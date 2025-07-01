@@ -1,25 +1,46 @@
-#!/usr/bin/env python3
-import csv, os
+
+import csv
+import os
+import argparse
 from loaders.transcript_loader import TranscriptLoader
 from coders.response_coder import ResponseCoder
 
 def main():
-    chunks = TranscriptLoader().load_and_chunk(["samples/interview1.txt"])
+    parser = argparse.ArgumentParser(description="Stage 1: chunk & code quotes")
+    parser.add_argument(
+        "--inputs", "-i",
+        nargs="+",
+        required=True,
+        help="List of transcript file paths to ingest"
+    )
+    parser.add_argument(
+        "--output", "-o",
+        default="stage1_output.csv",
+        help="CSV file to write coded quotes into"
+    )
+    args = parser.parse_args()
+
+    # 1) Load & chunk
+    loader = TranscriptLoader()
+    chunks = loader.load_and_chunk(args.inputs)
+
+    # 2) Code quotes
     coder = ResponseCoder()
     rows = []
     for c in chunks:
-        tags = coder.code(c["text"], c["metadata"])
-        merged = { **c["metadata"], **tags }
-        rows.append(merged)
+        tagged = coder.code(c["text"], c["metadata"])
+        # merge metadata into the row
+        row = {**c["metadata"], **tagged}
+        rows.append(row)
 
-    fieldnames = [
-        "interview_id","speaker","deal_outcome","date","client_id","source_type",
-        "quote_id","criteria","swot_theme","journey_phase","text"
-    ]
-    with open("stage1_output.csv", "w", newline="") as f:
+    # 3) Write output CSV
+    fieldnames = list(rows[0].keys()) if rows else []
+    with open(args.output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
+
+    print(f"Wrote {len(rows)} rows to {args.output}")
 
 if __name__ == "__main__":
     main()
