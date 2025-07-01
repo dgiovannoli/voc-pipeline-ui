@@ -4,7 +4,7 @@ import os
 from typing import List, Dict
 from docx import Document
 from langchain_community.document_loaders import TextLoader
-from langchain_core.schema import Document as LangDoc
+from langchain_core.schema.document import Document as LangDoc
 
 class TranscriptLoader:
     """
