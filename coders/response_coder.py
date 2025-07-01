@@ -7,40 +7,27 @@ from coders.schemas import CRITERIA_LIST, SWOT_LIST, PHASE_LIST
 class ResponseCoder:
     def __init__(self):
         self.llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
-        # Inline the lists via an f-string so they aren't treated as variables
+        # Simplified prompt template
         self.prompt = PromptTemplate(
             input_variables=["chunk_text", "metadata"],
             template=f"""
-You are tagging one interview chunk according to the Buried Wins framework.
+Tag this interview chunk using the Buried Wins framework.
 
-You have these options:
-Criteria: {CRITERIA_LIST}
-SWOT themes: {SWOT_LIST}
-Journey phases: {PHASE_LIST}
+Text: {{chunk_text}}
 
-Please tag the following chunk:
+Available options:
+- Criteria: {CRITERIA_LIST}
+- SWOT: {SWOT_LIST}  
+- Phases: {PHASE_LIST}
 
-Chunk:
-\"\"\"
-{{chunk_text}}
-\"\"\"
-
-Metadata:
-{{metadata}}
-
-Return ONLY a JSON object with exactly these keys:
+Return ONLY a JSON object with these exact keys:
 - quote_id (string)
-- criteria (one of {CRITERIA_LIST})
-- swot_theme (one of {SWOT_LIST})
-- journey_phase (one of {PHASE_LIST})
+- criteria (one of the criteria above)
+- swot_theme (one of the SWOT themes above)
+- journey_phase (one of the phases above)
 - text (the exact quote text)
 
-Example outputs:
-{{{{"quote_id":"intvw1_0","criteria":"commercial_terms","swot_theme":"strength","journey_phase":"decision","text":"The pricing was very competitive and the ROI was clear"}}}}
-{{{{"quote_id":"intvw1_1","criteria":"product_capability","swot_theme":"opportunity","journey_phase":"awareness","text":"This feature would solve our biggest pain point"}}}}
-
-Example output:
-{{{{"quote_id":"intvw1_0","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"…"}}}}
+Example: {{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great"}}
 """,
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
@@ -62,17 +49,31 @@ Example output:
         else:
             raw_text = str(raw)
         
-        # Attempt JSON parse + schema validation (up to 2 retries)
-        for attempt in range(2):
+        # Check for empty response
+        if not raw_text or raw_text.strip() == "":
+            raise RuntimeError(f"Empty response from LLM for chunk: {chunk_text[:100]}...")
+        
+        # Attempt JSON parse + schema validation (up to 3 retries)
+        for attempt in range(3):
             try:
-                obj = json.loads(raw_text.strip())
+                # Clean the response text
+                cleaned_text = raw_text.strip()
+                if cleaned_text.startswith("```json"):
+                    cleaned_text = cleaned_text[7:]
+                if cleaned_text.endswith("```"):
+                    cleaned_text = cleaned_text[:-3]
+                cleaned_text = cleaned_text.strip()
+                
+                obj = json.loads(cleaned_text)
                 # Ensure quote_id is set
                 if 'quote_id' not in obj or not obj['quote_id']:
                     obj['quote_id'] = quote_id
                 tag = QuoteTag(**obj)
                 return tag.dict()
-            except Exception as e:
-                if attempt < 1:  # Only retry once
+            except json.JSONDecodeError as e:
+                if attempt < 2:  # Retry up to 2 more times
+                    print(f"JSON decode error on attempt {attempt + 1}: {e}")
+                    print(f"Raw response: {raw_text}")
                     raw = self.chain.invoke({
                         "chunk_text": chunk_text, 
                         "metadata": metadata
@@ -82,6 +83,19 @@ Example output:
                     else:
                         raw_text = str(raw)
                 else:
-                    raise RuntimeError(f"Failed to parse tags after retries: {raw_text}. Error: {e}")
+                    raise RuntimeError(f"Failed to parse JSON after 3 attempts. Raw response: {raw_text}")
+            except Exception as e:
+                if attempt < 2:
+                    print(f"Other error on attempt {attempt + 1}: {e}")
+                    raw = self.chain.invoke({
+                        "chunk_text": chunk_text, 
+                        "metadata": metadata
+                    })
+                    if hasattr(raw, 'content'):
+                        raw_text = raw.content
+                    else:
+                        raw_text = str(raw)
+                else:
+                    raise RuntimeError(f"Failed to process after 3 attempts: {raw_text}. Error: {e}")
         
         raise RuntimeError(f"Failed to parse tags: {raw_text}")
