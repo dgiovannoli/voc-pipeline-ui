@@ -13,7 +13,7 @@ class TranscriptLoader:
     """
 
     def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
-        from langchain_community.text_splitter import RecursiveCharacterTextSplitter
+        from langchain_text_splitters import RecursiveCharacterTextSplitter
 
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size, chunk_overlap=chunk_overlap
