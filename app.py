@@ -40,7 +40,7 @@ if uploads:
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
             proc = subprocess.run(
-                [sys.executable, "batch_code.py", "--output", "stage1_output.csv"],
+                [sys.executable, "batch_code.py", "--inputs"] + uploaded_paths + ["--output", "stage1_output.csv"],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
             proc = subprocess.run(

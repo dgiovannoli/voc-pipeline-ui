@@ -1,5 +1,5 @@
 import os, json
-from langchain_community.llms import OpenAI
+from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from coders.models import QuoteTag
