@@ -30,12 +30,14 @@ authenticator = stauth.Authenticate(
 
 # Place the login widget in the sidebar
 name, authentication_status, username = authenticator.login("Login", "sidebar")
+
 if not authentication_status:
     st.error("❌ Username/password incorrect")
     st.stop()
 else:
     st.sidebar.success(f"Welcome, {name}")
     authenticator.logout("Logout", "sidebar")
+
 
 # -------------------- App Configuration --------------------
 DB_PATH = "voc_pipeline.db"
