@@ -1,0 +1,49 @@
+import os
+from dotenv import load_dotenv
+import pinecone
+from pinecone import Pinecone as PineconeClient, ServerlessSpec
+from langchain_openai import OpenAIEmbeddings
+from loaders.transcript_loader import TranscriptLoader
+
+def ingest_to_pinecone(paths):
+    load_dotenv()
+
+    # 1) Load + chunk
+    loader = TranscriptLoader()
+    docs = loader.load_and_chunk(paths)
+    texts = [d["text"] for d in docs]
+    metadatas = [d["metadata"] for d in docs]
+
+    # 2) Initialize Pinecone v2 client
+    pine_api = os.getenv("PINECONE_API_KEY")
+    pine_env = os.getenv("PINECONE_ENVIRONMENT")
+    client = PineconeClient(api_key=pine_api)
+
+    index_name = os.getenv("PINECONE_INDEX_NAME")
+    # 3) Ensure index exists
+    existing = client.list_indexes().names()
+    if index_name not in existing:
+        spec = ServerlessSpec(cloud="aws", region=pine_env)
+        client.create_index(name=index_name, dimension=1536, metric="cosine", spec=spec)
+
+    # 4) Create embeddings
+    embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
+    vectors = embeddings.embed_documents(texts)
+
+    # 5) Upsert in batches
+    idx = client.Index(index_name)
+    batch = []
+    for i, (vec, meta) in enumerate(zip(vectors, metadatas)):
+        vid = f"{meta['interview_id']}_{meta.get('chunk_index', i)}"
+        batch.append((vid, vec, meta))
+        if len(batch) == 100:
+            idx.upsert(vectors=batch)
+            batch = []
+    if batch:
+        idx.upsert(vectors=batch)
+
+    print(f"Ingested {len(texts)} chunks into Pinecone index '{index_name}'")
+
+if __name__ == "__main__":
+    import fire
+    fire.Fire({"ingest": ingest_to_pinecone})
