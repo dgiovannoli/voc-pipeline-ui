@@ -16,6 +16,7 @@ if password != "treasure23":
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 VALIDATED_CSV = "validated_quotes.csv"
+PASSTHROUGH_CSV = "passthrough_quotes.csv"
 
 st.title("VoC Pipeline Explorer")
 
@@ -47,6 +48,11 @@ if uploads:
                 [sys.executable, "batch_validate.py", "--input", "stage1_output.csv", "--output", VALIDATED_CSV],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
+            # Run passthrough after validation
+            proc = subprocess.run(
+                [sys.executable, "batch_passthrough.py", "--input", "stage1_output.csv", "--output", PASSTHROUGH_CSV],
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            )
             st.sidebar.success("✅ Processing complete")
         except subprocess.CalledProcessError as e:
             err = e.stderr.decode("utf-8", errors="replace")
@@ -56,13 +62,32 @@ if uploads:
             st.sidebar.error(f"🔴 Unexpected error: {e}")
 
 st.header("Validated Quotes")
-if os.path.exists(VALIDATED_CSV):
-    df = pd.read_csv(VALIDATED_CSV)
-    all_criteria = sorted(df["criteria"].dropna().unique())
+validated_exists = os.path.exists(VALIDATED_CSV)
+passthrough_exists = os.path.exists(PASSTHROUGH_CSV)
+validated_rows = 0
+passthrough_rows = 0
+
+df_validated = None
+df_passthrough = None
+
+if validated_exists:
+    df_validated = pd.read_csv(VALIDATED_CSV)
+    validated_rows = len(df_validated)
+if passthrough_exists:
+    df_passthrough = pd.read_csv(PASSTHROUGH_CSV)
+    passthrough_rows = len(df_passthrough)
+
+if validated_exists and validated_rows > 0:
+    all_criteria = sorted(df_validated["criteria"].dropna().unique())
     selected = st.multiselect("Filter by criteria", all_criteria, default=all_criteria)
     if selected:
-        df = df[df["criteria"].isin(selected)]
-    st.write(f"Showing {len(df)} quotes")
-    st.dataframe(df.head(200))
+        df_validated = df_validated[df_validated["criteria"].isin(selected)]
+    st.write(f"Showing {len(df_validated)} quotes")
+    st.dataframe(df_validated.head(200))
+# Fallback: show passthrough if validated is empty but passthrough has rows
+elif passthrough_exists and passthrough_rows > 0:
+    st.warning("Validated quotes are empty, but raw coded quotes are available. Displaying passthrough quotes as fallback.")
+    st.write(f"Showing {min(200, passthrough_rows)} passthrough quotes")
+    st.dataframe(df_passthrough.head(200))
 else:
     st.info("No `validated_quotes.csv` found yet. Upload & Process to get started.")
