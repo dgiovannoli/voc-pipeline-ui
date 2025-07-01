@@ -5,6 +5,14 @@ from pinecone import Pinecone as PineconeClient, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
 from loaders.transcript_loader import TranscriptLoader
 
+def clean_metadata_for_pinecone(metadata):
+    """Remove None values from metadata as Pinecone only accepts string, number, boolean, or list of strings"""
+    cleaned = {}
+    for key, value in metadata.items():
+        if value is not None:
+            cleaned[key] = value
+    return cleaned
+
 def ingest_to_pinecone(paths):
     load_dotenv()
 
@@ -47,7 +55,9 @@ def ingest_to_pinecone(paths):
     batch = []
     for i, (vec, meta) in enumerate(zip(vectors, metadatas)):
         vid = f"{meta['interview_id']}_{meta.get('chunk_index', i)}"
-        batch.append((vid, vec, meta))
+        # Clean metadata to remove None values before sending to Pinecone
+        cleaned_meta = clean_metadata_for_pinecone(meta)
+        batch.append((vid, vec, cleaned_meta))
         if len(batch) == 100:
             idx.upsert(vectors=batch)
             batch = []
