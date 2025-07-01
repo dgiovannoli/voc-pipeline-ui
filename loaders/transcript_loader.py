@@ -4,8 +4,8 @@ import os
 from typing import List, Dict
 from docx import Document
 from langchain_community.document_loaders import TextLoader
-from langchain_core.schema.document import Document as LangDoc
-
+from langchain.schema import Document as LangDoc
+# (If the above fails, try: from langchain_core.schema.document import Document as LangDoc)# (If the above fails, try: from langchain.schema import Document as LangDoc)
 class TranscriptLoader:
     """
     Given a list of file paths (.txt or .docx), load each into one or more
