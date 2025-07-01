@@ -13,6 +13,13 @@ class ResponseCoder:
             template=f"""
 You are tagging one interview chunk according to the Buried Wins framework.
 
+You have these options:
+Criteria: {CRITERIA_LIST}
+SWOT themes: {SWOT_LIST}
+Journey phases: {PHASE_LIST}
+
+Please tag the following chunk:
+
 Chunk:
 \"\"\"
 {{chunk_text}}
@@ -27,6 +34,10 @@ Return ONLY a JSON object with exactly these keys:
 - swot_theme (one of {SWOT_LIST})
 - journey_phase (one of {PHASE_LIST})
 - text (the exact quote text)
+
+Example outputs:
+{{{{"quote_id":"intvw1_0","criteria":"commercial_terms","swot_theme":"strength","journey_phase":"decision","text":"The pricing was very competitive and the ROI was clear"}}}}
+{{{{"quote_id":"intvw1_1","criteria":"product_capability","swot_theme":"opportunity","journey_phase":"awareness","text":"This feature would solve our biggest pain point"}}}}
 
 Example output:
 {{{{"quote_id":"intvw1_0","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"…"}}}}
