@@ -29,7 +29,7 @@ Return ONLY a JSON object with exactly these keys:
 - text (the exact quote text)
 
 Example output:
-{{"quote_id":"intvw1_0","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"…"}}
+{{{{"quote_id":"intvw1_0","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"…"}}}}
 """,
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
