@@ -11,13 +11,25 @@ def ingest_to_pinecone(paths):
     # 1) Load + chunk
     loader = TranscriptLoader()
     docs = loader.load_and_chunk(paths)
+
+    # —————————— ensure every chunk has interview_id & chunk_index ——————————
+    for idx, d in enumerate(docs):
+        meta = d.get("metadata", {})
+        # default interview_id to filename
+        if "interview_id" not in meta:
+            src = meta.get("source") or d.get("source") or paths[0]
+            meta["interview_id"] = os.path.splitext(os.path.basename(src))[0]
+        # default chunk_index to its position
+        if "chunk_index" not in meta:
+            meta["chunk_index"] = idx
+        d["metadata"] = meta
     texts = [d["text"] for d in docs]
     metadatas = [d["metadata"] for d in docs]
 
     # 2) Initialize Pinecone v2 client
     pine_api = os.getenv("PINECONE_API_KEY")
     pine_env = os.getenv("PINECONE_ENVIRONMENT")
-    client = PineconeClient(api_key=pine_api)
+    client = PineconeClient(api_key=pine_api, endpoint=os.getenv("PINECONE_ENDPOINT"))
 
     index_name = os.getenv("PINECONE_INDEX_NAME")
     # 3) Ensure index exists
