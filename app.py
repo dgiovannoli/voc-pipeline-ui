@@ -28,7 +28,7 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=1,
 )
 
-# Login widget in the sidebar
+# Place the login widget in the sidebar
 name, authentication_status, username = authenticator.login("Login", "sidebar")
 if not authentication_status:
     st.error("❌ Username/password incorrect")
@@ -42,7 +42,7 @@ DB_PATH = "voc_pipeline.db"
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-# Create / open SQLite connection
+# Open (or create) the SQLite database
 conn = sqlite3.connect(DB_PATH, check_same_thread=False)
 
 # -------------------- UI --------------------
@@ -54,7 +54,6 @@ uploaded_files = st.sidebar.file_uploader(
 )
 
 if uploaded_files:
-    # Save uploaded files locally
     local_paths = []
     for f in uploaded_files:
         dest = os.path.join(UPLOAD_DIR, f.name)
@@ -63,21 +62,22 @@ if uploaded_files:
         local_paths.append(dest)
     st.sidebar.success(f"Saved {len(local_paths)} file(s).")
 
-    # Trigger processing pipeline
     if st.sidebar.button("Process"):
         try:
-            # Ingest → Stage 1 → Stage 2
+            # 1) Ingest transcripts
             subprocess.run(
                 ["python", "run_pipeline.py", "--step", "ingest", "--inputs"] + local_paths,
                 check=True,
             )
+            # 2) Stage 1 tagging
             subprocess.run(["python", "batch_code.py"], check=True)
+            # 3) Stage 2 validation
             subprocess.run(
                 ["python", "batch_validate.py", "--input", "stage1_output.csv", "--output", "validated_quotes.csv"],
                 check=True,
             )
 
-            # Load validated CSV back into SQLite
+            # Reload into SQLite via pandas
             df = pd.read_csv("validated_quotes.csv")
             df.to_sql("validated_quotes", conn, if_exists="replace", index=False)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_criteria ON validated_quotes(criteria);")
@@ -88,17 +88,15 @@ if uploaded_files:
         except Exception as e:
             st.sidebar.error(f"Unexpected error: {e}")
 
-# -------------------- Data Explorer --------------------
 st.header("Validated Quotes")
 
-# Ensure the table exists
+# Try to load criteria list
 try:
-    all_criteria = pd.read_sql("SELECT DISTINCT criteria FROM validated_quotes", conn)["criteria"].tolist()
+    criteria_list = pd.read_sql("SELECT DISTINCT criteria FROM validated_quotes", conn)["criteria"].tolist()
 except Exception:
-    all_criteria = []
+    criteria_list = []
 
-# Allow filtering by criteria
-selected = st.multiselect("Filter by criteria", all_criteria, default=all_criteria)
+selected = st.multiselect("Filter by criteria", criteria_list, default=criteria_list)
 
 if selected:
     placeholders = ",".join("?" for _ in selected)
@@ -109,3 +107,4 @@ else:
 
 st.write(f"Showing {len(df_display)} rows")
 st.dataframe(df_display)
+
