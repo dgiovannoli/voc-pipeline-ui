@@ -12,7 +12,7 @@ class TranscriptLoader:
     LangChain Documents with metadata, ready for chunking.
     """
 
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+    def __init__(self, chunk_size: int = 800, chunk_overlap: int = 50):
         from langchain_text_splitters import RecursiveCharacterTextSplitter
 
         self.splitter = RecursiveCharacterTextSplitter(
@@ -48,12 +48,45 @@ class TranscriptLoader:
         for doc in docs:
             chunks = self.splitter.split_text(doc.page_content)
             for i, chunk in enumerate(chunks):
+                meta = {
+                    **doc.metadata,
+                    "chunk_index": i,
+                }
+                
+                # --- enrich metadata: role & timecodes ---
+                # If speaker appears like "Alice (CTO): Hello", split name & role
+                if "(" in meta.get("speaker", "") and ")" in meta["speaker"]:
+                    name, role = meta["speaker"].split("(", 1)
+                    meta["speaker"] = name.strip()
+                    meta["role"] = role.rstrip(")").strip()
+                # If using a loader that produces time spans, copy them:
+                if hasattr(chunk, "page_content") and hasattr(chunk, "metadata"):
+                    meta["start"] = chunk.metadata.get("start_time")
+                    meta["end"]   = chunk.metadata.get("end_time")
+                
+                # Ensure every chunk's metadata dict has keys "role", "start", and "end"
+                if "role" not in meta:
+                    meta["role"] = None
+                if "start" not in meta:
+                    meta["start"] = None
+                if "end" not in meta:
+                    meta["end"] = None
+                
                 chunked.append({
                     "text": chunk,
-                    "metadata": {
-                        **doc.metadata,
-                        "chunk_index": i,
-                    }
+                    "metadata": meta
                 })
+        
+        # Dedupe exact-text duplicates and assign chunk_index per unique chunk
+        unique = {}
+        deduped = []
+        for idx, c in enumerate(chunked):
+            text = c["text"]
+            if text not in unique:
+                c["metadata"]["chunk_index"] = idx
+                unique[text] = True
+                deduped.append(c)
+        chunked = deduped
+        
         return chunked
 
