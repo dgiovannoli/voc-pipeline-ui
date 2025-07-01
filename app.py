@@ -1,3 +1,32 @@
+import streamlit_authenticator as stauth
+
+# --- Authentication setup ---------------------------------------------
+credentials = {
+    "usernames": {
+        "nick":   {"name": "Nick",   "password": "$2b$12$lGal21pEt57loTjkokAENOjVd2z2UsooIwZesDFPK4qSRFmTX4ujS"},
+        "mai":    {"name": "Mai",    "password": "$2b$12$lGal21pEt57loTjkokAENOjVd2z2UsooIwZesDFPK4qSRFmTX4ujS"},
+        "jordan": {"name": "Jordan", "password": "$2b$12$lGal21pEt57loTjkokAENOjVd2z2UsooIwZesDFPK4qSRFmTX4ujS"},
+        "drew":   {"name": "Drew",   "password": "$2b$12$lGal21pEt57loTjkokAENOjVd2z2UsooIwZesDFPK4qSRFmTX4ujS"},
+        "anne":   {"name": "Anne",   "password": "$2b$12$lGal21pEt57loTjkokAENOjVd2z2UsooIwZesDFPK4qSRFmTX4ujS"},
+    }
+}
+
+authenticator = stauth.Authenticate(
+    credentials,
+    cookie_name="voc_auth_cookie",
+    key="voc_secret_key",
+    cookie_expiry_days=1,
+)
+
+name, authentication_status, username = authenticator.login("Login", "main")
+
+if not authentication_status:
+    st.error("❌ Username/password incorrect")
+    st.stop()
+else:
+    st.sidebar.success(f"Welcome, {name}")
+    authenticator.logout("Logout", "sidebar")
+
 import streamlit as st
 import pandas as pd
 import sqlite3
