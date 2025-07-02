@@ -15,25 +15,44 @@ class QuoteValidator:
     def validate(self, quote_row):
         # quote_row is a dict with all metadata + tags + text
         
-        # Log rejection reasons for missing required fields
-        if not quote_row.get("verbatim_response") and not quote_row.get("text"):
-            logger.info(f"DROPPED: missing verbatim_response for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
-            return None
+        # Handle both old and new schemas during transition
+        has_old_schema = quote_row.get("criteria") and quote_row.get("swot_theme") and quote_row.get("journey_phase")
+        has_new_schema = quote_row.get("subject") and quote_row.get("question")
         
-        if not quote_row.get("subject"):
-            logger.info(f"DROPPED: missing subject for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
-            return None
+        # For old schema, accept if it has the required old fields
+        if has_old_schema:
+            if not quote_row.get("text"):
+                logger.info(f"DROPPED: missing text for {quote_row.get('quote_id', 'unknown')}")
+                return None
+            # Accept old schema records
+            logger.info(f"ACCEPTED (old schema): {quote_row.get('quote_id', 'unknown')} → {quote_row.get('criteria', 'unknown')}")
+            return quote_row
         
-        if not quote_row.get("question"):
-            logger.info(f"DROPPED: missing question for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
-            return None
+        # For new schema, check new required fields
+        if has_new_schema:
+            if not quote_row.get("verbatim_response") and not quote_row.get("text"):
+                logger.info(f"DROPPED: missing verbatim_response for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
+                return None
+            # Accept new schema records
+            logger.info(f"ACCEPTED (new schema): {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))} → {quote_row.get('subject', 'unknown')}")
+            return quote_row
+        
+        # Neither schema is complete
+        logger.info(f"DROPPED: incomplete schema for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
+        return None
         
         # EnhancedTraceableStage2Analyzer expects:
         #   parsed_response, qa_pair, original_response
         response_text = quote_row.get("verbatim_response", quote_row.get("text", ""))
+        question_text = quote_row.get("question", "")
+        
+        # For old schema, use criteria as question context
+        if has_old_schema and not question_text:
+            question_text = f"What about {quote_row.get('criteria', 'the topic')}?"
+        
         validated_evidence, quality_report = self.analyzer.enhanced_evidence_validation(
             parsed_response=quote_row,
-            qa_pair={"question": quote_row.get("question", ""), "answer": response_text},
+            qa_pair={"question": question_text, "answer": response_text},
             original_response=response_text
         )
         

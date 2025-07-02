@@ -1,2 +1,2 @@
-interview_id,speaker,deal_outcome,date,client_id,source_type,quote_id,criteria,swot_theme,journey_phase,text,validated_evidence,quality_report
-demo_interview.txt,Product Manager,won,2025-07-01,clientA,customer,demo1,product_capability,strength,awareness,We needed faster onboarding.,{},{}
+response_id,verbatim_response,subject,question,deal_status,company_name,interviewee_name,date_of_interview
+resp_demo_interview.txt_0,We needed faster onboarding.,unknown,unknown,unknown,unknown,unknown,2024-01-01
