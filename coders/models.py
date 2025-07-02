@@ -7,6 +7,17 @@ class QuoteTag(BaseModel):
     swot_theme: str
     journey_phase: str
     text: str
+    response_id: str
+    verbatim_response: str
+    subject: str
+    question: str
+    deal_status: str
+    company: str
+    interviewee_name: str
+    date_of_interview: str
+
+    class Config:
+        extra = "allow"  # Allow extra fields
 
     @validator('criteria')
     def validate_criteria(cls, v):

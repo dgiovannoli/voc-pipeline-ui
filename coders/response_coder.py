@@ -7,11 +7,23 @@ from coders.schemas import CRITERIA_LIST, SWOT_LIST, PHASE_LIST
 class ResponseCoder:
     def __init__(self):
         self.llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
-        # Simplified prompt template with escaped curly braces in JSON example
+        # Updated prompt template with JSON schema and metadata usage
         self.prompt = PromptTemplate(
-            input_variables=["chunk_text", "metadata"],
+            input_variables=["chunk_text", "deal_status", "company", "interviewee_name", "date_of_interview"],
             template=f"""
 Tag this interview chunk using the Buried Wins framework.
+
+JSON Schema:
+{{
+  "response_id": "string",
+  "verbatim_response": "string", 
+  "subject": "string",
+  "question": "string",
+  "deal_status": "string",
+  "company": "string",
+  "interviewee_name": "string",
+  "date_of_interview": "YYYY-MM-DD"
+}}
 
 Text: {{chunk_text}}
 
@@ -20,14 +32,24 @@ Available options:
 - SWOT: {SWOT_LIST}  
 - Phases: {PHASE_LIST}
 
+Use the metadata fields `deal_status`, `company`, `interviewee_name`, and `date_of_interview` passed in to populate those keys exactly.
+
 Return ONLY a JSON object with these exact keys:
 - quote_id (string)
 - criteria (one of the criteria above)
 - swot_theme (one of the SWOT themes above)
 - journey_phase (one of the phases above)
 - text (the exact quote text)
+- response_id (string)
+- verbatim_response (string)
+- subject (string)
+- question (string)
+- deal_status (string)
+- company (string)
+- interviewee_name (string)
+- date_of_interview (YYYY-MM-DD)
 
-Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great"}}}}
+Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great","response_id":"resp_1","verbatim_response":"The product works great","subject":"product","question":"How is the product?","deal_status":"closed","company":"Acme Corp","interviewee_name":"John Doe","date_of_interview":"2024-01-15"}}}}
 """,
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
@@ -37,10 +59,19 @@ Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"
         # Generate quote_id from metadata if available
         quote_id = f"{metadata.get('interview_id', 'unknown')}_{metadata.get('chunk_index', 0)}"
         
-        # Invoke the chain with proper input
+        # Extract required metadata fields
+        deal_status = metadata.get('deal_status', 'unknown')
+        company = metadata.get('company', 'unknown')
+        interviewee_name = metadata.get('interviewee_name', 'unknown')
+        date_of_interview = metadata.get('date_of_interview', '2024-01-01')
+        
+        # Invoke the chain with proper input including metadata fields
         raw = self.chain.invoke({
-            "chunk_text": chunk_text, 
-            "metadata": metadata
+            "chunk_text": chunk_text,
+            "deal_status": deal_status,
+            "company": company,
+            "interviewee_name": interviewee_name,
+            "date_of_interview": date_of_interview
         })
         
         # Extract the content from the response
@@ -75,8 +106,11 @@ Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"
                     print(f"JSON decode error on attempt {attempt + 1}: {e}")
                     print(f"Raw response: {raw_text}")
                     raw = self.chain.invoke({
-                        "chunk_text": chunk_text, 
-                        "metadata": metadata
+                        "chunk_text": chunk_text,
+                        "deal_status": deal_status,
+                        "company": company,
+                        "interviewee_name": interviewee_name,
+                        "date_of_interview": date_of_interview
                     })
                     if hasattr(raw, 'content'):
                         raw_text = raw.content
@@ -88,8 +122,11 @@ Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"
                 if attempt < 2:
                     print(f"Other error on attempt {attempt + 1}: {e}")
                     raw = self.chain.invoke({
-                        "chunk_text": chunk_text, 
-                        "metadata": metadata
+                        "chunk_text": chunk_text,
+                        "deal_status": deal_status,
+                        "company": company,
+                        "interviewee_name": interviewee_name,
+                        "date_of_interview": date_of_interview
                     })
                     if hasattr(raw, 'content'):
                         raw_text = raw.content
