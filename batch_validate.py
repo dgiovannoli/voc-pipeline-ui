@@ -22,9 +22,18 @@ def main():
     v = QuoteValidator()
     validated = []
     for row in reader:
-        result = v.validate(row)
-        if result:
-            validated.append(result)
+        try:
+            result = v.validate(row)
+            if result:
+                validated.append(result)
+            else:
+                # dropped with no return
+                print(f"DROPPED (no return): quote_id={row.get('quote_id')} row={row}")
+                continue
+        except Exception as e:
+            # validation threw an error
+            print(f"ERROR in validate() for quote_id={row.get('quote_id')}: {e}")
+            continue
 
     # Preserve all original columns + the two new JSON columns
     fieldnames = reader.fieldnames + ["validated_evidence", "quality_report"]
