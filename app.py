@@ -127,3 +127,11 @@ with tab2:
         )
     else:
         st.info("Run the pipeline to generate the response data table.")
+
+if os.path.exists(VALIDATED_CSV) and os.path.getsize(VALIDATED_CSV)>0:
+    df = pd.read_csv(VALIDATED_CSV)
+else:
+    df = pd.read_csv("stage1_output.csv")
+
+st.write(f"Showing {len(df)} records")
+st.dataframe(df)
