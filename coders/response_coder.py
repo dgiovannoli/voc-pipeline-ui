@@ -1,4 +1,4 @@
-import os, json
+import os, json, time
 from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from coders.models import QuoteTag
@@ -6,7 +6,11 @@ from coders.schemas import CRITERIA_LIST, SWOT_LIST, PHASE_LIST
 
 class ResponseCoder:
     def __init__(self):
-        self.llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
+        self.llm = OpenAI(
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            max_tokens=1000,  # Limit response length to prevent truncation
+            temperature=0.1   # Lower temperature for more consistent responses
+        )
         # Updated prompt template with JSON schema and metadata usage
         self.prompt = PromptTemplate(
             input_variables=[
@@ -17,7 +21,7 @@ class ResponseCoder:
                 "interviewee_name",
                 "date_of_interview"
             ],
-            template=f"""Analyze this interview chunk and extract insights using the Buried Wins framework.
+            template=f"""Analyze this interview chunk using the Buried Wins framework.
 
 Interview Text: {{chunk_text}}
 
@@ -27,10 +31,10 @@ Available Categories:
 - Journey Phases: {PHASE_LIST}
 
 Instructions:
-1. Analyze the text for customer insights, pain points, or positive feedback
+1. Identify customer insights, pain points, or positive feedback
 2. Categorize using the available options above
 3. Extract the most relevant quote
-4. Return a JSON object with the following structure
+4. Provide brief subject and question context
 
 Return ONLY this JSON format:
 {{{{
@@ -83,8 +87,11 @@ Return ONLY this JSON format:
         if not raw_text or raw_text.strip() == "":
             raise RuntimeError(f"Empty response from LLM for chunk: {chunk_text[:100]}...")
         
-        # Attempt JSON parse + schema validation (up to 3 retries)
+        # Attempt JSON parse + schema validation with exponential backoff
         for attempt in range(3):
+            if attempt > 0:
+                # Exponential backoff: wait 1s, 2s, 4s
+                time.sleep(2 ** (attempt - 1))
             try:
                 # Clean the response text
                 cleaned_text = raw_text.strip()
@@ -93,6 +100,24 @@ Return ONLY this JSON format:
                 if cleaned_text.endswith("```"):
                     cleaned_text = cleaned_text[:-3]
                 cleaned_text = cleaned_text.strip()
+                
+                # Handle truncated JSON responses
+                if cleaned_text.count('{') > cleaned_text.count('}'):
+                    # JSON is incomplete, try to complete it
+                    missing_braces = cleaned_text.count('{') - cleaned_text.count('}')
+                    cleaned_text += '}' * missing_braces
+                    
+                # Handle incomplete string values
+                if cleaned_text.count('"') % 2 != 0:
+                    # Odd number of quotes, likely incomplete string
+                    last_quote_pos = cleaned_text.rfind('"')
+                    if last_quote_pos != -1:
+                        # Find the start of the incomplete string
+                        start_pos = cleaned_text.rfind('"', 0, last_quote_pos)
+                        if start_pos != -1:
+                            # Complete the string and add missing fields
+                            incomplete_field = cleaned_text[start_pos+1:last_quote_pos+1]
+                            cleaned_text = cleaned_text[:start_pos+1] + incomplete_field + '", "deal_status": "' + deal_status + '", "company": "' + company + '", "interviewee_name": "' + interviewee_name + '", "date_of_interview": "' + date_of_interview + '"}'
                 
                 obj = json.loads(cleaned_text)
                 # Ensure quote_id is set
