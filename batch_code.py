@@ -55,6 +55,15 @@ def main():
         help="CSV file to write coded quotes into"
     )
     args = parser.parse_args()
+    
+    # Create common metadata from CLI flags
+    common_meta = {
+        "client":            args.client,
+        "deal_status":       args.deal_status,
+        "company":           args.company,
+        "interviewee_name":  args.interviewee_name,
+        "date_of_interview": args.date_of_interview,
+    }
 
     # 1) Load & chunk
     loader = TranscriptLoader()
@@ -68,14 +77,15 @@ def main():
     rows = []
     coder = ResponseCoder()
     for i, c in enumerate(good_chunks):
-        meta = c['metadata']
+        meta = c['metadata'].copy()
+        meta.update(common_meta)
         # Compute the six required parameters
         response_id = f"{meta['company']}_{i+1}"
         chunk_text = c['text']
         company = meta['company']
-        interviewee_name = meta['speaker']
-        deal_status = meta['deal_outcome']
-        date_of_interview = meta['date']
+        interviewee_name = meta['interviewee_name']
+        deal_status = meta['deal_status']
+        date_of_interview = meta['date_of_interview']
         
         tag: dict = coder.code(chunk_text, response_id, company, interviewee_name, deal_status, date_of_interview)
         if not tag:
