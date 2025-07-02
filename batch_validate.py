@@ -35,8 +35,11 @@ def main():
             print(f"ERROR in validate() for quote_id={row.get('quote_id')}: {e}")
             continue
 
-    # Preserve all original columns + the two new JSON columns
-    fieldnames = reader.fieldnames + ["validated_evidence", "quality_report"]
+    # these must match your new eight-column schema:
+    fieldnames = [
+      "response_id","verbatim_response","subject","question",
+      "deal_status","company_name","interviewee_name","date_of_interview",
+    ]
     with open(args.output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

@@ -54,26 +54,34 @@ def main():
     # 2) Code quotes with parallel processing
     print(f"Processing {len(chunks)} chunks...")
     start_time = time.time()
-    
-    # Process chunks in parallel with batching
-    rows = process_chunks_parallel(chunks, args)
-    
+    rows = []
+    coder = ResponseCoder()
+    for c in chunks:
+        tag: dict = coder.code(c['text'], c['metadata'])
+        m = c['metadata']
+        rows.append({
+          "response_id":         tag["response_id"],
+          "verbatim_response":   tag["verbatim_response"],
+          "subject":             tag["subject"],
+          "question":            tag["question"],
+          "deal_status":         m["deal_status"],
+          "company_name":        m["company_name"],
+          "interviewee_name":    m["interviewee_name"],
+          "date_of_interview":   m["date_of_interview"],
+        })
     processing_time = time.time() - start_time
     print(f"Processing completed in {processing_time:.2f} seconds")
 
     # 3) Write output CSV with exact fieldnames from schema
-    fieldnames = ["response_id", "verbatim_response", "subject", "question", "deal_status", "company", "interviewee_name", "date_of_interview"]
-    
-    # Filter rows to only include schema fields
-    filtered_rows = []
-    for row in rows:
-        filtered_row = {field: row.get(field, "") for field in fieldnames}
-        filtered_rows.append(filtered_row)
+    fieldnames = [
+      "response_id","verbatim_response","subject","question",
+      "deal_status","company_name","interviewee_name","date_of_interview"
+    ]
     
     with open(args.output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(filtered_rows)
+        writer.writerows(rows)
 
     print(f"Wrote {len(rows)} rows to {args.output}")
 
