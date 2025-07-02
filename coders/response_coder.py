@@ -9,48 +9,22 @@ class ResponseCoder:
         self.llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
         # Updated prompt template with JSON schema and metadata usage
         self.prompt = PromptTemplate(
-            input_variables=["chunk_text", "response_id", "deal_status", "company", "interviewee_name", "date_of_interview"],
-            template=f"""
-Tag this interview chunk using the Buried Wins framework.
-
-JSON Schema:
-{{
-  "response_id": "string",
-  "verbatim_response": "string", 
-  "subject": "string",
-  "question": "string",
-  "deal_status": "string",
-  "company": "string",
-  "interviewee_name": "string",
-  "date_of_interview": "YYYY-MM-DD"
-}}
-
-Text: {{chunk_text}}
-
-Available options:
-- Criteria: {CRITERIA_LIST}
-- SWOT: {SWOT_LIST}  
-- Phases: {PHASE_LIST}
-
-Use the metadata fields `deal_status`, `company`, `interviewee_name`, and `date_of_interview` passed in to populate those keys exactly.
-
-Return ONLY a JSON object with these exact keys:
-- quote_id (string)
-- criteria (one of the criteria above)
-- swot_theme (one of the SWOT themes above)
-- journey_phase (one of the phases above)
-- text (the exact quote text)
-- response_id (string)
-- verbatim_response (string)
-- subject (string)
-- question (string)
-- deal_status (string)
-- company (string)
-- interviewee_name (string)
-- date_of_interview (YYYY-MM-DD)
-
-Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great","response_id":"{{response_id}}","verbatim_response":"The product works great","subject":"product","question":"How is the product?","deal_status":"{{deal_status}}","company":"{{company}}","interviewee_name":"{{interviewee_name}}","date_of_interview":"{{date_of_interview}}"}}}}
-""",
+            input_variables=[
+                "chunk_text",
+                "response_id", 
+                "deal_status",
+                "company",
+                "interviewee_name",
+                "date_of_interview"
+            ],
+            template="""{{
+  "response_id": "{response_id}",
+  "verbatim_response": "{chunk_text}",
+  "deal_status": "{deal_status}",
+  "company": "{company}",
+  "interviewee_name": "{interviewee_name}",
+  "date_of_interview": "{date_of_interview}"
+}}""",
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
         self.chain = self.prompt | self.llm
