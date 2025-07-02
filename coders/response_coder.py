@@ -7,7 +7,7 @@ from coders.schemas import CRITERIA_LIST, SWOT_LIST, PHASE_LIST
 class ResponseCoder:
     def __init__(self):
         self.llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
-        # Simplified prompt template
+        # Simplified prompt template with escaped curly braces in JSON example
         self.prompt = PromptTemplate(
             input_variables=["chunk_text", "metadata"],
             template=f"""
@@ -27,7 +27,7 @@ Return ONLY a JSON object with these exact keys:
 - journey_phase (one of the phases above)
 - text (the exact quote text)
 
-Example: {{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great"}}
+Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great"}}}}
 """,
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
