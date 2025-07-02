@@ -68,19 +68,27 @@ def main():
     rows = []
     coder = ResponseCoder()
     for c in good_chunks:
-        tag: dict = coder.code(c['text'], c['metadata'])
+        # Add external metadata to the chunk metadata
+        enhanced_metadata = {
+            **c['metadata'],
+            'deal_status': args.deal_status,
+            'company': args.company,
+            'interviewee_name': args.interviewee_name,
+            'date_of_interview': args.date_of_interview
+        }
+        
+        tag: dict = coder.code(c['text'], enhanced_metadata)
         if not tag:
             continue
-        m = c['metadata']
         rows.append({
           "response_id":         tag["response_id"],
           "verbatim_response":   tag["verbatim_response"],
           "subject":             tag["subject"],
           "question":            tag["question"],
-          "deal_status":         m["deal_status"],
-          "company_name":        m["company_name"],
-          "interviewee_name":    m["interviewee_name"],
-          "date_of_interview":   m["date_of_interview"],
+          "deal_status":         args.deal_status,
+          "company_name":        args.company,
+          "interviewee_name":    args.interviewee_name,
+          "date_of_interview":   args.date_of_interview,
         })
     processing_time = time.time() - start_time
     print(f"Processing completed in {processing_time:.2f} seconds")
