@@ -1,4 +1,4 @@
-import os, json, time
+import os, json, time, logging
 from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from coders.models import ResponseRow
@@ -124,106 +124,19 @@ class ResponseCoder:
         self.chain = self.prompt | self.llm
 
     def code(self, chunk_text, metadata):
-        # Generate quote_id and response_id from metadata if available
-        quote_id = f"{metadata.get('interview_id', 'unknown')}_{metadata.get('chunk_index', 0)}"
-        response_id = f"resp_{metadata.get('interview_id', 'unknown')}_{metadata.get('chunk_index', 0)}"
-        
-        # Extract required metadata fields
-        deal_status = metadata.get('deal_status', 'unknown')
-        company_name = metadata.get('company', 'unknown')
-        interviewee_name = metadata.get('interviewee_name', 'unknown')
-        date_of_interview = metadata.get('date_of_interview', '2024-01-01')
-        
-        # Invoke the chain with proper input including all six required fields
-        raw = self.chain.invoke({
-            "chunk_text": chunk_text,
-            "response_id": response_id,
-            "deal_status": deal_status,
-            "company_name": company_name,
-            "interviewee_name": interviewee_name,
-            "date_of_interview": date_of_interview
-        })
-        
-        # Extract the content from the response
-        if hasattr(raw, 'content'):
-            raw_text = raw.content
-        else:
-            raw_text = str(raw)
-        
-        # Check for empty response
-        if not raw_text or raw_text.strip() == "":
-            raise RuntimeError(f"Empty response from LLM for chunk: {chunk_text[:100]}...")
-        
-        # Attempt JSON parse + schema validation with exponential backoff
-        for attempt in range(3):
-            if attempt > 0:
-                # Exponential backoff: wait 1s, 2s, 4s
-                time.sleep(2 ** (attempt - 1))
+        raw = ""
+        # up to 3 attempts to get valid JSON
+        for _ in range(3):
+            raw = self.chain.invoke({"chunk_text": chunk_text, **metadata}).strip()
+            if not raw:
+                continue
             try:
-                # Clean the response text
-                cleaned_text = raw_text.strip()
-                if cleaned_text.startswith("```json"):
-                    cleaned_text = cleaned_text[7:]
-                if cleaned_text.endswith("```"):
-                    cleaned_text = cleaned_text[:-3]
-                cleaned_text = cleaned_text.strip()
-                
-                # Handle truncated JSON responses
-                if cleaned_text.count('{') > cleaned_text.count('}'):
-                    # JSON is incomplete, try to complete it
-                    missing_braces = cleaned_text.count('{') - cleaned_text.count('}')
-                    cleaned_text += '}' * missing_braces
-                    
-                # Handle incomplete string values
-                if cleaned_text.count('"') % 2 != 0:
-                    # Odd number of quotes, likely incomplete string
-                    last_quote_pos = cleaned_text.rfind('"')
-                    if last_quote_pos != -1:
-                        # Find the start of the incomplete string
-                        start_pos = cleaned_text.rfind('"', 0, last_quote_pos)
-                        if start_pos != -1:
-                            # Complete the string and add missing fields
-                            incomplete_field = cleaned_text[start_pos+1:last_quote_pos+1]
-                            cleaned_text = cleaned_text[:start_pos+1] + incomplete_field + '", "deal_status": "' + deal_status + '", "company": "' + company_name + '", "interviewee_name": "' + interviewee_name + '", "date_of_interview": "' + date_of_interview + '"}'
-                
-                obj = json.loads(cleaned_text)
-                # Create ResponseRow with the required fields
-                response_row = ResponseRow(**obj)
-                return response_row.dict()
-            except json.JSONDecodeError as e:
-                if attempt < 2:  # Retry up to 2 more times
-                    print(f"JSON decode error on attempt {attempt + 1}: {e}")
-                    print(f"Raw response: {raw_text}")
-                    raw = self.chain.invoke({
-                        "chunk_text": chunk_text,
-                        "response_id": response_id,
-                        "deal_status": deal_status,
-                        "company_name": company_name,
-                        "interviewee_name": interviewee_name,
-                        "date_of_interview": date_of_interview
-                    })
-                    if hasattr(raw, 'content'):
-                        raw_text = raw.content
-                    else:
-                        raw_text = str(raw)
-                else:
-                    raise RuntimeError(f"Failed to parse JSON after 3 attempts. Raw response: {raw_text}")
-            except Exception as e:
-                if attempt < 2:
-                    print(f"Other error on attempt {attempt + 1}: {e}")
-                    raw = self.chain.invoke({
-                        "chunk_text": chunk_text,
-                        "response_id": response_id,
-                        "deal_status": deal_status,
-                        "company_name": company_name,
-                        "interviewee_name": interviewee_name,
-                        "date_of_interview": date_of_interview
-                    })
-                    if hasattr(raw, 'content'):
-                        raw_text = raw.content
-                    else:
-                        raw_text = str(raw)
-                else:
-                    raise RuntimeError(f"Failed to process after 3 attempts: {raw_text}. Error: {e}")
-        
-        raise RuntimeError(f"Failed to parse tags: {raw_text}")
+                obj = json.loads(raw)
+                tag = ResponseRow(**obj)
+                return tag.dict()
+            except Exception:
+                # malformed JSON, retry
+                continue
+        # if we reach here, skip this chunk
+        logging.warning("Skipping chunk (no valid LLM output): %s", chunk_text[:60].replace("\n"," "))
+        return None
