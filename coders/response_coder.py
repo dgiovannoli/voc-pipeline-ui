@@ -13,7 +13,7 @@ class ResponseCoder:
         )
         # ——— Response Data Table Prompt ———
         self.prompt = PromptTemplate(
-            input_variables=["response_id","chunk_text","company","interviewee_name","deal_status","date_of_interview"],
+            input_variables=["response_id","chunk_text","company","company_name","interviewee_name","deal_status","date_of_interview"],
             template="""
 <role>
   <identity>Expert qualitative coding analyst specializing in win-loss interview data extraction</identity>
@@ -116,12 +116,21 @@ class ResponseCoder:
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
         self.chain = self.prompt | self.llm
 
-    def code(self, chunk_text, response_id, company, interviewee_name, deal_status, date_of_interview):
+    def code(self,
+             chunk_text: str,
+             response_id: str,
+             company: str,
+             company_name: str,
+             interviewee_name: str,
+             deal_status: str,
+             date_of_interview: str
+    ) -> dict:
         # Prepare the input with all required variables
         chain_input = {
             "chunk_text": chunk_text,
             "response_id": response_id,
             "company": company,
+            "company_name": company_name,
             "interviewee_name": interviewee_name,
             "deal_status": deal_status,
             "date_of_interview": date_of_interview
