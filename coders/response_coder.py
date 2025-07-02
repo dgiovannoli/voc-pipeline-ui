@@ -33,7 +33,7 @@ Instructions:
 4. Return a JSON object with the following structure
 
 Return ONLY this JSON format:
-{{
+{{{{
   "quote_id": "unique_identifier",
   "criteria": "one_of_the_criteria_options",
   "swot_theme": "one_of_the_swot_options", 
@@ -47,7 +47,7 @@ Return ONLY this JSON format:
   "company": "{{company}}",
   "interviewee_name": "{{interviewee_name}}",
   "date_of_interview": "{{date_of_interview}}"
-}}""",
+}}}}""",
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
         self.chain = self.prompt | self.llm
