@@ -64,10 +64,17 @@ def main():
 
     # 3) Write output CSV with exact fieldnames from schema
     fieldnames = ["response_id", "verbatim_response", "subject", "question", "deal_status", "company", "interviewee_name", "date_of_interview"]
+    
+    # Filter rows to only include schema fields
+    filtered_rows = []
+    for row in rows:
+        filtered_row = {field: row.get(field, "") for field in fieldnames}
+        filtered_rows.append(filtered_row)
+    
     with open(args.output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
+        writer.writerows(filtered_rows)
 
     print(f"Wrote {len(rows)} rows to {args.output}")
 
