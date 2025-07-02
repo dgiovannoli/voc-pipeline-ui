@@ -9,7 +9,7 @@ class ResponseCoder:
         self.llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"))
         # Updated prompt template with JSON schema and metadata usage
         self.prompt = PromptTemplate(
-            input_variables=["chunk_text", "deal_status", "company", "interviewee_name", "date_of_interview"],
+            input_variables=["chunk_text", "response_id", "deal_status", "company", "interviewee_name", "date_of_interview"],
             template=f"""
 Tag this interview chunk using the Buried Wins framework.
 
@@ -49,15 +49,16 @@ Return ONLY a JSON object with these exact keys:
 - interviewee_name (string)
 - date_of_interview (YYYY-MM-DD)
 
-Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great","response_id":"resp_1","verbatim_response":"The product works great","subject":"product","question":"How is the product?","deal_status":"closed","company":"Acme Corp","interviewee_name":"John Doe","date_of_interview":"2024-01-15"}}}}
+Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"strength","journey_phase":"awareness","text":"The product works great","response_id":"{{response_id}}","verbatim_response":"The product works great","subject":"product","question":"How is the product?","deal_status":"{{deal_status}}","company":"{{company}}","interviewee_name":"{{interviewee_name}}","date_of_interview":"{{date_of_interview}}"}}}}
 """,
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
         self.chain = self.prompt | self.llm
 
     def code(self, chunk_text, metadata):
-        # Generate quote_id from metadata if available
+        # Generate quote_id and response_id from metadata if available
         quote_id = f"{metadata.get('interview_id', 'unknown')}_{metadata.get('chunk_index', 0)}"
+        response_id = f"resp_{metadata.get('interview_id', 'unknown')}_{metadata.get('chunk_index', 0)}"
         
         # Extract required metadata fields
         deal_status = metadata.get('deal_status', 'unknown')
@@ -65,9 +66,10 @@ Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"
         interviewee_name = metadata.get('interviewee_name', 'unknown')
         date_of_interview = metadata.get('date_of_interview', '2024-01-01')
         
-        # Invoke the chain with proper input including metadata fields
+        # Invoke the chain with proper input including all six required fields
         raw = self.chain.invoke({
             "chunk_text": chunk_text,
+            "response_id": response_id,
             "deal_status": deal_status,
             "company": company,
             "interviewee_name": interviewee_name,
@@ -107,6 +109,7 @@ Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"
                     print(f"Raw response: {raw_text}")
                     raw = self.chain.invoke({
                         "chunk_text": chunk_text,
+                        "response_id": response_id,
                         "deal_status": deal_status,
                         "company": company,
                         "interviewee_name": interviewee_name,
@@ -123,6 +126,7 @@ Example: {{{{"quote_id":"chunk_1","criteria":"product_capability","swot_theme":"
                     print(f"Other error on attempt {attempt + 1}: {e}")
                     raw = self.chain.invoke({
                         "chunk_text": chunk_text,
+                        "response_id": response_id,
                         "deal_status": deal_status,
                         "company": company,
                         "interviewee_name": interviewee_name,
