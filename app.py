@@ -86,35 +86,42 @@ tab1, tab2 = st.tabs(["Validated Quotes", "Response Data Table"])
 
 with tab1:
     st.header("Validated Quotes")
-    validated_exists = os.path.exists(VALIDATED_CSV)
-    passthrough_exists = os.path.exists(PASSTHROUGH_CSV)
-    validated_rows = 0
-    passthrough_rows = 0
-
-    df_validated = None
-    df_passthrough = None
-
-    if validated_exists:
-        df_validated = pd.read_csv(VALIDATED_CSV)
-        validated_rows = len(df_validated)
-    if passthrough_exists:
-        df_passthrough = pd.read_csv(PASSTHROUGH_CSV)
-        passthrough_rows = len(df_passthrough)
-
-    if validated_exists and validated_rows > 0:
-        all_criteria = sorted(df_validated["criteria"].dropna().unique())
-        selected = st.multiselect("Filter by criteria", all_criteria, default=all_criteria)
-        if selected:
-            df_validated = df_validated[df_validated["criteria"].isin(selected)]
-        st.write(f"Showing {len(df_validated)} quotes")
-        st.dataframe(df_validated.head(200))
-    # Fallback: show passthrough if validated is empty but passthrough has rows
-    elif passthrough_exists and passthrough_rows > 0:
-        st.warning("Validated quotes are empty, but raw coded quotes are available. Displaying passthrough quotes as fallback.")
-        st.write(f"Showing {min(200, passthrough_rows)} passthrough quotes")
-        st.dataframe(df_passthrough.head(200))
+    
+    # Check for validated data first, then fallback to raw data
+    if os.path.exists(VALIDATED_CSV) and os.path.getsize(VALIDATED_CSV) > 0:
+        try:
+            df = pd.read_csv(VALIDATED_CSV)
+            if len(df) > 0:
+                st.write(f"Showing {len(df)} validated quotes")
+                st.dataframe(df.head(200))
+                if len(df) > 200:
+                    st.info(f"Showing first 200 of {len(df)} records")
+            else:
+                st.warning("Validated quotes file is empty")
+                # Fallback to raw data
+                if os.path.exists("stage1_output.csv"):
+                    df = pd.read_csv("stage1_output.csv")
+                    st.write(f"Showing {len(df)} raw quotes (fallback)")
+                    st.dataframe(df.head(200))
+                else:
+                    st.info("No data available. Upload & Process to get started.")
+        except Exception as e:
+            st.error(f"Error reading validated quotes: {e}")
+            # Fallback to raw data
+            if os.path.exists("stage1_output.csv"):
+                df = pd.read_csv("stage1_output.csv")
+                st.write(f"Showing {len(df)} raw quotes (fallback)")
+                st.dataframe(df.head(200))
+            else:
+                st.info("No data available. Upload & Process to get started.")
     else:
-        st.info("No `validated_quotes.csv` found yet. Upload & Process to get started.")
+        # No validated file, try raw data
+        if os.path.exists("stage1_output.csv"):
+            df = pd.read_csv("stage1_output.csv")
+            st.write(f"Showing {len(df)} raw quotes")
+            st.dataframe(df.head(200))
+        else:
+            st.info("No data available. Upload & Process to get started.")
 
 with tab2:
     if os.path.exists("response_data_table.csv"):
@@ -127,11 +134,3 @@ with tab2:
         )
     else:
         st.info("Run the pipeline to generate the response data table.")
-
-if os.path.exists(VALIDATED_CSV) and os.path.getsize(VALIDATED_CSV)>0:
-    df = pd.read_csv(VALIDATED_CSV)
-else:
-    df = pd.read_csv("stage1_output.csv")
-
-st.write(f"Showing {len(df)} records")
-st.dataframe(df)

@@ -16,28 +16,25 @@ class QuoteValidator:
         # quote_row is a dict with all metadata + tags + text
         
         # Log rejection reasons for missing required fields
-        if not quote_row.get("criteria"):
-            logger.info(f"DROPPED: missing criteria for {quote_row.get('quote_id', 'unknown')}")
+        if not quote_row.get("verbatim_response") and not quote_row.get("text"):
+            logger.info(f"DROPPED: missing verbatim_response for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
             return None
         
-        if not quote_row.get("swot_theme"):
-            logger.info(f"DROPPED: missing swot_theme for {quote_row.get('quote_id', 'unknown')}")
+        if not quote_row.get("subject"):
+            logger.info(f"DROPPED: missing subject for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
             return None
         
-        if not quote_row.get("journey_phase"):
-            logger.info(f"DROPPED: missing journey_phase for {quote_row.get('quote_id', 'unknown')}")
-            return None
-        
-        if not quote_row.get("text"):
-            logger.info(f"DROPPED: missing text for {quote_row.get('quote_id', 'unknown')}")
+        if not quote_row.get("question"):
+            logger.info(f"DROPPED: missing question for {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))}")
             return None
         
         # EnhancedTraceableStage2Analyzer expects:
         #   parsed_response, qa_pair, original_response
+        response_text = quote_row.get("verbatim_response", quote_row.get("text", ""))
         validated_evidence, quality_report = self.analyzer.enhanced_evidence_validation(
             parsed_response=quote_row,
-            qa_pair={"question": None, "answer": quote_row["text"]},
-            original_response=quote_row["text"]
+            qa_pair={"question": quote_row.get("question", ""), "answer": response_text},
+            original_response=response_text
         )
         
         # Comment out strict validation filters - accept more quotes
@@ -50,6 +47,6 @@ class QuoteValidator:
         quote_row["quality_report"] = json.dumps(quality_report) if quality_report else "{}"
         
         # Log acceptance
-        logger.info(f"ACCEPTED: {quote_row.get('quote_id', 'unknown')} → {quote_row.get('criteria', 'unknown')}")
+        logger.info(f"ACCEPTED: {quote_row.get('response_id', quote_row.get('quote_id', 'unknown'))} → {quote_row.get('subject', 'unknown')}")
         
         return quote_row
