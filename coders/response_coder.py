@@ -13,14 +13,7 @@ class ResponseCoder:
         )
         # ——— Response Data Table Prompt ———
         self.prompt = PromptTemplate(
-            input_variables=[
-                "chunk_text",
-                "deal_status",
-                "company_name",
-                "interviewee_name",
-                "date_of_interview",
-                "response_id"
-            ],
+            input_variables=["response_id","chunk_text","company","interviewee_name","deal_status","date_of_interview"],
             template="""
 <role>
   <identity>Expert qualitative coding analyst specializing in win-loss interview data extraction</identity>
@@ -113,7 +106,7 @@ class ResponseCoder:
     "subject": "brief_subject_description",
     "question": "what_question_this_answers",
     "deal_status": "{deal_status}",
-    "company": "{company_name}",
+    "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}"
   }}
@@ -123,23 +116,14 @@ class ResponseCoder:
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
         self.chain = self.prompt | self.llm
 
-    def code(self, chunk_text, metadata):
-        # Generate response_id from metadata if available
-        response_id = f"resp_{metadata.get('interview_id', 'unknown')}_{metadata.get('chunk_index', 0)}"
-        
-        # Extract required metadata fields with defaults
-        deal_status = metadata.get('deal_status', 'unknown')
-        company_name = metadata.get('company', 'unknown')
-        interviewee_name = metadata.get('interviewee_name', 'unknown')
-        date_of_interview = metadata.get('date_of_interview', '2024-01-01')
-        
+    def code(self, chunk_text, response_id, company, interviewee_name, deal_status, date_of_interview):
         # Prepare the input with all required variables
         chain_input = {
             "chunk_text": chunk_text,
             "response_id": response_id,
-            "deal_status": deal_status,
-            "company_name": company_name,
+            "company": company,
             "interviewee_name": interviewee_name,
+            "deal_status": deal_status,
             "date_of_interview": date_of_interview
         }
         

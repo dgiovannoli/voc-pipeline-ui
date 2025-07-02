@@ -93,7 +93,12 @@ with tab1:
             df = pd.read_csv(VALIDATED_CSV)
             if len(df) > 0:
                 st.write(f"Showing {len(df)} validated quotes")
-                st.dataframe(df.head(200))
+                st.dataframe(
+                    df[[
+                        "response_id","chunk_text","Subject","Question",
+                        "deal_status","company","interviewee_name","date_of_interview"
+                    ]]
+                )
                 if len(df) > 200:
                     st.info(f"Showing first 200 of {len(df)} records")
             else:
