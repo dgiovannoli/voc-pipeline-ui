@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import pandas as pd
 import argparse
 import os
 from dotenv import load_dotenv
@@ -7,6 +6,7 @@ from langchain_community.document_loaders import Docx2txtLoader
 from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
+from langchain_community.text_splitter import RecursiveCharacterTextSplitter
 
 def main():
     parser = argparse.ArgumentParser(description="Generate full data table from transcript")
@@ -55,7 +55,9 @@ def main():
     transcript_path = args.transcript
     if transcript_path.lower().endswith(".docx"):
         loader = Docx2txtLoader(transcript_path)
-        full_text = loader.load()[0].page_content
+        # 1) Load full transcript
+        docs = loader.load()
+        full_text = docs[0].page_content
     else:
         full_text = open(transcript_path, encoding="utf-8").read()
     
@@ -134,15 +136,31 @@ Please generate the complete CSV data table based on the transcript above.
     llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0)
     chain = LLMChain(llm=llm, prompt=prompt_template)
     
-    # Run the chain
-    raw_csv = chain.run(
-        transcript=full_text,
-        client=args.client,
-        company=args.company,
-        interviewee=args.interviewee,
-        deal_status=args.deal_status,
-        date=args.date,
-    )
+    # 2) Split into safe‐size chunks (~3k tokens w/ 200 overlap)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
+    chunks = splitter.split_text(full_text)
+    
+    # 3) Run the CSV‐generation chain on each chunk
+    csv_parts = []
+    for chunk in chunks:
+        part = chain.run(
+            transcript=chunk,
+            client=args.client,
+            company=args.company,
+            interviewee_name=args.interviewee,
+            deal_status=args.deal_status,
+            date=args.date,
+        )
+        csv_parts.append(part)
+    
+    # 4) Merge parts, dropping duplicate headers
+    lines = []
+    for part in csv_parts:
+        for i, line in enumerate(part.splitlines()):
+            if i == 0 and lines:
+                continue
+            lines.append(line)
+    raw_csv = "\n".join(lines)
     
     # Write output
     with open(args.output, "w", encoding="utf-8") as f:
