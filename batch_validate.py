@@ -25,7 +25,18 @@ def main():
         try:
             result = v.validate(row)
             if result:
-                validated.append(result)
+                # Map old schema to new schema
+                new_row = {
+                    "response_id": result.get("response_id", f"resp_{result.get('interview_id', 'unknown')}_{result.get('chunk_index', 0)}"),
+                    "verbatim_response": result.get("verbatim_response", result.get("text", "")),
+                    "subject": result.get("subject", "unknown"),
+                    "question": result.get("question", "unknown"),
+                    "deal_status": result.get("deal_status", "unknown"),
+                    "company_name": result.get("company_name", result.get("company", "unknown")),
+                    "interviewee_name": result.get("interviewee_name", "unknown"),
+                    "date_of_interview": result.get("date_of_interview", "2024-01-01"),
+                }
+                validated.append(new_row)
             else:
                 # dropped with no return
                 print(f"DROPPED (no return): quote_id={row.get('quote_id')} row={row}")
