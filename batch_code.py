@@ -68,6 +68,18 @@ def main():
     # 1) Load & chunk
     loader = TranscriptLoader()
     chunks = loader.load_and_chunk(args.inputs)
+    
+    # Inject CLI metadata into each chunk
+    for d in chunks:
+        meta = d.setdefault("metadata", {})
+        meta.update({
+            "client": args.client,
+            "deal_status": args.deal_status,
+            "company": args.company,
+            "company_name": args.company,
+            "interviewee_name": args.interviewee_name,
+            "date_of_interview": args.date_of_interview
+        })
 
     # 2) Code quotes with parallel processing
     # filter out non-substantive chunks (e.g. just "Speaker 1:")
@@ -87,7 +99,15 @@ def main():
         deal_status = meta['deal_status']
         date_of_interview = meta['date_of_interview']
         
-        tag: dict = coder.code(chunk_text, response_id, company, interviewee_name, deal_status, date_of_interview)
+        tag: dict = coder.code(
+            chunk_text,
+            response_id,
+            company,      # for {{company}}
+            company,      # for {{company_name}}
+            interviewee_name,
+            deal_status,
+            date_of_interview,
+        )
         if not tag:
             continue
         rows.append(tag)
