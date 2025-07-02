@@ -25,31 +25,31 @@ def main():
         try:
             result = v.validate(row)
             if result:
-                # Map old schema to new schema
-                new_row = {
-                    "response_id": result.get("response_id", f"resp_{result.get('interview_id', 'unknown')}_{result.get('chunk_index', 0)}"),
-                    "verbatim_response": result.get("verbatim_response", result.get("text", "")),
-                    "subject": result.get("subject", "unknown"),
-                    "question": result.get("question", "unknown"),
-                    "deal_status": result.get("deal_status", "unknown"),
-                    "company_name": result.get("company_name", result.get("company", "unknown")),
-                    "interviewee_name": result.get("interviewee_name", "unknown"),
-                    "date_of_interview": result.get("date_of_interview", "2024-01-01"),
+                # Add validated fields to the existing row
+                validated_row = {
+                    "response_id": row.get("response_id", ""),
+                    "chunk_text": row.get("chunk_text", ""),
+                    "company": row.get("company", ""),
+                    "interviewee_name": row.get("interviewee_name", ""),
+                    "deal_status": row.get("deal_status", ""),
+                    "date_of_interview": row.get("date_of_interview", ""),
+                    "Subject": result.get("subject", "unknown"),
+                    "Question": result.get("question", "unknown"),
                 }
-                validated.append(new_row)
+                validated.append(validated_row)
             else:
                 # dropped with no return
-                print(f"DROPPED (no return): quote_id={row.get('quote_id')} row={row}")
+                print(f"DROPPED (no return): response_id={row.get('response_id')} row={row}")
                 continue
         except Exception as e:
             # validation threw an error
-            print(f"ERROR in validate() for quote_id={row.get('quote_id')}: {e}")
+            print(f"ERROR in validate() for response_id={row.get('response_id')}: {e}")
             continue
 
-    # these must match your new eight-column schema:
+    # Updated fieldnames to include input columns + validated fields
     fieldnames = [
-      "response_id","verbatim_response","subject","question",
-      "deal_status","company_name","interviewee_name","date_of_interview",
+      "response_id","chunk_text","company","interviewee_name","deal_status","date_of_interview",
+      "Subject","Question"
     ]
     with open(args.output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)

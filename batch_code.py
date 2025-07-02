@@ -67,37 +67,25 @@ def main():
     start_time = time.time()
     rows = []
     coder = ResponseCoder()
-    for c in good_chunks:
-        # Add external metadata to the chunk metadata
-        enhanced_metadata = {
-            **c['metadata'],
-            'deal_status': args.deal_status,
-            'company': args.company,
-            'interviewee_name': args.interviewee_name,
-            'date_of_interview': args.date_of_interview
-        }
+    for i, c in enumerate(good_chunks):
+        meta = c['metadata']
+        # Compute the six required parameters
+        response_id = f"{meta['company']}_{i+1}"
+        chunk_text = c['text']
+        company = meta['company']
+        interviewee_name = meta['speaker']
+        deal_status = meta['deal_outcome']
+        date_of_interview = meta['date']
         
-        tag: dict = coder.code(c['text'], enhanced_metadata)
+        tag: dict = coder.code(chunk_text, response_id, company, interviewee_name, deal_status, date_of_interview)
         if not tag:
             continue
-        rows.append({
-          "response_id":         tag["response_id"],
-          "verbatim_response":   tag["verbatim_response"],
-          "subject":             tag["subject"],
-          "question":            tag["question"],
-          "deal_status":         args.deal_status,
-          "company_name":        args.company,
-          "interviewee_name":    args.interviewee_name,
-          "date_of_interview":   args.date_of_interview,
-        })
+        rows.append(tag)
     processing_time = time.time() - start_time
     print(f"Processing completed in {processing_time:.2f} seconds")
 
     # 3) Write output CSV with exact fieldnames from schema
-    fieldnames = [
-      "response_id","verbatim_response","subject","question",
-      "deal_status","company_name","interviewee_name","date_of_interview"
-    ]
+    fieldnames = ['response_id','chunk_text','company','interviewee_name','deal_status','date_of_interview']
     
     with open(args.output, "w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
