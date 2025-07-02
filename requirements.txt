@@ -10,3 +10,4 @@ fire
 pinecone
 langchain-openai
 langchain-text-splitters
+langchain
