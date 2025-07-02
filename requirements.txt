@@ -11,3 +11,4 @@ pinecone
 langchain-openai
 langchain-text-splitters
 langchain
+docx2txt
