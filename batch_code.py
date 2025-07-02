@@ -3,9 +3,18 @@ import os
 import argparse
 import concurrent.futures
 import time
+import re
 from typing import List, Dict, Any
 from loaders.transcript_loader import TranscriptLoader
 from coders.response_coder import ResponseCoder
+
+def is_substantive(text: str) -> bool:
+    t = text.strip()
+    if len(t) < 20:
+        return False
+    if re.match(r'^(Speaker \d+|Hi|Hello|How are you\?)', t):
+        return False
+    return True
 
 def main():
     parser = argparse.ArgumentParser(description="Stage 1: chunk & code quotes")
@@ -52,12 +61,16 @@ def main():
     chunks = loader.load_and_chunk(args.inputs)
 
     # 2) Code quotes with parallel processing
-    print(f"Processing {len(chunks)} chunks...")
+    # filter out non-substantive chunks (e.g. just "Speaker 1:")
+    good_chunks = [c for c in chunks if is_substantive(c["text"])]
+    print(f"Processing {len(good_chunks)} chunks...")
     start_time = time.time()
     rows = []
     coder = ResponseCoder()
-    for c in chunks:
+    for c in good_chunks:
         tag: dict = coder.code(c['text'], c['metadata'])
+        if not tag:
+            continue
         m = c['metadata']
         rows.append({
           "response_id":         tag["response_id"],
