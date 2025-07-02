@@ -17,13 +17,36 @@ class ResponseCoder:
                 "interviewee_name",
                 "date_of_interview"
             ],
-            template="""{{
-  "response_id": "{response_id}",
-  "verbatim_response": "{chunk_text}",
-  "deal_status": "{deal_status}",
-  "company": "{company}",
-  "interviewee_name": "{interviewee_name}",
-  "date_of_interview": "{date_of_interview}"
+            template=f"""Analyze this interview chunk and extract insights using the Buried Wins framework.
+
+Interview Text: {{chunk_text}}
+
+Available Categories:
+- Criteria: {CRITERIA_LIST}
+- SWOT Themes: {SWOT_LIST}
+- Journey Phases: {PHASE_LIST}
+
+Instructions:
+1. Analyze the text for customer insights, pain points, or positive feedback
+2. Categorize using the available options above
+3. Extract the most relevant quote
+4. Return a JSON object with the following structure
+
+Return ONLY this JSON format:
+{{
+  "quote_id": "unique_identifier",
+  "criteria": "one_of_the_criteria_options",
+  "swot_theme": "one_of_the_swot_options", 
+  "journey_phase": "one_of_the_phase_options",
+  "text": "exact_quote_from_text",
+  "response_id": "{{response_id}}",
+  "verbatim_response": "{{chunk_text}}",
+  "subject": "brief_subject_description",
+  "question": "what_question_this_answers",
+  "deal_status": "{{deal_status}}",
+  "company": "{{company}}",
+  "interviewee_name": "{{interviewee_name}}",
+  "date_of_interview": "{{date_of_interview}}"
 }}""",
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain
