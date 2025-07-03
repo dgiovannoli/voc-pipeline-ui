@@ -3,6 +3,8 @@ import sys
 import logging
 import click
 import json
+import re
+from datetime import datetime
 from dotenv import load_dotenv
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_openai import OpenAI
@@ -18,6 +20,93 @@ from io import StringIO
 logging.basicConfig(filename="qc.log",
                     level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
+
+def normalize_response_id(company: str, chunk_index: int) -> str:
+    """Create normalized, unique Response ID"""
+    # Remove spaces and special characters, convert to camelCase
+    normalized = re.sub(r'[^a-zA-Z0-9]', '', company)
+    return f"{normalized}_{chunk_index + 1}"
+
+def is_qa_chunk(chunk_text: str) -> bool:
+    """Check if chunk contains actual Q&A content"""
+    # Skip chunks that are just speaker introductions or non-substantive
+    if not chunk_text.strip():
+        return False
+    
+    # Check for question indicators
+    question_indicators = [
+        '?', 'what', 'how', 'why', 'when', 'where', 'which', 'who',
+        'could you', 'can you', 'would you', 'do you', 'did you',
+        'tell me', 'describe', 'explain', 'walk me through'
+    ]
+    
+    text_lower = chunk_text.lower()
+    
+    # Must contain at least one question indicator
+    has_question = any(indicator in text_lower for indicator in question_indicators)
+    
+    # Must have substantial content (not just speaker labels)
+    has_content = len(chunk_text.strip()) > 50
+    
+    return has_question and has_content
+
+def clean_verbatim_response(text: str) -> str:
+    """Clean verbatim response text"""
+    # Remove leading speaker timestamps like "Speaker 1 (01:52):"
+    cleaned = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', text)
+    
+    # Remove trailing timestamps like "(03:07):"
+    cleaned = re.sub(r'\(\d{2}:\d{2}\):\s*$', '', cleaned)
+    
+    # Clean up extra whitespace
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    
+    return cleaned
+
+def format_date(date_str: str) -> str:
+    """Format date to MM/DD/YYYY"""
+    try:
+        # Try to parse various date formats
+        for fmt in ['%Y-%m-%d', '%m/%d/%Y', '%Y/%m/%d', '%m-%d-%Y']:
+            try:
+                date_obj = datetime.strptime(date_str, fmt)
+                return date_obj.strftime('%m/%d/%Y')
+            except ValueError:
+                continue
+        # If no format works, return original
+        return date_str
+    except:
+        return date_str
+
+def normalize_deal_status(status: str) -> str:
+    """Normalize deal status to standard format"""
+    status_lower = status.lower().strip()
+    if 'won' in status_lower:
+        return 'closed won'
+    elif 'lost' in status_lower:
+        return 'closed lost'
+    else:
+        return 'no decision'
+
+def infer_subject_from_text(text: str) -> str:
+    """Infer subject from text content"""
+    text_lower = text.lower()
+    
+    # Keyword-based subject inference
+    if any(word in text_lower for word in ['product', 'feature', 'functionality', 'tool']):
+        return 'Product Features'
+    elif any(word in text_lower for word in ['price', 'cost', 'expensive', 'cheap', 'budget']):
+        return 'Pricing'
+    elif any(word in text_lower for word in ['implement', 'setup', 'onboard', 'deploy']):
+        return 'Implementation'
+    elif any(word in text_lower for word in ['support', 'service', 'help', 'assist']):
+        return 'Support'
+    elif any(word in text_lower for word in ['integrate', 'connect', 'api', 'database']):
+        return 'Integration'
+    elif any(word in text_lower for word in ['decision', 'choose', 'select', 'evaluate']):
+        return 'Decision Making'
+    else:
+        return 'General Feedback'
 
 def _process_transcript_impl(
     transcript_path: str,
@@ -107,12 +196,20 @@ Interview chunk to analyze:
     
     def process_chunk(chunk_index, chunk):
         try:
-            # Generate response ID
-            response_id = f"{company}_response_{chunk_index + 1}"
+            # Filter out non-Q&A chunks
+            if not is_qa_chunk(chunk):
+                logging.info(f"Chunk {chunk_index} filtered out: not Q&A content")
+                return (chunk_index, None)
+            
+            # Generate normalized response ID
+            response_id = normalize_response_id(company, chunk_index)
+            
+            # Clean the chunk text
+            cleaned_chunk = clean_verbatim_response(chunk)
             
             # Prepare input for the chain
             chain_input = {
-                "chunk_text": chunk,
+                "chunk_text": cleaned_chunk,
                 "response_id": response_id,
                 "company": company,
                 "company_name": company,
@@ -136,6 +233,22 @@ Interview chunk to analyze:
                     for field in required_fields:
                         if field not in obj:
                             raise ValueError(f"Missing required field: {field}")
+                    
+                    # Ensure metadata is populated everywhere
+                    obj["deal_status"] = normalize_deal_status(deal_status)
+                    obj["company"] = company
+                    obj["interviewee_name"] = interviewee
+                    obj["date_of_interview"] = format_date(date_of_interview)
+                    
+                    # Fill missing questions/subjects
+                    if not obj.get("question") or obj["question"] == "N/A":
+                        obj["question"] = "What insights did the interviewee share?"
+                    
+                    if not obj.get("subject") or obj["subject"] == "N/A":
+                        obj["subject"] = infer_subject_from_text(cleaned_chunk)
+                    
+                    # Clean verbatim response
+                    obj["verbatim_response"] = clean_verbatim_response(obj["verbatim_response"])
                     
                     # Convert to CSV row
                     csv_row = [
@@ -187,7 +300,7 @@ Interview chunk to analyze:
     # 4) Sort by chunk index and write CSV
     chunk_results.sort(key=lambda x: x[0])
     
-    # Write CSV header
+    # Write CSV header (no auto-index column)
     header = ["Response ID", "Verbatim Response", "Subject", "Question", "Deal Status", 
               "Company Name", "Interviewee Name", "Date of Interview", "Findings", 
               "Value_Realization", "Implementation_Experience", "Risk_Mitigation", 
