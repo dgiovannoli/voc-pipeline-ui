@@ -253,6 +253,37 @@ def is_low_value_response(text: str) -> bool:
         if phrase in text_lower and len(text_clean) < 50:  # Only filter if response is also short
             return True
     
+    # Filter out technical setup/testing quotes
+    setup_phrases = [
+        'can you hear me',
+        'check check check',
+        'one sec',
+        'let me switch',
+        'headphones',
+        'nice to meet you',
+        'how are you',
+        'alright cool',
+        'a b c d e f g',
+        '1 2 3',
+        'hello hello',
+        'i can hear you',
+        'now i can hear you',
+        'testing testing',
+        'mic check',
+        'sound check'
+    ]
+    
+    # Check if response contains multiple setup phrases
+    setup_count = sum(1 for phrase in setup_phrases if phrase in text_lower)
+    if setup_count >= 3:  # If 3 or more setup phrases, it's likely technical setup
+        return True
+    
+    # Filter out responses that are mostly technical setup
+    setup_words = ['hear', 'check', 'headphones', 'switch', 'sec', 'hello', 'alright', 'cool', 'testing']
+    setup_word_count = sum(text_lower.count(word) for word in setup_words)
+    if setup_word_count > len(text_lower.split()) * 0.4:  # More than 40% setup words
+        return True
+    
     return False
 
 def remove_disfluencies(text: str) -> str:
@@ -739,7 +770,15 @@ Interview chunk to analyze:
             "i mainly use it for depositions",
             "also, i was wondering on the subject",
             "maybe if it's, for example, specifically",
-            "i mean, the accuracy could be improved"
+            "i mean, the accuracy could be improved",
+            # Technical setup patterns
+            "hi drew, can you hear me",
+            "can you hear me",
+            "check check check",
+            "one sec",
+            "let me switch",
+            "alright cool",
+            "nice to meet you"
         ]
         
         is_duplicate_start = any(response_start.startswith(pattern) for pattern in duplicate_patterns)
