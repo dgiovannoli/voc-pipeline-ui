@@ -1,2 +1,1 @@
-response_id,verbatim_response,subject,question,deal_status,company_name,interviewee_name,date_of_interview
-resp_demo_interview.txt_0,We needed faster onboarding.,unknown,unknown,unknown,unknown,unknown,2024-01-01
+response_id,chunk_text,company,interviewee_name,deal_status,date_of_interview,Subject,Question

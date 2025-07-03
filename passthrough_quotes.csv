@@ -1,2 +1,1 @@
-interview_id,speaker,deal_outcome,date,client_id,source_type,quote_id,criteria,swot_theme,journey_phase,text
-demo_interview.txt,Product Manager,won,2025-07-01,clientA,customer,demo1,product_capability,strength,awareness,We needed faster onboarding.
+response_id,chunk_text,company,interviewee_name,deal_status,date_of_interview
