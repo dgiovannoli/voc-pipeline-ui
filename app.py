@@ -168,18 +168,34 @@ tab1, tab2, tab3, tab4 = st.tabs(["Validated Quotes", "Response Data Table", "Pr
 with tab1:
     st.header("Validated Quotes")
     st.caption("Main columns only. Metadata is auto-populated.")
+    
+    # Debug info
+    st.write(f"File exists: {os.path.exists(VALIDATED_CSV)}")
+    st.write(f"File size: {os.path.getsize(VALIDATED_CSV) if os.path.exists(VALIDATED_CSV) else 'N/A'}")
+    st.write(f"File path: {VALIDATED_CSV}")
+    
     if os.path.exists(VALIDATED_CSV) and os.path.getsize(VALIDATED_CSV) > 0:
         try:
             df = load_csv(VALIDATED_CSV)
+            st.write(f"DataFrame shape: {df.shape}")
+            st.write(f"DataFrame columns: {list(df.columns)}")
+            
             if len(df) > 0:
                 st.write(f"Showing {len(df)} validated quotes")
                 main_cols = [
                     "Response ID", "Subject", "Key Insight", "Question", "Verbatim Response",
                     "Deal Status", "Company Name", "Interviewee Name", "Date of Interview"
                 ]
-                st.dataframe(df[main_cols])
-                if len(df) > 200:
-                    st.info(f"Showing first 200 of {len(df)} records")
+                
+                # Check if all main_cols exist
+                missing_cols = [col for col in main_cols if col not in df.columns]
+                if missing_cols:
+                    st.error(f"Missing columns: {missing_cols}")
+                    st.write("Available columns:", list(df.columns))
+                else:
+                    st.dataframe(df[main_cols])
+                    if len(df) > 200:
+                        st.info(f"Showing first 200 of {len(df)} records")
             else:
                 st.warning("Validated quotes file is empty")
                 if os.path.exists(STAGE1_CSV):
@@ -190,6 +206,9 @@ with tab1:
                     st.info("No data available. Upload & Process to get started.")
         except Exception as e:
             st.error(f"Error reading validated quotes: {e}")
+            st.write(f"Exception type: {type(e)}")
+            import traceback
+            st.write(f"Traceback: {traceback.format_exc()}")
             if os.path.exists(STAGE1_CSV):
                 df = load_csv(STAGE1_CSV)
                 st.write(f"Showing {len(df)} raw quotes (fallback)")
