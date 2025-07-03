@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import click
 from dotenv import load_dotenv
 from langchain_community.document_loaders import Docx2txtLoader
 from langchain_openai import OpenAI
@@ -245,12 +246,16 @@ Please generate the complete CSV data table based on the transcript above.
     logging.info(f"Processed {total_chunks} chunks → created {total_rows} rows; dropped {dropped} chunks")
 
 
-def main():
-    """CLI entry point for the voc-pipeline package."""
-    import fire
-    fire.Fire({
-        "process_transcript": process_transcript,
-    })
+@click.command()
+@click.argument('transcript_path')
+@click.argument('client')
+@click.argument('company')
+@click.argument('interviewee')
+@click.argument('deal_status')
+@click.argument('date_of_interview')
+def main(transcript_path, client, company, interviewee, deal_status, date_of_interview):
+    """Process a transcript and output CSV data."""
+    process_transcript(transcript_path, client, company, interviewee, deal_status, date_of_interview)
 
 
 if __name__ == "__main__":

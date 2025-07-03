@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: voc-pipeline-ui
+Version: 0.1.0
+Summary: VoC Pipeline UI and CLI tools
+Author-email: Your Name <you@example.com>
+Requires-Dist: streamlit==1.46.1
+Requires-Dist: streamlit-authenticator==0.4.2
+Requires-Dist: bcrypt>=4.0.0
+Requires-Dist: pandas>=2.0.0
+Requires-Dist: python-dotenv>=1.0.0
+Requires-Dist: python-docx>=0.8.11
+Requires-Dist: langchain-community>=0.3.0
+Requires-Dist: openai>=1.0.0
+Requires-Dist: fire>=0.5.0
+Requires-Dist: pinecone>=2.0.0
+Requires-Dist: langchain-openai>=0.3.0
+Requires-Dist: langchain-text-splitters>=0.3.0
+Requires-Dist: langchain>=0.3.0
+Requires-Dist: docx2txt>=0.9
+Requires-Dist: langchain-core>=0.3.0

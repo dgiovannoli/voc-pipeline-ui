@@ -2,6 +2,19 @@
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools.packages.find]
+include = [
+    "coders*",
+    "ingestion*",
+    "loaders*",
+    "validators*",
+    "voc_pipeline*"
+]
+exclude = [
+    "samples*",
+    "uploads*"
+]
+
 [project]
 name = "voc-pipeline-ui"
 version = "0.1.0"
@@ -18,7 +31,7 @@ dependencies = [
   "python-docx>=0.8.11",
   "langchain-community>=0.3.0",
   "openai>=1.0.0",
-  "fire>=0.5.0",
+  "click>=8.0.0",
   "pinecone>=2.0.0",
   "langchain-openai>=0.3.0",
   "langchain-text-splitters>=0.3.0",
