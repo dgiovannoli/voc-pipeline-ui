@@ -1,8 +1,8 @@
 import os
 import sys
+import subprocess
 from datetime import date
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from voc_pipeline.processor import process_transcript
 
 import pandas as pd
 import streamlit as st
@@ -45,35 +45,19 @@ if uploads:
     st.sidebar.success(f"🗄️ Saved {len(uploaded_paths)} file(s)")
 
     if st.sidebar.button("▶️ Process"):
-        # gather your fixed metadata from user inputs or env
-        client, company, interviewee, deal_status, date = (
-            client,  # or stash in constants
-            company,
-            interviewee_name,
-            deal_status,
-            date_of_interview,
-        )
-        dfs = []
-        with ThreadPoolExecutor(max_workers=5) as exec:
-            futures = {
-                exec.submit(
-                    process_transcript,
-                    path, client, company, interviewee, deal_status, date.strftime("%m/%d/%Y")
-                ): path
-                for path in uploaded_paths
-            }
-            for f in as_completed(futures):
-                src = futures[f]
-                try:
-                    dfs.append(f.result())
-                except Exception as e:
-                    st.sidebar.error(f"❌ {src} failed: {e}")
-        if dfs:
-            df = pd.concat(dfs, ignore_index=True)
-            # Save the combined DataFrame
-            df.to_csv("response_data_table.csv", index=False)
-            st.success("✅ All done!")
-            st.dataframe(df)  # show the full table
+        with ThreadPoolExecutor() as ex:
+            futures = [
+              ex.submit(
+                subprocess.run,
+                [sys.executable, "-m", "voc_pipeline", "process_transcript",
+                 path, client, company, interviewee_name, deal_status, date_of_interview.strftime("%m/%d/%Y")],
+                check=True
+              )
+              for path in uploaded_paths
+            ]
+            for f in futures:
+                f.result()
+        st.sidebar.success("✅ All interviews processed.")
 
 # Create tabs for different views
 tab1, tab2 = st.tabs(["Validated Quotes", "Response Data Table"])

@@ -44,6 +44,8 @@ def process_transcript(
     prompt_template = PromptTemplate(
         input_variables=["transcript","client","company","interviewee","deal_status","date"],
         template="""
+You are an expert qualitative-coding assistant. **Respond with _only_ a well-formed CSV table** (header + rows), no explanations, markdown, or extra text.
+
 <role>
 You are a Voice of Customer (VoC) data analyst specializing in extracting structured insights from customer interview transcripts. Your task is to analyze interview content and generate a comprehensive data table that captures customer feedback, pain points, and insights in a structured format.
 </role>
@@ -127,7 +129,7 @@ Please generate the complete CSV data table based on the transcript above.
     )
     
     # Create LLM chain
-    llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0)
+    llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0, model="gpt-3.5-turbo")
     chain = LLMChain(llm=llm, prompt=prompt_template)
     
     # 2) Split into safe‐size chunks (~3k tokens w/ 200 overlap)
@@ -149,6 +151,14 @@ Please generate the complete CSV data table based on the transcript above.
             )
             if not raw_csv.strip():
                 raise ValueError("empty response")
+            
+            # Verify column count after generation
+            lines = raw_csv.strip().splitlines()
+            reader = csv.reader(lines)
+            for i, row in enumerate(reader, start=1):
+                if len(row) != 20:
+                    raise ValueError(f"Bad row #{i}: expected 20 columns but got {len(row)} → {row}")
+            
             return (chunk_index, raw_csv)
         except Exception as e:
             logging.warning(f"Chunk {chunk_index} dropped: {e} — text: {chunk[:100]!r}")
