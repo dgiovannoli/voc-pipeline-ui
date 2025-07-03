@@ -186,6 +186,21 @@ with tab1:
     file_size = os.path.getsize(VALIDATED_CSV) if file_exists else 0
     st.write(f"File exists: {file_exists}, File size: {file_size}")
     
+    # Debug: Show content of validated_quotes.csv
+    if file_exists:
+        try:
+            with open(VALIDATED_CSV, 'r') as f:
+                content = f.read()
+                st.write(f"File content (first 500 chars): {content[:500]}")
+                st.write(f"Total lines: {len(content.split(chr(10)))}")
+        except Exception as e:
+            st.write(f"Error reading file: {e}")
+    
+    # Also check stage1_output.csv
+    stage1_exists = os.path.exists(STAGE1_CSV)
+    stage1_size = os.path.getsize(STAGE1_CSV) if stage1_exists else 0
+    st.write(f"Stage1 file exists: {stage1_exists}, Stage1 file size: {stage1_size}")
+    
     # Fallback: try looking in current directory
     if not file_exists:
         fallback_path = "validated_quotes.csv"
@@ -236,6 +251,21 @@ with tab1:
             df = load_csv(STAGE1_CSV)
             st.write(f"Showing {len(df)} raw quotes")
             st.dataframe(df.head(200))
+            
+            # Add manual validation button
+            if st.button("🔧 Manual Validate"):
+                try:
+                    st.write("Running manual validation...")
+                    subprocess.run([
+                        sys.executable, "-m", "voc_pipeline", "validate",
+                        "--input", str(STAGE1_CSV),
+                        "--output", str(VALIDATED_CSV)
+                    ], check=True, capture_output=True, text=True)
+                    st.success("Manual validation complete!")
+                    st.rerun()
+                except subprocess.CalledProcessError as e:
+                    st.error(f"Manual validation failed: {e}")
+                    st.write(f"Error output: {e.stderr}")
         else:
             st.info("No data available. Upload & Process to get started.")
 
