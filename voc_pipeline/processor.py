@@ -569,8 +569,25 @@ def validate(input, output):
         
         # Basic validation - keep rows that have meaningful content
         if len(df) > 0:
-            # Filter out rows with empty verbatim responses
-            df_valid = df[df['Verbatim Response'].str.strip() != '']
+            print(f"Columns in input file: {list(df.columns)}")
+            
+            # Find the verbatim response column (handle different naming)
+            verbatim_col = None
+            for col in df.columns:
+                if 'verbatim' in col.lower() and 'response' in col.lower():
+                    verbatim_col = col
+                    break
+            
+            if verbatim_col is None:
+                print("Warning: Could not find 'Verbatim Response' column")
+                print(f"Available columns: {list(df.columns)}")
+                # Just pass through all data
+                df_valid = df
+            else:
+                print(f"Using verbatim column: {verbatim_col}")
+                # Filter out rows with empty verbatim responses
+                df_valid = df[df[verbatim_col].str.strip() != '']
+            
             print(f"After validation: {len(df_valid)} rows")
             
             # Save validated data
@@ -608,6 +625,8 @@ def build_table(input, output):
         print(f"Read {len(df)} rows from {input}")
         
         if len(df) > 0:
+            print(f"Columns in input file: {list(df.columns)}")
+            
             # Reorder columns to match the expected schema
             expected_columns = [
                 "Response ID","Verbatim Response","Subject","Question",
@@ -617,13 +636,27 @@ def build_table(input, output):
                 "Pain_Points","Success_Metrics","Future_Plans"
             ]
             
-            # Ensure all expected columns exist
-            for col in expected_columns:
-                if col not in df.columns:
-                    df[col] = ""
+            # Map column names (handle different naming conventions)
+            column_mapping = {}
+            for expected_col in expected_columns:
+                # Try exact match first
+                if expected_col in df.columns:
+                    column_mapping[expected_col] = expected_col
+                else:
+                    # Try case-insensitive match
+                    for actual_col in df.columns:
+                        if expected_col.lower() == actual_col.lower():
+                            column_mapping[expected_col] = actual_col
+                            break
+                    # If no match found, create empty column
+                    if expected_col not in column_mapping:
+                        column_mapping[expected_col] = expected_col
+                        df[expected_col] = ""
             
-            # Reorder columns
-            df_final = df[expected_columns]
+            # Reorder columns using mapping
+            df_final = df[[column_mapping[col] for col in expected_columns]]
+            # Rename columns to expected names
+            df_final.columns = expected_columns
             
             # Save final table
             df_final.to_csv(output, index=False)
