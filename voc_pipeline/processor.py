@@ -257,15 +257,29 @@ def _process_transcript_impl(
     
     # Create single-row-per-chunk prompt template with brevity instruction
     prompt_template = PromptTemplate(
-        input_variables=["response_id","chunk_text","company","company_name","interviewee_name","deal_status","date_of_interview"],
-        template="""IMPORTANT: Return only the interviewee's answer text. Do not include any speaker names or repeated question text.
+        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
+        template="""CRITICAL:
+- Capture **every question** and **follow-up**, including interviewer prompts or explanations.
+- For each extracted segment, produce:
+  1. **Key Insight**: a 1–2 sentence distilled takeaway.
+  2. **Verbatim Response**: the full stakeholder text.
 
-You are an expert qualitative coding analyst specializing in win-loss interview data extraction.
+CONTENT TO SURFACE:
+- Research methodology context (e.g. consent process, recording logistics).
+- Concrete use-cases (e.g. specific scenarios or tasks mentioned by the interviewee).
+- Ideas for integrating the product or service with other tools or workflows.
+- Pricing, billing, or procurement preferences.
+- Competitive evaluations and feature comparisons.
+
+SEGMENTATION RULES:
+- Default: one question → one record.
+- Split only if a single answer clearly discusses two distinct analytical themes (e.g. "performance challenges" vs. "workflow suggestions").
 
 Analyze the provided interview chunk and extract ONE meaningful insight. Return ONLY a valid JSON object with this structure:
 
 {{
   "response_id": "{response_id}",
+  "key_insight": "{key_insight}",
   "verbatim_response": "{chunk_text}",
   "subject": "brief_subject_description",
   "question": "what_question_this_answers",
@@ -382,6 +396,7 @@ Interview chunk to analyze:
                     # Convert to CSV row
                     csv_row = [
                         obj.get("response_id", ""),
+                        obj.get("key_insight", ""),
                         obj.get("verbatim_response", ""),
                         obj.get("subject", ""),
                         obj.get("question", ""),
@@ -430,7 +445,7 @@ Interview chunk to analyze:
     chunk_results.sort(key=lambda x: x[0])
     
     # Write CSV header (no auto-index column)
-    header = ["Response ID", "Verbatim Response", "Subject", "Question", "Deal Status", 
+    header = ["Response ID", "Key Insight", "Verbatim Response", "Subject", "Question", "Deal Status", 
               "Company Name", "Interviewee Name", "Date of Interview", "Findings", 
               "Value_Realization", "Implementation_Experience", "Risk_Mitigation", 
               "Competitive_Advantage", "Customer_Success", "Product_Feedback", 
