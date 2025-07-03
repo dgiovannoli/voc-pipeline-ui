@@ -41,7 +41,7 @@ uploads = st.sidebar.file_uploader(
 )
 
 # Model and cost info
-st.sidebar.header("2) Processing Details")
+st.sidebar.header("3) Processing Details")
 
 # Model details
 st.sidebar.markdown("**Model:** OpenAI gpt-3.5-turbo-16k (via LangChain)")
@@ -105,7 +105,7 @@ if uploads:
     st.sidebar.success(f"🗄️ Saved {len(st.session_state.uploaded_paths)} file(s)")
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 3) Process Files")
+    st.sidebar.markdown("### 2) Process Files")
     
     if st.sidebar.button("▶️ Process Files", use_container_width=True):
         try:
@@ -121,9 +121,11 @@ if uploads:
                     subprocess.run,
                     [sys.executable, "-m", "voc_pipeline", "process_transcript",
                      path,
-                     company if company else "",  # client
-                     company if company else "",  # company
-                     interviewee if interviewee else "", "", ""],
+                     company if company else "Unknown",  # client
+                     company if company else "Unknown",  # company
+                     interviewee if interviewee else "Unknown", 
+                     "closed_won",  # deal_status
+                     "2024-01-01"],  # date_of_interview
                     check=True, capture_output=True, text=True
                   )
                   for path in st.session_state.uploaded_paths
@@ -133,6 +135,9 @@ if uploads:
                 for f in as_completed(futures):
                     try:
                         result = f.result()
+                        st.sidebar.write(f"🔍 Debug: Subprocess return code: {result.returncode}")
+                        st.sidebar.write(f"🔍 Debug: Subprocess stdout length: {len(result.stdout)}")
+                        st.sidebar.write(f"🔍 Debug: Subprocess stderr: {result.stderr}")
                         stage1_outputs.append(result.stdout)
                         completed += 1
                         progress = completed / total_files
@@ -140,22 +145,28 @@ if uploads:
                         status_text.text(f"Processed {completed}/{total_files} files...")
                     except Exception as e:
                         st.warning(f"File failed: {e}")
+                        st.sidebar.write(f"🔍 Debug: Exception details: {str(e)}")
                         completed += 1
                         progress = completed / total_files
                         progress_bar.progress(progress)
                         continue
             if stage1_outputs:
-                header = stage1_outputs[0].split('\n')[0]
-                all_data = [header]
-                for output in stage1_outputs:
-                    lines = output.strip().split('\n')
-                    if len(lines) > 1:
-                        all_data.extend(lines[1:])
+                st.sidebar.write(f"🔍 Debug: Got {len(stage1_outputs)} outputs from pipeline")
+                for i, output in enumerate(stage1_outputs):
+                    st.sidebar.write(f"🔍 Debug: Output {i+1} length: {len(output)} chars")
+                    if len(output) > 0:
+                        st.sidebar.write(f"🔍 Debug: Output {i+1} preview: {output[:200]}...")
                 
-                with open(STAGE1_CSV, "w") as f:
-                    f.write('\n'.join(all_data))
+                # Write the first output directly to file (it's already a complete CSV)
+                if stage1_outputs and len(stage1_outputs[0]) > 0:
+                    st.sidebar.write(f"🔍 Debug: Writing pipeline output directly to {STAGE1_CSV}")
+                    with open(STAGE1_CSV, "w") as f:
+                        f.write(stage1_outputs[0])
+                else:
+                    st.sidebar.write("🔍 Debug: No valid output to write")
             else:
                 st.warning("No data collected from processing")
+                st.sidebar.write("🔍 Debug: stage1_outputs is empty")
             status_text.text("Validating data...")
             progress_bar.progress(0.8)
             subprocess.run([
@@ -177,8 +188,10 @@ if uploads:
         except subprocess.CalledProcessError as e:
             st.sidebar.error(f"❌ Processing failed: {e}")
             st.sidebar.text(f"Error output: {e.stderr}")
+            st.sidebar.text(f"Command output: {e.stdout}")
         except Exception as e:
             st.sidebar.error(f"🔴 Unexpected error: {e}")
+            st.sidebar.text(f"Error details: {str(e)}")
 else:
     st.sidebar.write("⚠️ No files uploaded yet")
 
