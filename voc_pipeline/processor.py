@@ -640,8 +640,55 @@ Interview chunk to analyze:
             except Exception as e:
                 print(f"Error processing chunk: {e}")
     
-    # 4) Sort by chunk index and write CSV
+    # 4) Sort by chunk index and deduplicate results
     chunk_results.sort(key=lambda x: x[0])
+    
+    # Deduplicate based on key insight and verbatim response similarity
+    def is_similar_response(row1, row2, similarity_threshold=0.8):
+        """Check if two responses are similar enough to be considered duplicates"""
+        import difflib
+        
+        # Ensure we have enough columns
+        if len(row1) < 3 or len(row2) < 3:
+            return False
+        
+        # Get key insight and verbatim response
+        insight1 = str(row1[1]).lower().strip()  # Key Insight
+        insight2 = str(row2[1]).lower().strip()
+        verbatim1 = str(row1[2]).lower().strip()  # Verbatim Response
+        verbatim2 = str(row2[2]).lower().strip()
+        
+        # Check if insights are very similar
+        insight_similarity = difflib.SequenceMatcher(None, insight1, insight2).ratio()
+        
+        # Check if verbatim responses are very similar (first 200 chars)
+        verbatim1_short = verbatim1[:200]
+        verbatim2_short = verbatim2[:200]
+        verbatim_similarity = difflib.SequenceMatcher(None, verbatim1_short, verbatim2_short).ratio()
+        
+        # If either insight or verbatim is very similar, consider it a duplicate
+        return insight_similarity > similarity_threshold or verbatim_similarity > similarity_threshold
+    
+    # Remove duplicates
+    unique_results = []
+    seen_responses = set()
+    
+    for chunk_index, row in chunk_results:
+        # Create a hash of the key insight and first part of verbatim response
+        response_hash = f"{row[1][:100]}_{row[2][:200]}".lower().replace(" ", "")
+        
+        # Check if we've seen a similar response
+        is_duplicate = False
+        for existing_row in unique_results:
+            if is_similar_response(row, existing_row):
+                is_duplicate = True
+                break
+        
+        if not is_duplicate and response_hash not in seen_responses:
+            unique_results.append((chunk_index, row))
+            seen_responses.add(response_hash)
+    
+    print(f"[DEBUG] Removed {len(chunk_results) - len(unique_results)} duplicate responses", file=sys.stderr)
     
     # Write CSV header (no auto-index column)
     header = ["Response ID", "Key Insight", "Verbatim Response", "Subject", "Question", "Deal Status", 
@@ -654,8 +701,8 @@ Interview chunk to analyze:
     writer = csv.writer(output, quoting=csv.QUOTE_ALL)  # Quote all fields for CSV integrity
     writer.writerow(header)
     
-    # Write data rows
-    for chunk_index, row in chunk_results:
+    # Write data rows (now deduplicated)
+    for chunk_index, row in unique_results:
         writer.writerow(row)
     
     # Write verbatim quality log
@@ -708,6 +755,12 @@ def validate(input, output):
                 df_valid = df[df[verbatim_col].str.strip() != '']
             
             print(f"After validation: {len(df_valid)} rows")
+            
+            # Additional deduplication step
+            if len(df_valid) > 0:
+                # Remove exact duplicates based on key insight and verbatim response
+                df_valid = df_valid.drop_duplicates(subset=['Key Insight', 'Verbatim Response'], keep='first')
+                print(f"After deduplication: {len(df_valid)} rows")
             
             # Save validated data
             df_valid.to_csv(output, index=False)
