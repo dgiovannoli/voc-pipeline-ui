@@ -36,7 +36,7 @@ def normalize_response_id(company: str, interviewee: str, chunk_index: int) -> s
 def extract_qa_segments(text: str) -> list:
     """Extract Q&A segments from transcript text"""
     segments = []
-    
+    found_qa = False
     # Split on common Q&A patterns
     qa_patterns = [
         r'Q:\s*(.*?)(?=A:\s*)',
@@ -45,59 +45,45 @@ def extract_qa_segments(text: str) -> list:
         r'Drew Giovannoli:\s*(.*?)(?=Yusuf Elmarakby:\s*)',
         r'Yusuf Elmarakby:\s*(.*?)(?=Drew Giovannoli:\s*)'
     ]
-    
-    # Try to find Q&A boundaries
     for pattern in qa_patterns:
         matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
         if matches:
+            found_qa = True
             for match in matches:
-                if len(match.strip()) > 20:  # Minimum meaningful length
+                if len(match.strip()) > 20:
                     segments.append(match.strip())
             break
-    
-    # If no Q&A patterns found, fall back to chunking
+    # If no Q&A patterns found, split on speaker turns
     if not segments:
-        # Split on speaker changes
-        speaker_pattern = r'([A-Za-z\s]+):\s*'
+        # Speaker X (00:00): or Speaker X:
+        speaker_pattern = r'(Speaker \d+ \(\d{2}:\d{2}\):|Speaker \d+:|[A-Za-z\s]+:)\s*'
         parts = re.split(speaker_pattern, text)
-        current_segment = ""
-        
-        for i, part in enumerate(parts):
-            if re.match(speaker_pattern, part):
-                # This is a speaker name, next part is their content
-                if i + 1 < len(parts):
-                    content = parts[i + 1].strip()
-                    if len(content) > 20:
-                        current_segment += f"{part}{content}\n"
-            elif len(part.strip()) > 20:
-                current_segment += part.strip() + "\n"
-        
-        if current_segment.strip():
-            segments = [current_segment.strip()]
-    
-    return segments
+        # parts alternates: [pre, speaker, text, speaker, text, ...]
+        for i in range(1, len(parts), 2):
+            speaker = parts[i]
+            content = parts[i+1] if i+1 < len(parts) else ''
+            chunk = f"{speaker} {content}".strip()
+            if len(chunk) > 20:
+                segments.append(chunk)
+    print(f"[DEBUG] Extracted {len(segments)} segments from transcript.")
+    return segments, found_qa
 
-def is_qa_chunk(chunk_text: str) -> bool:
+def is_qa_chunk(chunk_text: str, found_qa: bool = True) -> bool:
     """Check if chunk contains actual Q&A content"""
-    # Skip chunks that are just speaker introductions or non-substantive
     if not chunk_text.strip():
         return False
-    
+    if not found_qa:
+        # If no Q/A patterns found, allow all speaker turns through
+        return True
     # Check for question indicators
     question_indicators = [
         '?', 'what', 'how', 'why', 'when', 'where', 'which', 'who',
         'could you', 'can you', 'would you', 'do you', 'did you',
         'tell me', 'describe', 'explain', 'walk me through'
     ]
-    
     text_lower = chunk_text.lower()
-    
-    # Must contain at least one question indicator
     has_question = any(indicator in text_lower for indicator in question_indicators)
-    
-    # Must have substantial content (not just speaker labels)
     has_content = len(chunk_text.strip()) > 50
-    
     return has_question and has_content
 
 def is_low_value_response(text: str) -> bool:
@@ -355,7 +341,8 @@ Interview chunk to analyze:
     chain = prompt_template | llm
     
     # 2) Extract Q&A segments instead of fixed-size chunks
-    qa_segments = extract_qa_segments(full_text)
+    qa_segments, found_qa = extract_qa_segments(full_text)
+    print(f"[DEBUG] Passing {len(qa_segments)} segments to LLM.")
 
     # If Q&A segmentation didn't work well, fall back to chunking
     if len(qa_segments) < 3:
@@ -389,7 +376,7 @@ Interview chunk to analyze:
     def process_chunk(chunk_index, chunk):
         try:
             # Filter out non-Q&A chunks
-            if not is_qa_chunk(chunk):
+            if not is_qa_chunk(chunk, found_qa):
                 logging.info(f"Chunk {chunk_index} filtered out: not Q&A content")
                 return (chunk_index, None)
             
