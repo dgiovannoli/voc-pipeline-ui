@@ -94,8 +94,60 @@ def is_qa_chunk(chunk_text: str) -> bool:
     
     return has_question and has_content
 
+def is_low_value_response(text: str) -> bool:
+    """Check if response is low value (too short, vague, or non-substantive)"""
+    text_clean = text.strip()
+    
+    # Too short responses
+    if len(text_clean) < 20:
+        return True
+    
+    # Very vague responses that are just acknowledgments
+    acknowledgment_only = [
+        'yeah',
+        'yes',
+        'no',
+        'okay',
+        'ok',
+        'sure',
+        'right',
+        'uh huh',
+        'mm hmm',
+        'i see',
+        'got it',
+        'understood'
+    ]
+    
+    # If response is just acknowledgments, it's low value
+    words = text_clean.lower().split()
+    if len(words) <= 2 and all(word in acknowledgment_only for word in words):
+        return True
+    
+    # Extremely vague responses
+    extremely_vague = [
+        'nothing stands out',
+        'pretty straightforward',
+        'i don\'t know',
+        'not really',
+        'i guess',
+        'maybe',
+        'i think so',
+        'i don\'t think so',
+        'no idea',
+        'not sure',
+        'can\'t remember',
+        'forget'
+    ]
+    
+    text_lower = text_clean.lower()
+    for phrase in extremely_vague:
+        if phrase in text_lower and len(text_clean) < 50:  # Only filter if response is also short
+            return True
+    
+    return False
+
 def clean_verbatim_response(text: str) -> str:
-    """Clean verbatim response text - remove speaker labels and question context"""
+    """Clean verbatim response text - remove speaker labels but preserve context"""
     # Remove leading speaker timestamps like "Speaker 1 (01:52):"
     cleaned = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', text)
     
@@ -103,16 +155,18 @@ def clean_verbatim_response(text: str) -> str:
     cleaned = re.sub(r'\(\d{2}:\d{2}\):\s*$', '', cleaned)
     
     # Remove speaker labels at start of lines: "Drew Giovannoli:", "Yusuf Elmarakby:", etc.
+    # But preserve the content after the colon
     cleaned = re.sub(r'^[A-Za-z\s]+:\s*', '', cleaned, flags=re.MULTILINE)
     
     # Remove question context - look for patterns like "Q: What do you think?" and remove
+    # But be more conservative - only remove if it's clearly a question followed by answer
     cleaned = re.sub(r'^Q:\s*[^A]*?(?=A:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
     cleaned = re.sub(r'^Question:\s*[^A]*?(?=Answer:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
     
     # Remove interviewer questions that might be mixed in
     cleaned = re.sub(r'Interviewer:\s*[^I]*?(?=Interviewee:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
     
-    # Clean up extra whitespace and newlines
+    # Clean up extra whitespace and newlines, but preserve paragraph breaks
     cleaned = re.sub(r'\n+', ' ', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     
@@ -275,6 +329,11 @@ Interview chunk to analyze:
             # Skip if cleaning removed all content
             if not cleaned_chunk:
                 logging.info(f"Chunk {chunk_index} filtered out: no content after cleaning")
+                return (chunk_index, None)
+            
+            # Skip low-value responses
+            if is_low_value_response(cleaned_chunk):
+                logging.info(f"Chunk {chunk_index} filtered out: low-value response - {cleaned_chunk[:50]}...")
                 return (chunk_index, None)
             
             # Prepare input for the chain
