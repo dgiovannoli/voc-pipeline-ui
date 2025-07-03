@@ -421,9 +421,9 @@ def _process_transcript_impl(
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
         input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
-        template="""CRITICAL INSTRUCTIONS FOR QUALITY-FOCUSED ANALYSIS:
-- You have access to rich context windows (~8K tokens) containing 6-8 Q&A exchanges.
-- Extract the SINGLE RICHEST, MOST DETAILED insight from this chunk, prioritizing:
+        template="""CRITICAL INSTRUCTIONS FOR BALANCED ANALYSIS:
+- You have access to focused context windows (~5K tokens) containing 4-6 Q&A exchanges.
+- Extract the 2 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
   1. **Comprehensive Customer Experiences**: Complete scenarios with full context, specific examples, and detailed explanations
   2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages
   3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators
@@ -431,13 +431,14 @@ def _process_transcript_impl(
   5. **Strategic Perspectives**: Decision factors, risk assessments, future planning
 
 EXTRACTION STRATEGY:
-- Identify the SINGLE richest, most comprehensive response in this chunk
-- Extract the COMPLETE verbatim response with full context and conversation flow
-- Create a comprehensive key insight that captures the main themes and specific details
-- Focus on responses that provide the most complete picture and actionable insights
+- Identify the 2 richest, most comprehensive responses in this chunk
+- Extract the COMPLETE verbatim response for each with full context and conversation flow
+- Create comprehensive key insights that capture the main themes and specific details
+- Focus on responses that provide complete context and detailed explanations
+- Choose responses that cover different aspects or themes when possible
 
 VERBATIM RESPONSE RULES:
-- Include the COMPLETE response text (300-800 words for maximum context)
+- Include the COMPLETE response text (200-500 words for optimal context)
 - Preserve ALL context, examples, specific details, and quantitative information
 - Include relevant parts of the conversation flow for better understanding
 - Remove only speaker labels, timestamps, and interviewer prompts
@@ -445,47 +446,72 @@ VERBATIM RESPONSE RULES:
 - Maintain the natural flow and structure of the response
 - Include specific examples, metrics, detailed explanations, and follow-up context
 
-SINGLE INSIGHT PER CHUNK:
-- Extract the SINGLE most comprehensive insight from the richest response
+MULTIPLE INSIGHTS PER CHUNK:
+- Extract the 2 most comprehensive insights from the richest responses
 - Focus on responses that provide complete context and detailed explanations
-- Ensure the verbatim response captures the full conversation context
+- Ensure each verbatim response captures the full conversation context
+- Choose responses that cover different topics or perspectives when possible
 
-Analyze the provided interview chunk and extract the SINGLE RICHEST, MOST COMPREHENSIVE insight from the most detailed response. Return ONLY a JSON array containing a single object:
+Analyze the provided interview chunk and extract the 2 RICHEST, MOST COMPREHENSIVE insights from the most detailed responses. Return ONLY a JSON array containing two objects:
 
 [
   {{
-    "response_id": "{response_id}",
-    "key_insight": "comprehensive_insight_summary",
-    "verbatim_response": "complete_verbatim_response_with_full_context",
-    "subject": "brief_subject_description",
-    "question": "what_question_this_answers",
+    "response_id": "{response_id}_1",
+    "key_insight": "first_comprehensive_insight_summary",
+    "verbatim_response": "first_complete_verbatim_response_with_full_context",
+    "subject": "brief_subject_description_1",
+    "question": "what_question_this_answers_1",
     "deal_status": "{deal_status}",
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}",
-    "findings": "key_finding_summary",
-    "value_realization": "value_or_roi_metrics",
-    "implementation_experience": "implementation_details",
-    "risk_mitigation": "risk_mitigation_approaches",
-    "competitive_advantage": "competitive_positioning",
-    "customer_success": "customer_success_factors",
-    "product_feedback": "product_feature_feedback",
-    "service_quality": "service_quality_assessment",
-    "decision_factors": "decision_influencing_factors",
-    "pain_points": "challenges_or_pain_points",
-    "success_metrics": "success_criteria_and_metrics",
-    "future_plans": "future_plans_or_expansion"
+    "findings": "key_finding_summary_1",
+    "value_realization": "value_or_roi_metrics_1",
+    "implementation_experience": "implementation_details_1",
+    "risk_mitigation": "risk_mitigation_approaches_1",
+    "competitive_advantage": "competitive_positioning_1",
+    "customer_success": "customer_success_factors_1",
+    "product_feedback": "product_feature_feedback_1",
+    "service_quality": "service_quality_assessment_1",
+    "decision_factors": "decision_influencing_factors_1",
+    "pain_points": "challenges_or_pain_points_1",
+    "success_metrics": "success_criteria_and_metrics_1",
+    "future_plans": "future_plans_or_expansion_1"
+  }},
+  {{
+    "response_id": "{response_id}_2",
+    "key_insight": "second_comprehensive_insight_summary",
+    "verbatim_response": "second_complete_verbatim_response_with_full_context",
+    "subject": "brief_subject_description_2",
+    "question": "what_question_this_answers_2",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}",
+    "findings": "key_finding_summary_2",
+    "value_realization": "value_or_roi_metrics_2",
+    "implementation_experience": "implementation_details_2",
+    "risk_mitigation": "risk_mitigation_approaches_2",
+    "competitive_advantage": "competitive_positioning_2",
+    "customer_success": "customer_success_factors_2",
+    "product_feedback": "product_feature_feedback_2",
+    "service_quality": "service_quality_assessment_2",
+    "decision_factors": "decision_influencing_factors_2",
+    "pain_points": "challenges_or_pain_points_2",
+    "success_metrics": "success_criteria_and_metrics_2",
+    "future_plans": "future_plans_or_expansion_2"
   }}
 ]
 
 Guidelines:
-- Extract the SINGLE richest, most comprehensive insight per chunk
+- Extract the 2 richest, most comprehensive insights per chunk
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
 - Use "N/A" for fields that don't apply
 - Ensure all fields are populated
 - Return ONLY the JSON array, no other text
 - Focus on responses with specific examples, metrics, detailed explanations, and full context
-- Choose the response that provides the most complete picture and actionable insights
+- Choose responses that provide the most complete picture and actionable insights
+- If only one rich insight exists, return an array with just one object
 
 Interview chunk to analyze:
 {chunk_text}"""
@@ -501,10 +527,10 @@ Interview chunk to analyze:
     )
     chain = prompt_template | llm
     
-    # 2) Use improved Q&A-aware chunking optimized for quality over quantity
-    # Target larger chunks for better context and richer insights (8K tokens)
-    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=8000, overlap_tokens=600)
-    print(f"[DEBUG] Passing {len(qa_segments)} chunks to LLM with quality-focused chunking.", file=sys.stderr)
+    # 2) Use balanced chunking for optimal insight volume (5K tokens)
+    # Target medium chunks for good context while maximizing insight count
+    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=5000, overlap_tokens=400)
+    print(f"[DEBUG] Passing {len(qa_segments)} chunks to LLM with balanced chunking for 5-10 insights.", file=sys.stderr)
     
     # 3) Run the single-row-per-chunk processing
     chunk_results = []
