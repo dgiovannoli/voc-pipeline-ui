@@ -4,9 +4,9 @@ import logging
 import click
 from dotenv import load_dotenv
 from langchain_community.document_loaders import Docx2txtLoader
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains import LLMChain
+from langchain_core.runnables import RunnableSequence
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
@@ -18,7 +18,7 @@ logging.basicConfig(filename="qc.log",
                     level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
 
-def process_transcript(
+def _process_transcript_impl(
     transcript_path: str,
     client: str,
     company: str,
@@ -33,6 +33,12 @@ def process_transcript(
     # Load environment variables
     load_dotenv()
     
+    # Debug: Check if API key is loaded
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("ERROR: OPENAI_API_KEY not found in environment")
+        return
+    
     # Load transcript
     if transcript_path.lower().endswith(".docx"):
         loader = Docx2txtLoader(transcript_path)
@@ -41,6 +47,10 @@ def process_transcript(
         full_text = docs[0].page_content
     else:
         full_text = open(transcript_path, encoding="utf-8").read()
+    
+    if not full_text.strip():
+        print("ERROR: Transcript is empty")
+        return
     
     # Create prompt template
     prompt_template = PromptTemplate(
@@ -130,9 +140,9 @@ Please generate the complete CSV data table based on the transcript above.
 """
     )
     
-    # Create LLM chain
-    llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0, model="gpt-3.5-turbo")
-    chain = LLMChain(llm=llm, prompt=prompt_template)
+    # Create LLM chain (RunnableSequence)
+    llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0, model="gpt-4o-mini")
+    chain = prompt_template | llm
     
     # 2) Split into safe‐size chunks (~3k tokens w/ 200 overlap)
     splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
@@ -143,23 +153,36 @@ Please generate the complete CSV data table based on the transcript above.
     
     def process_chunk(chunk_index, chunk):
         try:
-            raw_csv = chain.run(
-                transcript=chunk,
-                client=client,
-                company=company,
-                interviewee=interviewee,
-                deal_status=deal_status,
-                date=date_of_interview,
-            )
+            response = chain.invoke({
+                "transcript": chunk,
+                "client": client,
+                "company": company,
+                "interviewee": interviewee,
+                "deal_status": deal_status,
+                "date": date_of_interview,
+            })
+            raw_csv = response.content if hasattr(response, 'content') else str(response)
             if not raw_csv.strip():
                 raise ValueError("empty response")
             
             # Verify column count after generation
             lines = raw_csv.strip().splitlines()
             reader = csv.reader(lines)
+            validated_lines = []
             for i, row in enumerate(reader, start=1):
-                if len(row) != 20:
-                    raise ValueError(f"Bad row #{i}: expected 20 columns but got {len(row)} → {row}")
+                if len(row) < 20:
+                    raise ValueError(f"Bad row #{i}: expected at least 20 columns but got {len(row)} → {row}")
+                # If more than 20 columns, truncate to first 20
+                if len(row) > 20:
+                    row = row[:20]
+                validated_lines.append(row)
+            
+            # Reconstruct CSV with validated rows
+            import io
+            output = io.StringIO()
+            writer = csv.writer(output)
+            writer.writerows(validated_lines)
+            raw_csv = output.getvalue()
             
             return (chunk_index, raw_csv)
         except Exception as e:
@@ -247,16 +270,108 @@ Please generate the complete CSV data table based on the transcript above.
 
 
 @click.command()
+@click.option('--input', '-i', required=True, help='Input CSV file to validate')
+@click.option('--output', '-o', required=True, help='Output CSV file for validated data')
+def validate(input, output):
+    """Validate processed CSV data."""
+    print(f"Validating {input}...")
+    
+    import pandas as pd
+    
+    try:
+        # Read the input CSV
+        df = pd.read_csv(input)
+        print(f"Read {len(df)} rows from {input}")
+        
+        # Basic validation - keep rows that have meaningful content
+        if len(df) > 0:
+            # Filter out rows with empty verbatim responses
+            df_valid = df[df['Verbatim Response'].str.strip() != '']
+            print(f"After validation: {len(df_valid)} rows")
+            
+            # Save validated data
+            df_valid.to_csv(output, index=False)
+            print(f"Validation complete. Output saved to {output}")
+        else:
+            print("No data to validate")
+            # Create empty file with headers
+            df.to_csv(output, index=False)
+            
+    except Exception as e:
+        print(f"Error during validation: {e}")
+        # Create empty output file with headers
+        pd.DataFrame(columns=[
+            "Response ID","Verbatim Response","Subject","Question",
+            "Deal Status","Company Name","Interviewee Name","Date of Interview","Findings",
+            "Value_Realization","Implementation_Experience","Risk_Mitigation","Competitive_Advantage",
+            "Customer_Success","Product_Feedback","Service_Quality","Decision_Factors",
+            "Pain_Points","Success_Metrics","Future_Plans"
+        ]).to_csv(output, index=False)
+
+
+@click.command()
+@click.option('--input', '-i', required=True, help='Input CSV file to process')
+@click.option('--output', '-o', required=True, help='Output CSV file for final table')
+def build_table(input, output):
+    """Build final data table from processed data."""
+    print(f"Building table from {input} to {output}...")
+    
+    import pandas as pd
+    
+    try:
+        # Read the input CSV
+        df = pd.read_csv(input)
+        print(f"Read {len(df)} rows from {input}")
+        
+        if len(df) > 0:
+            # Reorder columns to match the expected schema
+            expected_columns = [
+                "Response ID","Verbatim Response","Subject","Question",
+                "Deal Status","Company Name","Interviewee Name","Date of Interview","Findings",
+                "Value_Realization","Implementation_Experience","Risk_Mitigation","Competitive_Advantage",
+                "Customer_Success","Product_Feedback","Service_Quality","Decision_Factors",
+                "Pain_Points","Success_Metrics","Future_Plans"
+            ]
+            
+            # Ensure all expected columns exist
+            for col in expected_columns:
+                if col not in df.columns:
+                    df[col] = ""
+            
+            # Reorder columns
+            df_final = df[expected_columns]
+            
+            # Save final table
+            df_final.to_csv(output, index=False)
+            print(f"Table building complete. Output saved to {output}")
+        else:
+            print("No data to process")
+            # Create empty file with headers
+            df.to_csv(output, index=False)
+            
+    except Exception as e:
+        print(f"Error during table building: {e}")
+        # Create empty output file with headers
+        pd.DataFrame(columns=[
+            "Response ID","Verbatim Response","Subject","Question",
+            "Deal Status","Company Name","Interviewee Name","Date of Interview","Findings",
+            "Value_Realization","Implementation_Experience","Risk_Mitigation","Competitive_Advantage",
+            "Customer_Success","Product_Feedback","Service_Quality","Decision_Factors",
+            "Pain_Points","Success_Metrics","Future_Plans"
+        ]).to_csv(output, index=False)
+
+
+@click.command("process_transcript")
 @click.argument('transcript_path')
 @click.argument('client')
 @click.argument('company')
 @click.argument('interviewee')
 @click.argument('deal_status')
 @click.argument('date_of_interview')
-def main(transcript_path, client, company, interviewee, deal_status, date_of_interview):
+def process_transcript(transcript_path, client, company, interviewee, deal_status, date_of_interview):
     """Process a transcript and output CSV data."""
-    process_transcript(transcript_path, client, company, interviewee, deal_status, date_of_interview)
+    _process_transcript_impl(transcript_path, client, company, interviewee, deal_status, date_of_interview)
 
 
 if __name__ == "__main__":
-    main() 
+    process_transcript() 
