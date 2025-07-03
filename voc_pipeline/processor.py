@@ -331,11 +331,12 @@ Interview chunk to analyze:
 {chunk_text}"""
     )
     
-    # Create LLM chain (RunnableSequence) - using OpenAI instead of ChatOpenAI for consistency
-    llm = OpenAI(
+    # Create LLM chain (RunnableSequence) - using ChatOpenAI for gpt-3.5-turbo-16k
+    from langchain_openai import ChatOpenAI
+    llm = ChatOpenAI(
         model_name="gpt-3.5-turbo-16k",
         openai_api_key=os.getenv("OPENAI_API_KEY"),
-        max_tokens=16000,
+        max_tokens=4096,
         temperature=0.1
     )
     chain = prompt_template | llm
@@ -412,7 +413,12 @@ Interview chunk to analyze:
             raw = ""
             # up to 3 attempts to get valid JSON
             for _ in range(3):
-                raw = chain.invoke(chain_input).strip()
+                response = chain.invoke(chain_input)
+                # Extract content from AIMessage object
+                if hasattr(response, 'content'):
+                    raw = response.content.strip()
+                else:
+                    raw = str(response).strip()
                 if not raw:
                     continue
                 try:
