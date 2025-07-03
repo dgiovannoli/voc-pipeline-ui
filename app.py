@@ -59,7 +59,11 @@ else:
 # Live CSV loader with TTL
 @st.cache_data(ttl=1, show_spinner=False)
 def load_csv(path):
-    return pd.read_csv(path)
+    try:
+        return pd.read_csv(path)
+    except Exception as e:
+        st.error(f"Error loading CSV from {path}: {e}")
+        return pd.DataFrame()
 
 uploaded_paths = []
 
@@ -169,16 +173,13 @@ with tab1:
     st.header("Validated Quotes")
     st.caption("Main columns only. Metadata is auto-populated.")
     
-    # Debug info
-    st.write(f"File exists: {os.path.exists(VALIDATED_CSV)}")
-    st.write(f"File size: {os.path.getsize(VALIDATED_CSV) if os.path.exists(VALIDATED_CSV) else 'N/A'}")
-    st.write(f"File path: {VALIDATED_CSV}")
+    # Check if file exists and has content
+    file_exists = os.path.exists(VALIDATED_CSV)
+    file_size = os.path.getsize(VALIDATED_CSV) if file_exists else 0
     
-    if os.path.exists(VALIDATED_CSV) and os.path.getsize(VALIDATED_CSV) > 0:
+    if file_exists and file_size > 0:
         try:
             df = load_csv(VALIDATED_CSV)
-            st.write(f"DataFrame shape: {df.shape}")
-            st.write(f"DataFrame columns: {list(df.columns)}")
             
             if len(df) > 0:
                 st.write(f"Showing {len(df)} validated quotes")
@@ -206,9 +207,6 @@ with tab1:
                     st.info("No data available. Upload & Process to get started.")
         except Exception as e:
             st.error(f"Error reading validated quotes: {e}")
-            st.write(f"Exception type: {type(e)}")
-            import traceback
-            st.write(f"Traceback: {traceback.format_exc()}")
             if os.path.exists(STAGE1_CSV):
                 df = load_csv(STAGE1_CSV)
                 st.write(f"Showing {len(df)} raw quotes (fallback)")
