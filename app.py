@@ -163,7 +163,7 @@ if uploads:
             st.sidebar.error(f"🔴 Unexpected error: {e}")
 
 # Create tabs for different views
-tab1, tab2 = st.tabs(["Validated Quotes", "Response Data Table"])
+tab1, tab2, tab3 = st.tabs(["Validated Quotes", "Response Data Table", "Prompt Template"])
 
 with tab1:
     st.header("Validated Quotes")
@@ -225,3 +225,59 @@ with tab2:
             st.info("The CSV file may be malformed. Try regenerating it.")
     else:
         st.info("Run the pipeline to generate the response data table.")
+
+with tab3:
+    st.header("Prompt Template")
+    st.markdown("Below is the exact prompt sent to the AI for each interview chunk. You can review and suggest improvements.")
+    prompt_template_text = '''
+CRITICAL:
+- Capture **every question** and **follow-up**, including interviewer prompts or explanations.
+- For each extracted segment, produce:
+  1. **Key Insight**: a 1–2 sentence distilled takeaway.
+  2. **Verbatim Response**: the full stakeholder text.
+
+CONTENT TO SURFACE:
+- Research methodology context (e.g. consent process, recording logistics).
+- Concrete use-cases (e.g. specific scenarios or tasks mentioned by the interviewee).
+- Ideas for integrating the product or service with other tools or workflows.
+- Pricing, billing, or procurement preferences.
+- Competitive evaluations and feature comparisons.
+
+SEGMENTATION RULES:
+- Default: one question → one record.
+- Split only if a single answer clearly discusses two distinct analytical themes (e.g. "performance challenges" vs. "workflow suggestions").
+
+Analyze the provided interview chunk and extract ONE meaningful insight. Return ONLY a valid JSON object with this structure:
+
+{
+  "response_id": "{response_id}",
+  "key_insight": "{key_insight}",
+  "verbatim_response": "{chunk_text}",
+  "subject": "brief_subject_description",
+  "question": "what_question_this_answers",
+  "deal_status": "{deal_status}",
+  "company": "{company}",
+  "interviewee_name": "{interviewee_name}",
+  "date_of_interview": "{date_of_interview}",
+  "findings": "key_finding_summary",
+  "value_realization": "value_or_roi_metrics",
+  "implementation_experience": "implementation_details",
+  "risk_mitigation": "risk_mitigation_approaches",
+  "competitive_advantage": "competitive_positioning",
+  "customer_success": "customer_success_factors",
+  "product_feedback": "product_feature_feedback",
+  "service_quality": "service_quality_assessment",
+  "decision_factors": "decision_influencing_factors",
+  "pain_points": "challenges_or_pain_points",
+  "success_metrics": "success_criteria_and_metrics",
+  "future_plans": "future_plans_or_expansion"
+}
+
+Guidelines:
+- Extract ONE primary insight per chunk
+- Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
+- Use "N/A" for fields that don't apply
+- Ensure all fields are populated
+- Return ONLY the JSON object, no other text
+'''
+    st.code(prompt_template_text, language="markdown")
