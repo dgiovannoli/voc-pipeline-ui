@@ -157,11 +157,38 @@ if uploads:
                     if len(output) > 0:
                         st.sidebar.write(f"🔍 Debug: Output {i+1} preview: {output[:200]}...")
                 
-                # Write the first output directly to file (it's already a complete CSV)
-                if stage1_outputs and len(stage1_outputs[0]) > 0:
-                    st.sidebar.write(f"🔍 Debug: Writing pipeline output directly to {STAGE1_CSV}")
+                # Combine all outputs into a single CSV file
+                if stage1_outputs:
+                    st.sidebar.write(f"🔍 Debug: Combining {len(stage1_outputs)} outputs into {STAGE1_CSV}")
+                    combined_csv = ""
+                    header_written = False
+                    
+                    for i, output in enumerate(stage1_outputs):
+                        if len(output.strip()) > 0:
+                            lines = output.strip().split('\n')
+                            if not header_written:
+                                # Write header from first output
+                                combined_csv += lines[0] + '\n'
+                                header_written = True
+                                # Add data rows from first output
+                                for line in lines[1:]:
+                                    if line.strip():  # Skip empty lines
+                                        combined_csv += line + '\n'
+                            else:
+                                # Add only data rows (skip header) from subsequent outputs
+                                for line in lines[1:]:
+                                    if line.strip():  # Skip empty lines
+                                        combined_csv += line + '\n'
+                    
+                    # Write combined output to file
                     with open(STAGE1_CSV, "w") as f:
-                        f.write(stage1_outputs[0])
+                        f.write(combined_csv)
+                    st.sidebar.write(f"🔍 Debug: Combined output written with {combined_csv.count(chr(10))} lines")
+                    
+                    # Log summary of processing
+                    total_rows = combined_csv.count('\n') - 1  # Subtract header
+                    st.sidebar.write(f"🔍 Debug: Total rows processed: {total_rows}")
+                    st.sidebar.write(f"🔍 Debug: Files processed: {len([o for o in stage1_outputs if len(o.strip()) > 0])}")
                 else:
                     st.sidebar.write("🔍 Debug: No valid output to write")
             else:
