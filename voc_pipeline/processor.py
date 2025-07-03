@@ -21,11 +21,16 @@ logging.basicConfig(filename="qc.log",
                     level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
 
-def normalize_response_id(company: str, chunk_index: int) -> str:
+def normalize_response_id(company: str, interviewee: str, chunk_index: int) -> str:
     """Create normalized, unique Response ID"""
-    # Remove spaces and special characters, convert to camelCase
-    normalized = re.sub(r'[^a-zA-Z0-9]', '', company)
-    return f"{normalized}_{chunk_index + 1}"
+    parts = []
+    if company:
+        parts.append(re.sub(r'[^a-zA-Z0-9]', '', company))
+    if interviewee:
+        parts.append(re.sub(r'[^a-zA-Z0-9]', '', interviewee))
+    if not parts:
+        parts.append("Response")
+    return f"{'_'.join(parts)}_{chunk_index + 1}"
 
 def extract_qa_segments(text: str) -> list:
     """Extract Q&A segments from transcript text"""
@@ -146,34 +151,37 @@ def is_low_value_response(text: str) -> bool:
     
     return False
 
-def clean_verbatim_response(text: str) -> str:
+def clean_verbatim_response(text: str, interviewer_names=None) -> str:
     """Clean verbatim response text - remove speaker labels but preserve context"""
+    if interviewer_names is None:
+        interviewer_names = ["Q:", "Interviewer:", "Drew Giovannoli:", "Brian:", "Yusuf Elmarakby:"]
+    lines = text.splitlines()
+    cleaned_lines = []
+    for line in lines:
+        if any(line.strip().startswith(name) for name in interviewer_names):
+            continue
+        # Optionally, skip lines that are just questions
+        if line.strip().endswith("?"):
+            continue
+        cleaned_lines.append(line)
+    cleaned = " ".join(cleaned_lines).strip()
     # Remove leading speaker timestamps like "Speaker 1 (01:52):"
-    cleaned = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', text)
-    
+    cleaned = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', cleaned)
     # Remove trailing timestamps like "(03:07):"
     cleaned = re.sub(r'\(\d{2}:\d{2}\):\s*$', '', cleaned)
-    
-    # Remove speaker labels at start of lines: "Drew Giovannoli:", "Yusuf Elmarakby:", etc.
-    # But preserve the content after the colon
+    # Remove speaker labels at start of lines: "Drew Giovannoli:", etc.
     cleaned = re.sub(r'^[A-Za-z\s]+:\s*', '', cleaned, flags=re.MULTILINE)
-    
     # Remove question context - look for patterns like "Q: What do you think?" and remove
-    # But be more conservative - only remove if it's clearly a question followed by answer
     cleaned = re.sub(r'^Q:\s*[^A]*?(?=A:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
     cleaned = re.sub(r'^Question:\s*[^A]*?(?=Answer:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
-    
     # Remove interviewer questions that might be mixed in
     cleaned = re.sub(r'Interviewer:\s*[^I]*?(?=Interviewee:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
-    
     # Clean up extra whitespace and newlines, but preserve paragraph breaks
     cleaned = re.sub(r'\n+', ' ', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    
     # Ensure we have meaningful content
     if len(cleaned) < 10:
         return ""
-    
     return cleaned
 
 def format_date(date_str: str) -> str:
@@ -335,7 +343,7 @@ Interview chunk to analyze:
                 return (chunk_index, None)
             
             # Generate normalized response ID
-            response_id = normalize_response_id(company, chunk_index)
+            response_id = normalize_response_id(company, interviewee, chunk_index)
             
             # Clean the chunk text
             cleaned_chunk = clean_verbatim_response(chunk)
