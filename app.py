@@ -40,26 +40,6 @@ uploads = st.sidebar.file_uploader(
     "Select .txt or .docx files", type=["txt", "docx"], accept_multiple_files=True
 )
 
-# Model and cost info
-st.sidebar.header("3) Processing Details")
-
-# Model details
-st.sidebar.markdown("**Model:** OpenAI gpt-3.5-turbo-16k (via LangChain)")
-
-# Estimate time and cost
-if uploads:
-    num_files = len(uploads)
-    total_time = 2.5  # minutes for the whole batch
-    avg_tokens_per_file = 2000  # adjust if you have a better estimate
-    cost_per_1k = 0.003  # gpt-3.5-turbo-16k pricing
-    total_tokens = num_files * avg_tokens_per_file
-    total_cost = (total_tokens / 1000) * cost_per_1k
-    st.sidebar.markdown(f"**Expected time:** ~{total_time:.1f} min for {num_files} interview(s)")
-    st.sidebar.markdown(f"**Expected cost:** ~${total_cost:.4f} for {num_files} interview(s)")
-else:
-    st.sidebar.markdown("**Expected time:** N/A")
-    st.sidebar.markdown("**Expected cost:** N/A")
-
 # Live CSV loader with TTL
 @st.cache_data(ttl=1, show_spinner=False)
 def load_csv(path):
@@ -94,17 +74,17 @@ def extract_interviewee_and_company(filename):
 if uploads:
     # Clear previous uploads and add new ones
     st.session_state.uploaded_paths = []
-    st.sidebar.write(f"📁 Uploads detected: {len(uploads)} files")
+    
+    # Save files silently without showing details
     for f in uploads:
-        st.sidebar.write(f"  📄 {f.name} (size: {len(f.getbuffer())} bytes)")
         dest = UPLOAD_DIR / f.name
         with open(dest, "wb") as out:
             out.write(f.getbuffer())
         st.session_state.uploaded_paths.append(str(dest))
-        st.sidebar.write(f"  💾 Saved to: {dest}")
-    st.sidebar.success(f"🗄️ Saved {len(st.session_state.uploaded_paths)} file(s)")
     
-    st.sidebar.markdown("---")
+    st.sidebar.success(f"📁 {len(uploads)} files uploaded successfully")
+    
+    # Move Process button right after upload section
     st.sidebar.markdown("### 2) Process Files")
     
     if st.sidebar.button("▶️ Process Files", use_container_width=True):
@@ -221,6 +201,27 @@ if uploads:
             st.sidebar.text(f"Error details: {str(e)}")
 else:
     st.sidebar.write("⚠️ No files uploaded yet")
+
+# Processing Details section (moved to after Process button)
+st.sidebar.markdown("---")
+st.sidebar.header("3) Processing Details")
+
+# Model details
+st.sidebar.markdown("**Model:** OpenAI gpt-3.5-turbo-16k (via LangChain)")
+
+# Estimate time and cost
+if uploads:
+    num_files = len(uploads)
+    total_time = 2.5  # minutes for the whole batch
+    avg_tokens_per_file = 2000  # adjust if you have a better estimate
+    cost_per_1k = 0.003  # gpt-3.5-turbo-16k pricing
+    total_tokens = num_files * avg_tokens_per_file
+    total_cost = (total_tokens / 1000) * cost_per_1k
+    st.sidebar.markdown(f"**Expected time:** ~{total_time:.1f} min for {num_files} interview(s)")
+    st.sidebar.markdown(f"**Expected cost:** ~${total_cost:.4f} for {num_files} interview(s)")
+else:
+    st.sidebar.markdown("**Expected time:** N/A")
+    st.sidebar.markdown("**Expected cost:** N/A")
 
 # Create tabs for different views
 tab1, tab2, tab3, tab4 = st.tabs(["Validated Quotes", "Response Data Table", "Prompt Template", "Processing Details"])
