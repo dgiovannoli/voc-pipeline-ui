@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import csv
 from io import StringIO
+import math
 
 # Set up logging
 logging.basicConfig(filename="qc.log",
@@ -151,17 +152,34 @@ def is_low_value_response(text: str) -> bool:
     
     return False
 
+def remove_disfluencies(text: str) -> str:
+    # Remove common disfluencies unless they are part of a longer phrase
+    disfluencies = [r'\bum\b', r'\buh\b', r'\byou know\b', r'\bso\b', r'\blike\b', r'\ber\b', r'\bwell\b']
+    for pattern in disfluencies:
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+    # Remove extra spaces left behind
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+
 def clean_verbatim_response(text: str, interviewer_names=None) -> str:
-    """Clean verbatim response text - remove speaker labels but preserve context"""
     if interviewer_names is None:
-        interviewer_names = ["Q:", "Interviewer:", "Drew Giovannoli:", "Brian:", "Yusuf Elmarakby:"]
+        interviewer_names = ["Q:", "A:", "Interviewer:", "Drew Giovannoli:", "Brian:", "Yusuf Elmarakby:"]
     lines = text.splitlines()
     cleaned_lines = []
     for line in lines:
-        if any(line.strip().startswith(name) for name in interviewer_names):
+        l = line.strip()
+        # Remove interview titles/headings
+        if l.lower().startswith("an interview with") or l.lower().startswith("interview with"):
+            continue
+        # Remove speaker labels, timestamps, Q:/A: tags
+        if any(l.startswith(name) for name in interviewer_names):
+            continue
+        if re.match(r'^Speaker \d+ \(\d{2}:\d{2}\):', l):
+            continue
+        if re.match(r'^\(\d{2}:\d{2}\):', l):
             continue
         # Optionally, skip lines that are just questions
-        if line.strip().endswith("?"):
+        if l.endswith("?"):
             continue
         cleaned_lines.append(line)
     cleaned = " ".join(cleaned_lines).strip()
@@ -179,6 +197,8 @@ def clean_verbatim_response(text: str, interviewer_names=None) -> str:
     # Clean up extra whitespace and newlines, but preserve paragraph breaks
     cleaned = re.sub(r'\n+', ' ', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    # Remove disfluencies
+    cleaned = remove_disfluencies(cleaned)
     # Ensure we have meaningful content
     if len(cleaned) < 10:
         return ""
@@ -271,6 +291,11 @@ def _process_transcript_impl(
 - For each extracted segment, produce:
   1. **Key Insight**: a 1–2 sentence distilled takeaway.
   2. **Verbatim Response**: the full stakeholder text.
+- Verbatim Response must be one complete, grammatical answer.
+- Do NOT include any question text, interviewer prompts, speaker labels, timestamps, or metadata.
+- If answer is very short (<20 words), pad with any trailing context that completes the thought.
+- You may remove filler words (‘um’, ‘uh’, ‘you know’) to improve readability, but preserve any key emphasis or nuance.
+- If a single answer clearly expresses two separate analytical themes (e.g., ‘before vs. after’ *and* ‘pricing concerns’), split into two records, each with its own Response ID.
 
 CONTENT TO SURFACE:
 - Research methodology context (e.g. consent process, recording logistics).
@@ -281,38 +306,38 @@ CONTENT TO SURFACE:
 
 SEGMENTATION RULES:
 - Default: one question → one record.
-- Split only if a single answer clearly discusses two distinct analytical themes (e.g. "performance challenges" vs. "workflow suggestions").
+- Split only if a single answer clearly discusses two distinct analytical themes (e.g. \"performance challenges\" vs. \"workflow suggestions\").
 
 Analyze the provided interview chunk and extract ONE meaningful insight. Return ONLY a valid JSON object with this structure:
 
 {{
-  "response_id": "{response_id}",
-  "key_insight": "{key_insight}",
-  "verbatim_response": "{chunk_text}",
-  "subject": "brief_subject_description",
-  "question": "what_question_this_answers",
-  "deal_status": "{deal_status}",
-  "company": "{company}",
-  "interviewee_name": "{interviewee_name}",
-  "date_of_interview": "{date_of_interview}",
-  "findings": "key_finding_summary",
-  "value_realization": "value_or_roi_metrics",
-  "implementation_experience": "implementation_details",
-  "risk_mitigation": "risk_mitigation_approaches",
-  "competitive_advantage": "competitive_positioning",
-  "customer_success": "customer_success_factors",
-  "product_feedback": "product_feature_feedback",
-  "service_quality": "service_quality_assessment",
-  "decision_factors": "decision_influencing_factors",
-  "pain_points": "challenges_or_pain_points",
-  "success_metrics": "success_criteria_and_metrics",
-  "future_plans": "future_plans_or_expansion"
+  \"response_id\": \"{response_id}\",
+  \"key_insight\": \"{key_insight}\",
+  \"verbatim_response\": \"{chunk_text}\",
+  \"subject\": \"brief_subject_description\",
+  \"question\": \"what_question_this_answers\",
+  \"deal_status\": \"{deal_status}\",
+  \"company\": \"{company}\",
+  \"interviewee_name\": \"{interviewee_name}\",
+  \"date_of_interview\": \"{date_of_interview}\",
+  \"findings\": \"key_finding_summary\",
+  \"value_realization\": \"value_or_roi_metrics\",
+  \"implementation_experience\": \"implementation_details\",
+  \"risk_mitigation\": \"risk_mitigation_approaches\",
+  \"competitive_advantage\": \"competitive_positioning\",
+  \"customer_success\": \"customer_success_factors\",
+  \"product_feedback\": \"product_feature_feedback\",
+  \"service_quality\": \"service_quality_assessment\",
+  \"decision_factors\": \"decision_influencing_factors\",
+  \"pain_points\": \"challenges_or_pain_points\",
+  \"success_metrics\": \"success_criteria_and_metrics\",
+  \"future_plans\": \"future_plans_or_expansion\"
 }}
 
 Guidelines:
 - Extract ONE primary insight per chunk
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
-- Use "N/A" for fields that don't apply
+- Use \"N/A\" for fields that don't apply
 - Ensure all fields are populated
 - Return ONLY the JSON object, no other text
 
@@ -326,14 +351,35 @@ Interview chunk to analyze:
     
     # 2) Extract Q&A segments instead of fixed-size chunks
     qa_segments = extract_qa_segments(full_text)
-    
+
     # If Q&A segmentation didn't work well, fall back to chunking
     if len(qa_segments) < 3:
-        splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=2000,
+            chunk_overlap=300,
+            separators=['?', '.', '\n\n']
+        )
         qa_segments = splitter.split_text(full_text)
+        # Post-process: merge with next chunk if chunk ends without punctuation
+        merged_segments = []
+        i = 0
+        while i < len(qa_segments):
+            chunk = qa_segments[i].strip()
+            if not chunk:
+                i += 1
+                continue
+            # If chunk ends without punctuation, merge with next
+            if not chunk[-1] in '.!?':
+                if i + 1 < len(qa_segments):
+                    chunk += ' ' + qa_segments[i+1].strip()
+                    i += 1
+            merged_segments.append(chunk)
+            i += 1
+        qa_segments = merged_segments
     
     # 3) Run the single-row-per-chunk processing
     chunk_results = []
+    quality_rows = []
     
     def process_chunk(chunk_index, chunk):
         try:
@@ -403,7 +449,24 @@ Interview chunk to analyze:
                         obj["subject"] = infer_subject_from_text(cleaned_chunk)
                     
                     # Clean verbatim response again to ensure it's clean
+                    original_len = len(cleaned_chunk.split())
                     obj["verbatim_response"] = clean_verbatim_response(obj["verbatim_response"])
+                    cleaned_len = len(obj["verbatim_response"].split())
+                    # Quality check: flag if >80% of chunk was dropped
+                    if original_len > 0:
+                        drop_ratio = 1 - (cleaned_len / original_len)
+                        if drop_ratio > 0.8:
+                            quality_rows.append({
+                                "response_id": obj.get("response_id", ""),
+                                "grade": "LOW",
+                                "notes": f"{math.floor(drop_ratio*100)}% of original chunk dropped after cleaning."
+                            })
+                        else:
+                            quality_rows.append({
+                                "response_id": obj.get("response_id", ""),
+                                "grade": "OK",
+                                "notes": ""
+                            })
                     
                     # Convert to CSV row
                     csv_row = [
@@ -470,6 +533,13 @@ Interview chunk to analyze:
     # Write data rows
     for chunk_index, row in chunk_results:
         writer.writerow(row)
+    
+    # Write verbatim quality log
+    with open("verbatim_quality.csv", "w", newline="") as qf:
+        qwriter = csv.DictWriter(qf, fieldnames=["response_id", "grade", "notes"])
+        qwriter.writeheader()
+        for row in quality_rows:
+            qwriter.writerow(row)
     
     # Log summary
     logging.info(f"Processed {len(qa_segments)} chunks → created {len(chunk_results)} rows; dropped {len(qa_segments) - len(chunk_results)} chunks")
