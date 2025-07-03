@@ -643,8 +643,8 @@ Interview chunk to analyze:
     # 4) Sort by chunk index and deduplicate results
     chunk_results.sort(key=lambda x: x[0])
     
-    # Deduplicate based on key insight and verbatim response similarity
-    def is_similar_response(row1, row2, similarity_threshold=0.8):
+    # Enhanced deduplication based on key insight and verbatim response similarity
+    def is_similar_response(row1, row2, similarity_threshold=0.7):
         """Check if two responses are similar enough to be considered duplicates"""
         import difflib
         
@@ -658,24 +658,48 @@ Interview chunk to analyze:
         verbatim1 = str(row1[2]).lower().strip()  # Verbatim Response
         verbatim2 = str(row2[2]).lower().strip()
         
-        # Check if insights are very similar
+        # Check for exact matches first (most common case)
+        if insight1 == insight2 and verbatim1 == verbatim2:
+            return True
+        
+        # Check if insights are very similar (lowered threshold for more aggressive deduplication)
         insight_similarity = difflib.SequenceMatcher(None, insight1, insight2).ratio()
         
-        # Check if verbatim responses are very similar (first 200 chars)
-        verbatim1_short = verbatim1[:200]
-        verbatim2_short = verbatim2[:200]
+        # Check if verbatim responses are very similar (first 300 chars for better detection)
+        verbatim1_short = verbatim1[:300]
+        verbatim2_short = verbatim2[:300]
         verbatim_similarity = difflib.SequenceMatcher(None, verbatim1_short, verbatim2_short).ratio()
         
-        # If either insight or verbatim is very similar, consider it a duplicate
-        return insight_similarity > similarity_threshold or verbatim_similarity > similarity_threshold
+        # Check for common phrases that indicate duplicates
+        common_phrases = [
+            "turbo scribe", "rev", "transcription", "legal", "deposition",
+            "body cam", "court", "attorney", "paralegal", "law firm"
+        ]
+        
+        # If both responses contain the same key phrases, they're likely duplicates
+        phrase_match = 0
+        for phrase in common_phrases:
+            if phrase in insight1 and phrase in insight2:
+                phrase_match += 1
+        
+        # More aggressive deduplication: if either insight or verbatim is similar, OR if they share key phrases
+        return (insight_similarity > similarity_threshold or 
+                verbatim_similarity > similarity_threshold or 
+                phrase_match >= 2)
     
-    # Remove duplicates
+    # Enhanced duplicate removal with multiple strategies
     unique_results = []
     seen_responses = set()
+    seen_content_patterns = set()
     
     for chunk_index, row in chunk_results:
-        # Create a hash of the key insight and first part of verbatim response
-        response_hash = f"{row[1][:100]}_{row[2][:200]}".lower().replace(" ", "")
+        # Create multiple hashes for better detection
+        insight_hash = str(row[1]).lower().replace(" ", "")[:100]
+        verbatim_hash = str(row[2]).lower().replace(" ", "")[:200]
+        combined_hash = f"{insight_hash}_{verbatim_hash}"
+        
+        # Create content pattern hash (first 50 chars of each)
+        content_pattern = f"{str(row[1])[:50]}_{str(row[2])[:50]}".lower().replace(" ", "")
         
         # Check if we've seen a similar response
         is_duplicate = False
@@ -684,11 +708,47 @@ Interview chunk to analyze:
                 is_duplicate = True
                 break
         
-        if not is_duplicate and response_hash not in seen_responses:
+        # Additional check: if content pattern is very similar, it's likely a duplicate
+        if content_pattern in seen_content_patterns:
+            is_duplicate = True
+        
+        if not is_duplicate and combined_hash not in seen_responses:
             unique_results.append((chunk_index, row))
-            seen_responses.add(response_hash)
+            seen_responses.add(combined_hash)
+            seen_content_patterns.add(content_pattern)
     
     print(f"[DEBUG] Removed {len(chunk_results) - len(unique_results)} duplicate responses", file=sys.stderr)
+    
+    # Additional post-processing: remove responses that start with identical phrases
+    final_results = []
+    seen_starts = set()
+    
+    for chunk_index, row in unique_results:
+        # Get the first 100 characters of the verbatim response
+        response_start = str(row[2])[:100].lower().strip()
+        
+        # If we've seen this exact start before, skip it
+        if response_start in seen_starts:
+            continue
+        
+        # Check if this response starts with common duplicate patterns
+        duplicate_patterns = [
+            "before turbo scribe, we used rev",
+            "turbo scribe has significantly improved",
+            "i've had a subscription with westlaw",
+            "i mainly use it for depositions",
+            "also, i was wondering on the subject",
+            "maybe if it's, for example, specifically",
+            "i mean, the accuracy could be improved"
+        ]
+        
+        is_duplicate_start = any(response_start.startswith(pattern) for pattern in duplicate_patterns)
+        
+        if not is_duplicate_start:
+            final_results.append((chunk_index, row))
+            seen_starts.add(response_start)
+    
+    print(f"[DEBUG] Post-processing removed {len(unique_results) - len(final_results)} additional duplicates", file=sys.stderr)
     
     # Write CSV header (no auto-index column)
     header = ["Response ID", "Key Insight", "Verbatim Response", "Subject", "Question", "Deal Status", 
@@ -702,7 +762,7 @@ Interview chunk to analyze:
     writer.writerow(header)
     
     # Write data rows (now deduplicated)
-    for chunk_index, row in unique_results:
+    for chunk_index, row in final_results:
         writer.writerow(row)
     
     # Write verbatim quality log
@@ -756,10 +816,45 @@ def validate(input, output):
             
             print(f"After validation: {len(df_valid)} rows")
             
-            # Additional deduplication step
+            # Enhanced deduplication step
             if len(df_valid) > 0:
                 # Remove exact duplicates based on key insight and verbatim response
                 df_valid = df_valid.drop_duplicates(subset=['Key Insight', 'Verbatim Response'], keep='first')
+                
+                # Additional similarity-based deduplication
+                import difflib
+                
+                def find_similar_rows(df, similarity_threshold=0.8):
+                    """Find and remove rows with similar content"""
+                    to_remove = []
+                    
+                    for i in range(len(df)):
+                        for j in range(i + 1, len(df)):
+                            if i in to_remove or j in to_remove:
+                                continue
+                            
+                            # Compare key insights
+                            insight1 = str(df.iloc[i]['Key Insight']).lower()
+                            insight2 = str(df.iloc[j]['Key Insight']).lower()
+                            insight_similarity = difflib.SequenceMatcher(None, insight1, insight2).ratio()
+                            
+                            # Compare verbatim responses (first 200 chars)
+                            verbatim1 = str(df.iloc[i]['Verbatim Response'])[:200].lower()
+                            verbatim2 = str(df.iloc[j]['Verbatim Response'])[:200].lower()
+                            verbatim_similarity = difflib.SequenceMatcher(None, verbatim1, verbatim2).ratio()
+                            
+                            # If either is very similar, mark for removal
+                            if insight_similarity > similarity_threshold or verbatim_similarity > similarity_threshold:
+                                to_remove.append(j)
+                    
+                    return to_remove
+                
+                # Remove similar rows
+                similar_indices = find_similar_rows(df_valid)
+                if similar_indices:
+                    df_valid = df_valid.drop(df_valid.index[similar_indices])
+                    print(f"Removed {len(similar_indices)} similar rows during validation")
+                
                 print(f"After deduplication: {len(df_valid)} rows")
             
             # Save validated data
