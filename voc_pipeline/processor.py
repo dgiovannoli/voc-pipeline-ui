@@ -10,12 +10,13 @@ from langchain_community.document_loaders import Docx2txtLoader
 from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, TokenTextSplitter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import pandas as pd
 import csv
 from io import StringIO
 import math
+import tiktoken
 
 # Set up logging
 logging.basicConfig(filename="qc.log",
@@ -67,6 +68,114 @@ def extract_qa_segments(text: str) -> list:
                 segments.append(chunk)
     print(f"[DEBUG] Extracted {len(segments)} segments from transcript.", file=sys.stderr)
     return segments, found_qa
+
+def create_qa_aware_chunks(text: str, target_tokens: int = 12000, overlap_tokens: int = 800) -> list:
+    """
+    Create Q&A-aware chunks optimized for 16K token models.
+    
+    Strategy:
+    1. First extract Q&A segments to preserve conversation flow
+    2. Group Q&A segments into larger chunks (~12K tokens)
+    3. Use token-based splitting to respect the 16K limit
+    4. Preserve Q&A boundaries - never split mid-Q&A
+    """
+    # Initialize tokenizer for gpt-3.5-turbo-16k
+    try:
+        encoding = tiktoken.encoding_for_model("gpt-3.5-turbo-16k")
+    except:
+        # Fallback to cl100k_base encoding
+        encoding = tiktoken.get_encoding("cl100k_base")
+    
+    def count_tokens(text: str) -> int:
+        """Count tokens in text"""
+        return len(encoding.encode(text))
+    
+    # Step 1: Extract Q&A segments
+    qa_segments, found_qa = extract_qa_segments(text)
+    
+    if not qa_segments:
+        # Fallback: split by speaker turns or sentences
+        speaker_pattern = r'(Speaker \d+ \(\d{2}:\d{2}\):|Speaker \d+:|[A-Za-z\s]+:)\s*'
+        parts = re.split(speaker_pattern, text)
+        qa_segments = []
+        for i in range(1, len(parts), 2):
+            speaker = parts[i] if i < len(parts) else ''
+            content = parts[i+1] if i+1 < len(parts) else ''
+            chunk = f"{speaker} {content}".strip()
+            if len(chunk) > 20:
+                qa_segments.append(chunk)
+    
+    # Step 2: Group Q&A segments into larger chunks
+    chunks = []
+    current_chunk = ""
+    current_tokens = 0
+    
+    for segment in qa_segments:
+        segment_tokens = count_tokens(segment)
+        
+        # If adding this segment would exceed target, start new chunk
+        if current_tokens + segment_tokens > target_tokens and current_chunk:
+            chunks.append(current_chunk.strip())
+            
+            # Start new chunk with overlap from previous chunk
+            if overlap_tokens > 0:
+                # Find a good overlap point (preferably at Q&A boundary)
+                overlap_text = current_chunk[-overlap_tokens*4:]  # Rough character estimate
+                # Try to find a Q&A boundary in the overlap
+                qa_boundary_patterns = [
+                    r'Q:\s*',
+                    r'Question:\s*',
+                    r'Interviewer:\s*',
+                    r'Speaker \d+',
+                    r'\n[A-Za-z\s]+:\s*'
+                ]
+                
+                overlap_start = 0
+                for pattern in qa_boundary_patterns:
+                    match = re.search(pattern, overlap_text, re.IGNORECASE)
+                    if match:
+                        overlap_start = match.start()
+                        break
+                
+                current_chunk = overlap_text[overlap_start:] + "\n\n" + segment
+                current_tokens = count_tokens(current_chunk)
+            else:
+                current_chunk = segment
+                current_tokens = segment_tokens
+        else:
+            # Add to current chunk
+            if current_chunk:
+                current_chunk += "\n\n" + segment
+            else:
+                current_chunk = segment
+            current_tokens += segment_tokens
+    
+    # Add the last chunk
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+    
+    # Step 3: If we still have very large chunks, use token-based splitting
+    final_chunks = []
+    for chunk in chunks:
+        chunk_tokens = count_tokens(chunk)
+        
+        if chunk_tokens <= target_tokens:
+            final_chunks.append(chunk)
+        else:
+            # Use token-based splitter for oversized chunks
+            splitter = TokenTextSplitter(
+                encoding=encoding,
+                chunk_size=target_tokens,
+                chunk_overlap=overlap_tokens,
+                separators=['\n\n', '\n', '. ', '? ', '! ', ' ']
+            )
+            sub_chunks = splitter.split_text(chunk)
+            final_chunks.extend(sub_chunks)
+    
+    print(f"[DEBUG] Created {len(final_chunks)} chunks with Q&A-aware token-based chunking.", file=sys.stderr)
+    print(f"[DEBUG] Average chunk size: {sum(count_tokens(c) for c in final_chunks) // len(final_chunks) if final_chunks else 0} tokens", file=sys.stderr)
+    
+    return final_chunks, found_qa
 
 def is_qa_chunk(chunk_text: str, found_qa: bool = True) -> bool:
     """Check if chunk contains actual Q&A content"""
@@ -270,32 +379,38 @@ def _process_transcript_impl(
         print("ERROR: Transcript is empty")
         return
     
-    # Create single-row-per-chunk prompt template with brevity instruction
+    # Create enhanced prompt template optimized for 16K token context
     prompt_template = PromptTemplate(
         input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
-        template="""CRITICAL:
-- Capture **every question** and **follow-up**, including interviewer prompts or explanations.
-- For each extracted segment, produce:
-  1. **Key Insight**: a 1–2 sentence distilled takeaway.
-  2. **Verbatim Response**: the full stakeholder text.
-- Verbatim Response must be one complete, grammatical answer.
-- Do NOT include any question text, interviewer prompts, speaker labels, timestamps, or metadata.
-- If answer is very short (<20 words), pad with any trailing context that completes the thought.
-- You may remove filler words (‘um’, ‘uh’, ‘you know’) to improve readability, but preserve any key emphasis or nuance.
-- If a single answer clearly expresses two separate analytical themes (e.g., ‘before vs. after’ *and* ‘pricing concerns’), split into two records, each with its own Response ID.
+        template="""CRITICAL INSTRUCTIONS FOR 16K CONTEXT ANALYSIS:
+- You now have access to much larger context windows (~12K tokens) containing multiple Q&A exchanges.
+- Extract the 2-3 MOST SIGNIFICANT insights from this chunk, prioritizing:
+  1. **Detailed Customer Experiences**: Specific scenarios, use cases, implementation stories with concrete examples
+  2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages
+  3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators
+  4. **Integration Requirements**: Workflow details, tool integration needs, process changes
+  5. **Strategic Perspectives**: Decision factors, risk assessments, future planning
 
-CONTENT TO SURFACE:
-- Research methodology context (e.g. consent process, recording logistics).
-- Concrete use-cases (e.g. specific scenarios or tasks mentioned by the interviewee).
-- Ideas for integrating the product or service with other tools or workflows.
-- Pricing, billing, or procurement preferences.
-- Competitive evaluations and feature comparisons.
+EXTRACTION STRATEGY:
+- Identify the 2-3 richest, most detailed responses in this chunk
+- Extract the COMPLETE verbatim response for each (preserve full context)
+- Create comprehensive key insights that capture the main themes and specific details
+- If multiple responses are equally rich, choose those with the most actionable insights
 
-SEGMENTATION RULES:
-- Default: one question → one record.
-- Split only if a single answer clearly discusses two distinct analytical themes (e.g. \"performance challenges\" vs. \"workflow suggestions\").
+VERBATIM RESPONSE RULES:
+- Include the COMPLETE response text (much longer than before - 200-500 words)
+- Preserve ALL context, examples, specific details, and quantitative information
+- Remove only speaker labels, timestamps, and interviewer prompts
+- Keep filler words if they add emphasis or meaning
+- Maintain the natural flow and structure of the response
+- Include specific examples, metrics, and detailed explanations
 
-Analyze the provided interview chunk and extract ONE meaningful insight. Return ONLY a valid JSON object with this structure:
+MULTIPLE INSIGHTS PER CHUNK:
+- Extract 2-3 separate insights if the chunk contains multiple rich responses
+- Each insight should focus on a different aspect or theme
+- Ensure each verbatim response is complete and contextually rich
+
+Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a valid JSON object with this structure:
 
 {{
   \"response_id\": \"{response_id}\",
@@ -322,11 +437,12 @@ Analyze the provided interview chunk and extract ONE meaningful insight. Return 
 }}
 
 Guidelines:
-- Extract ONE primary insight per chunk
+- Extract 2-3 primary insights per chunk when multiple rich responses exist
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
 - Use \"N/A\" for fields that don't apply
 - Ensure all fields are populated
 - Return ONLY the JSON object, no other text
+- Focus on responses with specific examples, metrics, and detailed explanations
 
 Interview chunk to analyze:
 {chunk_text}"""
@@ -342,34 +458,9 @@ Interview chunk to analyze:
     )
     chain = prompt_template | llm
     
-    # 2) Extract Q&A segments instead of fixed-size chunks
-    qa_segments, found_qa = extract_qa_segments(full_text)
-    print(f"[DEBUG] Passing {len(qa_segments)} segments to LLM.", file=sys.stderr)
-
-    # If Q&A segmentation didn't work well, fall back to chunking
-    if len(qa_segments) < 3:
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=2000,
-            chunk_overlap=300,
-            separators=['?', '.', '\n\n']
-        )
-        qa_segments = splitter.split_text(full_text)
-        # Post-process: merge with next chunk if chunk ends without punctuation
-        merged_segments = []
-        i = 0
-        while i < len(qa_segments):
-            chunk = qa_segments[i].strip()
-            if not chunk:
-                i += 1
-                continue
-            # If chunk ends without punctuation, merge with next
-            if not chunk[-1] in '.!?':
-                if i + 1 < len(qa_segments):
-                    chunk += ' ' + qa_segments[i+1].strip()
-                    i += 1
-            merged_segments.append(chunk)
-            i += 1
-        qa_segments = merged_segments
+    # 2) Use improved Q&A-aware chunking optimized for 16K token models
+    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=12000, overlap_tokens=800)
+    print(f"[DEBUG] Passing {len(qa_segments)} chunks to LLM with improved 16K-optimized chunking.", file=sys.stderr)
     
     # 3) Run the single-row-per-chunk processing
     chunk_results = []
@@ -380,10 +471,7 @@ Interview chunk to analyze:
             # Filter out non-Q&A chunks
             if not is_qa_chunk(chunk, found_qa):
                 logging.info(f"Chunk {chunk_index} filtered out: not Q&A content")
-                return (chunk_index, None)
-            
-            # Generate normalized response ID
-            response_id = normalize_response_id(company, interviewee, chunk_index)
+                return (chunk_index, [])
             
             # Clean the chunk text (but be less aggressive for speaker-based transcripts)
             if found_qa:
@@ -391,7 +479,7 @@ Interview chunk to analyze:
                 cleaned_chunk = clean_verbatim_response(chunk)
                 if not cleaned_chunk:
                     logging.info(f"Chunk {chunk_index} filtered out: no content after cleaning")
-                    return (chunk_index, None)
+                    return (chunk_index, [])
             else:
                 # For speaker-based transcripts, just remove speaker labels and timestamps
                 cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', chunk)
@@ -399,17 +487,18 @@ Interview chunk to analyze:
                 cleaned_chunk = cleaned_chunk.strip()
                 if len(cleaned_chunk) < 5:
                     logging.info(f"Chunk {chunk_index} filtered out: too short after minimal cleaning")
-                    return (chunk_index, None)
+                    return (chunk_index, [])
             
             # Skip low-value responses
             if is_low_value_response(cleaned_chunk):
                 logging.info(f"Chunk {chunk_index} filtered out: low-value response - {cleaned_chunk[:50]}...")
-                return (chunk_index, None)
+                return (chunk_index, [])
             
             # Prepare input for the chain
+            base_response_id = normalize_response_id(company, interviewee, chunk_index)
             chain_input = {
                 "chunk_text": cleaned_chunk,
-                "response_id": response_id,
+                "response_id": base_response_id,
                 "key_insight": "",  # Let the LLM fill this in
                 "company": company,
                 "company_name": company,
@@ -459,6 +548,7 @@ Interview chunk to analyze:
                     original_len = len(cleaned_chunk.split())
                     obj["verbatim_response"] = clean_verbatim_response(obj["verbatim_response"])
                     cleaned_len = len(obj["verbatim_response"].split())
+                    
                     # Quality check: flag if >80% of chunk was dropped
                     if original_len > 0:
                         drop_ratio = 1 - (cleaned_len / original_len)
@@ -500,26 +590,27 @@ Interview chunk to analyze:
                         obj.get("future_plans", "")
                     ]
                     
-                    return (chunk_index, csv_row)
+                    return (chunk_index, [csv_row])
                 except Exception as e:
                     # malformed JSON, retry
                     continue
             
             # if we reach here, skip this chunk
             logging.warning(f"Chunk {chunk_index} dropped: no valid LLM output — text: {chunk[:60].replace(chr(10), ' ')}")
-            return (chunk_index, None)
+            return (chunk_index, [])
             
         except Exception as e:
             logging.warning(f"Chunk {chunk_index} dropped: {e} — text: {chunk[:100]!r}")
-            return (chunk_index, None)
+            return (chunk_index, [])
     
     with ThreadPoolExecutor(max_workers=5) as executor:
         future_to_chunk = {executor.submit(process_chunk, i, chunk): (i, chunk) for i, chunk in enumerate(qa_segments)}
         for future in as_completed(future_to_chunk):
             try:
-                chunk_index, result = future.result()
-                if result is not None:  # Only add successful results
-                    chunk_results.append((chunk_index, result))
+                chunk_index, results = future.result()
+                if results:  # Only add successful results
+                    for result in results:
+                        chunk_results.append((chunk_index, result))
             except Exception as e:
                 print(f"Error processing chunk: {e}")
     
@@ -549,7 +640,7 @@ Interview chunk to analyze:
             qwriter.writerow(row)
     
     # Log summary
-    logging.info(f"Processed {len(qa_segments)} chunks → created {len(chunk_results)} rows; dropped {len(qa_segments) - len(chunk_results)} chunks")
+    logging.info(f"Processed {len(qa_segments)} chunks → created {len(chunk_results)} insights; dropped {len(qa_segments) - len(set(r[0] for r in chunk_results))} chunks")
     
     # Output CSV to stdout
     print(output.getvalue())
