@@ -163,7 +163,7 @@ if uploads:
             st.sidebar.error(f"🔴 Unexpected error: {e}")
 
 # Create tabs for different views
-tab1, tab2, tab3 = st.tabs(["Validated Quotes", "Response Data Table", "Prompt Template"])
+tab1, tab2, tab3, tab4 = st.tabs(["Validated Quotes", "Response Data Table", "Prompt Template", "Processing Details"])
 
 with tab1:
     st.header("Validated Quotes")
@@ -281,3 +281,37 @@ Guidelines:
 - Return ONLY the JSON object, no other text
 '''
     st.code(prompt_template_text, language="markdown")
+
+with tab4:
+    st.header("Processing Details")
+    st.markdown("""
+**How the pipeline processes your interviews:**
+
+- **Batching & Parallel Processing:**
+  - Multiple interviews are processed in parallel using Python's `ThreadPoolExecutor` for speed and efficiency.
+  - Each file is handled as a separate job, so you can upload and process many interviews at once.
+
+- **Chunking & Segmentation:**
+  - Each transcript is split into Q&A segments using regex patterns (e.g., `Q: ... A: ...`, speaker labels, etc.).
+  - If Q&A patterns are not found, the transcript is chunked by speaker changes or by text length.
+  - Each chunk is processed as a single unit for the LLM prompt, ensuring one row per meaningful segment.
+
+- **Filtering & Cleaning:**
+  - Chunks are filtered to remove non-Q&A, low-value, or non-substantive content.
+  - Verbatim responses are aggressively cleaned to remove interviewer questions and speaker labels.
+
+- **LLM Processing:**
+  - Each chunk is sent to the LLM (OpenAI GPT-4o mini) with a detailed prompt.
+  - The LLM returns a structured JSON object for each chunk, which is parsed and validated.
+
+- **Post-processing:**
+  - All results are combined, sorted, and written to CSV.
+  - Additional validation ensures only high-quality, context-rich responses are kept.
+
+- **Performance:**
+  - The pipeline is optimized for speed and cost, leveraging parallelism and efficient chunking.
+  - Typical batch processing time is ~2.5 minutes for all interviews, with very low LLM costs (see sidebar).
+
+---
+This tab will be updated as the pipeline evolves. If you have questions or want to suggest improvements, let us know!
+""")
