@@ -7,6 +7,7 @@ from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def main():
     parser = argparse.ArgumentParser(description="Generate full data table from transcript")
@@ -84,6 +85,7 @@ Analyze the provided interview transcript and generate a CSV-formatted data tabl
 6. **Company Name**: The customer's company name
 7. **Interviewee Name**: The name of the person being interviewed
 8. **Date of Interview**: The date when the interview was conducted
+9. **Findings**: A one-sentence "Key Finding" summarizing the main insight from this response
 
 Guidelines:
 - Extract meaningful, substantive responses and insights
@@ -91,6 +93,7 @@ Guidelines:
 - Each row should represent a distinct insight or response
 - Use clear, concise subject categories
 - Ensure verbatim responses are accurate and complete
+- For each chunk, after the structured fields, generate a one-sentence "Key Finding" summarizing the main insight
 - Maintain proper CSV formatting with quotes around fields containing commas
 </task>
 
@@ -106,14 +109,14 @@ Guidelines:
 <output_format>
 Generate a CSV file with the following structure:
 
-"Response ID","Verbatim Response","Subject","Question","Deal Status","Company Name","Interviewee Name","Date of Interview"
-"{company}_response_1","[exact quote from transcript]","[subject category]","[question addressed]","{deal_status}","{company}","{interviewee}","{date}"
-"{company}_response_2","[exact quote from transcript]","[subject category]","[question addressed]","{deal_status}","{company}","{interviewee}","{date}"
+"Response ID","Verbatim Response","Subject","Question","Deal Status","Company Name","Interviewee Name","Date of Interview","Findings"
+"{company}_response_1","[exact quote from transcript]","[subject category]","[question addressed]","{deal_status}","{company}","{interviewee}","{date}","[key finding summary]"
+"{company}_response_2","[exact quote from transcript]","[subject category]","[question addressed]","{deal_status}","{company}","{interviewee}","{date}","[key finding summary]"
 ...
 
 Example:
-"AcmeCorp_response_1","The implementation was much smoother than we expected. The team was very responsive and helped us get up and running quickly.","Implementation","How was the implementation process?","Closed Won","Acme Corporation","John Smith","2024-01-15"
-"AcmeCorp_response_2","We've seen a 40% reduction in processing time since switching to this solution.","ROI","What measurable benefits have you seen?","Closed Won","Acme Corporation","John Smith","2024-01-15"
+"AcmeCorp_response_1","The implementation was much smoother than we expected. The team was very responsive and helped us get up and running quickly.","Implementation","How was the implementation process?","Closed Won","Acme Corporation","John Smith","2024-01-15","Implementation process exceeded expectations with responsive team support"
+"AcmeCorp_response_2","We've seen a 40% reduction in processing time since switching to this solution.","ROI","What measurable benefits have you seen?","Closed Won","Acme Corporation","John Smith","2024-01-15","40% reduction in processing time demonstrates significant efficiency gains"
 </output_format>
 
 <transcript>
@@ -140,10 +143,11 @@ Please generate the complete CSV data table based on the transcript above.
     splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
     chunks = splitter.split_text(full_text)
     
-    # 3) Run the CSV‐generation chain on each chunk
+    # 3) Run the CSV‐generation chain on each chunk with parallel processing
     csv_parts = []
-    for chunk in chunks:
-        part = chain.run(
+    
+    def process_chunk(chunk):
+        return chain.run(
             transcript=chunk,
             client=args.client,
             company=args.company,
@@ -151,7 +155,16 @@ Please generate the complete CSV data table based on the transcript above.
             deal_status=args.deal_status,
             date=args.date,
         )
-        csv_parts.append(part)
+    
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_chunk = {executor.submit(process_chunk, chunk): chunk for chunk in chunks}
+        for future in as_completed(future_to_chunk):
+            try:
+                part = future.result()
+                csv_parts.append(part)
+            except Exception as e:
+                print(f"Error processing chunk: {e}")
+                continue
     
     # 4) Merge parts, dropping duplicate headers
     lines = []

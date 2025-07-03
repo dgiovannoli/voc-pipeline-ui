@@ -21,7 +21,10 @@ def main():
     reader = csv.DictReader(open(args.input))
     v = QuoteValidator()
     validated = []
+    all_rows = []
+    
     for row in reader:
+        all_rows.append(row)
         try:
             result = v.validate(row)
             if result:
@@ -45,6 +48,22 @@ def main():
             # validation threw an error
             print(f"ERROR in validate() for response_id={row.get('response_id')}: {e}")
             continue
+    
+    # If no validated rows, default to all Stage 1 rows
+    if not validated and all_rows:
+        print("No validated rows found, defaulting to all Stage 1 rows")
+        for row in all_rows:
+            validated_row = {
+                "response_id": row.get("response_id", ""),
+                "chunk_text": row.get("chunk_text", ""),
+                "company": row.get("company", ""),
+                "interviewee_name": row.get("interviewee_name", ""),
+                "deal_status": row.get("deal_status", ""),
+                "date_of_interview": row.get("date_of_interview", ""),
+                "Subject": row.get("subject", "unknown"),
+                "Question": row.get("question", "unknown"),
+            }
+            validated.append(validated_row)
 
     # Updated fieldnames to include input columns + validated fields
     fieldnames = [
