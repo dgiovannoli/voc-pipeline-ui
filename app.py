@@ -19,8 +19,9 @@ PASSTHROUGH_CSV = BASE / "passthrough_quotes.csv"
 RESPONSE_TABLE_CSV = BASE / "response_data_table.csv"
 STAGE1_CSV = BASE / "stage1_output.csv"
 
-# Initialize uploaded_paths list
-uploaded_paths = []
+# Initialize uploaded_paths list in session state
+if 'uploaded_paths' not in st.session_state:
+    st.session_state.uploaded_paths = []
 
 st.title("Buried Wins Fantastical Interview Parser")
 
@@ -91,24 +92,27 @@ def extract_interviewee_and_company(filename):
     return name.strip(), ""
 
 if uploads:
+    # Clear previous uploads and add new ones
+    st.session_state.uploaded_paths = []
     st.sidebar.write(f"📁 Uploads detected: {len(uploads)} files")
     for f in uploads:
         st.sidebar.write(f"  📄 {f.name} (size: {len(f.getbuffer())} bytes)")
         dest = UPLOAD_DIR / f.name
         with open(dest, "wb") as out:
             out.write(f.getbuffer())
-        uploaded_paths.append(str(dest))
+        st.session_state.uploaded_paths.append(str(dest))
         st.sidebar.write(f"  💾 Saved to: {dest}")
-    st.sidebar.success(f"🗄️ Saved {len(uploaded_paths)} file(s)")
-else:
-    st.sidebar.write("⚠️ No files uploaded yet")
-
-    if st.sidebar.button("▶️ Process"):
+    st.sidebar.success(f"🗄️ Saved {len(st.session_state.uploaded_paths)} file(s)")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 3) Process Files")
+    
+    if st.sidebar.button("▶️ Process Files", use_container_width=True):
         try:
             progress_bar = st.progress(0)
             status_text = st.empty()
             stage1_outputs = []
-            total_files = len(uploaded_paths)
+            total_files = len(st.session_state.uploaded_paths)
             
             status_text.text(f"Processing {total_files} files...")
             with ThreadPoolExecutor(max_workers=3) as ex:
@@ -122,7 +126,7 @@ else:
                      interviewee if interviewee else "", "", ""],
                     check=True, capture_output=True, text=True
                   )
-                  for path in uploaded_paths
+                  for path in st.session_state.uploaded_paths
                   for interviewee, company in [extract_interviewee_and_company(os.path.basename(path))]
                 ]
                 completed = 0
@@ -175,6 +179,8 @@ else:
             st.sidebar.text(f"Error output: {e.stderr}")
         except Exception as e:
             st.sidebar.error(f"🔴 Unexpected error: {e}")
+else:
+    st.sidebar.write("⚠️ No files uploaded yet")
 
 # Create tabs for different views
 tab1, tab2, tab3, tab4 = st.tabs(["Validated Quotes", "Response Data Table", "Prompt Template", "Processing Details"])
