@@ -242,4 +242,16 @@ Please generate the complete CSV data table based on the transcript above.
     total_chunks = len(chunks)
     total_rows = len(all_rows)
     dropped = total_chunks - len(chunk_results)
-    logging.info(f"Processed {total_chunks} chunks → created {total_rows} rows; dropped {dropped} chunks") 
+    logging.info(f"Processed {total_chunks} chunks → created {total_rows} rows; dropped {dropped} chunks")
+
+
+def main():
+    """CLI entry point for the voc-pipeline package."""
+    import fire
+    fire.Fire({
+        "process_transcript": process_transcript,
+    })
+
+
+if __name__ == "__main__":
+    main() 
