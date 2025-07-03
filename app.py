@@ -19,6 +19,9 @@ PASSTHROUGH_CSV = BASE / "passthrough_quotes.csv"
 RESPONSE_TABLE_CSV = BASE / "response_data_table.csv"
 STAGE1_CSV = BASE / "stage1_output.csv"
 
+# Initialize uploaded_paths list
+uploaded_paths = []
+
 st.title("Buried Wins Fantastical Interview Parser")
 
 # Remove metadata input fields
@@ -78,8 +81,6 @@ def load_csv(path):
     except Exception as e:
         st.error(f"Error loading CSV from {path}: {e}")
         return pd.DataFrame()
-
-uploaded_paths = []
 
 def extract_interviewee_and_company(filename):
     name = filename.rsplit('.', 1)[0]
