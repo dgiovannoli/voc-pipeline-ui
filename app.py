@@ -68,11 +68,20 @@ if uploads:
                 [sys.executable, "batch_passthrough.py", "--input", "stage1_output.csv", "--output", PASSTHROUGH_CSV],
                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             )
-            # Generate final response data table
-            proc = subprocess.run(
-                [sys.executable, "batch_table.py", "--input", "stage1_output.csv", "--output", "response_data_table.csv"],
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            )
+            # Generate final response data table from uploaded files
+            if uploaded_paths:
+                for transcript_path in uploaded_paths:
+                    proc = subprocess.run(
+                        [sys.executable, "batch_table.py", 
+                         "--transcript", transcript_path,
+                         "--client", client,
+                         "--company", company,
+                         "--interviewee", interviewee_name,
+                         "--deal-status", deal_status,
+                         "--date", date_of_interview.strftime("%Y/%m/%d"),
+                         "--output", "response_data_table.csv"],
+                        check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                    )
             st.sidebar.success("✅ Processing complete")
         except subprocess.CalledProcessError as e:
             err = e.stderr.decode("utf-8", errors="replace")
@@ -129,13 +138,22 @@ with tab1:
             st.info("No data available. Upload & Process to get started.")
 
 with tab2:
-    if os.path.exists("response_data_table.csv"):
-        df2 = pd.read_csv("response_data_table.csv")
-        st.dataframe(df2)
-        st.download_button(
-            "Download Response Table",
-            data=df2.to_csv(index=False),
-            file_name="response_data_table.csv"
-        )
+    st.header("Response Data Table")
+    if os.path.exists("response_data_table.csv") and os.path.getsize("response_data_table.csv") > 0:
+        try:
+            df2 = pd.read_csv("response_data_table.csv")
+            if len(df2) > 0:
+                st.write(f"Showing {len(df2)} response records")
+                st.dataframe(df2)
+                st.download_button(
+                    "Download Response Table",
+                    data=df2.to_csv(index=False),
+                    file_name="response_data_table.csv"
+                )
+            else:
+                st.warning("Response data table is empty")
+        except Exception as e:
+            st.error(f"Error reading response data table: {e}")
+            st.info("The CSV file may be malformed. Try regenerating it.")
     else:
         st.info("Run the pipeline to generate the response data table.")
