@@ -310,29 +310,35 @@ with tab3:
     st.header("Prompt Template")
     st.markdown("Below is the exact prompt sent to the AI for each interview chunk. You can review and suggest improvements.")
     prompt_template_text = '''
-CRITICAL:
-- Capture **every question** and **follow-up**, including interviewer prompts or explanations.
-- For each extracted segment, produce:
-  1. **Key Insight**: a 1–2 sentence distilled takeaway.
-  2. **Verbatim Response**: the full stakeholder text.
-- Verbatim Response must be one complete, grammatical answer.
-- Do NOT include any question text, interviewer prompts, speaker labels, timestamps, Q:/A: tags, or metadata.
-- If answer is very short (<20 words), pad with any trailing context that completes the thought.
-- You may remove filler words (‘um’, ‘uh’, ‘you know’, ‘so’, ‘like’, ‘well’, ‘er’) to improve readability, but preserve any key emphasis or nuance.
-- If a single answer clearly expresses two separate analytical themes (e.g., ‘before vs. after’ *and* ‘pricing concerns’), split into two records, each with its own Response ID.
+CRITICAL INSTRUCTIONS FOR 16K CONTEXT ANALYSIS:
+- You now have access to much larger context windows (~12K tokens) containing multiple Q&A exchanges.
+- Extract the 2-3 MOST SIGNIFICANT insights from this chunk, prioritizing:
+  1. **Detailed Customer Experiences**: Specific scenarios, use cases, implementation stories with concrete examples
+  2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages
+  3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators
+  4. **Integration Requirements**: Workflow details, tool integration needs, process changes
+  5. **Strategic Perspectives**: Decision factors, risk assessments, future planning
 
-CONTENT TO SURFACE:
-- Research methodology context (e.g. consent process, recording logistics).
-- Concrete use-cases (e.g. specific scenarios or tasks mentioned by the interviewee).
-- Ideas for integrating the product or service with other tools or workflows.
-- Pricing, billing, or procurement preferences.
-- Competitive evaluations and feature comparisons.
+EXTRACTION STRATEGY:
+- Identify the 2-3 richest, most detailed responses in this chunk
+- Extract the COMPLETE verbatim response for each (preserve full context)
+- Create comprehensive key insights that capture the main themes and specific details
+- If multiple responses are equally rich, choose those with the most actionable insights
 
-SEGMENTATION RULES:
-- Default: one question → one record.
-- Split only if a single answer clearly discusses two distinct analytical themes (e.g. "performance challenges" vs. "workflow suggestions").
+VERBATIM RESPONSE RULES:
+- Include the COMPLETE response text (much longer than before - 200-500 words)
+- Preserve ALL context, examples, specific details, and quantitative information
+- Remove only speaker labels, timestamps, and interviewer prompts
+- Keep filler words if they add emphasis or meaning
+- Maintain the natural flow and structure of the response
+- Include specific examples, metrics, and detailed explanations
 
-Analyze the provided interview chunk and extract ONE meaningful insight. Return ONLY a valid JSON object with this structure:
+MULTIPLE INSIGHTS PER CHUNK:
+- Extract 2-3 separate insights if the chunk contains multiple rich responses
+- Each insight should focus on a different aspect or theme
+- Ensure each verbatim response is complete and contextually rich
+
+Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a valid JSON object with this structure:
 
 {
   "response_id": "{response_id}",
@@ -359,48 +365,53 @@ Analyze the provided interview chunk and extract ONE meaningful insight. Return 
 }
 
 Guidelines:
-- Extract ONE primary insight per chunk
+- Extract 2-3 primary insights per chunk when multiple rich responses exist
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
 - Use "N/A" for fields that don't apply
 - Ensure all fields are populated
 - Return ONLY the JSON object, no other text
+- Focus on responses with specific examples, metrics, and detailed explanations
 '''
     st.code(prompt_template_text, language="markdown")
 
 with tab4:
     st.header("Processing Details")
     st.markdown("""
-**How the pipeline processes your interviews (latest version):**
+**How the pipeline processes your interviews (16K-optimized version):**
 
 - **Batching & Parallel Processing:**
   - Multiple interviews are processed in parallel using Python's `ThreadPoolExecutor` for speed and efficiency.
   - Each file is handled as a separate job, so you can upload and process many interviews at once.
 
-- **Chunking & Segmentation:**
-  - Each transcript is split into Q&A segments using regex patterns (e.g., `Q: ... A: ...`, speaker labels, etc.).
-  - If Q&A patterns are not found, the transcript is chunked by speaker changes or by text length.
-  - Uses a sliding window with increased chunk overlap (300) and respects sentence boundaries (splits on `.`, `?`, `\n\n`).
-  - If a chunk ends without punctuation, it is merged with the next chunk to avoid mid-sentence truncation.
+- **Advanced Chunking & Segmentation (16K Optimized):**
+  - Uses token-based chunking with ~12K tokens per chunk (vs previous 2K character chunks)
+  - Q&A-aware segmentation that preserves conversation boundaries and context
+  - Intelligent overlap of 800 tokens to maintain continuity between chunks
+  - Preserves full Q&A exchanges and speaker turns within chunks
+  - Adaptive chunking that respects token limits while maximizing context
 
-- **Filtering & Cleaning:**
-  - Chunks are filtered to remove non-Q&A, low-value, or non-substantive content.
-  - Verbatim responses are aggressively cleaned to remove interviewer prompts, Q:/A: tags, speaker labels, timestamps, and interview titles.
-  - Common disfluencies ("um", "uh", "you know", etc.) are removed unless they carry meaning.
+- **Enhanced LLM Processing:**
+  - Each large chunk is sent to GPT-3.5-turbo-16k with comprehensive context
+  - Extracts 2-3 insights per chunk (vs previous 1 insight per chunk)
+  - Preserves much longer verbatim responses (200-500 words vs previous 20-50 words)
+  - Focuses on detailed customer experiences, quantitative feedback, and specific examples
 
-- **LLM Processing:**
-  - Each chunk is sent to the LLM (OpenAI gpt-3.5-turbo-16k) with a detailed prompt.
-  - The LLM returns a structured JSON object for each chunk, which is parsed and validated.
+- **Improved Content Extraction:**
+  - Prioritizes detailed customer experiences with specific scenarios and examples
+  - Captures quantitative feedback (metrics, timelines, ROI discussions)
+  - Preserves comparative analysis and competitive evaluations
+  - Maintains integration requirements and workflow details
 
-- **Post-processing & QA Logging:**
-  - All results are combined, sorted, and written to CSV.
-  - Additional validation ensures only high-quality, context-rich responses are kept.
-  - After LLM output, the code checks if >80% of the original chunk was dropped after cleaning and flags low-quality verbatim responses.
-  - A `verbatim_quality.csv` is exported with response_id, grade, and notes for manual review of low-grade items.
+- **Quality Assurance:**
+  - Enhanced validation for richer, more contextually complete responses
+  - Quality logging tracks response length and content preservation
+  - Flags responses that lose too much context during processing
 
 - **Performance:**
-  - The pipeline is optimized for speed and cost, leveraging parallelism and efficient chunking.
-  - Typical batch processing time is ~2.5 minutes for all interviews, with very low LLM costs (see sidebar).
+  - Fewer API calls due to larger chunks (more efficient token usage)
+  - Higher quality insights due to better context preservation
+  - Richer verbatim responses with full context and examples
 
 ---
-This tab will be updated as the pipeline evolves. If you have questions or want to suggest improvements, let us know!
+This pipeline is optimized for the 16K token context window to deliver significantly richer insights and more complete verbatim responses.
 """)
