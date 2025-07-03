@@ -235,6 +235,11 @@ CRITICAL:
 - For each extracted segment, produce:
   1. **Key Insight**: a 1–2 sentence distilled takeaway.
   2. **Verbatim Response**: the full stakeholder text.
+- Verbatim Response must be one complete, grammatical answer.
+- Do NOT include any question text, interviewer prompts, speaker labels, timestamps, Q:/A: tags, or metadata.
+- If answer is very short (<20 words), pad with any trailing context that completes the thought.
+- You may remove filler words (‘um’, ‘uh’, ‘you know’, ‘so’, ‘like’, ‘well’, ‘er’) to improve readability, but preserve any key emphasis or nuance.
+- If a single answer clearly expresses two separate analytical themes (e.g., ‘before vs. after’ *and* ‘pricing concerns’), split into two records, each with its own Response ID.
 
 CONTENT TO SURFACE:
 - Research methodology context (e.g. consent process, recording logistics).
@@ -285,7 +290,7 @@ Guidelines:
 with tab4:
     st.header("Processing Details")
     st.markdown("""
-**How the pipeline processes your interviews:**
+**How the pipeline processes your interviews (latest version):**
 
 - **Batching & Parallel Processing:**
   - Multiple interviews are processed in parallel using Python's `ThreadPoolExecutor` for speed and efficiency.
@@ -294,19 +299,23 @@ with tab4:
 - **Chunking & Segmentation:**
   - Each transcript is split into Q&A segments using regex patterns (e.g., `Q: ... A: ...`, speaker labels, etc.).
   - If Q&A patterns are not found, the transcript is chunked by speaker changes or by text length.
-  - Each chunk is processed as a single unit for the LLM prompt, ensuring one row per meaningful segment.
+  - Uses a sliding window with increased chunk overlap (300) and respects sentence boundaries (splits on `.`, `?`, `\n\n`).
+  - If a chunk ends without punctuation, it is merged with the next chunk to avoid mid-sentence truncation.
 
 - **Filtering & Cleaning:**
   - Chunks are filtered to remove non-Q&A, low-value, or non-substantive content.
-  - Verbatim responses are aggressively cleaned to remove interviewer questions and speaker labels.
+  - Verbatim responses are aggressively cleaned to remove interviewer prompts, Q:/A: tags, speaker labels, timestamps, and interview titles.
+  - Common disfluencies ("um", "uh", "you know", etc.) are removed unless they carry meaning.
 
 - **LLM Processing:**
-  - Each chunk is sent to the LLM (OpenAI GPT-4o mini) with a detailed prompt.
+  - Each chunk is sent to the LLM (OpenAI gpt-3.5-turbo-16k) with a detailed prompt.
   - The LLM returns a structured JSON object for each chunk, which is parsed and validated.
 
-- **Post-processing:**
+- **Post-processing & QA Logging:**
   - All results are combined, sorted, and written to CSV.
   - Additional validation ensures only high-quality, context-rich responses are kept.
+  - After LLM output, the code checks if >80% of the original chunk was dropped after cleaning and flags low-quality verbatim responses.
+  - A `verbatim_quality.csv` is exported with response_id, grade, and notes for manual review of low-grade items.
 
 - **Performance:**
   - The pipeline is optimized for speed and cost, leveraging parallelism and efficient chunking.
