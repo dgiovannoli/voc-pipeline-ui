@@ -19,7 +19,7 @@ PASSTHROUGH_CSV = BASE / "passthrough_quotes.csv"
 RESPONSE_TABLE_CSV = BASE / "response_data_table.csv"
 STAGE1_CSV = BASE / "stage1_output.csv"
 
-st.title("VoC Pipeline Explorer")
+st.title("Buried Wins Fantastical Interview Parser")
 
 # Remove metadata input fields
 # st.sidebar.header("Metadata")
@@ -35,16 +35,6 @@ st.sidebar.header("1) Upload Interviews")
 uploads = st.sidebar.file_uploader(
     "Select .txt or .docx files", type=["txt", "docx"], accept_multiple_files=True
 )
-
-# Debug: Show file mtime and head
-for label, path in [("Validated", VALIDATED_CSV), ("Response Table", RESPONSE_TABLE_CSV)]:
-    if os.path.exists(path):
-        mtime = os.path.getmtime(path)
-        st.sidebar.text(f"{label} last write: {datetime.fromtimestamp(mtime)}")
-        try:
-            st.sidebar.code(subprocess.check_output(["head", "-n", "3", str(path)]).decode())
-        except Exception:
-            pass
 
 # Live CSV loader with TTL
 @st.cache_data(ttl=1, show_spinner=False)
