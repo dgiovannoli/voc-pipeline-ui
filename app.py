@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 BASE = pathlib.Path(__file__).parent
+UPLOAD_DIR = BASE / "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 VALIDATED_CSV = BASE / "validated_quotes.csv"
 PASSTHROUGH_CSV = BASE / "passthrough_quotes.csv"
 RESPONSE_TABLE_CSV = BASE / "response_data_table.csv"
@@ -51,7 +53,7 @@ def load_csv(path):
 uploaded_paths = []
 if uploads:
     for f in uploads:
-        dest = BASE / "uploads" / f.name
+        dest = UPLOAD_DIR / f.name
         with open(dest, "wb") as out:
             out.write(f.getbuffer())
         uploaded_paths.append(str(dest))
