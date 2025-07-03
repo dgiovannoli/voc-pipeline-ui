@@ -105,16 +105,20 @@ def create_qa_aware_chunks(text: str, target_tokens: int = 12000, overlap_tokens
             if len(chunk) > 20:
                 qa_segments.append(chunk)
     
-    # Step 2: Group Q&A segments into larger chunks
+    # Step 2: Group Q&A segments into chunks with better granularity
     chunks = []
     current_chunk = ""
     current_tokens = 0
+    segments_in_chunk = 0
     
     for segment in qa_segments:
         segment_tokens = count_tokens(segment)
         
-        # If adding this segment would exceed target, start new chunk
-        if current_tokens + segment_tokens > target_tokens and current_chunk:
+        # Start new chunk if:
+        # 1. Adding this segment would exceed target tokens, OR
+        # 2. We already have 3-4 segments in current chunk (for better granularity)
+        if ((current_tokens + segment_tokens > target_tokens and current_chunk) or 
+            (segments_in_chunk >= 4 and current_chunk)):
             chunks.append(current_chunk.strip())
             
             # Start new chunk with overlap from previous chunk
@@ -139,9 +143,11 @@ def create_qa_aware_chunks(text: str, target_tokens: int = 12000, overlap_tokens
                 
                 current_chunk = overlap_text[overlap_start:] + "\n\n" + segment
                 current_tokens = count_tokens(current_chunk)
+                segments_in_chunk = 1
             else:
                 current_chunk = segment
                 current_tokens = segment_tokens
+                segments_in_chunk = 1
         else:
             # Add to current chunk
             if current_chunk:
@@ -149,6 +155,7 @@ def create_qa_aware_chunks(text: str, target_tokens: int = 12000, overlap_tokens
             else:
                 current_chunk = segment
             current_tokens += segment_tokens
+            segments_in_chunk += 1
     
     # Add the last chunk
     if current_chunk:
@@ -382,9 +389,9 @@ def _process_transcript_impl(
     # Create enhanced prompt template optimized for 16K token context
     prompt_template = PromptTemplate(
         input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
-        template="""CRITICAL INSTRUCTIONS FOR 16K CONTEXT ANALYSIS:
-- You now have access to much larger context windows (~12K tokens) containing multiple Q&A exchanges.
-- Extract the 2-3 MOST SIGNIFICANT insights from this chunk, prioritizing:
+        template="""CRITICAL INSTRUCTIONS FOR ENHANCED CONTEXT ANALYSIS:
+- You have access to focused context windows (~4K tokens) containing 3-4 Q&A exchanges.
+- Extract the 1-2 MOST SIGNIFICANT insights from this chunk, prioritizing:
   1. **Detailed Customer Experiences**: Specific scenarios, use cases, implementation stories with concrete examples
   2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages
   3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators
@@ -392,7 +399,7 @@ def _process_transcript_impl(
   5. **Strategic Perspectives**: Decision factors, risk assessments, future planning
 
 EXTRACTION STRATEGY:
-- Identify the 2-3 richest, most detailed responses in this chunk
+- Identify the 1-2 richest, most detailed responses in this chunk
 - Extract the COMPLETE verbatim response for each (preserve full context)
 - Create comprehensive key insights that capture the main themes and specific details
 - If multiple responses are equally rich, choose those with the most actionable insights
@@ -406,11 +413,11 @@ VERBATIM RESPONSE RULES:
 - Include specific examples, metrics, and detailed explanations
 
 MULTIPLE INSIGHTS PER CHUNK:
-- Extract 2-3 separate insights if the chunk contains multiple rich responses
+- Extract 1-2 separate insights if the chunk contains multiple rich responses
 - Each insight should focus on a different aspect or theme
 - Ensure each verbatim response is complete and contextually rich
 
-Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a JSON array containing multiple objects, one for each insight:
+Analyze the provided interview chunk and extract the 1-2 MOST SIGNIFICANT insights from the richest responses. Return ONLY a JSON array containing multiple objects, one for each insight:
 
 [
   {{
@@ -462,7 +469,7 @@ Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insigh
 ]
 
 Guidelines:
-- Extract 2-3 primary insights per chunk when multiple rich responses exist
+- Extract 1-2 primary insights per chunk when multiple rich responses exist
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
 - Use "N/A" for fields that don't apply
 - Ensure all fields are populated
@@ -485,7 +492,8 @@ Interview chunk to analyze:
     chain = prompt_template | llm
     
     # 2) Use improved Q&A-aware chunking optimized for 16K token models
-    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=12000, overlap_tokens=800)
+    # Target smaller chunks to get more insights per interview (6-12 responses)
+    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=4000, overlap_tokens=400)
     print(f"[DEBUG] Passing {len(qa_segments)} chunks to LLM with improved 16K-optimized chunking.", file=sys.stderr)
     
     # 3) Run the single-row-per-chunk processing
