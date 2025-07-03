@@ -282,20 +282,39 @@ with tab1:
             
             if len(df) > 0:
                 st.write(f"Showing {len(df)} validated quotes")
-                main_cols = [
-                    "Response ID", "Subject", "Key Insight", "Question", "Verbatim Response",
-                    "Deal Status", "Company Name", "Interviewee Name", "Date of Interview"
-                ]
                 
-                # Check if all main_cols exist
-                missing_cols = [col for col in main_cols if col not in df.columns]
-                if missing_cols:
-                    st.error(f"Missing columns: {missing_cols}")
-                    st.write("Available columns:", list(df.columns))
-                else:
-                    st.dataframe(df[main_cols])
+                # Define the columns we want to show, with fallbacks
+                display_cols = []
+                col_mapping = {
+                    "Response ID": ["Response ID"],
+                    "Subject": ["Subject"],
+                    "Key Insight": ["Key Insight", "Findings"],  # Fallback to Findings if Key Insight missing
+                    "Question": ["Question"],
+                    "Verbatim Response": ["Verbatim Response"],
+                    "Deal Status": ["Deal Status"],
+                    "Company Name": ["Company Name"],
+                    "Interviewee Name": ["Interviewee Name"],
+                    "Date of Interview": ["Date of Interview"]
+                }
+                
+                # Find available columns for each desired column
+                for desired_col, possible_names in col_mapping.items():
+                    found = False
+                    for possible_name in possible_names:
+                        if possible_name in df.columns:
+                            display_cols.append(possible_name)
+                            found = True
+                            break
+                    if not found:
+                        st.warning(f"Column '{desired_col}' not found in data")
+                
+                if display_cols:
+                    st.dataframe(df[display_cols])
                     if len(df) > 200:
                         st.info(f"Showing first 200 of {len(df)} records")
+                else:
+                    st.error("No displayable columns found")
+                    st.write("Available columns:", list(df.columns))
             else:
                 st.warning("Validated quotes file is empty")
                 if os.path.exists(STAGE1_CSV):
