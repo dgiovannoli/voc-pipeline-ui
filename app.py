@@ -40,21 +40,18 @@ uploads = st.sidebar.file_uploader(
 st.sidebar.header("2) Processing Details")
 
 # Model details
-st.sidebar.markdown("**Model:** OpenAI GPT-4 (via LangChain)")
+st.sidebar.markdown("**Model:** OpenAI GPT-4o mini (via LangChain)")
 
 # Estimate time and cost
 if uploads:
     num_files = len(uploads)
-    # Assume average interview takes 1.5 minutes to process
-    avg_time_per_file = 1.5  # minutes
-    total_time = num_files * avg_time_per_file
-    # Assume average cost per interview (e.g., 2000 tokens per interview, $0.01 per 1K tokens for GPT-4o)
-    avg_tokens_per_file = 2000
-    cost_per_1k = 0.01  # adjust as needed for your model/pricing
+    total_time = 2.5  # minutes for the whole batch
+    avg_tokens_per_file = 2000  # adjust if you have a better estimate
+    cost_per_1k = 0.0005  # GPT-4o mini pricing
     total_tokens = num_files * avg_tokens_per_file
     total_cost = (total_tokens / 1000) * cost_per_1k
     st.sidebar.markdown(f"**Expected time:** ~{total_time:.1f} min for {num_files} interview(s)")
-    st.sidebar.markdown(f"**Expected cost:** ~${total_cost:.2f} for {num_files} interview(s)")
+    st.sidebar.markdown(f"**Expected cost:** ~${total_cost:.4f} for {num_files} interview(s)")
 else:
     st.sidebar.markdown("**Expected time:** N/A")
     st.sidebar.markdown("**Expected cost:** N/A")
