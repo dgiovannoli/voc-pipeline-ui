@@ -110,7 +110,21 @@ class ResponseCoder:
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}"
   }}
+  
+  **Output must be strictly valid JSON matching the ResponseRow schema. Return only the raw JSON object—no markdown, no extra commentary or tables.**
 </execution_instructions>
+
+Output (JSON only):
+{{
+  "response_id": "{response_id}",
+  "verbatim_response": "{chunk_text}",
+  "subject": "brief_subject_description",
+  "question": "what_question_this_answers",
+  "deal_status": "{deal_status}",
+  "company": "{company}",
+  "interviewee_name": "{interviewee_name}",
+  "date_of_interview": "{date_of_interview}"
+}}
 """.strip()
         )
         # Use modern RunnableSequence syntax instead of deprecated LLMChain

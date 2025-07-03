@@ -114,15 +114,15 @@ def main():
     processing_time = time.time() - start_time
     print(f"Processing completed in {processing_time:.2f} seconds")
 
-    # 3) Write output CSV with exact fieldnames from schema
-    fieldnames = ['response_id','chunk_text','company','interviewee_name','deal_status','date_of_interview']
-    
-    with open(args.output, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
-
-    print(f"Wrote {len(rows)} rows to {args.output}")
+    # 3) Write output CSV using actual keys from the tags
+    if rows:
+        with open(args.output, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=rows[0].keys(), quoting=csv.QUOTE_MINIMAL)
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"Wrote {len(rows)} rows to {args.output}")
+    else:
+        print("No rows to write")
 
 def process_chunks_parallel(chunks: List[Dict[str, Any]], args) -> List[Dict[str, Any]]:
     """Process chunks in parallel with batching for better performance."""

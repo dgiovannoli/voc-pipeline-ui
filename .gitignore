@@ -9,3 +9,6 @@ uploads/
 samples/
 .vscode/
 .idea/
+validated_quotes.csv
+stage1_output.csv
+voc_pipeline.db
