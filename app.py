@@ -159,7 +159,7 @@ if uploads:
             progress_bar.progress(1.0)
             status_text.text("✅ Complete!")
             st.sidebar.success("✅ All interviews processed, validated, and table built!")
-            st.experimental_rerun()
+            st.rerun()
         except subprocess.CalledProcessError as e:
             st.sidebar.error(f"❌ Processing failed: {e}")
             st.sidebar.text(f"Error output: {e.stderr}")
