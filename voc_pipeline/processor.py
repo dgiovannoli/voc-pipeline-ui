@@ -65,7 +65,7 @@ def extract_qa_segments(text: str) -> list:
             chunk = f"{speaker} {content}".strip()
             if len(chunk) > 20:
                 segments.append(chunk)
-    print(f"[DEBUG] Extracted {len(segments)} segments from transcript.")
+    print(f"[DEBUG] Extracted {len(segments)} segments from transcript.", file=sys.stderr)
     return segments, found_qa
 
 def is_qa_chunk(chunk_text: str, found_qa: bool = True) -> bool:
@@ -164,8 +164,8 @@ def clean_verbatim_response(text: str, interviewer_names=None) -> str:
             continue
         if re.match(r'^\(\d{2}:\d{2}\):', l):
             continue
-        # Optionally, skip lines that are just questions
-        if l.endswith("?"):
+        # Skip lines that are just questions (but keep questions that are part of longer content)
+        if l.endswith("?") and len(l) < 50:
             continue
         cleaned_lines.append(line)
     cleaned = " ".join(cleaned_lines).strip()
@@ -174,7 +174,8 @@ def clean_verbatim_response(text: str, interviewer_names=None) -> str:
     # Remove trailing timestamps like "(03:07):"
     cleaned = re.sub(r'\(\d{2}:\d{2}\):\s*$', '', cleaned)
     # Remove speaker labels at start of lines: "Drew Giovannoli:", etc.
-    cleaned = re.sub(r'^[A-Za-z\s]+:\s*', '', cleaned, flags=re.MULTILINE)
+    # But be more careful not to remove content that looks like speaker labels
+    cleaned = re.sub(r'^(Speaker \d+|Drew Giovannoli|Brian|Yusuf Elmarakby):\s*', '', cleaned, flags=re.MULTILINE)
     # Remove question context - look for patterns like "Q: What do you think?" and remove
     cleaned = re.sub(r'^Q:\s*[^A]*?(?=A:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
     cleaned = re.sub(r'^Question:\s*[^A]*?(?=Answer:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
@@ -185,8 +186,8 @@ def clean_verbatim_response(text: str, interviewer_names=None) -> str:
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
     # Remove disfluencies
     cleaned = remove_disfluencies(cleaned)
-    # Ensure we have meaningful content
-    if len(cleaned) < 10:
+    # Ensure we have meaningful content (be less strict)
+    if len(cleaned) < 5:
         return ""
     return cleaned
 
@@ -343,7 +344,7 @@ Interview chunk to analyze:
     
     # 2) Extract Q&A segments instead of fixed-size chunks
     qa_segments, found_qa = extract_qa_segments(full_text)
-    print(f"[DEBUG] Passing {len(qa_segments)} segments to LLM.")
+    print(f"[DEBUG] Passing {len(qa_segments)} segments to LLM.", file=sys.stderr)
 
     # If Q&A segmentation didn't work well, fall back to chunking
     if len(qa_segments) < 3:
@@ -384,13 +385,21 @@ Interview chunk to analyze:
             # Generate normalized response ID
             response_id = normalize_response_id(company, interviewee, chunk_index)
             
-            # Clean the chunk text
-            cleaned_chunk = clean_verbatim_response(chunk)
-            
-            # Skip if cleaning removed all content
-            if not cleaned_chunk:
-                logging.info(f"Chunk {chunk_index} filtered out: no content after cleaning")
-                return (chunk_index, None)
+            # Clean the chunk text (but be less aggressive for speaker-based transcripts)
+            if found_qa:
+                # For Q&A format, clean aggressively
+                cleaned_chunk = clean_verbatim_response(chunk)
+                if not cleaned_chunk:
+                    logging.info(f"Chunk {chunk_index} filtered out: no content after cleaning")
+                    return (chunk_index, None)
+            else:
+                # For speaker-based transcripts, just remove speaker labels and timestamps
+                cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', chunk)
+                cleaned_chunk = re.sub(r'\(\d{2}:\d{2}\):\s*', '', cleaned_chunk)
+                cleaned_chunk = cleaned_chunk.strip()
+                if len(cleaned_chunk) < 5:
+                    logging.info(f"Chunk {chunk_index} filtered out: too short after minimal cleaning")
+                    return (chunk_index, None)
             
             # Skip low-value responses
             if is_low_value_response(cleaned_chunk):
