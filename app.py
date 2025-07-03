@@ -338,93 +338,113 @@ with tab3:
     st.header("Prompt Template")
     st.markdown("Below is the exact prompt sent to the AI for each interview chunk. You can review and suggest improvements.")
     prompt_template_text = '''
-CRITICAL INSTRUCTIONS FOR 16K CONTEXT ANALYSIS:
-- You now have access to much larger context windows (~12K tokens) containing multiple Q&A exchanges.
-- Extract the 2-3 MOST SIGNIFICANT insights from this chunk, prioritizing:
-  1. **Detailed Customer Experiences**: Specific scenarios, use cases, implementation stories with concrete examples
-  2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages
-  3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators
-  4. **Integration Requirements**: Workflow details, tool integration needs, process changes
-  5. **Strategic Perspectives**: Decision factors, risk assessments, future planning
+CRITICAL INSTRUCTIONS FOR ENHANCED QUALITY ANALYSIS:
+- You have access to focused context windows (~7K tokens) containing 6-8 Q&A exchanges.
+- Extract the 1-2 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
+  1. **Comprehensive Customer Experiences**: Complete scenarios with full context, specific examples, detailed explanations, and quantitative details
+  2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages, workload distributions
+  3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators and performance metrics
+  4. **Integration Requirements**: Workflow details, tool integration needs, process changes, technical specifications
+  5. **Strategic Perspectives**: Decision factors, risk assessments, future planning, business impact
 
 EXTRACTION STRATEGY:
-- Identify the 2-3 richest, most detailed responses in this chunk
-- Extract the COMPLETE verbatim response for each (preserve full context)
+- Identify the 1-2 richest, most comprehensive responses in this chunk
+- Extract the COMPLETE verbatim response for each with full context and conversation flow
 - Create comprehensive key insights that capture the main themes and specific details
-- If multiple responses are equally rich, choose those with the most actionable insights
+- Focus on responses that provide complete context and detailed explanations
+- Choose responses that cover different aspects or themes when possible
+- If only one high-quality response exists, extract just that one
+- Prioritize responses with specific examples, metrics, and actionable insights
 
 VERBATIM RESPONSE RULES:
-- Include the COMPLETE response text (much longer than before - 200-500 words)
+- Include the COMPLETE response text (300-800 words for optimal context and richness)
 - Preserve ALL context, examples, specific details, and quantitative information
+- Include relevant parts of the conversation flow for better understanding
+- Include follow-up questions and clarifications that add context
 - Remove only speaker labels, timestamps, and interviewer prompts
 - Keep filler words if they add emphasis or meaning
 - Maintain the natural flow and structure of the response
-- Include specific examples, metrics, and detailed explanations
+- Include specific examples, metrics, detailed explanations, and follow-up context
+- Preserve comparative language and specific differentiators
+- Include workflow details, process descriptions, and technical specifications
 
-MULTIPLE INSIGHTS PER CHUNK:
-- Extract 2-3 separate insights if the chunk contains multiple rich responses
-- Each insight should focus on a different aspect or theme
-- Ensure each verbatim response is complete and contextually rich
+QUALITY-FOCUSED INSIGHTS:
+- Extract the 1-2 most comprehensive insights from the richest responses
+- Focus on responses that provide complete context and detailed explanations
+- Ensure each verbatim response captures the full conversation context
+- Choose responses that cover different topics or perspectives when possible
+- Only extract if the response contains substantial, actionable content
+- Prioritize responses with specific metrics, examples, and detailed workflows
 
-Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a JSON array containing multiple objects, one for each insight:
+DIFFERENTIATION STRATEGY:
+- When multiple responses cover similar topics, extract the most detailed and specific one
+- Focus on responses that provide unique perspectives or specific examples
+- Include responses that show different aspects of the same topic (e.g., different use cases, workflows, or pain points)
+- Prioritize responses with quantitative details, specific processes, or technical specifications
+- Choose responses that provide the most complete picture of customer experiences
+
+Analyze the provided interview chunk and extract the 1-2 RICHEST, MOST COMPREHENSIVE insights from the most detailed responses. Return ONLY a JSON array containing one or two objects:
 
 [
   {
     "response_id": "{response_id}_1",
-    "key_insight": "first_insight_summary",
-    "verbatim_response": "complete_verbatim_response_1",
+    "key_insight": "first_comprehensive_insight_summary_with_specific_details",
+    "verbatim_response": "first_complete_verbatim_response_with_full_context_and_specific_examples",
     "subject": "brief_subject_description_1",
     "question": "what_question_this_answers_1",
     "deal_status": "{deal_status}",
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}",
-    "findings": "key_finding_summary_1",
-    "value_realization": "value_or_roi_metrics_1",
-    "implementation_experience": "implementation_details_1",
-    "risk_mitigation": "risk_mitigation_approaches_1",
-    "competitive_advantage": "competitive_positioning_1",
-    "customer_success": "customer_success_factors_1",
-    "product_feedback": "product_feature_feedback_1",
-    "service_quality": "service_quality_assessment_1",
-    "decision_factors": "decision_influencing_factors_1",
-    "pain_points": "challenges_or_pain_points_1",
-    "success_metrics": "success_criteria_and_metrics_1",
-    "future_plans": "future_plans_or_expansion_1"
+    "findings": "key_finding_summary_with_specific_details_1",
+    "value_realization": "value_or_roi_metrics_with_quantitative_details_1",
+    "implementation_experience": "implementation_details_with_workflow_specifics_1",
+    "risk_mitigation": "risk_mitigation_approaches_with_specific_strategies_1",
+    "competitive_advantage": "competitive_positioning_with_specific_differentiators_1",
+    "customer_success": "customer_success_factors_with_measurable_outcomes_1",
+    "product_feedback": "product_feature_feedback_with_specific_examples_1",
+    "service_quality": "service_quality_assessment_with_quantitative_metrics_1",
+    "decision_factors": "decision_influencing_factors_with_specific_criteria_1",
+    "pain_points": "challenges_or_pain_points_with_detailed_context_1",
+    "success_metrics": "success_criteria_and_metrics_with_specific_measurements_1",
+    "future_plans": "future_plans_or_expansion_with_specific_timelines_1"
   },
   {
     "response_id": "{response_id}_2",
-    "key_insight": "second_insight_summary",
-    "verbatim_response": "complete_verbatim_response_2",
+    "key_insight": "second_comprehensive_insight_summary_with_specific_details",
+    "verbatim_response": "second_complete_verbatim_response_with_full_context_and_specific_examples",
     "subject": "brief_subject_description_2",
     "question": "what_question_this_answers_2",
     "deal_status": "{deal_status}",
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}",
-    "findings": "key_finding_summary_2",
-    "value_realization": "value_or_roi_metrics_2",
-    "implementation_experience": "implementation_details_2",
-    "risk_mitigation": "risk_mitigation_approaches_2",
-    "competitive_advantage": "competitive_positioning_2",
-    "customer_success": "customer_success_factors_2",
-    "product_feedback": "product_feature_feedback_2",
-    "service_quality": "service_quality_assessment_2",
-    "decision_factors": "decision_influencing_factors_2",
-    "pain_points": "challenges_or_pain_points_2",
-    "success_metrics": "success_criteria_and_metrics_2",
-    "future_plans": "future_plans_or_expansion_2"
+    "findings": "key_finding_summary_with_specific_details_2",
+    "value_realization": "value_or_roi_metrics_with_quantitative_details_2",
+    "implementation_experience": "implementation_details_with_workflow_specifics_2",
+    "risk_mitigation": "risk_mitigation_approaches_with_specific_strategies_2",
+    "competitive_advantage": "competitive_positioning_with_specific_differentiators_2",
+    "customer_success": "customer_success_factors_with_measurable_outcomes_2",
+    "product_feedback": "product_feature_feedback_with_specific_examples_2",
+    "service_quality": "service_quality_assessment_with_quantitative_metrics_2",
+    "decision_factors": "decision_influencing_factors_with_specific_criteria_2",
+    "pain_points": "challenges_or_pain_points_with_detailed_context_2",
+    "success_metrics": "success_criteria_and_metrics_with_specific_measurements_2",
+    "future_plans": "future_plans_or_expansion_with_specific_timelines_2"
   }
 ]
 
 Guidelines:
-- Extract 2-3 primary insights per chunk when multiple rich responses exist
-- Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
+- Extract the 1-2 richest, most comprehensive insights per chunk
+- Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
 - Use "N/A" for fields that don't apply
-- Ensure all fields are populated
+- Ensure all fields are populated with specific, actionable content
 - Return ONLY the JSON array, no other text
-- Focus on responses with specific examples, metrics, and detailed explanations
+- Focus on responses with specific examples, metrics, detailed explanations, and full context
+- Choose responses that provide the most complete picture and actionable insights
 - If only one rich insight exists, return an array with just one object
+- Skip chunks that only contain low-quality content (acknowledgments, thank yous, etc.)
+- Prioritize responses that show different aspects of similar topics (e.g., different use cases, workflows, or specific pain points)
 '''
     st.code(prompt_template_text, language="markdown")
 
