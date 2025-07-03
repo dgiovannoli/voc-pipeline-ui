@@ -53,15 +53,27 @@ def load_csv(path):
 
 uploaded_paths = []
 
-def extract_client_from_filename(filename):
+def extract_interviewee_and_company(filename):
     name = filename.rsplit('.', 1)[0]
-    match = re.search(r'at ([^.,]+)', name, re.IGNORECASE)
+    # Try to extract "Interview with [Interviewee], ... at [Company]"
+    match = re.search(r'Interview with ([^,]+),.*? at ([^.,]+)', name, re.IGNORECASE)
     if match:
-        return match.group(1).strip()
+        interviewee = match.group(1).strip()
+        company = match.group(2).strip()
+        return interviewee, company
+    # Try to extract "Interview with [Interviewee] at [Company]"
+    match = re.search(r'Interview with ([^,]+) at ([^.,]+)', name, re.IGNORECASE)
+    if match:
+        interviewee = match.group(1).strip()
+        company = match.group(2).strip()
+        return interviewee, company
+    # Try to extract "Interview with [Interviewee]"
     match = re.search(r'Interview with ([^.,-]+)', name, re.IGNORECASE)
     if match:
-        return match.group(1).strip()
-    return name.strip()
+        interviewee = match.group(1).strip()
+        return interviewee, ""
+    # Fallback: use the whole name as interviewee
+    return name.strip(), ""
 
 if uploads:
     for f in uploads:
@@ -84,12 +96,13 @@ if uploads:
                     subprocess.run,
                     [sys.executable, "-m", "voc_pipeline", "process_transcript",
                      path,
-                     extract_client_from_filename(os.path.basename(path)),  # client
-                     extract_client_from_filename(os.path.basename(path)),  # company
-                     "", "", ""],
+                     company if company else "",  # client
+                     company if company else "",  # company
+                     interviewee if interviewee else "", "", ""],
                     check=True, capture_output=True, text=True
                   )
                   for path in uploaded_paths
+                  for interviewee, company in [extract_interviewee_and_company(os.path.basename(path))]
                 ]
                 completed = 0
                 for f in as_completed(futures):
