@@ -7,6 +7,7 @@ import pathlib
 import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
+import re
 
 load_dotenv()
 
@@ -51,6 +52,17 @@ def load_csv(path):
     return pd.read_csv(path)
 
 uploaded_paths = []
+
+def extract_client_from_filename(filename):
+    name = filename.rsplit('.', 1)[0]
+    match = re.search(r'at ([^.,]+)', name, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    match = re.search(r'Interview with ([^.,-]+)', name, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return name.strip()
+
 if uploads:
     for f in uploads:
         dest = UPLOAD_DIR / f.name
@@ -71,7 +83,10 @@ if uploads:
                   ex.submit(
                     subprocess.run,
                     [sys.executable, "-m", "voc_pipeline", "process_transcript",
-                     path, "", "", "", "", ""],
+                     path,
+                     extract_client_from_filename(os.path.basename(path)),  # client
+                     extract_client_from_filename(os.path.basename(path)),  # company
+                     "", "", ""],
                     check=True, capture_output=True, text=True
                   )
                   for path in uploaded_paths
