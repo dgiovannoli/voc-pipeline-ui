@@ -34,20 +34,6 @@ st.title("Buried Wins Fantastical Interview Parser")
 
 st.sidebar.info("ℹ️ Metadata is now auto-populated from the pipeline and transcript. No manual entry required.")
 
-# Add test file creation
-if st.sidebar.button("🧪 Create Test File"):
-    test_content = """Q: What do you think about our product?
-A: I really like the interface and how easy it is to use. The features are exactly what I need for my workflow.
-
-Q: What could be improved?
-A: I wish there was better integration with other tools I use. Also, the pricing could be more competitive."""
-    
-    test_file_path = UPLOAD_DIR / "test_interview.txt"
-    with open(test_file_path, "w") as f:
-        f.write(test_content)
-    st.sidebar.success(f"✅ Created test file: {test_file_path}")
-    uploaded_paths.append(str(test_file_path))
-
 st.sidebar.header("1) Upload Interviews")
 uploads = st.sidebar.file_uploader(
     "Select .txt or .docx files", type=["txt", "docx"], accept_multiple_files=True
@@ -119,33 +105,10 @@ else:
 
     if st.sidebar.button("▶️ Process"):
         try:
-            # Debug: Check what's in the uploads directory
-            st.sidebar.write("🔍 Checking uploads directory...")
-            if os.path.exists(UPLOAD_DIR):
-                upload_files = os.listdir(UPLOAD_DIR)
-                st.sidebar.write(f"📂 Files in uploads directory: {upload_files}")
-                for f in upload_files:
-                    fpath = UPLOAD_DIR / f
-                    size = os.path.getsize(fpath)
-                    st.sidebar.write(f"  📄 {f}: {size} bytes")
-            else:
-                st.sidebar.write("❌ Uploads directory doesn't exist!")
-            
             progress_bar = st.progress(0)
             status_text = st.empty()
             stage1_outputs = []
             total_files = len(uploaded_paths)
-            
-            # Debug: Show what files we're processing
-            st.sidebar.write(f"Processing {total_files} files:")
-            for i, path in enumerate(uploaded_paths):
-                st.sidebar.write(f"  {i+1}. {os.path.basename(path)}")
-                # Check if file exists and has content
-                if os.path.exists(path):
-                    size = os.path.getsize(path)
-                    st.sidebar.write(f"     Size: {size} bytes")
-                else:
-                    st.sidebar.write(f"     ERROR: File not found!")
             
             status_text.text(f"Processing {total_files} files...")
             with ThreadPoolExecutor(max_workers=3) as ex:
@@ -166,16 +129,6 @@ else:
                 for f in as_completed(futures):
                     try:
                         result = f.result()
-                        # Debug: Show what the pipeline output
-                        st.sidebar.write(f"Pipeline output for file {completed+1}:")
-                        st.sidebar.write(f"  Return code: {result.returncode}")
-                        st.sidebar.write(f"  Stdout length: {len(result.stdout)}")
-                        st.sidebar.write(f"  Stderr length: {len(result.stderr)}")
-                        if result.stdout:
-                            st.sidebar.write(f"  Stdout preview: {result.stdout[:200]}...")
-                        if result.stderr:
-                            st.sidebar.write(f"  Stderr: {result.stderr}")
-                        
                         stage1_outputs.append(result.stdout)
                         completed += 1
                         progress = completed / total_files
@@ -183,18 +136,11 @@ else:
                         status_text.text(f"Processed {completed}/{total_files} files...")
                     except Exception as e:
                         st.warning(f"File failed: {e}")
-                        st.sidebar.write(f"Exception details: {str(e)}")
                         completed += 1
                         progress = completed / total_files
                         progress_bar.progress(progress)
                         continue
             if stage1_outputs:
-                st.sidebar.write(f"Stage1 outputs collected: {len(stage1_outputs)}")
-                for i, output in enumerate(stage1_outputs):
-                    st.sidebar.write(f"  Output {i+1} length: {len(output)}")
-                    if output:
-                        st.sidebar.write(f"  Output {i+1} preview: {output[:200]}...")
-                
                 header = stage1_outputs[0].split('\n')[0]
                 all_data = [header]
                 for output in stage1_outputs:
@@ -202,12 +148,10 @@ else:
                     if len(lines) > 1:
                         all_data.extend(lines[1:])
                 
-                st.sidebar.write(f"Total data lines: {len(all_data)}")
                 with open(STAGE1_CSV, "w") as f:
                     f.write('\n'.join(all_data))
-                st.sidebar.write(f"Stage1 CSV written to {STAGE1_CSV}")
             else:
-                st.sidebar.write("No stage1 outputs collected!")
+                st.warning("No data collected from processing")
             status_text.text("Validating data...")
             progress_bar.progress(0.8)
             subprocess.run([
@@ -239,42 +183,9 @@ with tab1:
     st.header("Validated Quotes")
     st.caption("Main columns only. Metadata is auto-populated.")
     
-    # Debug: Show current working directory and file paths
-    st.write(f"Current working directory: {os.getcwd()}")
-    st.write(f"Looking for file: {VALIDATED_CSV}")
-    
-    # List all CSV files in current directory
-    csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
-    st.write(f"CSV files in current directory: {csv_files}")
-    
     # Check if file exists and has content
     file_exists = os.path.exists(VALIDATED_CSV)
     file_size = os.path.getsize(VALIDATED_CSV) if file_exists else 0
-    st.write(f"File exists: {file_exists}, File size: {file_size}")
-    
-    # Debug: Show content of validated_quotes.csv
-    if file_exists:
-        try:
-            with open(VALIDATED_CSV, 'r') as f:
-                content = f.read()
-                st.write(f"File content (first 500 chars): {content[:500]}")
-                st.write(f"Total lines: {len(content.split(chr(10)))}")
-        except Exception as e:
-            st.write(f"Error reading file: {e}")
-    
-    # Also check stage1_output.csv
-    stage1_exists = os.path.exists(STAGE1_CSV)
-    stage1_size = os.path.getsize(STAGE1_CSV) if stage1_exists else 0
-    st.write(f"Stage1 file exists: {stage1_exists}, Stage1 file size: {stage1_size}")
-    
-    # Fallback: try looking in current directory
-    if not file_exists:
-        fallback_path = "validated_quotes.csv"
-        file_exists = os.path.exists(fallback_path)
-        file_size = os.path.getsize(fallback_path) if file_exists else 0
-        st.write(f"Fallback path {fallback_path}: exists={file_exists}, size={file_size}")
-        if file_exists:
-            VALIDATED_CSV = fallback_path
     
     if file_exists and file_size > 0:
         try:
