@@ -136,7 +136,7 @@ with tab1:
             if len(df) > 0:
                 st.write(f"Showing {len(df)} validated quotes")
                 main_cols = [
-                    "Response ID", "Subject", "Question", "Verbatim Response",
+                    "Response ID", "Key Insight", "Subject", "Question", "Verbatim Response",
                     "Deal Status", "Company Name", "Interviewee Name", "Date of Interview"
                 ]
                 st.dataframe(df[main_cols])
