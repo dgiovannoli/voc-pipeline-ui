@@ -103,6 +103,18 @@ if uploads:
             status_text = st.empty()
             stage1_outputs = []
             total_files = len(uploaded_paths)
+            
+            # Debug: Show what files we're processing
+            st.sidebar.write(f"Processing {total_files} files:")
+            for i, path in enumerate(uploaded_paths):
+                st.sidebar.write(f"  {i+1}. {os.path.basename(path)}")
+                # Check if file exists and has content
+                if os.path.exists(path):
+                    size = os.path.getsize(path)
+                    st.sidebar.write(f"     Size: {size} bytes")
+                else:
+                    st.sidebar.write(f"     ERROR: File not found!")
+            
             status_text.text(f"Processing {total_files} files...")
             with ThreadPoolExecutor(max_workers=3) as ex:
                 futures = [
@@ -122,6 +134,16 @@ if uploads:
                 for f in as_completed(futures):
                     try:
                         result = f.result()
+                        # Debug: Show what the pipeline output
+                        st.sidebar.write(f"Pipeline output for file {completed+1}:")
+                        st.sidebar.write(f"  Return code: {result.returncode}")
+                        st.sidebar.write(f"  Stdout length: {len(result.stdout)}")
+                        st.sidebar.write(f"  Stderr length: {len(result.stderr)}")
+                        if result.stdout:
+                            st.sidebar.write(f"  Stdout preview: {result.stdout[:200]}...")
+                        if result.stderr:
+                            st.sidebar.write(f"  Stderr: {result.stderr}")
+                        
                         stage1_outputs.append(result.stdout)
                         completed += 1
                         progress = completed / total_files
@@ -129,19 +151,31 @@ if uploads:
                         status_text.text(f"Processed {completed}/{total_files} files...")
                     except Exception as e:
                         st.warning(f"File failed: {e}")
+                        st.sidebar.write(f"Exception details: {str(e)}")
                         completed += 1
                         progress = completed / total_files
                         progress_bar.progress(progress)
                         continue
             if stage1_outputs:
+                st.sidebar.write(f"Stage1 outputs collected: {len(stage1_outputs)}")
+                for i, output in enumerate(stage1_outputs):
+                    st.sidebar.write(f"  Output {i+1} length: {len(output)}")
+                    if output:
+                        st.sidebar.write(f"  Output {i+1} preview: {output[:200]}...")
+                
                 header = stage1_outputs[0].split('\n')[0]
                 all_data = [header]
                 for output in stage1_outputs:
                     lines = output.strip().split('\n')
                     if len(lines) > 1:
                         all_data.extend(lines[1:])
+                
+                st.sidebar.write(f"Total data lines: {len(all_data)}")
                 with open(STAGE1_CSV, "w") as f:
                     f.write('\n'.join(all_data))
+                st.sidebar.write(f"Stage1 CSV written to {STAGE1_CSV}")
+            else:
+                st.sidebar.write("No stage1 outputs collected!")
             status_text.text("Validating data...")
             progress_bar.progress(0.8)
             subprocess.run([
