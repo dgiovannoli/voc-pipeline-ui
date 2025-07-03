@@ -354,6 +354,7 @@ Interview chunk to analyze:
             chain_input = {
                 "chunk_text": cleaned_chunk,
                 "response_id": response_id,
+                "key_insight": "",  # Let the LLM fill this in
                 "company": company,
                 "company_name": company,
                 "interviewee_name": interviewee,
@@ -372,10 +373,13 @@ Interview chunk to analyze:
                     obj = json.loads(raw)
                     # Validate required fields
                     required_fields = ["response_id", "verbatim_response", "subject", "question", 
-                                     "deal_status", "company", "interviewee_name", "date_of_interview"]
+                                     "deal_status", "company", "interviewee_name", "date_of_interview", "key_insight"]
                     for field in required_fields:
                         if field not in obj:
-                            raise ValueError(f"Missing required field: {field}")
+                            if field == "key_insight":
+                                obj["key_insight"] = "N/A"
+                            else:
+                                raise ValueError(f"Missing required field: {field}")
                     
                     # Ensure metadata is populated everywhere
                     obj["deal_status"] = normalize_deal_status(deal_status)
