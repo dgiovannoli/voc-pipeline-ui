@@ -31,6 +31,20 @@ st.title("Buried Wins Fantastical Interview Parser")
 
 st.sidebar.info("ℹ️ Metadata is now auto-populated from the pipeline and transcript. No manual entry required.")
 
+# Add test file creation
+if st.sidebar.button("🧪 Create Test File"):
+    test_content = """Q: What do you think about our product?
+A: I really like the interface and how easy it is to use. The features are exactly what I need for my workflow.
+
+Q: What could be improved?
+A: I wish there was better integration with other tools I use. Also, the pricing could be more competitive."""
+    
+    test_file_path = UPLOAD_DIR / "test_interview.txt"
+    with open(test_file_path, "w") as f:
+        f.write(test_content)
+    st.sidebar.success(f"✅ Created test file: {test_file_path}")
+    uploaded_paths.append(str(test_file_path))
+
 st.sidebar.header("1) Upload Interviews")
 uploads = st.sidebar.file_uploader(
     "Select .txt or .docx files", type=["txt", "docx"], accept_multiple_files=True
@@ -90,15 +104,32 @@ def extract_interviewee_and_company(filename):
     return name.strip(), ""
 
 if uploads:
+    st.sidebar.write(f"📁 Uploads detected: {len(uploads)} files")
     for f in uploads:
+        st.sidebar.write(f"  📄 {f.name} (size: {len(f.getbuffer())} bytes)")
         dest = UPLOAD_DIR / f.name
         with open(dest, "wb") as out:
             out.write(f.getbuffer())
         uploaded_paths.append(str(dest))
+        st.sidebar.write(f"  💾 Saved to: {dest}")
     st.sidebar.success(f"🗄️ Saved {len(uploaded_paths)} file(s)")
+else:
+    st.sidebar.write("⚠️ No files uploaded yet")
 
     if st.sidebar.button("▶️ Process"):
         try:
+            # Debug: Check what's in the uploads directory
+            st.sidebar.write("🔍 Checking uploads directory...")
+            if os.path.exists(UPLOAD_DIR):
+                upload_files = os.listdir(UPLOAD_DIR)
+                st.sidebar.write(f"📂 Files in uploads directory: {upload_files}")
+                for f in upload_files:
+                    fpath = UPLOAD_DIR / f
+                    size = os.path.getsize(fpath)
+                    st.sidebar.write(f"  📄 {f}: {size} bytes")
+            else:
+                st.sidebar.write("❌ Uploads directory doesn't exist!")
+            
             progress_bar = st.progress(0)
             status_text = st.empty()
             stage1_outputs = []
