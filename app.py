@@ -173,9 +173,27 @@ with tab1:
     st.header("Validated Quotes")
     st.caption("Main columns only. Metadata is auto-populated.")
     
+    # Debug: Show current working directory and file paths
+    st.write(f"Current working directory: {os.getcwd()}")
+    st.write(f"Looking for file: {VALIDATED_CSV}")
+    
+    # List all CSV files in current directory
+    csv_files = [f for f in os.listdir('.') if f.endswith('.csv')]
+    st.write(f"CSV files in current directory: {csv_files}")
+    
     # Check if file exists and has content
     file_exists = os.path.exists(VALIDATED_CSV)
     file_size = os.path.getsize(VALIDATED_CSV) if file_exists else 0
+    st.write(f"File exists: {file_exists}, File size: {file_size}")
+    
+    # Fallback: try looking in current directory
+    if not file_exists:
+        fallback_path = "validated_quotes.csv"
+        file_exists = os.path.exists(fallback_path)
+        file_size = os.path.getsize(fallback_path) if file_exists else 0
+        st.write(f"Fallback path {fallback_path}: exists={file_exists}, size={file_size}")
+        if file_exists:
+            VALIDATED_CSV = fallback_path
     
     if file_exists and file_size > 0:
         try:
