@@ -338,39 +338,65 @@ MULTIPLE INSIGHTS PER CHUNK:
 - Each insight should focus on a different aspect or theme
 - Ensure each verbatim response is complete and contextually rich
 
-Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a valid JSON object with this structure:
+Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a JSON array containing multiple objects, one for each insight:
 
-{
-  "response_id": "{response_id}",
-  "key_insight": "{key_insight}",
-  "verbatim_response": "{chunk_text}",
-  "subject": "brief_subject_description",
-  "question": "what_question_this_answers",
-  "deal_status": "{deal_status}",
-  "company": "{company}",
-  "interviewee_name": "{interviewee_name}",
-  "date_of_interview": "{date_of_interview}",
-  "findings": "key_finding_summary",
-  "value_realization": "value_or_roi_metrics",
-  "implementation_experience": "implementation_details",
-  "risk_mitigation": "risk_mitigation_approaches",
-  "competitive_advantage": "competitive_positioning",
-  "customer_success": "customer_success_factors",
-  "product_feedback": "product_feature_feedback",
-  "service_quality": "service_quality_assessment",
-  "decision_factors": "decision_influencing_factors",
-  "pain_points": "challenges_or_pain_points",
-  "success_metrics": "success_criteria_and_metrics",
-  "future_plans": "future_plans_or_expansion"
-}
+[
+  {
+    "response_id": "{response_id}_1",
+    "key_insight": "first_insight_summary",
+    "verbatim_response": "complete_verbatim_response_1",
+    "subject": "brief_subject_description_1",
+    "question": "what_question_this_answers_1",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}",
+    "findings": "key_finding_summary_1",
+    "value_realization": "value_or_roi_metrics_1",
+    "implementation_experience": "implementation_details_1",
+    "risk_mitigation": "risk_mitigation_approaches_1",
+    "competitive_advantage": "competitive_positioning_1",
+    "customer_success": "customer_success_factors_1",
+    "product_feedback": "product_feature_feedback_1",
+    "service_quality": "service_quality_assessment_1",
+    "decision_factors": "decision_influencing_factors_1",
+    "pain_points": "challenges_or_pain_points_1",
+    "success_metrics": "success_criteria_and_metrics_1",
+    "future_plans": "future_plans_or_expansion_1"
+  },
+  {
+    "response_id": "{response_id}_2",
+    "key_insight": "second_insight_summary",
+    "verbatim_response": "complete_verbatim_response_2",
+    "subject": "brief_subject_description_2",
+    "question": "what_question_this_answers_2",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}",
+    "findings": "key_finding_summary_2",
+    "value_realization": "value_or_roi_metrics_2",
+    "implementation_experience": "implementation_details_2",
+    "risk_mitigation": "risk_mitigation_approaches_2",
+    "competitive_advantage": "competitive_positioning_2",
+    "customer_success": "customer_success_factors_2",
+    "product_feedback": "product_feature_feedback_2",
+    "service_quality": "service_quality_assessment_2",
+    "decision_factors": "decision_influencing_factors_2",
+    "pain_points": "challenges_or_pain_points_2",
+    "success_metrics": "success_criteria_and_metrics_2",
+    "future_plans": "future_plans_or_expansion_2"
+  }
+]
 
 Guidelines:
 - Extract 2-3 primary insights per chunk when multiple rich responses exist
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
 - Use "N/A" for fields that don't apply
 - Ensure all fields are populated
-- Return ONLY the JSON object, no other text
+- Return ONLY the JSON array, no other text
 - Focus on responses with specific examples, metrics, and detailed explanations
+- If only one rich insight exists, return an array with just one object
 '''
     st.code(prompt_template_text, language="markdown")
 

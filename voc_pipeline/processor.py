@@ -410,39 +410,65 @@ MULTIPLE INSIGHTS PER CHUNK:
 - Each insight should focus on a different aspect or theme
 - Ensure each verbatim response is complete and contextually rich
 
-Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a valid JSON object with this structure:
+Analyze the provided interview chunk and extract the 2-3 MOST SIGNIFICANT insights from the richest responses. Return ONLY a JSON array containing multiple objects, one for each insight:
 
-{{
-  \"response_id\": \"{response_id}\",
-  \"key_insight\": \"{key_insight}\",
-  \"verbatim_response\": \"{chunk_text}\",
-  \"subject\": \"brief_subject_description\",
-  \"question\": \"what_question_this_answers\",
-  \"deal_status\": \"{deal_status}\",
-  \"company\": \"{company}\",
-  \"interviewee_name\": \"{interviewee_name}\",
-  \"date_of_interview\": \"{date_of_interview}\",
-  \"findings\": \"key_finding_summary\",
-  \"value_realization\": \"value_or_roi_metrics\",
-  \"implementation_experience\": \"implementation_details\",
-  \"risk_mitigation\": \"risk_mitigation_approaches\",
-  \"competitive_advantage\": \"competitive_positioning\",
-  \"customer_success\": \"customer_success_factors\",
-  \"product_feedback\": \"product_feature_feedback\",
-  \"service_quality\": \"service_quality_assessment\",
-  \"decision_factors\": \"decision_influencing_factors\",
-  \"pain_points\": \"challenges_or_pain_points\",
-  \"success_metrics\": \"success_criteria_and_metrics\",
-  \"future_plans\": \"future_plans_or_expansion\"
-}}
+[
+  {{
+    "response_id": "{response_id}_1",
+    "key_insight": "first_insight_summary",
+    "verbatim_response": "complete_verbatim_response_1",
+    "subject": "brief_subject_description_1",
+    "question": "what_question_this_answers_1",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}",
+    "findings": "key_finding_summary_1",
+    "value_realization": "value_or_roi_metrics_1",
+    "implementation_experience": "implementation_details_1",
+    "risk_mitigation": "risk_mitigation_approaches_1",
+    "competitive_advantage": "competitive_positioning_1",
+    "customer_success": "customer_success_factors_1",
+    "product_feedback": "product_feature_feedback_1",
+    "service_quality": "service_quality_assessment_1",
+    "decision_factors": "decision_influencing_factors_1",
+    "pain_points": "challenges_or_pain_points_1",
+    "success_metrics": "success_criteria_and_metrics_1",
+    "future_plans": "future_plans_or_expansion_1"
+  }},
+  {{
+    "response_id": "{response_id}_2",
+    "key_insight": "second_insight_summary",
+    "verbatim_response": "complete_verbatim_response_2",
+    "subject": "brief_subject_description_2",
+    "question": "what_question_this_answers_2",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}",
+    "findings": "key_finding_summary_2",
+    "value_realization": "value_or_roi_metrics_2",
+    "implementation_experience": "implementation_details_2",
+    "risk_mitigation": "risk_mitigation_approaches_2",
+    "competitive_advantage": "competitive_positioning_2",
+    "customer_success": "customer_success_factors_2",
+    "product_feedback": "product_feature_feedback_2",
+    "service_quality": "service_quality_assessment_2",
+    "decision_factors": "decision_influencing_factors_2",
+    "pain_points": "challenges_or_pain_points_2",
+    "success_metrics": "success_criteria_and_metrics_2",
+    "future_plans": "future_plans_or_expansion_2"
+  }}
+]
 
 Guidelines:
 - Extract 2-3 primary insights per chunk when multiple rich responses exist
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
-- Use \"N/A\" for fields that don't apply
+- Use "N/A" for fields that don't apply
 - Ensure all fields are populated
-- Return ONLY the JSON object, no other text
+- Return ONLY the JSON array, no other text
 - Focus on responses with specific examples, metrics, and detailed explanations
+- If only one rich insight exists, return an array with just one object
 
 Interview chunk to analyze:
 {chunk_text}"""
@@ -520,77 +546,90 @@ Interview chunk to analyze:
                 if not raw:
                     continue
                 try:
-                    obj = json.loads(raw)
-                    # Validate required fields
-                    required_fields = ["response_id", "verbatim_response", "subject", "question", 
-                                     "deal_status", "company", "interviewee_name", "date_of_interview", "key_insight"]
-                    for field in required_fields:
-                        if field not in obj:
-                            if field == "key_insight":
-                                obj["key_insight"] = "N/A"
+                    # Parse response - could be single object or array
+                    parsed = json.loads(raw)
+                    
+                    # Handle both single object and array responses
+                    if isinstance(parsed, list):
+                        objects = parsed
+                    else:
+                        objects = [parsed]
+                    
+                    csv_rows = []
+                    
+                    for i, obj in enumerate(objects):
+                        # Validate required fields
+                        required_fields = ["response_id", "verbatim_response", "subject", "question", 
+                                         "deal_status", "company", "interviewee_name", "date_of_interview", "key_insight"]
+                        for field in required_fields:
+                            if field not in obj:
+                                if field == "key_insight":
+                                    obj["key_insight"] = "N/A"
+                                else:
+                                    raise ValueError(f"Missing required field: {field}")
+                        
+                        # Ensure metadata is populated everywhere
+                        obj["deal_status"] = normalize_deal_status(deal_status)
+                        obj["company"] = company
+                        obj["interviewee_name"] = interviewee
+                        obj["date_of_interview"] = format_date(date_of_interview)
+                        
+                        # Fill missing questions/subjects
+                        if not obj.get("question") or obj["question"] == "N/A":
+                            obj["question"] = "What insights did the interviewee share?"
+                        
+                        if not obj.get("subject") or obj["subject"] == "N/A":
+                            obj["subject"] = infer_subject_from_text(cleaned_chunk)
+                        
+                        # Clean verbatim response again to ensure it's clean
+                        original_len = len(cleaned_chunk.split())
+                        obj["verbatim_response"] = clean_verbatim_response(obj["verbatim_response"])
+                        cleaned_len = len(obj["verbatim_response"].split())
+                        
+                        # Quality check: flag if >80% of chunk was dropped
+                        if original_len > 0:
+                            drop_ratio = 1 - (cleaned_len / original_len)
+                            if drop_ratio > 0.8:
+                                quality_rows.append({
+                                    "response_id": obj.get("response_id", ""),
+                                    "grade": "LOW",
+                                    "notes": f"{math.floor(drop_ratio*100)}% of original chunk dropped after cleaning."
+                                })
                             else:
-                                raise ValueError(f"Missing required field: {field}")
+                                quality_rows.append({
+                                    "response_id": obj.get("response_id", ""),
+                                    "grade": "OK",
+                                    "notes": ""
+                                })
+                        
+                        # Convert to CSV row
+                        csv_row = [
+                            obj.get("response_id", ""),
+                            obj.get("key_insight", ""),
+                            obj.get("verbatim_response", ""),
+                            obj.get("subject", ""),
+                            obj.get("question", ""),
+                            obj.get("deal_status", ""),
+                            obj.get("company", ""),
+                            obj.get("interviewee_name", ""),
+                            obj.get("date_of_interview", ""),
+                            obj.get("findings", ""),
+                            obj.get("value_realization", ""),
+                            obj.get("implementation_experience", ""),
+                            obj.get("risk_mitigation", ""),
+                            obj.get("competitive_advantage", ""),
+                            obj.get("customer_success", ""),
+                            obj.get("product_feedback", ""),
+                            obj.get("service_quality", ""),
+                            obj.get("decision_factors", ""),
+                            obj.get("pain_points", ""),
+                            obj.get("success_metrics", ""),
+                            obj.get("future_plans", "")
+                        ]
+                        
+                        csv_rows.append(csv_row)
                     
-                    # Ensure metadata is populated everywhere
-                    obj["deal_status"] = normalize_deal_status(deal_status)
-                    obj["company"] = company
-                    obj["interviewee_name"] = interviewee
-                    obj["date_of_interview"] = format_date(date_of_interview)
-                    
-                    # Fill missing questions/subjects
-                    if not obj.get("question") or obj["question"] == "N/A":
-                        obj["question"] = "What insights did the interviewee share?"
-                    
-                    if not obj.get("subject") or obj["subject"] == "N/A":
-                        obj["subject"] = infer_subject_from_text(cleaned_chunk)
-                    
-                    # Clean verbatim response again to ensure it's clean
-                    original_len = len(cleaned_chunk.split())
-                    obj["verbatim_response"] = clean_verbatim_response(obj["verbatim_response"])
-                    cleaned_len = len(obj["verbatim_response"].split())
-                    
-                    # Quality check: flag if >80% of chunk was dropped
-                    if original_len > 0:
-                        drop_ratio = 1 - (cleaned_len / original_len)
-                        if drop_ratio > 0.8:
-                            quality_rows.append({
-                                "response_id": obj.get("response_id", ""),
-                                "grade": "LOW",
-                                "notes": f"{math.floor(drop_ratio*100)}% of original chunk dropped after cleaning."
-                            })
-                        else:
-                            quality_rows.append({
-                                "response_id": obj.get("response_id", ""),
-                                "grade": "OK",
-                                "notes": ""
-                            })
-                    
-                    # Convert to CSV row
-                    csv_row = [
-                        obj.get("response_id", ""),
-                        obj.get("key_insight", ""),
-                        obj.get("verbatim_response", ""),
-                        obj.get("subject", ""),
-                        obj.get("question", ""),
-                        obj.get("deal_status", ""),
-                        obj.get("company", ""),
-                        obj.get("interviewee_name", ""),
-                        obj.get("date_of_interview", ""),
-                        obj.get("findings", ""),
-                        obj.get("value_realization", ""),
-                        obj.get("implementation_experience", ""),
-                        obj.get("risk_mitigation", ""),
-                        obj.get("competitive_advantage", ""),
-                        obj.get("customer_success", ""),
-                        obj.get("product_feedback", ""),
-                        obj.get("service_quality", ""),
-                        obj.get("decision_factors", ""),
-                        obj.get("pain_points", ""),
-                        obj.get("success_metrics", ""),
-                        obj.get("future_plans", "")
-                    ]
-                    
-                    return (chunk_index, [csv_row])
+                    return (chunk_index, csv_rows)
                 except Exception as e:
                     # malformed JSON, retry
                     continue
