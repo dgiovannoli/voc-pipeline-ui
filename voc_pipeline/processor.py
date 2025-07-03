@@ -27,6 +27,50 @@ def normalize_response_id(company: str, chunk_index: int) -> str:
     normalized = re.sub(r'[^a-zA-Z0-9]', '', company)
     return f"{normalized}_{chunk_index + 1}"
 
+def extract_qa_segments(text: str) -> list:
+    """Extract Q&A segments from transcript text"""
+    segments = []
+    
+    # Split on common Q&A patterns
+    qa_patterns = [
+        r'Q:\s*(.*?)(?=A:\s*)',
+        r'Question:\s*(.*?)(?=Answer:\s*)',
+        r'Interviewer:\s*(.*?)(?=Interviewee:\s*)',
+        r'Drew Giovannoli:\s*(.*?)(?=Yusuf Elmarakby:\s*)',
+        r'Yusuf Elmarakby:\s*(.*?)(?=Drew Giovannoli:\s*)'
+    ]
+    
+    # Try to find Q&A boundaries
+    for pattern in qa_patterns:
+        matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
+        if matches:
+            for match in matches:
+                if len(match.strip()) > 20:  # Minimum meaningful length
+                    segments.append(match.strip())
+            break
+    
+    # If no Q&A patterns found, fall back to chunking
+    if not segments:
+        # Split on speaker changes
+        speaker_pattern = r'([A-Za-z\s]+):\s*'
+        parts = re.split(speaker_pattern, text)
+        current_segment = ""
+        
+        for i, part in enumerate(parts):
+            if re.match(speaker_pattern, part):
+                # This is a speaker name, next part is their content
+                if i + 1 < len(parts):
+                    content = parts[i + 1].strip()
+                    if len(content) > 20:
+                        current_segment += f"{part}{content}\n"
+            elif len(part.strip()) > 20:
+                current_segment += part.strip() + "\n"
+        
+        if current_segment.strip():
+            segments = [current_segment.strip()]
+    
+    return segments
+
 def is_qa_chunk(chunk_text: str) -> bool:
     """Check if chunk contains actual Q&A content"""
     # Skip chunks that are just speaker introductions or non-substantive
@@ -51,15 +95,30 @@ def is_qa_chunk(chunk_text: str) -> bool:
     return has_question and has_content
 
 def clean_verbatim_response(text: str) -> str:
-    """Clean verbatim response text"""
+    """Clean verbatim response text - remove speaker labels and question context"""
     # Remove leading speaker timestamps like "Speaker 1 (01:52):"
     cleaned = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', text)
     
     # Remove trailing timestamps like "(03:07):"
     cleaned = re.sub(r'\(\d{2}:\d{2}\):\s*$', '', cleaned)
     
-    # Clean up extra whitespace
+    # Remove speaker labels at start of lines: "Drew Giovannoli:", "Yusuf Elmarakby:", etc.
+    cleaned = re.sub(r'^[A-Za-z\s]+:\s*', '', cleaned, flags=re.MULTILINE)
+    
+    # Remove question context - look for patterns like "Q: What do you think?" and remove
+    cleaned = re.sub(r'^Q:\s*[^A]*?(?=A:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
+    cleaned = re.sub(r'^Question:\s*[^A]*?(?=Answer:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Remove interviewer questions that might be mixed in
+    cleaned = re.sub(r'Interviewer:\s*[^I]*?(?=Interviewee:|$)', '', cleaned, flags=re.DOTALL | re.IGNORECASE)
+    
+    # Clean up extra whitespace and newlines
+    cleaned = re.sub(r'\n+', ' ', cleaned)
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    
+    # Ensure we have meaningful content
+    if len(cleaned) < 10:
+        return ""
     
     return cleaned
 
@@ -142,10 +201,12 @@ def _process_transcript_impl(
         print("ERROR: Transcript is empty")
         return
     
-    # Create single-row-per-chunk prompt template (reverted from response_coder.py)
+    # Create single-row-per-chunk prompt template with brevity instruction
     prompt_template = PromptTemplate(
         input_variables=["response_id","chunk_text","company","company_name","interviewee_name","deal_status","date_of_interview"],
-        template="""You are an expert qualitative coding analyst specializing in win-loss interview data extraction.
+        template="""IMPORTANT: Return only the interviewee's answer text. Do not include any speaker names or repeated question text.
+
+You are an expert qualitative coding analyst specializing in win-loss interview data extraction.
 
 Analyze the provided interview chunk and extract ONE meaningful insight. Return ONLY a valid JSON object with this structure:
 
@@ -187,9 +248,13 @@ Interview chunk to analyze:
     llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), max_tokens=800, temperature=0.1)
     chain = prompt_template | llm
     
-    # 2) Split into smaller chunks to avoid token limits (~2k tokens w/ 100 overlap)
-    splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
-    chunks = splitter.split_text(full_text)
+    # 2) Extract Q&A segments instead of fixed-size chunks
+    qa_segments = extract_qa_segments(full_text)
+    
+    # If Q&A segmentation didn't work well, fall back to chunking
+    if len(qa_segments) < 3:
+        splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
+        qa_segments = splitter.split_text(full_text)
     
     # 3) Run the single-row-per-chunk processing
     chunk_results = []
@@ -206,6 +271,11 @@ Interview chunk to analyze:
             
             # Clean the chunk text
             cleaned_chunk = clean_verbatim_response(chunk)
+            
+            # Skip if cleaning removed all content
+            if not cleaned_chunk:
+                logging.info(f"Chunk {chunk_index} filtered out: no content after cleaning")
+                return (chunk_index, None)
             
             # Prepare input for the chain
             chain_input = {
@@ -247,7 +317,7 @@ Interview chunk to analyze:
                     if not obj.get("subject") or obj["subject"] == "N/A":
                         obj["subject"] = infer_subject_from_text(cleaned_chunk)
                     
-                    # Clean verbatim response
+                    # Clean verbatim response again to ensure it's clean
                     obj["verbatim_response"] = clean_verbatim_response(obj["verbatim_response"])
                     
                     # Convert to CSV row
@@ -288,7 +358,7 @@ Interview chunk to analyze:
             return (chunk_index, None)
     
     with ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_chunk = {executor.submit(process_chunk, i, chunk): (i, chunk) for i, chunk in enumerate(chunks)}
+        future_to_chunk = {executor.submit(process_chunk, i, chunk): (i, chunk) for i, chunk in enumerate(qa_segments)}
         for future in as_completed(future_to_chunk):
             try:
                 chunk_index, result = future.result()
@@ -308,7 +378,7 @@ Interview chunk to analyze:
               "Service_Quality", "Decision_Factors", "Pain_Points", "Success_Metrics", "Future_Plans"]
     
     output = StringIO()
-    writer = csv.writer(output)
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)  # Quote all fields for CSV integrity
     writer.writerow(header)
     
     # Write data rows
@@ -316,7 +386,7 @@ Interview chunk to analyze:
         writer.writerow(row)
     
     # Log summary
-    logging.info(f"Processed {len(chunks)} chunks → created {len(chunk_results)} rows; dropped {len(chunks) - len(chunk_results)} chunks")
+    logging.info(f"Processed {len(qa_segments)} chunks → created {len(chunk_results)} rows; dropped {len(qa_segments) - len(chunk_results)} chunks")
     
     # Output CSV to stdout
     print(output.getvalue())
