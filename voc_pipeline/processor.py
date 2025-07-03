@@ -346,7 +346,12 @@ Interview chunk to analyze:
     )
     
     # Create LLM chain (RunnableSequence) - using OpenAI instead of ChatOpenAI for consistency
-    llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), max_tokens=800, temperature=0.1)
+    llm = OpenAI(
+        model_name="gpt-3.5-turbo-16k",
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        max_tokens=16000,
+        temperature=0.1
+    )
     chain = prompt_template | llm
     
     # 2) Extract Q&A segments instead of fixed-size chunks

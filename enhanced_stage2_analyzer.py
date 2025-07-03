@@ -14,7 +14,12 @@ load_dotenv()
 
 class EnhancedTraceableStage2Analyzer:
     def __init__(self):
-        self.llm = OpenAI(model="gpt-4o-mini", temperature=0.1, openai_api_key=os.getenv("OPENAI_API_KEY"))
+        self.llm = OpenAI(
+            model_name="gpt-3.5-turbo-16k",
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            max_tokens=16000,
+            temperature=0.1
+        )
         
         self.criteria = {
             "product_capability": "Functionality, features, performance, and core solution fit",

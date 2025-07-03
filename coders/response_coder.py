@@ -7,9 +7,10 @@ from coders.schemas import CRITERIA_LIST, SWOT_LIST, PHASE_LIST
 class ResponseCoder:
     def __init__(self):
         self.llm = OpenAI(
+            model_name="gpt-3.5-turbo-16k",
             openai_api_key=os.getenv("OPENAI_API_KEY"),
-            max_tokens=1000,  # Limit response length to prevent truncation
-            temperature=0.1   # Lower temperature for more consistent responses
+            max_tokens=16000,
+            temperature=0.1
         )
         # ——— Response Data Table Prompt ———
         self.prompt = PromptTemplate(
