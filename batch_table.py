@@ -6,7 +6,7 @@ from langchain_community.document_loaders import Docx2txtLoader
 from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
-from langchain_community.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 def main():
     parser = argparse.ArgumentParser(description="Generate full data table from transcript")
@@ -147,7 +147,7 @@ Please generate the complete CSV data table based on the transcript above.
             transcript=chunk,
             client=args.client,
             company=args.company,
-            interviewee_name=args.interviewee,
+            interviewee=args.interviewee,
             deal_status=args.deal_status,
             date=args.date,
         )
