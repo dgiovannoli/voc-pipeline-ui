@@ -117,9 +117,9 @@ def create_qa_aware_chunks(text: str, target_tokens: int = 8000, overlap_tokens:
         
         # Start new chunk if:
         # 1. Adding this segment would exceed target tokens, OR
-        # 2. We already have 6-8 segments in current chunk (for better context)
+        # 2. We already have 8-10 segments in current chunk (for better context)
         if ((current_tokens + segment_tokens > target_tokens and current_chunk) or 
-            (segments_in_chunk >= 8 and current_chunk)):
+            (segments_in_chunk >= 10 and current_chunk)):
             chunks.append(current_chunk.strip())
             
             # Start new chunk with overlap from previous chunk
@@ -245,7 +245,17 @@ def is_low_value_response(text: str) -> bool:
         'no idea',
         'not sure',
         'can\'t remember',
-        'forget'
+        'forget',
+        'that was an awesome interview',
+        'thank you for your time',
+        'yeah, i can\'t think of anything else',
+        'correct, it\'s just me',
+        'i\'m the only one',
+        'that\'s it',
+        'that\'s all',
+        'nothing else',
+        'no other thoughts',
+        'no other feedback'
     ]
     
     text_lower = text_clean.lower()
@@ -421,9 +431,9 @@ def _process_transcript_impl(
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
         input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
-        template="""CRITICAL INSTRUCTIONS FOR BALANCED ANALYSIS:
-- You have access to focused context windows (~5K tokens) containing 4-6 Q&A exchanges.
-- Extract the 2 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
+        template="""CRITICAL INSTRUCTIONS FOR QUALITY-FOCUSED ANALYSIS:
+- You have access to focused context windows (~7K tokens) containing 6-8 Q&A exchanges.
+- Extract the 1-2 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
   1. **Comprehensive Customer Experiences**: Complete scenarios with full context, specific examples, and detailed explanations
   2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages
   3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators
@@ -431,11 +441,12 @@ def _process_transcript_impl(
   5. **Strategic Perspectives**: Decision factors, risk assessments, future planning
 
 EXTRACTION STRATEGY:
-- Identify the 2 richest, most comprehensive responses in this chunk
+- Identify the 1-2 richest, most comprehensive responses in this chunk
 - Extract the COMPLETE verbatim response for each with full context and conversation flow
 - Create comprehensive key insights that capture the main themes and specific details
 - Focus on responses that provide complete context and detailed explanations
 - Choose responses that cover different aspects or themes when possible
+- If only one high-quality response exists, extract just that one
 
 VERBATIM RESPONSE RULES:
 - Include the COMPLETE response text (200-500 words for optimal context)
@@ -446,13 +457,14 @@ VERBATIM RESPONSE RULES:
 - Maintain the natural flow and structure of the response
 - Include specific examples, metrics, detailed explanations, and follow-up context
 
-MULTIPLE INSIGHTS PER CHUNK:
-- Extract the 2 most comprehensive insights from the richest responses
+QUALITY-FOCUSED INSIGHTS:
+- Extract the 1-2 most comprehensive insights from the richest responses
 - Focus on responses that provide complete context and detailed explanations
 - Ensure each verbatim response captures the full conversation context
 - Choose responses that cover different topics or perspectives when possible
+- Only extract if the response contains substantial, actionable content
 
-Analyze the provided interview chunk and extract the 2 RICHEST, MOST COMPREHENSIVE insights from the most detailed responses. Return ONLY a JSON array containing two objects:
+Analyze the provided interview chunk and extract the 1-2 RICHEST, MOST COMPREHENSIVE insights from the most detailed responses. Return ONLY a JSON array containing one or two objects:
 
 [
   {{
@@ -504,7 +516,7 @@ Analyze the provided interview chunk and extract the 2 RICHEST, MOST COMPREHENSI
 ]
 
 Guidelines:
-- Extract the 2 richest, most comprehensive insights per chunk
+- Extract the 1-2 richest, most comprehensive insights per chunk
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
 - Use "N/A" for fields that don't apply
 - Ensure all fields are populated
@@ -512,6 +524,7 @@ Guidelines:
 - Focus on responses with specific examples, metrics, detailed explanations, and full context
 - Choose responses that provide the most complete picture and actionable insights
 - If only one rich insight exists, return an array with just one object
+- Skip chunks that only contain low-quality content (acknowledgments, thank yous, etc.)
 
 Interview chunk to analyze:
 {chunk_text}"""
@@ -527,10 +540,10 @@ Interview chunk to analyze:
     )
     chain = prompt_template | llm
     
-    # 2) Use balanced chunking for optimal insight volume (5K tokens)
-    # Target medium chunks for good context while maximizing insight count
-    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=5000, overlap_tokens=400)
-    print(f"[DEBUG] Passing {len(qa_segments)} chunks to LLM with balanced chunking for 5-10 insights.", file=sys.stderr)
+    # 2) Use quality-focused chunking targeting ~5 insights per interview (7K tokens)
+    # Balance between context and granularity for consistent high-quality insights
+    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=7000, overlap_tokens=600)
+    print(f"[DEBUG] Passing {len(qa_segments)} chunks to LLM with quality-focused chunking targeting ~5 insights.", file=sys.stderr)
     
     # 3) Run the single-row-per-chunk processing
     chunk_results = []
