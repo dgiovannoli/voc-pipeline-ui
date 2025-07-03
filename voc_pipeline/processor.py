@@ -2,9 +2,10 @@ import os
 import sys
 import logging
 import click
+import json
 from dotenv import load_dotenv
 from langchain_community.document_loaders import Docx2txtLoader
-from langchain_openai import ChatOpenAI
+from langchain_openai import OpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnableSequence
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -52,139 +53,123 @@ def _process_transcript_impl(
         print("ERROR: Transcript is empty")
         return
     
-    # Create prompt template
+    # Create single-row-per-chunk prompt template (reverted from response_coder.py)
     prompt_template = PromptTemplate(
-        input_variables=["transcript","client","company","interviewee","deal_status","date"],
-        template="""
-You are an expert qualitative-coding assistant. **Respond with _only_ a well-formed CSV table** (header + rows), no explanations, markdown, or extra text.
+        input_variables=["response_id","chunk_text","company","company_name","interviewee_name","deal_status","date_of_interview"],
+        template="""You are an expert qualitative coding analyst specializing in win-loss interview data extraction.
 
-<role>
-You are a Voice of Customer (VoC) data analyst specializing in extracting structured insights from customer interview transcripts. Your task is to analyze interview content and generate a comprehensive data table that captures customer feedback, pain points, and insights in a structured format.
-</role>
+Analyze the provided interview chunk and extract ONE meaningful insight. Return ONLY a valid JSON object with this structure:
 
-<context>
-You are processing a customer interview transcript to extract valuable insights for product development, customer success, and business strategy. The transcript contains a conversation between an interviewer and a customer (interviewee) discussing their experience with a product or service.
-</context>
-
-<task>
-Analyze the provided interview transcript and generate a CSV-formatted data table with the following structure:
-
-1. **Response ID**: A unique identifier for each response (format: {company}_response_1, {company}_response_2, etc.)
-2. **Verbatim Response**: The exact quote or response from the transcript
-3. **Subject**: Brief categorization of what the response is about (e.g., "Product Features", "Customer Service", "Pricing", "Implementation", "ROI", "Pain Points", "Success Metrics")
-4. **Question**: What question or topic this response addresses (e.g., "What challenges did you face?", "How has the product helped?", "What would you improve?")
-5. **Deal Status**: The current status of the customer relationship
-6. **Company Name**: The customer's company name
-7. **Interviewee Name**: The name of the person being interviewed
-8. **Date of Interview**: The date when the interview was conducted
-9. **Findings**: A one-sentence "Key Finding" summarizing the main insight from this response
-10. **Value_Realization**: Specific value or ROI metrics mentioned
-11. **Implementation_Experience**: Details about implementation process and experience
-12. **Risk_Mitigation**: How risks were addressed or mitigated
-13. **Competitive_Advantage**: Competitive positioning or advantages mentioned
-14. **Customer_Success**: Customer success factors and outcomes
-15. **Product_Feedback**: Specific product feature feedback
-16. **Service_Quality**: Service and support quality assessment
-17. **Decision_Factors**: Key factors that influenced the decision
-18. **Pain_Points**: Challenges or pain points identified
-19. **Success_Metrics**: Success criteria and measurement approaches
-20. **Future_Plans**: Future plans or expansion intentions
+{{
+  "response_id": "{response_id}",
+  "verbatim_response": "{chunk_text}",
+  "subject": "brief_subject_description",
+  "question": "what_question_this_answers",
+  "deal_status": "{deal_status}",
+  "company": "{company}",
+  "interviewee_name": "{interviewee_name}",
+  "date_of_interview": "{date_of_interview}",
+  "findings": "key_finding_summary",
+  "value_realization": "value_or_roi_metrics",
+  "implementation_experience": "implementation_details",
+  "risk_mitigation": "risk_mitigation_approaches",
+  "competitive_advantage": "competitive_positioning",
+  "customer_success": "customer_success_factors",
+  "product_feedback": "product_feature_feedback",
+  "service_quality": "service_quality_assessment",
+  "decision_factors": "decision_influencing_factors",
+  "pain_points": "challenges_or_pain_points",
+  "success_metrics": "success_criteria_and_metrics",
+  "future_plans": "future_plans_or_expansion"
+}}
 
 Guidelines:
-- Extract meaningful, substantive responses and insights
-- Avoid filler words, greetings, or non-substantive content
-- Each row should represent a distinct insight or response
-- Use clear, concise subject categories
-- Ensure verbatim responses are accurate and complete
-- For each chunk, after the structured fields, generate a one-sentence "Key Finding" summarizing the main insight
-- Populate all additional insight columns based on the content analysis
-- Maintain proper CSV formatting with quotes around fields containing commas
-</task>
+- Extract ONE primary insight per chunk
+- Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making
+- Use "N/A" for fields that don't apply
+- Ensure all fields are populated
+- Return ONLY the JSON object, no other text
 
-<execution_instructions>
-1. Read through the entire transcript carefully
-2. Identify all substantive responses and insights
-3. For each response, create a row with the required fields
-4. Generate a properly formatted CSV with headers
-5. Ensure all fields are populated correctly
-6. Use the provided metadata (client, company, interviewee, deal_status, date) consistently
-7. Analyze each response for the additional insight categories and populate accordingly
-</execution_instructions>
-
-<output_format>
-Generate a CSV file with the following structure:
-
-"Response ID","Verbatim Response","Subject","Question","Deal Status","Company Name","Interviewee Name","Date of Interview","Findings","Value_Realization","Implementation_Experience","Risk_Mitigation","Competitive_Advantage","Customer_Success","Product_Feedback","Service_Quality","Decision_Factors","Pain_Points","Success_Metrics","Future_Plans"
-"{company}_response_1","[exact quote from transcript]","[subject category]","[question addressed]","{deal_status}","{company}","{interviewee}","{date}","[key finding summary]","[value metrics]","[implementation details]","[risk mitigation]","[competitive info]","[success factors]","[product feedback]","[service quality]","[decision factors]","[pain points]","[success metrics]","[future plans]"
-"{company}_response_2","[exact quote from transcript]","[subject category]","[question addressed]","{deal_status}","{company}","{interviewee}","{date}","[key finding summary]","[value metrics]","[implementation details]","[risk mitigation]","[competitive info]","[success factors]","[product feedback]","[service quality]","[decision factors]","[pain points]","[success metrics]","[future plans]"
-...
-
-Example:
-"AcmeCorp_response_1","The implementation was much smoother than we expected. The team was very responsive and helped us get up and running quickly.","Implementation","How was the implementation process?","Closed Won","Acme Corporation","John Smith","2024-01-15","Implementation process exceeded expectations with responsive team support","40% time savings","Smooth onboarding with responsive team","Minimal disruption to operations","Superior implementation support","Quick time-to-value","Excellent implementation experience","Outstanding support quality","Implementation ease was key","Initial complexity concerns","Time-to-value metrics","Planning expansion to other departments"
-"AcmeCorp_response_2","We've seen a 40% reduction in processing time since switching to this solution.","ROI","What measurable benefits have you seen?","Closed Won","Acme Corporation","John Smith","2024-01-15","40% reduction in processing time demonstrates significant efficiency gains","40% processing time reduction","Efficient transition process","Data migration risks addressed","Performance advantage over competitors","Improved operational efficiency","High performance product","Reliable service delivery","ROI and efficiency gains","Processing bottlenecks eliminated","Processing time metrics","Scaling to additional workflows"
-</output_format>
-
-<transcript>
-{transcript}
-</transcript>
-
-<metadata>
-Client: {client}
-Company: {company}
-Interviewee: {interviewee}
-Deal Status: {deal_status}
-Date: {date}
-</metadata>
-
-Please generate the complete CSV data table based on the transcript above.
-"""
+Interview chunk to analyze:
+{chunk_text}"""
     )
     
-    # Create LLM chain (RunnableSequence)
-    llm = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), temperature=0.0, model="gpt-4o-mini")
+    # Create LLM chain (RunnableSequence) - using OpenAI instead of ChatOpenAI for consistency
+    llm = OpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), max_tokens=800, temperature=0.1)
     chain = prompt_template | llm
     
-    # 2) Split into safe‐size chunks (~3k tokens w/ 200 overlap)
-    splitter = RecursiveCharacterTextSplitter(chunk_size=3000, chunk_overlap=200)
+    # 2) Split into smaller chunks to avoid token limits (~2k tokens w/ 100 overlap)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
     chunks = splitter.split_text(full_text)
     
-    # 3) Run the CSV‐generation chain on each chunk with parallel processing
+    # 3) Run the single-row-per-chunk processing
     chunk_results = []
     
     def process_chunk(chunk_index, chunk):
         try:
-            response = chain.invoke({
-                "transcript": chunk,
-                "client": client,
+            # Generate response ID
+            response_id = f"{company}_response_{chunk_index + 1}"
+            
+            # Prepare input for the chain
+            chain_input = {
+                "chunk_text": chunk,
+                "response_id": response_id,
                 "company": company,
-                "interviewee": interviewee,
+                "company_name": company,
+                "interviewee_name": interviewee,
                 "deal_status": deal_status,
-                "date": date_of_interview,
-            })
-            raw_csv = response.content if hasattr(response, 'content') else str(response)
-            if not raw_csv.strip():
-                raise ValueError("empty response")
+                "date_of_interview": date_of_interview
+            }
             
-            # Verify column count after generation
-            lines = raw_csv.strip().splitlines()
-            reader = csv.reader(lines)
-            validated_lines = []
-            for i, row in enumerate(reader, start=1):
-                if len(row) < 20:
-                    raise ValueError(f"Bad row #{i}: expected at least 20 columns but got {len(row)} → {row}")
-                # If more than 20 columns, truncate to first 20
-                if len(row) > 20:
-                    row = row[:20]
-                validated_lines.append(row)
+            # Get response from LLM
+            raw = ""
+            # up to 3 attempts to get valid JSON
+            for _ in range(3):
+                raw = chain.invoke(chain_input).strip()
+                if not raw:
+                    continue
+                try:
+                    obj = json.loads(raw)
+                    # Validate required fields
+                    required_fields = ["response_id", "verbatim_response", "subject", "question", 
+                                     "deal_status", "company", "interviewee_name", "date_of_interview"]
+                    for field in required_fields:
+                        if field not in obj:
+                            raise ValueError(f"Missing required field: {field}")
+                    
+                    # Convert to CSV row
+                    csv_row = [
+                        obj.get("response_id", ""),
+                        obj.get("verbatim_response", ""),
+                        obj.get("subject", ""),
+                        obj.get("question", ""),
+                        obj.get("deal_status", ""),
+                        obj.get("company", ""),
+                        obj.get("interviewee_name", ""),
+                        obj.get("date_of_interview", ""),
+                        obj.get("findings", ""),
+                        obj.get("value_realization", ""),
+                        obj.get("implementation_experience", ""),
+                        obj.get("risk_mitigation", ""),
+                        obj.get("competitive_advantage", ""),
+                        obj.get("customer_success", ""),
+                        obj.get("product_feedback", ""),
+                        obj.get("service_quality", ""),
+                        obj.get("decision_factors", ""),
+                        obj.get("pain_points", ""),
+                        obj.get("success_metrics", ""),
+                        obj.get("future_plans", "")
+                    ]
+                    
+                    return (chunk_index, csv_row)
+                except Exception as e:
+                    # malformed JSON, retry
+                    continue
             
-            # Reconstruct CSV with validated rows
-            import io
-            output = io.StringIO()
-            writer = csv.writer(output)
-            writer.writerows(validated_lines)
-            raw_csv = output.getvalue()
+            # if we reach here, skip this chunk
+            logging.warning(f"Chunk {chunk_index} dropped: no valid LLM output — text: {chunk[:60].replace(chr(10), ' ')}")
+            return (chunk_index, None)
             
-            return (chunk_index, raw_csv)
         except Exception as e:
             logging.warning(f"Chunk {chunk_index} dropped: {e} — text: {chunk[:100]!r}")
             return (chunk_index, None)
@@ -193,80 +178,35 @@ Please generate the complete CSV data table based on the transcript above.
         future_to_chunk = {executor.submit(process_chunk, i, chunk): (i, chunk) for i, chunk in enumerate(chunks)}
         for future in as_completed(future_to_chunk):
             try:
-                chunk_index, part = future.result()
-                if part is not None:  # Only add successful results
-                    chunk_results.append((chunk_index, part))
+                chunk_index, result = future.result()
+                if result is not None:  # Only add successful results
+                    chunk_results.append((chunk_index, result))
             except Exception as e:
                 print(f"Error processing chunk: {e}")
-                continue
     
-    # 4) Parse CSV parts and create DataFrame
-    # Define expected columns
-    expected_columns = [
-        "Response ID","Verbatim Response","Subject","Question",
-        "Deal Status","Company Name","Interviewee Name","Date of Interview","Findings",
-        "Value_Realization","Implementation_Experience","Risk_Mitigation","Competitive_Advantage",
-        "Customer_Success","Product_Feedback","Service_Quality","Decision_Factors",
-        "Pain_Points","Success_Metrics","Future_Plans"
-    ]
-    
-    # Sort results by chunk index to maintain order
+    # 4) Sort by chunk index and write CSV
     chunk_results.sort(key=lambda x: x[0])
     
-    # Collect all rows for DataFrame
-    all_rows = []
+    # Write CSV header
+    header = ["Response ID", "Verbatim Response", "Subject", "Question", "Deal Status", 
+              "Company Name", "Interviewee Name", "Date of Interview", "Findings", 
+              "Value_Realization", "Implementation_Experience", "Risk_Mitigation", 
+              "Competitive_Advantage", "Customer_Success", "Product_Feedback", 
+              "Service_Quality", "Decision_Factors", "Pain_Points", "Success_Metrics", "Future_Plans"]
     
-    # Process each chunk's CSV output
-    for chunk_index, raw_csv in chunk_results:
-        if not raw_csv.strip():
-            continue
-        
-        rows = raw_csv.strip().splitlines()
-        # Skip header line if present
-        if rows and rows[0].startswith('"Response ID"'):
-            rows = rows[1:]
-        
-        # Process each row in the chunk
-        for row_num, line in enumerate(rows):
-            if not line.strip():
-                continue
-            
-            try:
-                # Parse the CSV line
-                reader = csv.reader([line])
-                row_data = next(reader)
-                
-                # Validate we have enough columns
-                if len(row_data) < len(expected_columns):
-                    print(f"Warning: Row has {len(row_data)} columns, expected {len(expected_columns)}")
-                    continue
-                
-                # Compute unique response ID: company_chunk_row
-                unique_response_id = f"{company}_{chunk_index+1}_{row_num+1}"
-                
-                # Replace the response ID in the first column
-                row_data[0] = unique_response_id
-                
-                # Add the row to our collection
-                all_rows.append(row_data[:len(expected_columns)])
-                
-            except Exception as e:
-                print(f"Error parsing row in chunk {chunk_index+1}, row {row_num+1}: {e}")
-                continue
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(header)
     
-    # Emit raw CSV to stdout
-    # Write header
-    sys.stdout.write(','.join(f'"{col}"' for col in expected_columns) + '\n')
+    # Write data rows
+    for chunk_index, row in chunk_results:
+        writer.writerow(row)
     
-    # Write all rows
-    for row_data in all_rows:
-        sys.stdout.write(','.join(f'"{field}"' for field in row_data) + '\n')
+    # Log summary
+    logging.info(f"Processed {len(chunks)} chunks → created {len(chunk_results)} rows; dropped {len(chunks) - len(chunk_results)} chunks")
     
-    # Log summary statistics
-    total_chunks = len(chunks)
-    total_rows = len(all_rows)
-    dropped = total_chunks - len(chunk_results)
-    logging.info(f"Processed {total_chunks} chunks → created {total_rows} rows; dropped {dropped} chunks")
+    # Output CSV to stdout
+    print(output.getvalue())
 
 
 @click.command()
