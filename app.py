@@ -48,13 +48,6 @@ def process_files_modular():
     if not st.session_state.uploaded_paths:
         raise Exception("No files uploaded")
     
-    # Save uploaded files
-    for f in uploads:
-        dest = UPLOAD_DIR / f.name
-        with open(dest, "wb") as out:
-            out.write(f.getbuffer())
-        st.session_state.uploaded_paths.append(str(dest))
-    
     # Process using modular pipeline
     for path in st.session_state.uploaded_paths:
         interviewee, company = extract_interviewee_and_company(os.path.basename(path))
@@ -249,6 +242,14 @@ if st.session_state.current_stage == 'upload':
             
             # Process button
             if st.button("🚀 Start Processing", type="primary", use_container_width=True):
+                # Save uploaded files to session state
+                st.session_state.uploaded_paths = []
+                for f in uploads:
+                    dest = UPLOAD_DIR / f.name
+                    with open(dest, "wb") as out:
+                        out.write(f.getbuffer())
+                    st.session_state.uploaded_paths.append(str(dest))
+                
                 st.session_state.current_stage = 'extract'
                 st.rerun()
     
