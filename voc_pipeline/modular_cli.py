@@ -26,7 +26,7 @@ def cli():
 @click.argument('interviewee')
 @click.argument('deal_status')
 @click.argument('date_of_interview')
-@click.option('--output', '-o', help='Output JSON file for core responses')
+@click.option('--output', '-o', help='Output file for core responses (CSV or JSON)')
 @click.option('--model', '-m', default='gpt-3.5-turbo-16k', help='LLM model to use')
 def extract_core(transcript_path: str, company: str, interviewee: str, deal_status: str, 
                 date_of_interview: str, output: Optional[str], model: str):
@@ -43,9 +43,14 @@ def extract_core(transcript_path: str, company: str, interviewee: str, deal_stat
         
         # Save to file if specified
         if output:
-            with open(output, 'w') as f:
-                json.dump(responses, f, indent=2)
-            logger.info(f"Saved core responses to {output}")
+            if output.lower().endswith('.csv'):
+                df = pd.DataFrame(responses)
+                df.to_csv(output, index=False)
+                logger.info(f"Saved core responses to {output} (CSV)")
+            else:
+                with open(output, 'w') as f:
+                    json.dump(responses, f, indent=2)
+                logger.info(f"Saved core responses to {output} (JSON)")
         
         # Print summary
         print(f"\n=== Core Extraction Results ===")
