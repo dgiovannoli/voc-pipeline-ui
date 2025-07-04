@@ -43,22 +43,27 @@ def load_csv(path):
         return pd.DataFrame()
 
 def process_files():
-    """Process uploaded files using the pipeline"""
+    """Process uploaded files using the modular pipeline CLI"""
     if not st.session_state.uploaded_paths:
         raise Exception("No files uploaded")
-    
-    # Process using original pipeline
     for path in st.session_state.uploaded_paths:
         interviewee, company = extract_interviewee_and_company(os.path.basename(path))
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline", "process_transcript",
+        result = subprocess.run([
+            sys.executable, "-m", "voc_pipeline.modular_cli", "extract-core",
             path,
             company if company else "Unknown",
-            company if company else "Unknown", 
             interviewee if interviewee else "Unknown",
             "closed_won",
-            "2024-01-01"
-        ], check=True)
+            "2024-01-01",
+            "-o", str(STAGE1_CSV)
+        ], capture_output=True, text=True)
+        if result.returncode != 0:
+            st.error(f"Processing failed!\n\nSTDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}")
+            return
+    if not os.path.exists(STAGE1_CSV) or os.path.getsize(STAGE1_CSV) == 0:
+        st.error("Processing failed: No output was generated. Please check your input files and try again.")
+        return
+    st.session_state.current_step = 2
 
 def validate_and_build():
     """Run validation and build final table"""
@@ -149,153 +154,114 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Progress indicator
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 with col1:
-    step1_active = st.session_state.current_step >= 1
+    step1_active = st.session_state.current_step == 1
     st.markdown(f"""
     <div class="step-card {'step-active' if step1_active else ''}">
-        <h3>📁 Upload</h3>
-        <p>Upload interview files</p>
+        <h3>📁 Upload & Process</h3>
+        <p>Upload and process files</p>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
-    step2_active = st.session_state.current_step >= 2
+    step2_active = st.session_state.current_step == 2
     st.markdown(f"""
     <div class="step-card {'step-active' if step2_active else ''}">
-        <h3>🔍 Process</h3>
-        <p>Extract responses</p>
-    </div>
-    """, unsafe_allow_html=True)
-
-with col3:
-    step3_active = st.session_state.current_step >= 3
-    st.markdown(f"""
-    <div class="step-card {'step-active' if step3_active else ''}">
         <h3>✅ Validate</h3>
         <p>Validate & enrich</p>
     </div>
     """, unsafe_allow_html=True)
 
-with col4:
-    step4_active = st.session_state.current_step >= 4
+with col3:
+    step3_active = st.session_state.current_step == 3
     st.markdown(f"""
-    <div class="step-card {'step-active' if step4_active else ''}">
+    <div class="step-card {'step-active' if step3_active else ''}">
         <h3>📊 Export</h3>
         <p>Download results</p>
     </div>
     """, unsafe_allow_html=True)
 
-# Step 1: Upload
+# Step 1: Upload & Process
 if st.session_state.current_step == 1:
-    st.markdown("## 📁 Upload Interview Files")
-    
     uploads = st.file_uploader(
         "Select interview files",
         type=["txt", "docx"],
         accept_multiple_files=True,
         help="Upload .txt or .docx files containing customer interviews"
     )
-    
     if uploads:
-        st.success(f"✅ {len(uploads)} files uploaded")
-        
-        # Show uploaded files
-        for i, f in enumerate(uploads):
-            filename = f.name
-            interviewee, company = extract_interviewee_and_company(filename)
-            st.write(f"**{i+1}. {filename}**")
-            if interviewee or company:
-                st.write(f"   👤 {interviewee} | 🏢 {company}")
-        
-        if st.button("🚀 Start Processing", type="primary", use_container_width=True):
-            # Save files
-            st.session_state.uploaded_paths = []
-            for f in uploads:
-                dest = UPLOAD_DIR / f.name
-                with open(dest, "wb") as out:
-                    out.write(f.getbuffer())
-                st.session_state.uploaded_paths.append(str(dest))
-            
-            st.session_state.current_step = 2
-            st.rerun()
-
-# Step 2: Process
-elif st.session_state.current_step == 2:
-    st.markdown("## 🔍 Processing Files")
-    
-    if not st.session_state.uploaded_paths:
-        st.error("No files uploaded. Please go back to step 1.")
-        if st.button("⬅️ Back to Upload"):
-            st.session_state.current_step = 1
-            st.rerun()
-    else:
-        # Show files being processed
-        st.write("**Files to process:**")
-        for path in st.session_state.uploaded_paths:
-            st.write(f"• {os.path.basename(path)}")
-        
+        # Always clear old outputs
+        for f in [STAGE1_CSV, VALIDATED_CSV, RESPONSE_TABLE_CSV]:
+            if os.path.exists(f):
+                os.remove(f)
+        st.session_state.uploaded_paths = []
+        for f in uploads:
+            dest = UPLOAD_DIR / f.name
+            with open(dest, "wb") as out:
+                out.write(f.getbuffer())
+            st.session_state.uploaded_paths.append(str(dest))
         if st.button("▶️ Process Files", type="primary", use_container_width=True):
             with st.spinner("Processing files..."):
                 try:
                     process_files()
-                    st.success("✅ Processing complete!")
-                    st.session_state.current_step = 3
-                    st.rerun()
+                    # Check if output exists and is non-empty
+                    if not (os.path.exists(STAGE1_CSV) and os.path.getsize(STAGE1_CSV) > 0):
+                        st.error("Processing failed: No output was generated. Please check your input files and try again.")
+                    else:
+                        st.session_state.current_step = 2
+                        st.rerun()
                 except Exception as e:
                     st.error(f"❌ Processing failed: {e}")
 
-# Step 3: Validate & Enrich
-elif st.session_state.current_step == 3:
+# Step 2: Validate & Enrich
+elif st.session_state.current_step == 2:
     st.markdown("## ✅ Validate & Enrich")
-    
     if not os.path.exists(STAGE1_CSV):
-        st.error("No processed data found. Please complete step 2 first.")
-        if st.button("⬅️ Back to Process"):
-            st.session_state.current_step = 2
+        st.error("No processed data found. Please upload and process files first.")
+        if st.button("⬅️ Back to Upload"):
+            st.session_state.current_step = 1
             st.rerun()
     else:
-        # Show processing stats
         df = load_csv(STAGE1_CSV)
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Responses", len(df))
-        with col2:
-            st.metric("Companies", df['Company Name'].nunique() if 'Company Name' in df.columns else 0)
-        with col3:
-            st.metric("Subjects", df['Subject'].nunique() if 'Subject' in df.columns else 0)
-        
+        # Only show core columns
+        core_cols = [
+            'Response ID', 'Verbatim Response', 'Subject', 'Question',
+            'Deal Status', 'Company Name', 'Interviewee Name', 'Date of Interview'
+        ]
+        core_cols = [col for col in core_cols if col in df.columns]
+        st.markdown("### Extracted Responses (Source of Truth)")
+        st.dataframe(df[core_cols], use_container_width=True, height=300)
+        # Show prompt and approach
+        with st.expander("🔎 Show Prompt & Processing Approach"):
+            st.markdown("**Prompt Template:**")
+            st.code('''You are a quality control assistant. Validate the extracted responses for completeness, deduplicate, and ensure all required fields are present. Enrich responses with any missing metadata if possible.''', language="text")
+            st.markdown("**Approach:**\n- Validate each response for required fields and completeness.\n- Remove duplicates.\n- Enrich with missing metadata if available.\n- Prepare for downstream analysis and labeling.")
         if st.button("✅ Validate & Enrich", type="primary", use_container_width=True):
             with st.spinner("Validating and enriching..."):
                 try:
                     validate_and_build()
-                    
-                    # Save to database
                     if os.path.exists(RESPONSE_TABLE_CSV):
                         count = st.session_state.db.migrate_csv_to_db(str(RESPONSE_TABLE_CSV))
-                        st.success(f"✅ Validation complete! Saved {count} responses to database.")
-                    
-                    st.session_state.current_step = 4
+                    st.session_state.current_step = 3
                     st.rerun()
                 except Exception as e:
                     st.error(f"❌ Validation failed: {e}")
 
-# Step 4: Export
-elif st.session_state.current_step == 4:
+# Step 3: Export
+elif st.session_state.current_step == 3:
     st.markdown("## 📊 Export Results")
     
     stats = st.session_state.db.get_stats()
     
     # Show final stats
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Responses", stats.get('total_responses', 0))
     with col2:
         st.metric("AI Analyses", stats.get('total_analyses', 0))
     with col3:
         st.metric("Companies", len(stats.get('responses_by_company', {})))
-    with col4:
-        st.metric("Subjects", len(stats.get('responses_by_subject', {})))
     
     # Export options
     st.markdown("### 📤 Download Results")
