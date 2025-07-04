@@ -1,0 +1,2 @@
+response_id,verbatim_response,subject,question,deal_status,company,interviewee_name,date_of_interview,created_at,updated_at,analyses,quality_metrics
+example_001,The product integration was seamless and saved us 30% time.,Product Integration,How was the product integration experience?,closed_won,TechCorp,John Smith,2024-01-15,2025-07-04 17:04:14,2025-07-04 17:04:14,"findings: Positive integration experience with measurable time savings,value_realization: 30% time savings achieved,implementation_experience: Seamless integration process","quality_score: 0.85,word_count: 15.0"

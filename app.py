@@ -8,6 +8,7 @@ import pandas as pd
 import streamlit as st
 from dotenv import load_dotenv
 import re
+from database import VOCDatabase
 
 load_dotenv()
 
@@ -19,7 +20,10 @@ PASSTHROUGH_CSV = BASE / "passthrough_quotes.csv"
 RESPONSE_TABLE_CSV = BASE / "response_data_table.csv"
 STAGE1_CSV = BASE / "stage1_output.csv"
 
-# Initialize uploaded_paths list in session state
+# Initialize database and session state
+if 'db' not in st.session_state:
+    st.session_state.db = VOCDatabase()
+
 if 'uploaded_paths' not in st.session_state:
     st.session_state.uploaded_paths = []
 
@@ -224,120 +228,536 @@ else:
     st.sidebar.markdown("**Expected cost:** N/A")
 
 # Create tabs for different views
-tab1, tab2, tab3, tab4 = st.tabs(["Validated Quotes", "Response Data Table", "Prompt Template", "Processing Details"])
+tab1, tab2, tab3, tab4 = st.tabs(["📊 Database", "📋 Raw Data", "🔧 Processing", "📖 Documentation"])
 
 with tab1:
-    st.header("Validated Quotes")
-    st.caption("Main columns only. Metadata is auto-populated.")
+    st.header("📊 Database Management")
+    st.caption("Your centralized data hub - view, filter, label, and export responses.")
     
-    # Check if file exists and has content
-    file_exists = os.path.exists(VALIDATED_CSV)
-    file_size = os.path.getsize(VALIDATED_CSV) if file_exists else 0
+    # Database statistics
+    stats = st.session_state.db.get_stats()
     
-    if file_exists and file_size > 0:
-        try:
-            df = load_csv(VALIDATED_CSV)
+    # Overview metrics
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Total Responses", stats.get('total_responses', 0))
+    with col2:
+        st.metric("Analysis Results", stats.get('total_analyses', 0))
+    with col3:
+        st.metric("Labels", stats.get('total_labels', 0))
+    with col4:
+        st.metric("Companies", len(stats.get('responses_by_company', {})))
+    
+    # Quick actions
+    st.subheader("🚀 Quick Actions")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("🔄 Migrate CSV Data", use_container_width=True):
+            if os.path.exists(RESPONSE_TABLE_CSV):
+                with st.spinner("Migrating response data..."):
+                    count = st.session_state.db.migrate_csv_to_db(str(RESPONSE_TABLE_CSV))
+                    st.success(f"✅ Migrated {count} responses!")
+                    st.rerun()
+            elif os.path.exists(VALIDATED_CSV):
+                with st.spinner("Migrating validated quotes..."):
+                    count = st.session_state.db.migrate_csv_to_db(str(VALIDATED_CSV))
+                    st.success(f"✅ Migrated {count} responses!")
+                    st.rerun()
+            else:
+                st.warning("No CSV data found. Process files first.")
+    
+    with col2:
+        if st.button("📥 Export All Data", use_container_width=True):
+            if stats.get('total_responses', 0) > 0:
+                csv_data = st.session_state.db.get_responses().to_csv(index=False)
+                st.download_button(
+                    "Download Complete Dataset",
+                    data=csv_data,
+                    file_name=f"voc_database_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.warning("No data to export")
+    
+    with col3:
+        if st.button("📊 View Statistics", use_container_width=True):
+            st.session_state.show_stats = True
+    
+    # Show detailed statistics if requested
+    if hasattr(st.session_state, 'show_stats') and st.session_state.show_stats:
+        st.subheader("📈 Detailed Statistics")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            if stats.get('responses_by_company'):
+                st.write("**Responses by Company:**")
+                for company, count in stats['responses_by_company'].items():
+                    st.write(f"• {company}: {count}")
+        
+        with col2:
+            if stats.get('responses_by_status'):
+                st.write("**Responses by Deal Status:**")
+                for status, count in stats['responses_by_status'].items():
+                    st.write(f"• {status}: {count}")
+    
+    # Data exploration section
+    st.subheader("🔍 Explore Data")
+    
+    # Filters
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        companies = ["All"] + list(stats.get('responses_by_company', {}).keys())
+        selected_company = st.selectbox("Company", companies)
+    with col2:
+        deal_statuses = ["All"] + list(stats.get('responses_by_status', {}).keys())
+        selected_status = st.selectbox("Deal Status", deal_statuses)
+    with col3:
+        search_term = st.text_input("Search Responses", placeholder="Enter keywords...")
+    with col4:
+        if st.button("🔍 Apply Filters", use_container_width=True):
+            filters = {}
+            if selected_company != "All":
+                filters['company'] = selected_company
+            if selected_status != "All":
+                filters['deal_status'] = selected_status
             
-            if len(df) > 0:
-                st.write(f"Showing {len(df)} validated quotes")
-                
-                # Define the columns we want to show, with fallbacks
-                display_cols = []
-                col_mapping = {
-                    "Response ID": ["Response ID"],
-                    "Subject": ["Subject"],
-                    "Key Insight": ["Key Insight", "Findings"],  # Fallback to Findings if Key Insight missing
-                    "Question": ["Question"],
-                    "Verbatim Response": ["Verbatim Response"],
-                    "Deal Status": ["Deal Status"],
-                    "Company Name": ["Company Name"],
-                    "Interviewee Name": ["Interviewee Name"],
-                    "Date of Interview": ["Date of Interview"]
-                }
-                
-                # Find available columns for each desired column
-                for desired_col, possible_names in col_mapping.items():
-                    found = False
-                    for possible_name in possible_names:
-                        if possible_name in df.columns:
-                            display_cols.append(possible_name)
-                            found = True
-                            break
-                    if not found:
-                        st.warning(f"Column '{desired_col}' not found in data")
-                
-                if display_cols:
-                    st.dataframe(df[display_cols])
-                    if len(df) > 200:
-                        st.info(f"Showing first 200 of {len(df)} records")
-                else:
-                    st.error("No displayable columns found")
-                    st.write("Available columns:", list(df.columns))
+            # Get filtered data
+            df_db = st.session_state.db.get_responses(filters)
+            
+            # Apply text search if provided
+            if search_term:
+                mask = df_db['verbatim_response'].str.contains(search_term, case=False, na=False) | \
+                       df_db['subject'].str.contains(search_term, case=False, na=False)
+                df_db = df_db[mask]
+            
+            st.session_state.filtered_db_data = df_db
+            st.success(f"Found {len(df_db)} responses")
+    
+    # Display filtered data
+    if hasattr(st.session_state, 'filtered_db_data') and len(st.session_state.filtered_db_data) > 0:
+        st.subheader("📋 Results")
+        df_db = st.session_state.filtered_db_data
+        
+        # Show key columns
+        display_cols = ['response_id', 'subject', 'verbatim_response', 'company', 'deal_status', 'created_at']
+        available_cols = [col for col in display_cols if col in df_db.columns]
+        
+        if available_cols:
+            # Truncate verbatim response for display
+            display_df = df_db[available_cols].copy()
+            if 'verbatim_response' in display_df.columns:
+                display_df['verbatim_response'] = display_df['verbatim_response'].str[:100] + "..."
+            
+            st.dataframe(display_df, use_container_width=True)
+            
+            # Export filtered results
+            if st.button("📥 Export Filtered Results"):
+                csv_data = df_db.to_csv(index=False)
+                st.download_button(
+                    "Download Filtered Data",
+                    data=csv_data,
+                    file_name=f"filtered_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+    
+    # Labeling section
+    st.subheader("🏷️ Add Labels")
+    
+    if hasattr(st.session_state, 'filtered_db_data') and len(st.session_state.filtered_db_data) > 0:
+        df_db = st.session_state.filtered_db_data
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            response_ids = df_db['response_id'].tolist()
+            selected_response = st.selectbox("Select Response", response_ids)
+        with col2:
+            label_types = ['sentiment', 'priority', 'actionable', 'topic', 'quality', 'custom']
+            selected_label_type = st.selectbox("Label Type", label_types)
+        with col3:
+            if selected_label_type == 'sentiment':
+                label_values = st.selectbox("Label Value", ['positive', 'negative', 'neutral'])
+            elif selected_label_type == 'priority':
+                label_values = st.selectbox("Label Value", ['high', 'medium', 'low'])
+            elif selected_label_type == 'actionable':
+                label_values = st.selectbox("Label Value", ['yes', 'no', 'maybe'])
             else:
-                st.warning("Validated quotes file is empty")
-                if os.path.exists(STAGE1_CSV):
-                    df = load_csv(STAGE1_CSV)
-                    st.write(f"Showing {len(df)} raw quotes (fallback)")
-                    st.dataframe(df.head(200))
+                label_values = st.text_input("Label Value")
+        with col4:
+            if st.button("➕ Add Label", use_container_width=True) and label_values:
+                if st.session_state.db.add_label(selected_response, selected_label_type, label_values):
+                    st.success("✅ Label added!")
+                    st.rerun()
                 else:
-                    st.info("No data available. Upload & Process to get started.")
-        except Exception as e:
-            st.error(f"Error reading validated quotes: {e}")
-            if os.path.exists(STAGE1_CSV):
-                df = load_csv(STAGE1_CSV)
-                st.write(f"Showing {len(df)} raw quotes (fallback)")
-                st.dataframe(df.head(200))
-            else:
-                st.info("No data available. Upload & Process to get started.")
+                    st.error("❌ Failed to add label")
     else:
-        if os.path.exists(STAGE1_CSV):
-            df = load_csv(STAGE1_CSV)
-            st.write(f"Showing {len(df)} raw quotes")
-            st.dataframe(df.head(200))
-            
-            # Add manual validation button
-            if st.button("🔧 Manual Validate"):
+        st.info("Filter data first to add labels")
+    
+    # Show current labels
+    if hasattr(st.session_state, 'filtered_db_data') and len(st.session_state.filtered_db_data) > 0:
+        st.subheader("🏷️ Current Labels")
+        
+        # Get labels for displayed responses
+        response_ids = st.session_state.filtered_db_data['response_id'].tolist()
+        all_labels = []
+        
+        for response_id in response_ids[:10]:  # Limit to first 10 for performance
+            response = st.session_state.db.get_response_by_id(response_id)
+            if response and response.get('labels'):
+                for label_type, label_data in response['labels'].items():
+                    all_labels.append({
+                        'response_id': response_id,
+                        'label_type': label_type,
+                        'label_value': label_data['value'],
+                        'confidence': label_data['confidence']
+                    })
+        
+        if all_labels:
+            labels_df = pd.DataFrame(all_labels)
+            st.dataframe(labels_df, use_container_width=True)
+        else:
+            st.info("No labels found for displayed responses")
+
+with tab2:
+    st.header("📋 Raw Data Files")
+    st.caption("View and manage your raw CSV data files before database migration.")
+    
+    # File status overview
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        stage1_exists = os.path.exists(STAGE1_CSV) and os.path.getsize(STAGE1_CSV) > 0
+        st.metric("Stage 1 Output", 
+                 f"{len(load_csv(STAGE1_CSV)) if stage1_exists else 0} rows",
+                 "✅ Ready" if stage1_exists else "❌ Empty")
+    
+    with col2:
+        validated_exists = os.path.exists(VALIDATED_CSV) and os.path.getsize(VALIDATED_CSV) > 0
+        st.metric("Validated Quotes", 
+                 f"{len(load_csv(VALIDATED_CSV)) if validated_exists else 0} rows",
+                 "✅ Ready" if validated_exists else "❌ Empty")
+    
+    with col3:
+        response_exists = os.path.exists(RESPONSE_TABLE_CSV) and os.path.getsize(RESPONSE_TABLE_CSV) > 0
+        st.metric("Response Table", 
+                 f"{len(load_csv(RESPONSE_TABLE_CSV)) if response_exists else 0} rows",
+                 "✅ Ready" if response_exists else "❌ Empty")
+    
+    # File viewer
+    st.subheader("📄 View Raw Files")
+    
+    file_options = {
+        "Stage 1 Output (Raw Processing)": STAGE1_CSV,
+        "Validated Quotes (Cleaned)": VALIDATED_CSV,
+        "Response Data Table (Complete)": RESPONSE_TABLE_CSV
+    }
+    
+    selected_file = st.selectbox("Select file to view:", list(file_options.keys()))
+    selected_path = file_options[selected_file]
+    
+    if os.path.exists(selected_path) and os.path.getsize(selected_path) > 0:
+        try:
+            df = load_csv(selected_path)
+            if len(df) > 0:
+                st.write(f"**{selected_file}** - {len(df)} rows, {len(df.columns)} columns")
+                
+                # Show sample data
+                st.dataframe(df.head(50), use_container_width=True)
+                
+                # Download option
+                csv_data = df.to_csv(index=False)
+                st.download_button(
+                    f"📥 Download {selected_file}",
+                    data=csv_data,
+                    file_name=f"{selected_file.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+                
+                # Column info
+                with st.expander("📊 Column Information"):
+                    col_info = []
+                    for col in df.columns:
+                        non_null = df[col].notna().sum()
+                        null_pct = (len(df) - non_null) / len(df) * 100
+                        col_info.append({
+                            'Column': col,
+                            'Non-Null Count': non_null,
+                            'Null Percentage': f"{null_pct:.1f}%",
+                            'Data Type': str(df[col].dtype)
+                        })
+                    st.dataframe(pd.DataFrame(col_info))
+                
+            else:
+                st.warning(f"{selected_file} is empty")
+        except Exception as e:
+            st.error(f"Error reading {selected_file}: {e}")
+    else:
+        st.info(f"{selected_file} not found or empty")
+    
+    # Manual processing controls
+    st.subheader("🔧 Manual Processing")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🔧 Validate Stage 1 Output", use_container_width=True):
+            if os.path.exists(STAGE1_CSV):
                 try:
-                    st.write("Running manual validation...")
+                    with st.spinner("Validating data..."):
+                        subprocess.run([
+                            sys.executable, "-m", "voc_pipeline", "validate",
+                            "--input", str(STAGE1_CSV),
+                            "--output", str(VALIDATED_CSV)
+                        ], check=True, capture_output=True, text=True)
+                    st.success("✅ Validation complete!")
+                    st.rerun()
+                except subprocess.CalledProcessError as e:
+                    st.error(f"❌ Validation failed: {e}")
+            else:
+                st.warning("No Stage 1 output found")
+    
+    with col2:
+        if st.button("🔧 Build Response Table", use_container_width=True):
+            if os.path.exists(VALIDATED_CSV):
+                try:
+                    with st.spinner("Building response table..."):
+                        subprocess.run([
+                            sys.executable, "-m", "voc_pipeline", "build-table",
+                            "--input", str(VALIDATED_CSV),
+                            "--output", str(RESPONSE_TABLE_CSV)
+                        ], check=True, capture_output=True, text=True)
+                    st.success("✅ Response table built!")
+                    st.rerun()
+                except subprocess.CalledProcessError as e:
+                    st.error(f"❌ Build failed: {e}")
+            else:
+                st.warning("No validated quotes found")
+
+with tab3:
+    st.header("🔧 Processing Pipeline")
+    st.caption("Process interview files and manage the AI pipeline.")
+    
+    # Processing status
+    st.subheader("📊 Processing Status")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        upload_count = len(st.session_state.uploaded_paths) if hasattr(st.session_state, 'uploaded_paths') else 0
+        st.metric("Files Uploaded", upload_count, "Ready to process" if upload_count > 0 else "No files")
+    
+    with col2:
+        stage1_count = len(load_csv(STAGE1_CSV)) if os.path.exists(STAGE1_CSV) else 0
+        st.metric("Stage 1 Output", stage1_count, "✅ Complete" if stage1_count > 0 else "❌ Pending")
+    
+    with col3:
+        db_count = st.session_state.db.get_stats().get('total_responses', 0)
+        st.metric("In Database", db_count, "✅ Migrated" if db_count > 0 else "❌ Not migrated")
+    
+    # File processing
+    st.subheader("🔄 Process Files")
+    
+    if uploads:
+        st.success(f"📁 {len(uploads)} files uploaded successfully")
+        
+        # Show uploaded files
+        with st.expander("📋 Uploaded Files"):
+            for i, path in enumerate(st.session_state.uploaded_paths):
+                filename = os.path.basename(path)
+                interviewee, company = extract_interviewee_and_company(filename)
+                st.write(f"{i+1}. **{filename}**")
+                st.write(f"   - Interviewee: {interviewee}")
+                st.write(f"   - Company: {company}")
+        
+        # Process button
+        if st.button("▶️ Process All Files", use_container_width=True, type="primary"):
+            try:
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                stage1_outputs = []
+                total_files = len(st.session_state.uploaded_paths)
+                
+                status_text.text(f"Processing {total_files} files...")
+                with ThreadPoolExecutor(max_workers=3) as ex:
+                    futures = [
+                      ex.submit(
+                        subprocess.run,
+                        [sys.executable, "-m", "voc_pipeline", "process_transcript",
+                         path,
+                         company if company else "Unknown",  # client
+                         company if company else "Unknown",  # company
+                         interviewee if interviewee else "Unknown", 
+                         "closed_won",  # deal_status
+                         "2024-01-01"],  # date_of_interview
+                        check=True, capture_output=True, text=True
+                      )
+                      for path in st.session_state.uploaded_paths
+                      for interviewee, company in [extract_interviewee_and_company(os.path.basename(path))]
+                    ]
+                    completed = 0
+                    for f in as_completed(futures):
+                        try:
+                            result = f.result()
+                            stage1_outputs.append(result.stdout)
+                            completed += 1
+                            progress = completed / total_files
+                            progress_bar.progress(progress)
+                            status_text.text(f"Processed {completed}/{total_files} files...")
+                        except Exception as e:
+                            st.warning(f"File failed: {e}")
+                            completed += 1
+                            progress = completed / total_files
+                            progress_bar.progress(progress)
+                            continue
+                
+                if stage1_outputs:
+                    # Combine outputs
+                    combined_csv = ""
+                    header_written = False
+                    
+                    for output in stage1_outputs:
+                        if len(output.strip()) > 0:
+                            lines = output.strip().split('\n')
+                            if not header_written:
+                                combined_csv += lines[0] + '\n'
+                                header_written = True
+                                for line in lines[1:]:
+                                    if line.strip():
+                                        combined_csv += line + '\n'
+                            else:
+                                for line in lines[1:]:
+                                    if line.strip():
+                                        combined_csv += line + '\n'
+                    
+                    # Write combined output
+                    with open(STAGE1_CSV, "w") as f:
+                        f.write(combined_csv)
+                    
+                    # Run validation and table building
+                    status_text.text("Validating data...")
+                    progress_bar.progress(0.8)
                     subprocess.run([
                         sys.executable, "-m", "voc_pipeline", "validate",
                         "--input", str(STAGE1_CSV),
                         "--output", str(VALIDATED_CSV)
-                    ], check=True, capture_output=True, text=True)
-                    st.success("Manual validation complete!")
+                    ], check=True)
+                    
+                    status_text.text("Building final table...")
+                    progress_bar.progress(0.9)
+                    subprocess.run([
+                        sys.executable, "-m", "voc_pipeline", "build-table",
+                        "--input", str(VALIDATED_CSV),
+                        "--output", str(RESPONSE_TABLE_CSV)
+                    ], check=True)
+                    
+                    progress_bar.progress(1.0)
+                    status_text.text("✅ Complete!")
+                    st.success("✅ All interviews processed successfully!")
                     st.rerun()
-                except subprocess.CalledProcessError as e:
-                    st.error(f"Manual validation failed: {e}")
-                    st.write(f"Error output: {e.stderr}")
-        else:
-            st.info("No data available. Upload & Process to get started.")
-
-with tab2:
-    st.header("Response Data Table")
-    st.caption("Full table with all columns.")
-    if os.path.exists(RESPONSE_TABLE_CSV) and os.path.getsize(RESPONSE_TABLE_CSV) > 0:
-        try:
-            df2 = load_csv(RESPONSE_TABLE_CSV)
-            if len(df2) > 0:
-                st.write(f"Showing {len(df2)} response records")
-                st.dataframe(df2)
-                st.download_button(
-                    "Download Response Table",
-                    data=df2.to_csv(index=False),
-                    file_name="response_data_table.csv"
-                )
-            else:
-                st.warning("Response data table is empty")
-        except Exception as e:
-            st.error(f"Error reading response data table: {e}")
-            st.info("The CSV file may be malformed. Try regenerating it.")
+                else:
+                    st.warning("No data collected from processing")
+                    
+            except subprocess.CalledProcessError as e:
+                st.error(f"❌ Processing failed: {e}")
+                st.text(f"Error output: {e.stderr}")
+            except Exception as e:
+                st.error(f"🔴 Unexpected error: {e}")
     else:
-        st.info("Run the pipeline to generate the response data table.")
+        st.info("⚠️ No files uploaded yet. Use the sidebar to upload interview files.")
+    
+    # Pipeline configuration
+    st.subheader("⚙️ Pipeline Configuration")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Model Details:**")
+        st.write("• **Model:** OpenAI gpt-3.5-turbo-16k")
+        st.write("• **Chunk Size:** ~7K tokens")
+        st.write("• **Insights per chunk:** 1-2")
+        st.write("• **Processing:** Parallel with ThreadPoolExecutor")
+    
+    with col2:
+        if uploads:
+            num_files = len(uploads)
+            total_time = 2.5  # minutes for the whole batch
+            avg_tokens_per_file = 2000
+            cost_per_1k = 0.003
+            total_tokens = num_files * avg_tokens_per_file
+            total_cost = (total_tokens / 1000) * cost_per_1k
+            
+            st.markdown("**Estimated Processing:**")
+            st.write(f"• **Time:** ~{total_time:.1f} min for {num_files} file(s)")
+            st.write(f"• **Cost:** ~${total_cost:.4f}")
+            st.write(f"• **Tokens:** ~{total_tokens:,}")
+        else:
+            st.markdown("**Estimated Processing:**")
+            st.write("• **Time:** N/A")
+            st.write("• **Cost:** N/A")
+            st.write("• **Tokens:** N/A")
 
-with tab3:
-    st.header("Prompt Template")
-    st.markdown("Below is the exact prompt sent to the AI for each interview chunk. You can review and suggest improvements.")
-    prompt_template_text = '''
+with tab4:
+    st.header("📖 Documentation & Help")
+    st.caption("Learn how to use the VOC pipeline and database.")
+    
+    # Documentation sections
+    tab_docs, tab_prompt, tab_schema = st.tabs(["📚 User Guide", "🤖 AI Prompt", "🏗️ Database Schema"])
+    
+    with tab_docs:
+        st.subheader("🚀 Quick Start Guide")
+        
+        st.markdown("""
+        ### **Step 1: Upload Files**
+        1. Use the sidebar to upload interview files (.txt or .docx)
+        2. Files are automatically saved and ready for processing
+        
+        ### **Step 2: Process Files**
+        1. Go to the **🔧 Processing Pipeline** tab
+        2. Click **"▶️ Process All Files"** to run the AI pipeline
+        3. Wait for processing to complete (usually 2-3 minutes)
+        
+        ### **Step 3: Migrate to Database**
+        1. Go to the **📊 Database** tab
+        2. Click **"🔄 Migrate CSV Data"** to import processed data
+        3. Your data is now in the database and ready for analysis
+        
+        ### **Step 4: Explore & Label**
+        1. Use filters to find specific responses
+        2. Add labels to categorize responses
+        3. Export filtered data for further analysis
+        """)
+        
+        st.subheader("💡 Pro Tips")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown("""
+            **File Naming:**
+            - Use descriptive names like "Interview with John Smith at TechCorp.docx"
+            - The system will auto-extract interviewee and company names
+            
+            **Processing:**
+            - Process multiple files at once for efficiency
+            - Each file is processed independently
+            - Results are combined automatically
+            """)
+        
+        with col2:
+            st.markdown("""
+            **Database Usage:**
+            - Start with simple labels like sentiment
+            - Use filters to find specific responses quickly
+            - Export data regularly for backup
+            
+            **Troubleshooting:**
+            - Check the **📋 Raw Data Files** tab if processing fails
+            - Use manual validation if needed
+            - Database is persistent - your data is safe
+            """)
+    
+    with tab_prompt:
+        st.subheader("🤖 AI Prompt Template")
+        st.markdown("Below is the exact prompt sent to the AI for each interview chunk. You can review and suggest improvements.")
+        prompt_template_text = '''
 CRITICAL INSTRUCTIONS FOR ENHANCED QUALITY ANALYSIS:
 - You have access to focused context windows (~7K tokens) containing 6-8 Q&A exchanges.
 - Extract the 1-2 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
@@ -446,46 +866,79 @@ Guidelines:
 - Skip chunks that only contain low-quality content (acknowledgments, thank yous, etc.)
 - Prioritize responses that show different aspects of similar topics (e.g., different use cases, workflows, or specific pain points)
 '''
-    st.code(prompt_template_text, language="markdown")
+        st.code(prompt_template_text, language="markdown")
+        
+        st.subheader("🔧 Pipeline Details")
+        st.markdown("""
+        **How the pipeline processes your interviews (16K-optimized version):**
 
-with tab4:
-    st.header("Processing Details")
-    st.markdown("""
-**How the pipeline processes your interviews (16K-optimized version):**
+        - **Batching & Parallel Processing:**
+          - Multiple interviews are processed in parallel using Python's `ThreadPoolExecutor` for speed and efficiency.
+          - Each file is handled as a separate job, so you can upload and process many interviews at once.
 
-- **Batching & Parallel Processing:**
-  - Multiple interviews are processed in parallel using Python's `ThreadPoolExecutor` for speed and efficiency.
-  - Each file is handled as a separate job, so you can upload and process many interviews at once.
+        - **Advanced Chunking & Segmentation (16K Optimized):**
+          - Uses token-based chunking with ~7K tokens per chunk
+          - Q&A-aware segmentation that preserves conversation boundaries and context
+          - Intelligent overlap of 800 tokens to maintain continuity between chunks
+          - Preserves full Q&A exchanges and speaker turns within chunks
 
-- **Advanced Chunking & Segmentation (16K Optimized):**
-  - Uses token-based chunking with ~12K tokens per chunk (vs previous 2K character chunks)
-  - Q&A-aware segmentation that preserves conversation boundaries and context
-  - Intelligent overlap of 800 tokens to maintain continuity between chunks
-  - Preserves full Q&A exchanges and speaker turns within chunks
-  - Adaptive chunking that respects token limits while maximizing context
+        - **Enhanced LLM Processing:**
+          - Each large chunk is sent to GPT-3.5-turbo-16k with comprehensive context
+          - Extracts 1-2 insights per chunk for optimal quality
+          - Preserves longer verbatim responses (300-800 words)
+          - Focuses on detailed customer experiences, quantitative feedback, and specific examples
 
-- **Enhanced LLM Processing:**
-  - Each large chunk is sent to GPT-3.5-turbo-16k with comprehensive context
-  - Extracts 2-3 insights per chunk (vs previous 1 insight per chunk)
-  - Preserves much longer verbatim responses (200-500 words vs previous 20-50 words)
-  - Focuses on detailed customer experiences, quantitative feedback, and specific examples
-
-- **Improved Content Extraction:**
-  - Prioritizes detailed customer experiences with specific scenarios and examples
-  - Captures quantitative feedback (metrics, timelines, ROI discussions)
-  - Preserves comparative analysis and competitive evaluations
-  - Maintains integration requirements and workflow details
-
-- **Quality Assurance:**
-  - Enhanced validation for richer, more contextually complete responses
-  - Quality logging tracks response length and content preservation
-  - Flags responses that lose too much context during processing
-
-- **Performance:**
-  - Fewer API calls due to larger chunks (more efficient token usage)
-  - Higher quality insights due to better context preservation
-  - Richer verbatim responses with full context and examples
-
----
-This pipeline is optimized for the 16K token context window to deliver significantly richer insights and more complete verbatim responses.
-""")
+        - **Quality Assurance:**
+          - Enhanced validation for richer, more contextually complete responses
+          - Quality logging tracks response length and content preservation
+          - Flags responses that lose too much context during processing
+        """)
+    
+    with tab_schema:
+        st.subheader("🏗️ Database Schema")
+        st.markdown("""
+        The database uses a normalized design with 4 main tables:
+        """)
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **📋 responses** (Source of Truth)
+            - `response_id` (PRIMARY KEY)
+            - `verbatim_response` (TEXT)
+            - `subject`, `question`
+            - `deal_status`, `company`, `interviewee_name`
+            - `date_of_interview`, `created_at`, `updated_at`
+            
+            **🔍 analysis_results** (AI Insights)
+            - `id` (PRIMARY KEY)
+            - `response_id` (FOREIGN KEY)
+            - `analysis_type` (findings, value_realization, etc.)
+            - `analysis_text` (TEXT)
+            - `model_version`, `confidence_score`
+            """)
+        
+        with col2:
+            st.markdown("""
+            **🏷️ response_labels** (Manual/AI Labels)
+            - `id` (PRIMARY KEY)
+            - `response_id` (FOREIGN KEY)
+            - `label_type`, `label_value`
+            - `confidence_score`, `labeled_by`
+            
+            **📊 quality_metrics** (Quality Tracking)
+            - `id` (PRIMARY KEY)
+            - `response_id` (FOREIGN KEY)
+            - `metric_type`, `metric_value`
+            - `metric_details` (JSON)
+            """)
+        
+        st.markdown("""
+        **Key Benefits:**
+        - **Data Integrity**: Raw responses never change
+        - **Flexibility**: Add new labels and metrics without schema changes
+        - **Performance**: Indexed for fast queries
+        - **Audit Trail**: Track all changes and additions
+        - **Scalability**: Easy to add new analysis types and labels
+        """)
