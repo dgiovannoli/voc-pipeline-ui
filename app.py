@@ -44,30 +44,29 @@ def load_csv(path):
         return pd.DataFrame()
 
 def process_files_modular():
-    """Process files using the modular pipeline"""
+    """Process files using the original pipeline (compatible with existing workflow)"""
     if not st.session_state.uploaded_paths:
         raise Exception("No files uploaded")
     
-    # Process using modular pipeline
+    # Process using original pipeline
     for path in st.session_state.uploaded_paths:
         interviewee, company = extract_interviewee_and_company(os.path.basename(path))
         subprocess.run([
-            sys.executable, "-m", "voc_pipeline.modular_cli", "run-pipeline",
-            "--input", path,
-            "--company", company if company else "Unknown",
-            "--interviewee", interviewee if interviewee else "Unknown",
-            "--deal-status", "closed_won",
-            "--date", "2024-01-01"
+            sys.executable, "-m", "voc_pipeline", "process_transcript",
+            path,
+            company if company else "Unknown",  # client
+            company if company else "Unknown",  # company
+            interviewee if interviewee else "Unknown",  # interviewee
+            "closed_won",  # deal_status
+            "2024-01-01"  # date_of_interview
         ], check=True)
 
 def run_modular_stage(stage):
-    """Run a specific modular stage"""
+    """Run a specific pipeline stage"""
     if stage == 'extract-core':
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline.modular_cli", "extract-core",
-            "--input", str(STAGE1_CSV),
-            "--output", str(STAGE1_CSV)
-        ], check=True)
+        # This stage is handled by process_files_modular() which processes individual files
+        # and outputs to STAGE1_CSV
+        st.info("Extract core stage is handled by the main processing pipeline")
     elif stage == 'validate':
         subprocess.run([
             sys.executable, "-m", "voc_pipeline", "validate",
@@ -75,11 +74,8 @@ def run_modular_stage(stage):
             "--output", str(VALIDATED_CSV)
         ], check=True)
     elif stage == 'enrich-analysis':
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline.modular_cli", "enrich-analysis",
-            "--input", str(VALIDATED_CSV),
-            "--output", str(RESPONSE_TABLE_CSV)
-        ], check=True)
+        # This stage is handled by build-table which adds enrichment from database
+        st.info("Enrichment is handled by the build-table stage")
     elif stage == 'build-table':
         subprocess.run([
             sys.executable, "-m", "voc_pipeline", "build-table",
@@ -310,14 +306,14 @@ elif st.session_state.current_stage == 'extract':
         
         with col1:
             st.markdown("#### 🚀 Quick Process")
-            st.markdown("Process all files using the modular pipeline:")
+            st.markdown("Process all files using the original pipeline:")
             
-            if st.button("▶️ Extract Core Responses", type="primary", use_container_width=True):
+            if st.button("▶️ Process All Files", type="primary", use_container_width=True):
                 with st.spinner("Processing files..."):
-                    # Process files using modular pipeline
+                    # Process files using original pipeline
                     try:
                         process_files_modular()
-                        st.success("✅ Core extraction complete!")
+                        st.success("✅ File processing complete!")
                         st.session_state.current_stage = 'enrich'
                         st.rerun()
                     except Exception as e:
