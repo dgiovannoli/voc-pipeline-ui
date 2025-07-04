@@ -420,46 +420,53 @@ with tab1:
 
 with tab2:
     st.header("📋 Raw Data Files")
-    st.caption("View and manage your raw CSV data files before database migration.")
+    st.caption("View and manage your raw CSV data files with the new normalized structure.")
     
     # File status overview
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         stage1_exists = os.path.exists(STAGE1_CSV) and os.path.getsize(STAGE1_CSV) > 0
         st.metric("Stage 1 Output", 
                  f"{len(load_csv(STAGE1_CSV)) if stage1_exists else 0} rows",
-                 "✅ Ready" if stage1_exists else "❌ Empty")
+                 "✅ Core Fields" if stage1_exists else "❌ Empty")
     
     with col2:
         validated_exists = os.path.exists(VALIDATED_CSV) and os.path.getsize(VALIDATED_CSV) > 0
         st.metric("Validated Quotes", 
                  f"{len(load_csv(VALIDATED_CSV)) if validated_exists else 0} rows",
-                 "✅ Ready" if validated_exists else "❌ Empty")
+                 "✅ Core Fields" if validated_exists else "❌ Empty")
     
     with col3:
         response_exists = os.path.exists(RESPONSE_TABLE_CSV) and os.path.getsize(RESPONSE_TABLE_CSV) > 0
         st.metric("Response Table", 
                  f"{len(load_csv(RESPONSE_TABLE_CSV)) if response_exists else 0} rows",
-                 "✅ Ready" if response_exists else "❌ Empty")
+                 "✅ Complete" if response_exists else "❌ Empty")
     
-    # File viewer
-    st.subheader("📄 View Raw Files")
+    with col4:
+        db_count = st.session_state.db.get_stats().get('total_responses', 0)
+        st.metric("Database", 
+                 f"{db_count} responses",
+                 "✅ Normalized" if db_count > 0 else "❌ Empty")
     
-    file_options = {
-        "Stage 1 Output (Raw Processing)": STAGE1_CSV,
-        "Validated Quotes (Cleaned)": VALIDATED_CSV,
-        "Response Data Table (Complete)": RESPONSE_TABLE_CSV
+    # Core Data Files (Stage 1 and Validated)
+    st.subheader("📄 Core Data Files")
+    st.info("These files contain only the essential fields (Response ID, Verbatim Response, Subject, Question, Deal Status, Company Name, Interviewee Name, Date of Interview). Enrichment fields are stored separately in the database.")
+    
+    core_file_options = {
+        "Stage 1 Output (Core Fields Only)": STAGE1_CSV,
+        "Validated Quotes (Core Fields Only)": VALIDATED_CSV
     }
     
-    selected_file = st.selectbox("Select file to view:", list(file_options.keys()))
-    selected_path = file_options[selected_file]
+    selected_core_file = st.selectbox("Select core data file:", list(core_file_options.keys()))
+    selected_core_path = core_file_options[selected_core_file]
     
-    if os.path.exists(selected_path) and os.path.getsize(selected_path) > 0:
+    if os.path.exists(selected_core_path) and os.path.getsize(selected_core_path) > 0:
         try:
-            df = load_csv(selected_path)
+            df = load_csv(selected_core_path)
             if len(df) > 0:
-                st.write(f"**{selected_file}** - {len(df)} rows, {len(df.columns)} columns")
+                st.write(f"**{selected_core_file}** - {len(df)} rows, {len(df.columns)} columns")
+                st.write("**Core Fields:** " + ", ".join(df.columns.tolist()))
                 
                 # Show sample data
                 st.dataframe(df.head(50), use_container_width=True)
@@ -467,9 +474,9 @@ with tab2:
                 # Download option
                 csv_data = df.to_csv(index=False)
                 st.download_button(
-                    f"📥 Download {selected_file}",
+                    f"📥 Download {selected_core_file}",
                     data=csv_data,
-                    file_name=f"{selected_file.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    file_name=f"{selected_core_file.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                     mime="text/csv"
                 )
                 
@@ -488,11 +495,113 @@ with tab2:
                     st.dataframe(pd.DataFrame(col_info))
                 
             else:
-                st.warning(f"{selected_file} is empty")
+                st.warning(f"{selected_core_file} is empty")
         except Exception as e:
-            st.error(f"Error reading {selected_file}: {e}")
+            st.error(f"Error reading {selected_core_file}: {e}")
     else:
-        st.info(f"{selected_file} not found or empty")
+        st.info(f"{selected_core_file} not found or empty")
+    
+    # Enriched Data Files (Complete with all fields)
+    st.subheader("🔍 Enriched Data Files")
+    st.info("These files contain the complete dataset with both core fields and enrichment fields (AI-generated insights, labels, quality metrics).")
+    
+    enriched_file_options = {
+        "Response Data Table (Complete with Enrichment)": RESPONSE_TABLE_CSV
+    }
+    
+    selected_enriched_file = st.selectbox("Select enriched data file:", list(enriched_file_options.keys()))
+    selected_enriched_path = enriched_file_options[selected_enriched_file]
+    
+    if os.path.exists(selected_enriched_path) and os.path.getsize(selected_enriched_path) > 0:
+        try:
+            df = load_csv(selected_enriched_path)
+            if len(df) > 0:
+                st.write(f"**{selected_enriched_file}** - {len(df)} rows, {len(df.columns)} columns")
+                
+                # Separate core and enrichment columns
+                core_columns = ['Response ID', 'Verbatim Response', 'Subject', 'Question', 'Deal Status', 'Company Name', 'Interviewee Name', 'Date of Interview']
+                enrichment_columns = [col for col in df.columns if col not in core_columns]
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("**Core Fields:** " + ", ".join(core_columns))
+                with col2:
+                    st.write("**Enrichment Fields:** " + ", ".join(enrichment_columns))
+                
+                # Show sample data
+                st.dataframe(df.head(50), use_container_width=True)
+                
+                # Download option
+                csv_data = df.to_csv(index=False)
+                st.download_button(
+                    f"📥 Download {selected_enriched_file}",
+                    data=csv_data,
+                    file_name=f"{selected_enriched_file.lower().replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+                
+                # Column info
+                with st.expander("📊 Column Information"):
+                    col_info = []
+                    for col in df.columns:
+                        non_null = df[col].notna().sum()
+                        null_pct = (len(df) - non_null) / len(df) * 100
+                        col_type = "Core" if col in core_columns else "Enrichment"
+                        col_info.append({
+                            'Column': col,
+                            'Type': col_type,
+                            'Non-Null Count': non_null,
+                            'Null Percentage': f"{null_pct:.1f}%",
+                            'Data Type': str(df[col].dtype)
+                        })
+                    st.dataframe(pd.DataFrame(col_info))
+                
+            else:
+                st.warning(f"{selected_enriched_file} is empty")
+        except Exception as e:
+            st.error(f"Error reading {selected_enriched_file}: {e}")
+    else:
+        st.info(f"{selected_enriched_file} not found or empty")
+    
+    # Database Export (Normalized Structure)
+    st.subheader("🗄️ Database Export")
+    st.info("Export data from the normalized database structure with proper separation of core and enrichment fields.")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("📥 Export Core Data Only", use_container_width=True):
+            if st.session_state.db.get_stats().get('total_responses', 0) > 0:
+                # Get only core fields from database
+                df_core = st.session_state.db.get_responses()
+                core_cols = ['response_id', 'verbatim_response', 'subject', 'question', 'deal_status', 'company', 'interviewee_name', 'date_of_interview']
+                df_core = df_core[core_cols]
+                
+                csv_data = df_core.to_csv(index=False)
+                st.download_button(
+                    "Download Core Data",
+                    data=csv_data,
+                    file_name=f"core_data_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.warning("No data in database")
+    
+    with col2:
+        if st.button("📥 Export Complete Data", use_container_width=True):
+            if st.session_state.db.get_stats().get('total_responses', 0) > 0:
+                # Get complete data with enrichment fields
+                df_complete = st.session_state.db.get_responses()
+                
+                csv_data = df_complete.to_csv(index=False)
+                st.download_button(
+                    "Download Complete Data",
+                    data=csv_data,
+                    file_name=f"complete_data_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+            else:
+                st.warning("No data in database")
     
     # Manual processing controls
     st.subheader("🔧 Manual Processing")
