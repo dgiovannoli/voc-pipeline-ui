@@ -8,6 +8,7 @@ import streamlit as st
 from dotenv import load_dotenv
 import re
 from database import VOCDatabase
+from prompts.core_extraction import CORE_EXTRACTION_PROMPT
 
 load_dotenv()
 
@@ -224,18 +225,26 @@ elif st.session_state.current_step == 2:
             st.rerun()
     else:
         df = load_csv(STAGE1_CSV)
+        st.markdown(f"**Available columns:** {list(df.columns)}")
+        st.markdown(f"**Data shape:** {df.shape}")
+        
         # Only show core columns
         core_cols = [
-            'Response ID', 'Verbatim Response', 'Subject', 'Question',
-            'Deal Status', 'Company Name', 'Interviewee Name', 'Date of Interview'
+            'response_id', 'verbatim_response', 'subject', 'question',
+            'deal_status', 'company', 'interviewee_name', 'date_of_interview'
         ]
         core_cols = [col for col in core_cols if col in df.columns]
-        st.markdown("### Extracted Responses (Source of Truth)")
-        st.dataframe(df[core_cols], use_container_width=True, height=300)
+        st.markdown(f"**Core columns found:** {core_cols}")
+        
+        if core_cols:
+            st.markdown("### Extracted Responses (Source of Truth)")
+            st.dataframe(df[core_cols], use_container_width=True, height=300)
+        else:
+            st.error("No core columns found in the data. Available columns: " + ", ".join(df.columns))
         # Show prompt and approach
         with st.expander("🔎 Show Prompt & Processing Approach"):
             st.markdown("**Prompt Template:**")
-            st.code('''You are a quality control assistant. Validate the extracted responses for completeness, deduplicate, and ensure all required fields are present. Enrich responses with any missing metadata if possible.''', language="text")
+            st.code(CORE_EXTRACTION_PROMPT, language="text")
             st.markdown("**Approach:**\n- Validate each response for required fields and completeness.\n- Remove duplicates.\n- Enrich with missing metadata if available.\n- Prepare for downstream analysis and labeling.")
         if st.button("✅ Validate & Enrich", type="primary", use_container_width=True):
             with st.spinner("Validating and enriching..."):

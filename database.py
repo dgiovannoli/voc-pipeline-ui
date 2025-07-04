@@ -276,13 +276,13 @@ class VOCDatabase:
             
             for _, row in df.iterrows():
                 response_data = {
-                    'response_id': row.get('Response ID', f"migrated_{migrated_count}"),
-                    'verbatim_response': row.get('Verbatim Response', ''),
-                    'subject': row.get('Subject', ''),
-                    'question': row.get('Question', ''),
-                    'deal_status': row.get('Deal Status', ''),
-                    'company': row.get('Company Name', ''),
-                    'interviewee_name': row.get('Interviewee Name', ''),
+                                'response_id': row.get('response_id', f"migrated_{migrated_count}"),
+            'verbatim_response': row.get('verbatim_response', ''),
+            'subject': row.get('subject', ''),
+            'question': row.get('question', ''),
+            'deal_status': row.get('deal_status', ''),
+            'company': row.get('company', ''),
+            'interviewee_name': row.get('interviewee_name', ''),
                     'date_of_interview': row.get('Date of Interview', ''),
                 }
                 

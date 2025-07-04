@@ -31,6 +31,7 @@ try:
     from langchain_openai import ChatOpenAI
     from langchain_core.prompts import PromptTemplate
     from langchain_core.runnables import RunnableSequence
+    from prompts.core_extraction import CORE_EXTRACTION_PROMPT
     LLM_AVAILABLE = True
 except ImportError:
     LLM_AVAILABLE = False
@@ -99,20 +100,10 @@ class ModularProcessor:
             try:
                 response_id = f"{company}_{interviewee}_{i+1}"
                 
-                # Create prompt
-                prompt_text = get_core_extraction_prompt(
-                    response_id=response_id,
-                    company=company,
-                    interviewee_name=interviewee,
-                    deal_status=deal_status,
-                    date_of_interview=date_of_interview,
-                    chunk_text=chunk
-                )
-                
-                # Create chain
+                # Create prompt template (use raw template, not formatted)
                 prompt_template = PromptTemplate(
                     input_variables=["response_id", "company", "interviewee_name", "deal_status", "date_of_interview", "chunk_text"],
-                    template=prompt_text
+                    template=CORE_EXTRACTION_PROMPT
                 )
                 chain = prompt_template | self.llm
                 
