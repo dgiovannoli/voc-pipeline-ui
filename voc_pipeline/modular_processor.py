@@ -79,16 +79,36 @@ class ModularProcessor:
         
         # Load transcript
         if transcript_path.lower().endswith(".docx"):
-            from langchain_community.document_loaders import Docx2txtLoader
-            loader = Docx2txtLoader(transcript_path)
-            docs = loader.load()
-            full_text = docs[0].page_content
+            try:
+                # Try python-docx first for better extraction
+                from docx import Document
+                doc = Document(transcript_path)
+                full_text = '\n'.join([paragraph.text for paragraph in doc.paragraphs])
+                if not full_text.strip():
+                    # Fallback to Docx2txtLoader
+                    from langchain_community.document_loaders import Docx2txtLoader
+                    loader = Docx2txtLoader(transcript_path)
+                    docs = loader.load()
+                    full_text = docs[0].page_content
+            except ImportError:
+                # Fallback to Docx2txtLoader if python-docx not available
+                from langchain_community.document_loaders import Docx2txtLoader
+                loader = Docx2txtLoader(transcript_path)
+                docs = loader.load()
+                full_text = docs[0].page_content
         else:
             with open(transcript_path, encoding="utf-8") as f:
                 full_text = f.read()
         
         if not full_text.strip():
             raise ValueError("Transcript is empty")
+        
+        # Debug: Check text length
+        import tiktoken
+        encoding = tiktoken.get_encoding("cl100k_base")
+        total_tokens = len(encoding.encode(full_text))
+        logger.info(f"Extracted {len(full_text)} characters ({total_tokens} tokens) from transcript")
+        logger.info(f"Text preview: {full_text[:200]}...")
         
         # Create chunks using 16K-optimized approach
         chunks = self._create_chunks(full_text, target_tokens=12000, overlap_tokens=800)
