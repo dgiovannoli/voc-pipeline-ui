@@ -18,6 +18,13 @@ from io import StringIO
 import math
 import tiktoken
 
+# Add database import
+try:
+    from database import VOCDatabase
+    DB_AVAILABLE = True
+except ImportError:
+    DB_AVAILABLE = False
+
 # Set up logging
 logging.basicConfig(filename="qc.log",
                     level=logging.INFO,
@@ -922,9 +929,48 @@ Interview chunk to analyze:
     writer = csv.writer(output, quoting=csv.QUOTE_ALL)  # Quote all fields for CSV integrity
     writer.writerow(header)
     
-    # Write data rows (now deduplicated)
+    # Write data rows (now deduplicated) and save to database if available
+    db = None
+    if DB_AVAILABLE:
+        try:
+            db = VOCDatabase()
+        except Exception as e:
+            print(f"[WARNING] Database not available: {e}", file=sys.stderr)
+    
     for chunk_index, row in final_results:
         writer.writerow(row)
+        
+        # Save to database if available
+        if db:
+            try:
+                # Convert row to response_data format
+                response_data = {
+                    'response_id': row[0],  # Response ID
+                    'verbatim_response': row[2],  # Verbatim Response
+                    'subject': row[3],  # Subject
+                    'question': row[4],  # Question
+                    'deal_status': row[5],  # Deal Status
+                    'company': row[6],  # Company Name
+                    'interviewee_name': row[7],  # Interviewee Name
+                    'date_of_interview': row[8],  # Date of Interview
+                }
+                
+                # Add analysis fields if they exist
+                if len(row) > 9:
+                    analysis_fields = [
+                        'findings', 'value_realization', 'implementation_experience',
+                        'risk_mitigation', 'competitive_advantage', 'customer_success',
+                        'product_feedback', 'service_quality', 'decision_factors',
+                        'pain_points', 'success_metrics', 'future_plans'
+                    ]
+                    
+                    for i, field in enumerate(analysis_fields):
+                        if 9 + i < len(row) and row[9 + i] and row[9 + i] != 'N/A':
+                            response_data[field] = row[9 + i]
+                
+                db.save_response(response_data)
+            except Exception as e:
+                print(f"[WARNING] Failed to save to database: {e}", file=sys.stderr)
     
     # Write verbatim quality log
     with open("verbatim_quality.csv", "w", newline="") as qf:
