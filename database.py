@@ -146,10 +146,11 @@ class VOCDatabase:
             
             conn.commit()
             conn.close()
+            logger.info(f"Successfully saved response {response_data.get('response_id')}")
             return True
             
         except Exception as e:
-            logger.error(f"Error saving response: {e}")
+            logger.error(f"Error saving response {response_data.get('response_id')}: {e}")
             return False
     
     def get_responses(self, filters: Optional[Dict] = None) -> pd.DataFrame:
@@ -285,7 +286,7 @@ class VOCDatabase:
                     'date_of_interview': row.get('Date of Interview', ''),
                 }
                 
-                # Add analysis fields
+                # Add analysis fields - check if they exist in the CSV
                 analysis_fields = [
                     'Findings', 'Value_Realization', 'Implementation_Experience',
                     'Risk_Mitigation', 'Competitive_Advantage', 'Customer_Success',
@@ -294,8 +295,8 @@ class VOCDatabase:
                 ]
                 
                 for field in analysis_fields:
-                    if field in row and pd.notna(row[field]) and row[field] != 'N/A':
-                        response_data[field.lower()] = row[field]
+                    if field in df.columns and pd.notna(row[field]) and row[field] != 'N/A' and str(row[field]).strip():
+                        response_data[field.lower()] = str(row[field])
                 
                 if self.save_response(response_data):
                     migrated_count += 1
