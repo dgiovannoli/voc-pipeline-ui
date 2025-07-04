@@ -1,10 +1,9 @@
 response_id,grade,notes
-Unknown_AlexVandenberg_4_1,OK,
-Unknown_AlexVandenberg_5_1,LOW,93% of original chunk dropped after cleaning.
-Unknown_AlexVandenberg_5_2,LOW,94% of original chunk dropped after cleaning.
-Unknown_AlexVandenberg_6_1,OK,
-Unknown_AlexVandenberg_6_2,LOW,84% of original chunk dropped after cleaning.
-Unknown_AlexVandenberg_3_1,LOW,80% of original chunk dropped after cleaning.
-Unknown_AlexVandenberg_3_2,OK,
-Unknown_AlexVandenberg_7_1,OK,
-Unknown_AlexVandenberg_7_2,LOW,85% of original chunk dropped after cleaning.
+LuminosLaw_ChristinaFouche_5_1,OK,
+LuminosLaw_ChristinaFouche_1_1,OK,
+LuminosLaw_ChristinaFouche_4_1,LOW,80% of original chunk dropped after cleaning.
+LuminosLaw_ChristinaFouche_4_2,OK,
+LuminosLaw_ChristinaFouche_3_1,OK,
+LuminosLaw_ChristinaFouche_3_2,OK,
+LuminosLaw_ChristinaFouche_2_1,LOW,93% of original chunk dropped after cleaning.
+LuminosLaw_ChristinaFouche_2_2,LOW,95% of original chunk dropped after cleaning.
