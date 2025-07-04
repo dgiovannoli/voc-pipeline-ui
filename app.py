@@ -281,6 +281,17 @@ elif st.session_state.current_stage == 'extract':
             st.session_state.current_stage = 'upload'
             st.rerun()
     else:
+        # Show uploaded files
+        st.markdown("### 📁 Files Ready for Processing")
+        with st.expander("📋 Uploaded Files", expanded=True):
+            for i, path in enumerate(st.session_state.uploaded_paths):
+                filename = os.path.basename(path)
+                interviewee, company = extract_interviewee_and_company(filename)
+                st.write(f"**{i+1}. {filename}**")
+                if interviewee or company:
+                    st.write(f"   👤 {interviewee} | 🏢 {company}")
+        
+        st.markdown("---")
         # Processing status
         col1, col2, col3 = st.columns(3)
         with col1:
