@@ -918,60 +918,70 @@ Interview chunk to analyze:
     
     print(f"[DEBUG] Post-processing removed {len(unique_results) - len(final_results)} additional duplicates", file=sys.stderr)
     
-    # Write CSV header (no auto-index column)
-    header = ["Response ID", "Key Insight", "Verbatim Response", "Subject", "Question", "Deal Status", 
-              "Company Name", "Interviewee Name", "Date of Interview", "Findings", 
-              "Value_Realization", "Implementation_Experience", "Risk_Mitigation", 
-              "Competitive_Advantage", "Customer_Success", "Product_Feedback", 
-              "Service_Quality", "Decision_Factors", "Pain_Points", "Success_Metrics", "Future_Plans"]
-    
+    # Write CSV header (core fields only for Stage 1/Validated)
+    core_header = [
+        "Response ID", "Verbatim Response", "Subject", "Question", "Deal Status",
+        "Company Name", "Interviewee Name", "Date of Interview"
+    ]
+    enrichment_header = [
+        "Key Insight", "Findings", "Value_Realization", "Implementation_Experience", "Risk_Mitigation",
+        "Competitive_Advantage", "Customer_Success", "Product_Feedback", "Service_Quality", "Decision_Factors",
+        "Pain_Points", "Success_Metrics", "Future_Plans"
+    ]
+    # For Stage 1/Validated, only use core_header
+    header = core_header
     output = StringIO()
-    writer = csv.writer(output, quoting=csv.QUOTE_ALL)  # Quote all fields for CSV integrity
+    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
     writer.writerow(header)
-    
-    # Write data rows (now deduplicated) and save to database if available
+
     db = None
     if DB_AVAILABLE:
         try:
             db = VOCDatabase()
         except Exception as e:
             print(f"[WARNING] Database not available: {e}", file=sys.stderr)
-    
+
     for chunk_index, row in final_results:
-        writer.writerow(row)
-        
-        # Save to database if available
+        # Only write core fields to CSV
+        core_row = [
+            row[0],  # Response ID
+            row[2],  # Verbatim Response
+            row[3],  # Subject
+            row[4],  # Question
+            row[5],  # Deal Status
+            row[6],  # Company Name
+            row[7],  # Interviewee Name
+            row[8],  # Date of Interview
+        ]
+        writer.writerow(core_row)
+
+        # Save to database if available (with enrichment fields)
         if db:
             try:
-                # Convert row to response_data format
                 response_data = {
-                    'response_id': row[0],  # Response ID
-                    'verbatim_response': row[2],  # Verbatim Response
-                    'subject': row[3],  # Subject
-                    'question': row[4],  # Question
-                    'deal_status': row[5],  # Deal Status
-                    'company': row[6],  # Company Name
-                    'interviewee_name': row[7],  # Interviewee Name
-                    'date_of_interview': row[8],  # Date of Interview
+                    'response_id': row[0],
+                    'verbatim_response': row[2],
+                    'subject': row[3],
+                    'question': row[4],
+                    'deal_status': row[5],
+                    'company': row[6],
+                    'interviewee_name': row[7],
+                    'date_of_interview': row[8],
                 }
-                
                 # Add analysis fields if they exist
                 if len(row) > 9:
                     analysis_fields = [
-                        'findings', 'value_realization', 'implementation_experience',
-                        'risk_mitigation', 'competitive_advantage', 'customer_success',
-                        'product_feedback', 'service_quality', 'decision_factors',
-                        'pain_points', 'success_metrics', 'future_plans'
+                        'key_insight', 'findings', 'value_realization', 'implementation_experience',
+                        'risk_mitigation', 'competitive_advantage', 'customer_success', 'product_feedback',
+                        'service_quality', 'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
                     ]
-                    
                     for i, field in enumerate(analysis_fields):
                         if 9 + i < len(row) and row[9 + i] and row[9 + i] != 'N/A':
                             response_data[field] = row[9 + i]
-                
                 db.save_response(response_data)
             except Exception as e:
                 print(f"[WARNING] Failed to save to database: {e}", file=sys.stderr)
-    
+
     # Write verbatim quality log
     with open("verbatim_quality.csv", "w", newline="") as qf:
         qwriter = csv.DictWriter(qf, fieldnames=["response_id", "grade", "notes"])
@@ -1088,31 +1098,28 @@ def validate(input, output):
 @click.option('--input', '-i', required=True, help='Input CSV file to process')
 @click.option('--output', '-o', required=True, help='Output CSV file for final table')
 def build_table(input, output):
-    """Build final data table from processed data."""
-    print(f"Building table from {input} to {output}...")
+    """Build final data table from processed data with enrichment fields from database."""
+    print(f"Building enriched table from {input} to {output}...")
     
     import pandas as pd
     
     try:
-        # Read the input CSV
+        # Read the input CSV (core fields only)
         df = pd.read_csv(input)
         print(f"Read {len(df)} rows from {input}")
         
         if len(df) > 0:
             print(f"Columns in input file: {list(df.columns)}")
             
-            # Reorder columns to match the expected schema
-            expected_columns = [
-                "Response ID","Verbatim Response","Subject","Question",
-                "Deal Status","Company Name","Interviewee Name","Date of Interview","Findings",
-                "Value_Realization","Implementation_Experience","Risk_Mitigation","Competitive_Advantage",
-                "Customer_Success","Product_Feedback","Service_Quality","Decision_Factors",
-                "Pain_Points","Success_Metrics","Future_Plans"
+            # Expected core columns
+            expected_core_columns = [
+                "Response ID", "Verbatim Response", "Subject", "Question",
+                "Deal Status", "Company Name", "Interviewee Name", "Date of Interview"
             ]
             
             # Map column names (handle different naming conventions)
             column_mapping = {}
-            for expected_col in expected_columns:
+            for expected_col in expected_core_columns:
                 # Try exact match first
                 if expected_col in df.columns:
                     column_mapping[expected_col] = expected_col
@@ -1127,29 +1134,99 @@ def build_table(input, output):
                         column_mapping[expected_col] = expected_col
                         df[expected_col] = ""
             
-            # Reorder columns using mapping
-            df_final = df[[column_mapping[col] for col in expected_columns]]
+            # Reorder core columns using mapping
+            df_core = df[[column_mapping[col] for col in expected_core_columns]]
             # Rename columns to expected names
-            df_final.columns = expected_columns
+            df_core.columns = expected_core_columns
+            
+            # Try to get enrichment fields from database
+            enrichment_df = None
+            if DB_AVAILABLE:
+                try:
+                    db = VOCDatabase()
+                    # Get all responses with their analysis results
+                    db_responses = db.get_responses()
+                    
+                    if len(db_responses) > 0:
+                        # Extract enrichment fields from database
+                        enrichment_fields = [
+                            'key_insight', 'findings', 'value_realization', 'implementation_experience',
+                            'risk_mitigation', 'competitive_advantage', 'customer_success', 'product_feedback',
+                            'service_quality', 'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
+                        ]
+                        
+                        # Create enrichment dataframe
+                        enrichment_data = []
+                        for _, row in db_responses.iterrows():
+                            response_id = row['response_id']
+                            enrichment_row = {'Response ID': response_id}
+                            
+                            # Get analysis results for this response
+                            response_detail = db.get_response_by_id(response_id)
+                            if response_detail and 'analyses' in response_detail:
+                                analyses = response_detail['analyses']
+                                for field in enrichment_fields:
+                                    enrichment_row[field.replace('_', ' ').title()] = analyses.get(field, '')
+                            
+                            enrichment_data.append(enrichment_row)
+                        
+                        if enrichment_data:
+                            enrichment_df = pd.DataFrame(enrichment_data)
+                            print(f"Found {len(enrichment_df)} enrichment records in database")
+                        else:
+                            print("No enrichment data found in database")
+                    else:
+                        print("No responses found in database")
+                        
+                except Exception as e:
+                    print(f"Warning: Could not access database for enrichment fields: {e}")
+            
+            # Create final table
+            if enrichment_df is not None and len(enrichment_df) > 0:
+                # Merge core and enrichment data
+                df_final = pd.merge(df_core, enrichment_df, on='Response ID', how='left')
+                print(f"Merged core data with enrichment fields")
+            else:
+                # Use only core data if no enrichment available
+                df_final = df_core.copy()
+                # Add empty enrichment columns
+                enrichment_columns = [
+                    'Key Insight', 'Findings', 'Value_Realization', 'Implementation_Experience',
+                    'Risk_Mitigation', 'Competitive_Advantage', 'Customer_Success', 'Product_Feedback',
+                    'Service_Quality', 'Decision_Factors', 'Pain_Points', 'Success_Metrics', 'Future_Plans'
+                ]
+                for col in enrichment_columns:
+                    df_final[col] = ''
+                print(f"Using core data only (no enrichment fields available)")
             
             # Save final table
             df_final.to_csv(output, index=False)
             print(f"Table building complete. Output saved to {output}")
+            print(f"Final table has {len(df_final)} rows and {len(df_final.columns)} columns")
+            
         else:
             print("No data to process")
             # Create empty file with headers
-            df.to_csv(output, index=False)
+            empty_columns = [
+                "Response ID", "Verbatim Response", "Subject", "Question",
+                "Deal Status", "Company Name", "Interviewee Name", "Date of Interview",
+                "Key Insight", "Findings", "Value_Realization", "Implementation_Experience",
+                "Risk_Mitigation", "Competitive_Advantage", "Customer_Success", "Product_Feedback",
+                "Service_Quality", "Decision_Factors", "Pain_Points", "Success_Metrics", "Future_Plans"
+            ]
+            pd.DataFrame(columns=empty_columns).to_csv(output, index=False)
             
     except Exception as e:
         print(f"Error during table building: {e}")
         # Create empty output file with headers
-        pd.DataFrame(columns=[
-            "Response ID","Verbatim Response","Subject","Question",
-            "Deal Status","Company Name","Interviewee Name","Date of Interview","Findings",
-            "Value_Realization","Implementation_Experience","Risk_Mitigation","Competitive_Advantage",
-            "Customer_Success","Product_Feedback","Service_Quality","Decision_Factors",
-            "Pain_Points","Success_Metrics","Future_Plans"
-        ]).to_csv(output, index=False)
+        empty_columns = [
+            "Response ID", "Verbatim Response", "Subject", "Question",
+            "Deal Status", "Company Name", "Interviewee Name", "Date of Interview",
+            "Key Insight", "Findings", "Value_Realization", "Implementation_Experience",
+            "Risk_Mitigation", "Competitive_Advantage", "Customer_Success", "Product_Feedback",
+            "Service_Quality", "Decision_Factors", "Pain_Points", "Success_Metrics", "Future_Plans"
+        ]
+        pd.DataFrame(columns=empty_columns).to_csv(output, index=False)
 
 
 @click.command("process_transcript")
