@@ -110,9 +110,9 @@ class ModularProcessor:
         logger.info(f"Extracted {len(full_text)} characters ({total_tokens} tokens) from transcript")
         logger.info(f"Text preview: {full_text[:200]}...")
         
-        # Create chunks using 16K-optimized approach
-        chunks = self._create_chunks(full_text, target_tokens=12000, overlap_tokens=800)
-        logger.info(f"Passing {len(chunks)} chunks to LLM with quality-focused chunking targeting ~5 insights")
+        # Create chunks using 16K-optimized approach with smaller chunks for comprehensive coverage
+        chunks = self._create_chunks(full_text, target_tokens=2000, overlap_tokens=200)
+        logger.info(f"Passing {len(chunks)} chunks to LLM with comprehensive coverage targeting ~3-5 insights per chunk")
         
         # Process each chunk
         all_responses = []
@@ -353,17 +353,17 @@ class ModularProcessor:
         logger.info(f"Saved {saved_count} responses to database")
         return saved_count
     
-    def _create_chunks(self, text: str, target_tokens: int = 12000, overlap_tokens: int = 800) -> List[str]:
+    def _create_chunks(self, text: str, target_tokens: int = 2000, overlap_tokens: int = 200) -> List[str]:
         """
-        Create text chunks for processing using 16K-optimized approach.
+        Create text chunks for processing using comprehensive coverage approach.
         
         Args:
             text: Full transcript text
-            target_tokens: Target tokens per chunk (12K for 16K model)
-            overlap_tokens: Overlap between chunks (800 tokens for continuity)
+            target_tokens: Target tokens per chunk (2K for comprehensive coverage)
+            overlap_tokens: Overlap between chunks (200 tokens for continuity)
             
         Returns:
-            List of text chunks optimized for processing
+            List of text chunks optimized for comprehensive processing
         """
         import tiktoken
         
@@ -410,7 +410,7 @@ class ModularProcessor:
             if start >= len(tokens):
                 break
         
-        logger.info(f"Created {len(chunks)} chunks with 16K-optimized token-based chunking")
+        logger.info(f"Created {len(chunks)} chunks with comprehensive coverage token-based chunking")
         logger.info(f"Average chunk size: {sum(len(encoding.encode(chunk)) for chunk in chunks) // len(chunks)} tokens")
         
         return chunks
