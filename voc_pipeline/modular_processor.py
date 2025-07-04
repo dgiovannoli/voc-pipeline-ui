@@ -90,15 +90,16 @@ class ModularProcessor:
         if not full_text.strip():
             raise ValueError("Transcript is empty")
         
-        # Create chunks (simplified chunking for now)
-        chunks = self._create_chunks(full_text, target_tokens=7000, overlap_tokens=600)
-        logger.info(f"Created {len(chunks)} chunks for processing")
+        # Create chunks using 16K-optimized approach
+        chunks = self._create_chunks(full_text, target_tokens=12000, overlap_tokens=800)
+        logger.info(f"Passing {len(chunks)} chunks to LLM with quality-focused chunking targeting ~5 insights")
         
         # Process each chunk
         all_responses = []
         for i, chunk in enumerate(chunks):
             try:
-                response_id = f"{company}_{interviewee}_{i+1}"
+                # Create unique response ID for this chunk
+                chunk_id = f"{company}_{interviewee}_{i+1}"
                 
                 # Create prompt template (use raw template, not formatted)
                 prompt_template = PromptTemplate(
@@ -109,7 +110,7 @@ class ModularProcessor:
                 
                 # Get response
                 result = chain.invoke({
-                    "response_id": response_id,
+                    "response_id": chunk_id,
                     "company": company,
                     "interviewee_name": interviewee,
                     "deal_status": deal_status,
@@ -127,8 +128,13 @@ class ModularProcessor:
                 try:
                     responses = json.loads(response_text)
                     if isinstance(responses, list):
+                        # Add chunk index to response IDs to ensure uniqueness
+                        for j, response in enumerate(responses):
+                            if 'response_id' in response:
+                                response['response_id'] = f"{chunk_id}_{j+1}"
                         all_responses.extend(responses)
                     else:
+                        responses['response_id'] = f"{chunk_id}_1"
                         all_responses.append(responses)
                 except json.JSONDecodeError as e:
                     logger.warning(f"Failed to parse JSON from chunk {i}: {e}")
@@ -138,8 +144,31 @@ class ModularProcessor:
                 logger.error(f"Error processing chunk {i}: {e}")
                 continue
         
-        logger.info(f"Stage 1 complete: extracted {len(all_responses)} responses")
-        return all_responses
+        # Post-processing: Remove duplicates and improve quality
+        logger.info(f"Post-processing {len(all_responses)} responses")
+        
+        # Remove exact duplicates based on verbatim response
+        seen_responses = set()
+        unique_responses = []
+        for response in all_responses:
+            verbatim = response.get('verbatim_response', '').strip().lower()
+            if verbatim and verbatim not in seen_responses:
+                seen_responses.add(verbatim)
+                unique_responses.append(response)
+        
+        logger.info(f"Removed {len(all_responses) - len(unique_responses)} duplicate responses")
+        
+        # Filter out very short responses (likely incomplete)
+        quality_responses = []
+        for response in unique_responses:
+            verbatim = response.get('verbatim_response', '')
+            if len(verbatim.split()) >= 20:  # At least 20 words
+                quality_responses.append(response)
+        
+        logger.info(f"Post-processing removed {len(unique_responses) - len(quality_responses)} additional duplicates")
+        
+        logger.info(f"Stage 1 complete: extracted {len(quality_responses)} responses")
+        return quality_responses
     
     def stage2_analysis_enrichment(self, core_responses: List[Dict]) -> List[Dict]:
         """
@@ -304,32 +333,99 @@ class ModularProcessor:
         logger.info(f"Saved {saved_count} responses to database")
         return saved_count
     
-    def _create_chunks(self, text: str, target_tokens: int = 7000, overlap_tokens: int = 600) -> List[str]:
-        """Create text chunks for processing."""
-        # Simple character-based chunking (can be improved with token-based chunking)
-        chunk_size = target_tokens * 4  # Rough approximation
-        overlap_size = overlap_tokens * 4
+    def _create_chunks(self, text: str, target_tokens: int = 12000, overlap_tokens: int = 800) -> List[str]:
+        """
+        Create text chunks for processing using 16K-optimized approach.
+        
+        Args:
+            text: Full transcript text
+            target_tokens: Target tokens per chunk (12K for 16K model)
+            overlap_tokens: Overlap between chunks (800 tokens for continuity)
+            
+        Returns:
+            List of text chunks optimized for processing
+        """
+        import tiktoken
+        
+        # Initialize tokenizer
+        try:
+            encoding = tiktoken.encoding_for_model("gpt-3.5-turbo-16k")
+        except:
+            # Fallback to cl100k_base encoding
+            encoding = tiktoken.get_encoding("cl100k_base")
+        
+        # Tokenize the full text
+        tokens = encoding.encode(text)
         
         chunks = []
         start = 0
         
-        while start < len(text):
-            end = start + chunk_size
-            chunk = text[start:end]
+        while start < len(tokens):
+            end = start + target_tokens
             
-            # Try to break at sentence boundary
-            if end < len(text):
-                last_period = chunk.rfind('.')
-                last_newline = chunk.rfind('\n')
-                break_point = max(last_period, last_newline)
-                if break_point > start + chunk_size * 0.8:  # Only break if we're not too far back
-                    chunk = text[start:start + break_point + 1]
-                    end = start + break_point + 1
+            # Extract tokens for this chunk
+            chunk_tokens = tokens[start:end]
             
-            chunks.append(chunk)
-            start = end - overlap_size
+            # Decode back to text
+            chunk_text = encoding.decode(chunk_tokens)
+            
+            # Q&A-aware segmentation - try to break at natural conversation boundaries
+            if end < len(tokens):
+                # Look for natural break points in the remaining text
+                remaining_tokens = tokens[end:end + 200]  # Look ahead 200 tokens
+                remaining_text = encoding.decode(remaining_tokens)
+                
+                # Find the best break point
+                break_point = self._find_break_point(chunk_text, remaining_text)
+                if break_point > len(chunk_text) * 0.7:  # Only break if we're not too far back
+                    chunk_text = chunk_text[:break_point]
+                    # Adjust end position based on actual text length
+                    actual_tokens = encoding.encode(chunk_text)
+                    end = start + len(actual_tokens)
+            
+            chunks.append(chunk_text)
+            
+            # Move start position with overlap
+            start = end - overlap_tokens
+            if start >= len(tokens):
+                break
+        
+        logger.info(f"Created {len(chunks)} chunks with 16K-optimized token-based chunking")
+        logger.info(f"Average chunk size: {sum(len(encoding.encode(chunk)) for chunk in chunks) // len(chunks)} tokens")
         
         return chunks
+    
+    def _find_break_point(self, chunk_text: str, remaining_text: str) -> int:
+        """
+        Find the best break point for Q&A-aware segmentation.
+        
+        Args:
+            chunk_text: Current chunk text
+            remaining_text: Next portion of text
+            
+        Returns:
+            Best break point position in chunk_text
+        """
+        # Look for conversation boundaries
+        break_patterns = [
+            '\n\n',  # Double newline (speaker change)
+            '.\n',   # End of sentence followed by newline
+            '?\n',   # Question followed by newline
+            '!\n',   # Exclamation followed by newline
+            '\nQ:',  # Question marker
+            '\nA:',  # Answer marker
+            '\nInterviewer:',  # Interviewer marker
+            '\nInterviewee:',  # Interviewee marker
+        ]
+        
+        best_break = len(chunk_text)
+        
+        for pattern in break_patterns:
+            pos = chunk_text.rfind(pattern)
+            if pos > len(chunk_text) * 0.7:  # Only use if it's in the latter part
+                best_break = min(best_break, pos + len(pattern))
+        
+        return best_break
     
     def run_full_pipeline(self, transcript_path: str, company: str, interviewee: str, 
                          deal_status: str, date_of_interview: str, 
