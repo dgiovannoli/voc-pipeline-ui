@@ -12,6 +12,88 @@ from database import VOCDatabase
 
 load_dotenv()
 
+# Helper functions
+def extract_interviewee_and_company(filename):
+    name = filename.rsplit('.', 1)[0]
+    # Try to extract "Interview with [Interviewee], ... at [Company]"
+    match = re.search(r'Interview with ([^,]+),.*? at ([^.,]+)', name, re.IGNORECASE)
+    if match:
+        interviewee = match.group(1).strip()
+        company = match.group(2).strip()
+        return interviewee, company
+    # Try to extract "Interview with [Interviewee] at [Company]"
+    match = re.search(r'Interview with ([^,]+) at ([^.,]+)', name, re.IGNORECASE)
+    if match:
+        interviewee = match.group(1).strip()
+        company = match.group(2).strip()
+        return interviewee, company
+    # Try to extract "Interview with [Interviewee]"
+    match = re.search(r'Interview with ([^.,-]+)', name, re.IGNORECASE)
+    if match:
+        interviewee = match.group(1).strip()
+        return interviewee, ""
+    # Fallback: use the whole name as interviewee
+    return name.strip(), ""
+
+@st.cache_data(ttl=1, show_spinner=False)
+def load_csv(path):
+    try:
+        return pd.read_csv(path)
+    except Exception as e:
+        st.error(f"Error loading CSV from {path}: {e}")
+        return pd.DataFrame()
+
+def process_files_modular():
+    """Process files using the modular pipeline"""
+    if not st.session_state.uploaded_paths:
+        raise Exception("No files uploaded")
+    
+    # Save uploaded files
+    for f in uploads:
+        dest = UPLOAD_DIR / f.name
+        with open(dest, "wb") as out:
+            out.write(f.getbuffer())
+        st.session_state.uploaded_paths.append(str(dest))
+    
+    # Process using modular pipeline
+    for path in st.session_state.uploaded_paths:
+        interviewee, company = extract_interviewee_and_company(os.path.basename(path))
+        subprocess.run([
+            sys.executable, "-m", "voc_pipeline.modular_cli", "run-pipeline",
+            "--input", path,
+            "--company", company if company else "Unknown",
+            "--interviewee", interviewee if interviewee else "Unknown",
+            "--deal-status", "closed_won",
+            "--date", "2024-01-01"
+        ], check=True)
+
+def run_modular_stage(stage):
+    """Run a specific modular stage"""
+    if stage == 'extract-core':
+        subprocess.run([
+            sys.executable, "-m", "voc_pipeline.modular_cli", "extract-core",
+            "--input", str(STAGE1_CSV),
+            "--output", str(STAGE1_CSV)
+        ], check=True)
+    elif stage == 'validate':
+        subprocess.run([
+            sys.executable, "-m", "voc_pipeline", "validate",
+            "--input", str(STAGE1_CSV),
+            "--output", str(VALIDATED_CSV)
+        ], check=True)
+    elif stage == 'enrich-analysis':
+        subprocess.run([
+            sys.executable, "-m", "voc_pipeline.modular_cli", "enrich-analysis",
+            "--input", str(VALIDATED_CSV),
+            "--output", str(RESPONSE_TABLE_CSV)
+        ], check=True)
+    elif stage == 'build-table':
+        subprocess.run([
+            sys.executable, "-m", "voc_pipeline", "build-table",
+            "--input", str(VALIDATED_CSV),
+            "--output", str(RESPONSE_TABLE_CSV)
+        ], check=True)
+
 # Page configuration
 st.set_page_config(
     page_title="VOC Pipeline - Modular Analysis",
@@ -614,85 +696,3 @@ elif st.session_state.current_stage == 'export':
     if st.button("🔄 Start New Workflow", type="primary", use_container_width=True):
         st.session_state.current_stage = 'upload'
         st.rerun()
-
-# Helper functions
-def extract_interviewee_and_company(filename):
-    name = filename.rsplit('.', 1)[0]
-    # Try to extract "Interview with [Interviewee], ... at [Company]"
-    match = re.search(r'Interview with ([^,]+),.*? at ([^.,]+)', name, re.IGNORECASE)
-    if match:
-        interviewee = match.group(1).strip()
-        company = match.group(2).strip()
-        return interviewee, company
-    # Try to extract "Interview with [Interviewee] at [Company]"
-    match = re.search(r'Interview with ([^,]+) at ([^.,]+)', name, re.IGNORECASE)
-    if match:
-        interviewee = match.group(1).strip()
-        company = match.group(2).strip()
-        return interviewee, company
-    # Try to extract "Interview with [Interviewee]"
-    match = re.search(r'Interview with ([^.,-]+)', name, re.IGNORECASE)
-    if match:
-        interviewee = match.group(1).strip()
-        return interviewee, ""
-    # Fallback: use the whole name as interviewee
-    return name.strip(), ""
-
-@st.cache_data(ttl=1, show_spinner=False)
-def load_csv(path):
-    try:
-        return pd.read_csv(path)
-    except Exception as e:
-        st.error(f"Error loading CSV from {path}: {e}")
-        return pd.DataFrame()
-
-def process_files_modular():
-    """Process files using the modular pipeline"""
-    if not st.session_state.uploaded_paths:
-        raise Exception("No files uploaded")
-    
-    # Save uploaded files
-    for f in uploads:
-        dest = UPLOAD_DIR / f.name
-        with open(dest, "wb") as out:
-            out.write(f.getbuffer())
-        st.session_state.uploaded_paths.append(str(dest))
-    
-    # Process using modular pipeline
-    for path in st.session_state.uploaded_paths:
-        interviewee, company = extract_interviewee_and_company(os.path.basename(path))
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline.modular_cli", "run-pipeline",
-            "--input", path,
-            "--company", company if company else "Unknown",
-            "--interviewee", interviewee if interviewee else "Unknown",
-            "--deal-status", "closed_won",
-            "--date", "2024-01-01"
-        ], check=True)
-
-def run_modular_stage(stage):
-    """Run a specific modular stage"""
-    if stage == 'extract-core':
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline.modular_cli", "extract-core",
-            "--input", str(STAGE1_CSV),
-            "--output", str(STAGE1_CSV)
-        ], check=True)
-    elif stage == 'validate':
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline", "validate",
-            "--input", str(STAGE1_CSV),
-            "--output", str(VALIDATED_CSV)
-        ], check=True)
-    elif stage == 'enrich-analysis':
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline.modular_cli", "enrich-analysis",
-            "--input", str(VALIDATED_CSV),
-            "--output", str(RESPONSE_TABLE_CSV)
-        ], check=True)
-    elif stage == 'build-table':
-        subprocess.run([
-            sys.executable, "-m", "voc_pipeline", "build-table",
-            "--input", str(VALIDATED_CSV),
-            "--output", str(RESPONSE_TABLE_CSV)
-        ], check=True)
