@@ -47,8 +47,16 @@ def process_files():
     """Process uploaded files using the modular pipeline CLI"""
     if not st.session_state.uploaded_paths:
         raise Exception("No files uploaded")
-    for path in st.session_state.uploaded_paths:
+    
+    all_results = []
+    processed_count = 0
+    
+    for i, path in enumerate(st.session_state.uploaded_paths):
         interviewee, company = extract_interviewee_and_company(os.path.basename(path))
+        
+        # Create temporary output file for this file
+        temp_output = BASE / f"temp_output_{i}.csv"
+        
         result = subprocess.run([
             sys.executable, "-m", "voc_pipeline.modular_cli", "extract-core",
             path,
@@ -56,14 +64,40 @@ def process_files():
             interviewee if interviewee else "Unknown",
             "closed_won",
             "2024-01-01",
-            "-o", str(STAGE1_CSV)
+            "-o", str(temp_output)
         ], capture_output=True, text=True)
+        
         if result.returncode != 0:
-            st.error(f"Processing failed!\n\nSTDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}")
+            st.error(f"Processing failed for {os.path.basename(path)}!\n\nSTDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}")
+            # Clean up temp files
+            for temp_file in [BASE / f"temp_output_{j}.csv" for j in range(len(st.session_state.uploaded_paths))]:
+                if temp_file.exists():
+                    temp_file.unlink()
             return
-    if not os.path.exists(STAGE1_CSV) or os.path.getsize(STAGE1_CSV) == 0:
-        st.error("Processing failed: No output was generated. Please check your input files and try again.")
+        
+        # Load and combine results
+        if temp_output.exists() and temp_output.stat().st_size > 0:
+            try:
+                df_temp = pd.read_csv(temp_output)
+                all_results.append(df_temp)
+                processed_count += 1
+                st.success(f"✅ Processed {os.path.basename(path)}: {len(df_temp)} responses")
+            except Exception as e:
+                st.warning(f"⚠️ Could not read results from {os.path.basename(path)}: {e}")
+        
+        # Clean up temp file
+        if temp_output.exists():
+            temp_output.unlink()
+    
+    # Combine all results
+    if all_results:
+        combined_df = pd.concat(all_results, ignore_index=True)
+        combined_df.to_csv(STAGE1_CSV, index=False)
+        st.success(f"🎉 Successfully processed {processed_count} files with {len(combined_df)} total responses")
+    else:
+        st.error("Processing failed: No output was generated from any files. Please check your input files and try again.")
         return
+    
     st.session_state.current_step = 2
 
 def validate_and_build():
@@ -204,6 +238,7 @@ if st.session_state.current_step == 1:
             st.session_state.uploaded_paths.append(str(dest))
         if st.button("▶️ Process Files", type="primary", use_container_width=True):
             with st.spinner("Processing files..."):
+                st.info(f"Processing {len(uploads)} files...")
                 try:
                     process_files()
                     # Check if output exists and is non-empty

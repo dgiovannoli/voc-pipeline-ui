@@ -7,7 +7,7 @@ This is the source of truth and should focus on quality verbatim extraction.
 CORE_EXTRACTION_PROMPT = """
 CRITICAL INSTRUCTIONS FOR ENHANCED QUALITY ANALYSIS:
 - You have access to focused context windows (~7K tokens) containing 6-8 Q&A exchanges.
-- Extract the 1-2 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
+- Extract the 3-5 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
   1. **Comprehensive Customer Experiences**: Complete scenarios with full context, specific examples, detailed explanations, and quantitative details
   2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages, workload distributions
   3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators and performance metrics
@@ -15,7 +15,7 @@ CRITICAL INSTRUCTIONS FOR ENHANCED QUALITY ANALYSIS:
   5. **Strategic Perspectives**: Decision factors, risk assessments, future planning, business impact
 
 EXTRACTION STRATEGY:
-- Identify the 1-2 richest, most comprehensive responses in this chunk
+- Identify the 3-5 richest, most comprehensive responses in this chunk
 - Extract the COMPLETE verbatim response for each with full context and conversation flow
 - Create comprehensive key insights that capture the main themes and specific details
 - Focus on responses that provide complete context and detailed explanations
@@ -36,10 +36,11 @@ VERBATIM RESPONSE RULES:
 - Include workflow details, process descriptions, and technical specifications
 
 QUALITY-FOCUSED INSIGHTS:
-- Extract the 1-2 most comprehensive insights from the richest responses
+- Extract the 3-5 most comprehensive insights from the richest responses
 - Focus on responses that provide complete context and detailed explanations
 - Ensure each verbatim response captures the full conversation context
 - Choose responses that cover different topics or perspectives when possible
+- Extract multiple responses even if they cover similar topics but provide different details or examples
 - Only extract if the response contains substantial, actionable content
 - Prioritize responses with specific metrics, examples, and detailed workflows
 
@@ -50,7 +51,7 @@ DIFFERENTIATION STRATEGY:
 - Prioritize responses with quantitative details, specific processes, or technical specifications
 - Choose responses that provide the most complete picture of customer experiences
 
-Analyze the provided interview chunk and extract the 1-2 RICHEST, MOST COMPREHENSIVE verbatim responses. Return ONLY a JSON array containing one or two objects with the following fields:
+Analyze the provided interview chunk and extract the 3-5 RICHEST, MOST COMPREHENSIVE verbatim responses. Return ONLY a JSON array containing three to five objects with the following fields:
 
 [
   {{
@@ -72,17 +73,47 @@ Analyze the provided interview chunk and extract the 1-2 RICHEST, MOST COMPREHEN
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}"
+  }},
+  {{
+    "response_id": "{response_id}_3",
+    "verbatim_response": "third_complete_verbatim_response_with_full_context_and_specific_examples",
+    "subject": "brief_subject_description_3",
+    "question": "what_question_this_answers_3",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}"
+  }},
+  {{
+    "response_id": "{response_id}_4",
+    "verbatim_response": "fourth_complete_verbatim_response_with_full_context_and_specific_examples",
+    "subject": "brief_subject_description_4",
+    "question": "what_question_this_answers_4",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}"
+  }},
+  {{
+    "response_id": "{response_id}_5",
+    "verbatim_response": "fifth_complete_verbatim_response_with_full_context_and_specific_examples",
+    "subject": "brief_subject_description_5",
+    "question": "what_question_this_answers_5",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}"
   }}
 ]
 
 Guidelines:
-- Extract the 1-2 richest, most comprehensive verbatim responses per chunk
+- Extract the 3-5 richest, most comprehensive verbatim responses per chunk
 - Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
 - Use "N/A" for fields that don't apply
 - Return ONLY the JSON array, no other text
 - Focus on responses with specific examples, metrics, detailed explanations, and full context
 - Choose responses that provide the most complete picture of customer experiences
-- If only one rich response exists, return an array with just one object
+- If fewer than 3 rich responses exist, return an array with the available responses (minimum 1)
 - Skip chunks that only contain low-quality content (acknowledgments, thank yous, etc.)
 - Prioritize responses that show different aspects of similar topics (e.g., different use cases, workflows, or specific pain points)
 
