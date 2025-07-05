@@ -26,33 +26,31 @@ if [ -z "$VIRTUAL_ENV" ]; then
     echo "💡 Make sure to activate your virtual environment first:"
     echo "   source .venv/bin/activate"
     echo ""
+    echo "🔧 Activating virtual environment..."
+    source .venv/bin/activate
 fi
 
-# Fix database schema
+# Check if Python is available
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Error: python3 not found"
+    exit 1
+fi
+
 echo "🔧 Checking database schema..."
-python production_fix.py
-if [ $? -ne 0 ]; then
+if python3 production_fix.py; then
+    echo "✅ Database fix completed successfully"
+else
     echo "❌ Database fix failed"
     exit 1
 fi
 
-# Kill any existing Streamlit processes
 echo "🔧 Stopping existing Streamlit processes..."
 pkill -f streamlit 2>/dev/null || true
 
-# Wait a moment for processes to stop
-sleep 2
-
-# Start Streamlit in production mode
 echo "🚀 Starting Streamlit in production mode..."
 echo "🌐 App will be available at: http://localhost:8501"
 echo "💡 Press Ctrl+C to stop the server"
 echo ""
 
 # Start Streamlit with production settings
-streamlit run app.py \
-    --server.port 8501 \
-    --server.headless true \
-    --server.enableCORS false \
-    --server.enableXsrfProtection false \
-    --browser.gatherUsageStats false 
+streamlit run app.py --server.port 8501 --server.headless true 
