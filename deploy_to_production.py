@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Production Deployment Script
+Production Deployment Script for Supabase-only VOC Pipeline
 This script ensures the production environment is properly configured.
 """
 
@@ -22,10 +22,30 @@ def run_command(command, description):
         print(f"Error output: {e.stderr}")
         return False
 
+def check_supabase_connection():
+    """Check if Supabase connection is working"""
+    print("🔍 Testing Supabase connection...")
+    try:
+        # Import and test Supabase connection
+        from supabase_database import SupabaseDatabase
+        db = SupabaseDatabase()
+        
+        # Try to get a simple query to test connection
+        test_result = db.test_connection()
+        if test_result:
+            print("✅ Supabase connection successful")
+            return True
+        else:
+            print("❌ Supabase connection failed")
+            return False
+    except Exception as e:
+        print(f"❌ Supabase connection error: {e}")
+        return False
+
 def ensure_production_environment():
     """Ensure production environment is properly configured"""
-    print("🚀 PRODUCTION DEPLOYMENT")
-    print("=" * 50)
+    print("🚀 PRODUCTION DEPLOYMENT - SUPABASE ARCHITECTURE")
+    print("=" * 60)
     
     # Get current directory
     current_dir = Path.cwd()
@@ -37,18 +57,13 @@ def ensure_production_environment():
         print("💡 Make sure you're in the voc-pipeline-ui directory")
         return False
     
-    # Check if database exists and is correct
-    print("\n🔍 Checking database...")
-    if not run_command("python production_fix.py", "Database schema check"):
-        return False
-    
     # Check if all required files exist
     required_files = [
         "app.py",
-        "database.py", 
+        "supabase_database.py", 
         "enhanced_stage2_analyzer.py",
-        "voc_pipeline.db",
-        "config/analysis_config.yaml"
+        "config/analysis_config.yaml",
+        "requirements.txt"
     ]
     
     print("\n🔍 Checking required files...")
@@ -60,13 +75,38 @@ def ensure_production_environment():
             print(f"✅ Found: {file_path}")
     
     # Check environment variables
-    print("\n🔍 Checking environment...")
-    required_env_vars = ["OPENAI_API_KEY"]
+    print("\n🔍 Checking environment variables...")
+    required_env_vars = ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
+    missing_vars = []
+    
     for var in required_env_vars:
         if not os.getenv(var):
-            print(f"⚠️ Environment variable not set: {var}")
+            print(f"❌ Environment variable not set: {var}")
+            missing_vars.append(var)
         else:
             print(f"✅ Environment variable set: {var}")
+    
+    if missing_vars:
+        print(f"\n⚠️ Missing environment variables: {', '.join(missing_vars)}")
+        print("💡 Please set these in your .env file or environment")
+        return False
+    
+    # Check Supabase connection
+    if not check_supabase_connection():
+        print("❌ Cannot proceed without Supabase connection")
+        return False
+    
+    # Check if virtual environment is activated
+    if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+        print("⚠️ Virtual environment not detected")
+        print("💡 Please activate your virtual environment first:")
+        print("   source .venv/bin/activate")
+        return False
+    
+    # Install/update dependencies
+    print("\n🔧 Installing/updating dependencies...")
+    if not run_command("pip install -r requirements.txt", "Install dependencies"):
+        return False
     
     # Kill any existing Streamlit processes
     print("\n🔧 Stopping existing Streamlit processes...")
@@ -78,6 +118,11 @@ def ensure_production_environment():
         print("\n✅ PRODUCTION DEPLOYMENT SUCCESSFUL!")
         print("🌐 App is running at: http://localhost:8501")
         print("💡 Use Ctrl+C to stop the server")
+        print("\n📊 Production Features:")
+        print("   ✅ Supabase-only architecture")
+        print("   ✅ Real-time data sync")
+        print("   ✅ Scalable cloud database")
+        print("   ✅ Enhanced Stage 2 analysis")
         return True
     else:
         print("\n❌ PRODUCTION DEPLOYMENT FAILED!")
@@ -99,17 +144,67 @@ def show_production_status():
     else:
         print("❌ Streamlit is not running")
     
-    # Check database status
-    print("\n📊 Database status:")
-    run_command("python production_fix.py info", "Database info")
+    # Check Supabase connection
+    print("\n🔍 Supabase status:")
+    if check_supabase_connection():
+        print("✅ Supabase connection healthy")
+    else:
+        print("❌ Supabase connection failed")
+    
+    # Check environment variables
+    print("\n🔍 Environment variables:")
+    env_vars = ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
+    for var in env_vars:
+        if os.getenv(var):
+            print(f"✅ {var}: Set")
+        else:
+            print(f"❌ {var}: Not set")
+
+def run_health_check():
+    """Run a comprehensive health check"""
+    print("🏥 PRODUCTION HEALTH CHECK")
+    print("=" * 50)
+    
+    # Check files
+    print("\n📁 File system check:")
+    required_files = ["app.py", "supabase_database.py", "enhanced_stage2_analyzer.py"]
+    for file_path in required_files:
+        if Path(file_path).exists():
+            print(f"✅ {file_path}")
+        else:
+            print(f"❌ {file_path}")
+    
+    # Check environment
+    print("\n🔍 Environment check:")
+    env_vars = ["OPENAI_API_KEY", "SUPABASE_URL", "SUPABASE_KEY"]
+    for var in env_vars:
+        if os.getenv(var):
+            print(f"✅ {var}")
+        else:
+            print(f"❌ {var}")
+    
+    # Check Supabase
+    print("\n🔍 Supabase check:")
+    if check_supabase_connection():
+        print("✅ Supabase connection")
+    else:
+        print("❌ Supabase connection")
+    
+    # Check Streamlit
+    print("\n🔍 Streamlit check:")
+    result = subprocess.run("pgrep -f streamlit", shell=True, capture_output=True, text=True)
+    if result.returncode == 0:
+        print("✅ Streamlit running")
+    else:
+        print("❌ Streamlit not running")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "status":
             show_production_status()
-        elif sys.argv[1] == "fix":
-            run_command("python production_fix.py", "Fix database")
+        elif sys.argv[1] == "health":
+            run_health_check()
         else:
-            print("Usage: python deploy_to_production.py [status|fix]")
+            print("Usage: python deploy_to_production.py [status|health]")
     else:
         ensure_production_environment() 
