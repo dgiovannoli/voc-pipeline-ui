@@ -15,6 +15,9 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
 
+# Load environment variables from .env file
+load_dotenv()
+
 # Initialize Supabase database
 try:
     db = SupabaseDatabase()
