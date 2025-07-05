@@ -1,0 +1,78 @@
+# Stage 2 Analysis Configuration
+# This file controls all aspects of the quote labeling and analysis process
+
+scoring:
+  # Binary + Intensity: 0 = not relevant, 1-5 = relevant with increasing importance
+  scale: [0, 5]
+  
+  # Deal outcome weighting factors
+  deal_weighting:
+    lost_deal_base: 1.2      # Lost deals get more attention
+    won_deal_base: 0.9       # Won deals get less attention
+    critical_multiplier: 1.5  # Amplify truly critical feedback
+    minor_multiplier: 0.7     # Reduce minor feedback impact
+
+processing:
+  max_workers: 4             # Number of parallel workers
+  max_quote_length: 1000     # Maximum characters to send to LLM
+  retry_attempts: 3          # Number of retry attempts on failure
+  batch_size: 50             # Batch size for processing
+
+# 10-Criteria Executive Scorecard Framework
+criteria:
+  product_capability:
+    description: "Functionality, features, performance, and core solution fit"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  implementation_onboarding:
+    description: "Deployment ease, time-to-value, setup complexity"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  integration_technical_fit:
+    description: "APIs, data compatibility, technical architecture alignment"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  support_service_quality:
+    description: "Post-sale support, responsiveness, expertise, SLAs"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  security_compliance:
+    description: "Data protection, certifications, governance, risk management"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  market_position_reputation:
+    description: "Brand trust, references, analyst recognition, market presence"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  vendor_stability:
+    description: "Financial health, roadmap clarity, long-term viability"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  sales_experience_partnership:
+    description: "Buying process quality, relationship building, trust"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  commercial_terms:
+    description: "Price, contract flexibility, ROI, total cost of ownership"
+    weight: 1.0
+    priority_threshold: 0.8
+    
+  speed_responsiveness:
+    description: "Implementation timeline, decision-making speed, agility"
+    weight: 1.0
+    priority_threshold: 0.8
+
+
+  
+# Quality control settings
+quality:
+  min_confidence: "medium"   # Minimum confidence level to include in analysis
+  max_processing_errors: 10  # Maximum errors before stopping processing 

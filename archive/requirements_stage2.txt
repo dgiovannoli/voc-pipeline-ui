@@ -1,0 +1,7 @@
+# Stage 2 Analysis Dependencies
+pyyaml>=6.0
+tenacity>=8.0.0
+sqlite3  # Usually included with Python
+pandas>=1.5.0
+python-dotenv>=0.19.0
+langchain-openai>=0.1.0 
