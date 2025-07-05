@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Production Startup Script for VOC Pipeline UI
-# This script ensures the production environment uses the correct database
+# Production Startup Script for Supabase-only VOC Pipeline UI
+# This script ensures the production environment is properly configured
 
-echo "🚀 VOC Pipeline UI - Production Startup"
-echo "========================================"
+echo "🚀 VOC Pipeline UI - Production Startup (Supabase)"
+echo "=================================================="
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -36,11 +36,44 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-echo "🔧 Checking database schema..."
-if python3 production_fix.py; then
-    echo "✅ Database fix completed successfully"
-else
-    echo "❌ Database fix failed"
+# Check environment variables
+echo "🔍 Checking environment variables..."
+if [ -z "$OPENAI_API_KEY" ]; then
+    echo "❌ Error: OPENAI_API_KEY not set"
+    echo "💡 Please set your OpenAI API key in the environment"
+    exit 1
+fi
+
+if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_KEY" ]; then
+    echo "❌ Error: Supabase credentials not set"
+    echo "💡 Please set SUPABASE_URL and SUPABASE_KEY in the environment"
+    exit 1
+fi
+
+echo "✅ Environment variables configured"
+
+# Install/update dependencies
+echo "🔧 Installing/updating dependencies..."
+pip install -r requirements.txt
+
+# Test Supabase connection
+echo "🔍 Testing Supabase connection..."
+python3 -c "
+from supabase_database import SupabaseDatabase
+try:
+    db = SupabaseDatabase()
+    if db.test_connection():
+        print('✅ Supabase connection successful')
+    else:
+        print('❌ Supabase connection failed')
+        exit(1)
+except Exception as e:
+    print(f'❌ Supabase connection error: {e}')
+    exit(1)
+"
+
+if [ $? -ne 0 ]; then
+    echo "❌ Supabase connection failed"
     exit 1
 fi
 

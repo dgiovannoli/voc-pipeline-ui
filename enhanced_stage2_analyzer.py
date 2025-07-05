@@ -4,7 +4,6 @@ import os
 import json
 import re
 import pandas as pd
-import sqlite3
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -14,19 +13,21 @@ import logging
 from typing import Dict, List, Optional, Tuple
 import yaml
 
+# Import Supabase database manager
+from supabase_database import SupabaseDatabase
+
 load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class DatabaseStage2Analyzer:
+class SupabaseStage2Analyzer:
     """
-    Stage 2: Database-first quote labeling with incremental processing
+    Stage 2: Supabase-first quote labeling with incremental processing
     """
     
-    def __init__(self, db_path="voc_pipeline.db", config_path="config/analysis_config.yaml"):
-        self.db_path = db_path
+    def __init__(self, config_path="config/analysis_config.yaml"):
         self.config_path = config_path
         self.config = self.load_config()
         
@@ -37,8 +38,8 @@ class DatabaseStage2Analyzer:
             temperature=0.3
         )
         
-        # Initialize database
-        self.init_database()
+        # Initialize Supabase database
+        self.db = SupabaseDatabase()
         
         # Load criteria from config
         self.criteria = self.config.get('criteria', {})
@@ -133,101 +134,17 @@ class DatabaseStage2Analyzer:
             }
         }
     
-    def init_database(self):
-        """Initialize database with proper schema"""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            
-            # Core responses table (Stage 1 output) - Source of truth
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS core_responses (
-                    response_id VARCHAR PRIMARY KEY,
-                    verbatim_response TEXT,
-                    subject VARCHAR,
-                    question TEXT,
-                    deal_status VARCHAR,
-                    company VARCHAR,
-                    interviewee_name VARCHAR,
-                    interview_date DATE,
-                    file_source VARCHAR,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            """)
-            
-            # Quote analysis table (Stage 2 output) - Analysis layer
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS quote_analysis (
-                    analysis_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    quote_id VARCHAR,
-                    criterion VARCHAR NOT NULL,
-                    score DECIMAL(3,2),
-                    priority VARCHAR CHECK (priority IN ('critical', 'high', 'medium', 'low')),
-                    confidence VARCHAR CHECK (confidence IN ('high', 'medium', 'low')),
-                    relevance_explanation TEXT,
-                    deal_weighted_score DECIMAL(3,2),
-                    context_keywords TEXT,
-                    question_relevance VARCHAR CHECK (question_relevance IN ('direct', 'indirect', 'unrelated')),
-                    analysis_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (quote_id) REFERENCES core_responses(response_id),
-                    UNIQUE(quote_id, criterion)
-                )
-            """)
-            
-            # Add question_relevance column if it doesn't exist (for existing databases)
-            try:
-                cursor.execute("ALTER TABLE quote_analysis ADD COLUMN question_relevance VARCHAR CHECK (question_relevance IN ('direct', 'indirect', 'unrelated'))")
-                logger.info("Added question_relevance column to existing quote_analysis table")
-            except sqlite3.OperationalError:
-                # Column already exists
-                pass
-            
-
-            
-            # Processing metadata table
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS processing_metadata (
-                    metadata_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    processing_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    quotes_processed INTEGER,
-                    quotes_with_scores INTEGER,
-                    processing_errors INTEGER,
-                    config_version VARCHAR,
-                    processing_duration_seconds INTEGER
-                )
-            """)
-            
-            conn.commit()
-            logger.info("Database initialized with schema")
-    
-    def load_stage1_data_from_db(self) -> pd.DataFrame:
-        """Load Stage 1 extracted quotes from database instead of CSV"""
-        query = """
-        SELECT response_id, verbatim_response, subject, question, deal_status, 
-               company, interviewee_name, interview_date, file_source
-        FROM core_responses
-        ORDER BY created_at DESC
-        """
-        
-        with sqlite3.connect(self.db_path) as conn:
-            df = pd.read_sql_query(query, conn)
-            logger.info(f"📊 Loaded {len(df)} quotes from database")
-            return df
+    def load_stage1_data_from_supabase(self) -> pd.DataFrame:
+        """Load Stage 1 extracted quotes from Supabase"""
+        df = self.db.get_core_responses()
+        logger.info(f"📊 Loaded {len(df)} quotes from Supabase")
+        return df
     
     def get_unanalyzed_quotes(self) -> pd.DataFrame:
         """Get quotes that haven't been analyzed yet (incremental processing)"""
-        query = """
-        SELECT cr.response_id, cr.verbatim_response, cr.subject, cr.question, 
-               cr.deal_status, cr.company, cr.interviewee_name, cr.interview_date
-        FROM core_responses cr
-        LEFT JOIN quote_analysis qa ON cr.response_id = qa.quote_id
-        WHERE qa.analysis_id IS NULL
-        ORDER BY cr.created_at DESC
-        """
-        
-        with sqlite3.connect(self.db_path) as conn:
-            df = pd.read_sql_query(query, conn)
-            logger.info(f"🔍 Found {len(df)} unanalyzed quotes")
-            return df
+        df = self.db.get_unanalyzed_quotes()
+        logger.info(f"🔍 Found {len(df)} unanalyzed quotes")
+        return df
     
     def analyze_single_quote(self, quote_row: pd.Series) -> Optional[Dict]:
         """Analyze a single quote with improved context-aware scoring"""
@@ -338,8 +255,8 @@ class DatabaseStage2Analyzer:
                         score, deal_status, context, context_keywords
                     )
                 
-                # Save to database
-                self.save_analysis_to_db(
+                # Save to Supabase
+                self.save_analysis_to_supabase(
                     quote_id, deal_status, company, interviewee, 
                     verbatim_response[:200], subject, question,
                     scores, weighted_scores,
@@ -368,7 +285,7 @@ class DatabaseStage2Analyzer:
                 logger.warning(f"⚠️ Failed to parse JSON for quote {quote_id}. Raw output: {result.content}")
                 self.quality_metrics["processing_errors"] += 1
                 return None
-                
+            
         except Exception as e:
             logger.error(f"❌ Analysis error for quote {quote_id}: {e}")
             self.quality_metrics["processing_errors"] += 1
@@ -424,33 +341,27 @@ class DatabaseStage2Analyzer:
         
         return score * base_weight * multiplier
     
-    def save_analysis_to_db(self, quote_id: str, deal_status: str, company: str, interviewee: str,
-                          original_quote: str, subject: str, question: str,
-                          scores: Dict, weighted_scores: Dict, priorities: Dict, 
-                          confidence: Dict, relevance_explanations: Dict, context_keywords: str,
-                          question_relevance: Dict = None):
-        """Save analysis results to database"""
+    def save_analysis_to_supabase(self, quote_id: str, deal_status: str, company: str, interviewee: str,
+                                original_quote: str, subject: str, question: str,
+                                scores: Dict, weighted_scores: Dict, priorities: Dict, 
+                                confidence: Dict, relevance_explanations: Dict, context_keywords: str,
+                                question_relevance: Dict = None):
+        """Save analysis results to Supabase"""
         
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
+        for criterion in scores.keys():
+            analysis_data = {
+                'quote_id': quote_id,
+                'criterion': criterion,
+                'score': scores[criterion],
+                'priority': priorities.get(criterion, 'medium'),
+                'confidence': confidence.get(criterion, 'medium'),
+                'relevance_explanation': relevance_explanations.get(criterion, ''),
+                'deal_weighted_score': weighted_scores.get(criterion, scores[criterion]),
+                'context_keywords': context_keywords,
+                'question_relevance': question_relevance.get(criterion, 'unrelated') if question_relevance else 'unrelated'
+            }
             
-            for criterion in scores.keys():
-                cursor.execute("""
-                    INSERT OR REPLACE INTO quote_analysis 
-                    (quote_id, criterion, score, priority, confidence, relevance_explanation, 
-                     deal_weighted_score, context_keywords, question_relevance)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (
-                    quote_id, criterion, scores[criterion], 
-                    priorities.get(criterion, 'medium'),
-                    confidence.get(criterion, 'medium'),
-                    relevance_explanations.get(criterion, ''),
-                    weighted_scores.get(criterion, scores[criterion]),
-                    context_keywords,
-                    question_relevance.get(criterion, 'unrelated') if question_relevance else 'unrelated'
-                ))
-            
-            conn.commit()
+            self.db.save_quote_analysis(analysis_data)
     
     def process_incremental(self, force_reprocess: bool = False) -> Dict:
         """Process quotes incrementally - only new ones unless forced"""
@@ -460,7 +371,7 @@ class DatabaseStage2Analyzer:
         
         if force_reprocess:
             logger.info("📊 Processing ALL quotes (forced reprocess)")
-            quotes_df = self.load_stage1_data_from_db()
+            quotes_df = self.load_stage1_data_from_supabase()
         else:
             logger.info("📊 Processing only UNANALYZED quotes (incremental)")
             quotes_df = self.get_unanalyzed_quotes()
@@ -515,80 +426,18 @@ class DatabaseStage2Analyzer:
     
     def save_processing_metadata(self, quotes_processed: int, quotes_analyzed: int, duration: float):
         """Save processing metadata for tracking"""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO processing_metadata 
-                (quotes_processed, quotes_with_scores, processing_errors, config_version, processing_duration_seconds)
-                VALUES (?, ?, ?, ?, ?)
-            """, (
-                quotes_processed, quotes_analyzed, 
-                self.quality_metrics["processing_errors"],
-                "1.0", duration
-            ))
-            conn.commit()
+        metadata = {
+            'quotes_processed': quotes_processed,
+            'quotes_with_scores': quotes_analyzed,
+            'processing_errors': self.quality_metrics["processing_errors"],
+            'config_version': "1.0",
+            'processing_duration_seconds': duration
+        }
+        self.db.save_processing_metadata(metadata)
     
     def generate_summary_statistics(self) -> Dict:
-        """Generate summary statistics from database"""
-        
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.cursor()
-            
-            # Get total quotes
-            cursor.execute("SELECT COUNT(*) FROM core_responses")
-            total_quotes = cursor.fetchone()[0]
-            
-            # Get quotes with scores
-            cursor.execute("SELECT COUNT(DISTINCT quote_id) FROM quote_analysis")
-            quotes_with_scores = cursor.fetchone()[0]
-            
-            # Get criteria performance
-            cursor.execute("""
-                SELECT criterion, 
-                       COUNT(*) as mention_count,
-                       AVG(deal_weighted_score) as avg_score,
-                       MIN(deal_weighted_score) as min_score,
-                       MAX(deal_weighted_score) as max_score
-                FROM quote_analysis 
-                GROUP BY criterion
-                ORDER BY avg_score DESC
-            """)
-            criteria_performance = {}
-            for row in cursor.fetchall():
-                criterion, mentions, avg_score, min_score, max_score = row
-                criteria_performance[criterion] = {
-                    "mention_count": mentions,
-                    "average_score": round(avg_score, 2),
-                    "score_range": [min_score, max_score],
-                    "coverage_percentage": round((mentions / total_quotes) * 100, 1)
-                }
-            
-            # Get deal outcome distribution
-            cursor.execute("""
-                SELECT deal_status, COUNT(*) 
-                FROM core_responses 
-                GROUP BY deal_status
-            """)
-            deal_outcome_distribution = dict(cursor.fetchall())
-            
-            # Get company distribution
-            cursor.execute("""
-                SELECT company, COUNT(*) 
-                FROM core_responses 
-                GROUP BY company
-            """)
-            company_distribution = dict(cursor.fetchall())
-        
-        return {
-            "total_quotes": total_quotes,
-            "quotes_with_scores": quotes_with_scores,
-            "coverage_percentage": round((quotes_with_scores / total_quotes) * 100, 1) if total_quotes > 0 else 0,
-            "criteria_performance": criteria_performance,
-            "deal_outcome_distribution": deal_outcome_distribution,
-            "company_distribution": company_distribution
-        }
-    
-
+        """Generate summary statistics from Supabase"""
+        return self.db.get_summary_statistics()
     
     def parse_json_response(self, response_text: str) -> Optional[Dict]:
         """Parse JSON response with fallback strategies"""
@@ -667,9 +516,9 @@ class DatabaseStage2Analyzer:
         logger.info("4 = Critical feedback/deal-breaking issue")
         logger.info("5 = Exceptional praise/deal-winning strength")
 
-def run_database_analysis(force_reprocess: bool = False):
-    """Run the database-first quote analysis"""
-    analyzer = DatabaseStage2Analyzer()
+def run_supabase_analysis(force_reprocess: bool = False):
+    """Run the Supabase-first quote analysis"""
+    analyzer = SupabaseStage2Analyzer()
     return analyzer.process_incremental(force_reprocess)
 
 # Run the analysis
@@ -681,7 +530,7 @@ if __name__ == "__main__":
     
     if force_reprocess:
         print("🔄 Force reprocessing all quotes with new Binary + Intensity scoring system...")
-        run_database_analysis(force_reprocess=True)
+        run_supabase_analysis(force_reprocess=True)
     else:
         print("🔄 Running incremental analysis with new Binary + Intensity scoring system...")
-        run_database_analysis()
+        run_supabase_analysis()
