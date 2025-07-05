@@ -26,6 +26,10 @@ except ImportError:
 
 load_dotenv()
 
+# Debug information (commented out for production)
+# st.write("Current working directory:", os.getcwd())
+# st.write("voc_pipeline.db exists:", os.path.exists("voc_pipeline.db"))
+
 # Helper functions
 def extract_interviewee_and_company(filename):
     """
@@ -33,8 +37,12 @@ def extract_interviewee_and_company(filename):
     Example: 'Interview with Ben Evenstad, Owner at Evenstad Law.docx' -> ('Ben Evenstad', 'Evenstad Law')
     """
     base = os.path.basename(filename).replace('.docx', '').replace('.txt', '')
-    if base.lower().startswith("interview with "):
-        base = base[len("interview with "):]
+    
+    # Handle simple filenames without interview format
+    if not base.lower().startswith("interview with "):
+        return ("Unknown", "Unknown")
+    
+    base = base[len("interview with "):]
     parts = [p.strip() for p in base.split(",")]
     interviewee = parts[0] if parts else "Unknown"
     company = "Unknown"
@@ -353,9 +361,17 @@ def init_database():
                     interviewee_name VARCHAR,
                     interview_date DATE,
                     file_source VARCHAR,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    sync_status VARCHAR DEFAULT 'local_only'
                 )
             """)
+            
+            # Add sync_status column if it doesn't exist (for existing databases)
+            try:
+                cursor.execute("ALTER TABLE core_responses ADD COLUMN sync_status VARCHAR DEFAULT 'local_only'")
+            except sqlite3.OperationalError:
+                # Column already exists
+                pass
             
             # Quote analysis table (Stage 2 output)
             cursor.execute("""
@@ -405,8 +421,8 @@ def save_stage1_to_database(csv_path):
                 cursor.execute("""
                     INSERT OR REPLACE INTO core_responses 
                     (response_id, verbatim_response, subject, question, deal_status, 
-                     company, interviewee_name, interview_date, file_source)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     company, interviewee_name, interview_date, file_source, sync_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     row.get('response_id', ''),
                     row.get('verbatim_response', ''),
@@ -416,7 +432,8 @@ def save_stage1_to_database(csv_path):
                     row.get('company', ''),
                     row.get('interviewee_name', ''),
                     interview_date,
-                    csv_path
+                    csv_path,
+                    'local_only'
                 ))
             
             conn.commit()
@@ -635,12 +652,6 @@ def show_supabase_sync():
 
 
 def main():
-    st.set_page_config(
-        page_title="VOC Pipeline",
-        page_icon="🎤",
-        layout="wide",
-        initial_sidebar_state="expanded"
-    )
     
     # Initialize database
     if not init_database():
