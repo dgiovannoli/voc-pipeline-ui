@@ -510,9 +510,6 @@ def show_supabase_sync():
         if "error" in status:
             st.error(f"❌ Error getting sync status: {status['error']}")
             return
-    except Exception as e:
-        st.error(f"❌ Error getting sync status: {e}")
-        return
         
         # Display status metrics
         col1, col2, col3 = st.columns(3)
@@ -550,8 +547,12 @@ def show_supabase_sync():
             st.write("**Quote Analysis:**")
             for sync_type, count in analysis_status.items():
                 st.write(f"  - {sync_type}: {count}")
-        
-        # Sync actions
+                
+    except Exception as e:
+        st.error(f"❌ Error getting sync status: {e}")
+        return
+    
+    # Sync actions
         st.markdown("---")
         st.subheader("🔄 Sync Actions")
         
