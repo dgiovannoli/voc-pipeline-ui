@@ -23,23 +23,32 @@ class VOCDatabase:
         conn = self.get_connection()
         cursor = conn.cursor()
         
-        # Core responses table (source of truth)
+        # Core responses table (source of truth) - Updated to match core_responses schema
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS responses (
-                response_id VARCHAR(255) PRIMARY KEY,
-                verbatim_response TEXT NOT NULL,
-                subject VARCHAR(500),
-                question VARCHAR(1000),
-                deal_status VARCHAR(100),
-                company VARCHAR(255),
-                interviewee_name VARCHAR(255),
-                date_of_interview DATE,
+            CREATE TABLE IF NOT EXISTS core_responses (
+                response_id VARCHAR PRIMARY KEY,
+                verbatim_response TEXT,
+                subject VARCHAR,
+                question TEXT,
+                deal_status VARCHAR,
+                company VARCHAR,
+                interviewee_name VARCHAR,
+                interview_date DATE,
+                file_source VARCHAR,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                sync_status VARCHAR DEFAULT 'local_only'
             )
         """)
         
-        # Labels/annotations table
+        # Add sync_status column if it doesn't exist (for existing databases)
+        try:
+            cursor.execute("ALTER TABLE core_responses ADD COLUMN sync_status VARCHAR DEFAULT 'local_only'")
+            logger.info("Added sync_status column to core_responses table")
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
+        
+        # Labels/annotations table - Updated to reference core_responses
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS response_labels (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,12 +58,12 @@ class VOCDatabase:
                 confidence_score REAL,
                 labeled_by VARCHAR(100),
                 labeled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (response_id) REFERENCES responses(response_id) ON DELETE CASCADE,
+                FOREIGN KEY (response_id) REFERENCES core_responses(response_id) ON DELETE CASCADE,
                 UNIQUE(response_id, label_type, label_value)
             )
         """)
         
-        # Analysis results table (AI-generated insights)
+        # Analysis results table (AI-generated insights) - Updated to reference core_responses
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS analysis_results (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,11 +73,11 @@ class VOCDatabase:
                 confidence_score REAL,
                 model_version VARCHAR(50),
                 analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (response_id) REFERENCES responses(response_id) ON DELETE CASCADE
+                FOREIGN KEY (response_id) REFERENCES core_responses(response_id) ON DELETE CASCADE
             )
         """)
         
-        # Quality metrics table
+        # Quality metrics table - Updated to reference core_responses
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS quality_metrics (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -77,17 +86,18 @@ class VOCDatabase:
                 metric_value REAL,
                 metric_details TEXT, -- JSON as text for SQLite
                 evaluated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (response_id) REFERENCES responses(response_id) ON DELETE CASCADE
+                FOREIGN KEY (response_id) REFERENCES core_responses(response_id) ON DELETE CASCADE
             )
         """)
         
-        # Create indexes for performance
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_responses_company ON responses(company)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_responses_deal_status ON responses(deal_status)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_responses_date ON responses(date_of_interview)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_responses_subject ON responses(subject)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_responses_created_at ON responses(created_at)")
-        cursor.execute("CREATE INDEX IF NOT EXISTS idx_responses_interviewee ON responses(interviewee_name)")
+        # Create indexes for performance - Updated to use core_responses
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_responses_company ON core_responses(company)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_responses_deal_status ON core_responses(deal_status)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_responses_date ON core_responses(interview_date)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_responses_subject ON core_responses(subject)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_responses_created_at ON core_responses(created_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_responses_interviewee ON core_responses(interviewee_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_responses_sync_status ON core_responses(sync_status)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_labels_type ON response_labels(label_type)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_labels_value ON response_labels(label_value)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_labels_confidence ON response_labels(confidence_score)")
@@ -106,12 +116,12 @@ class VOCDatabase:
             conn = self.get_connection()
             cursor = conn.cursor()
             
-            # Insert core response
+            # Insert core response - Updated to use core_responses schema
             cursor.execute("""
-                INSERT OR REPLACE INTO responses (
+                INSERT OR REPLACE INTO core_responses (
                     response_id, verbatim_response, subject, question,
-                    deal_status, company, interviewee_name, date_of_interview
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    deal_status, company, interviewee_name, interview_date, file_source, sync_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 response_data.get('response_id'),
                 response_data.get('verbatim_response'),
@@ -120,7 +130,9 @@ class VOCDatabase:
                 response_data.get('deal_status'),
                 response_data.get('company'),
                 response_data.get('interviewee_name'),
-                response_data.get('date_of_interview')
+                response_data.get('interview_date') or response_data.get('date_of_interview'),  # Handle both column names
+                response_data.get('file_source', ''),
+                response_data.get('sync_status', 'local_only')
             ))
             
             # Insert analysis results if present
@@ -154,14 +166,14 @@ class VOCDatabase:
             return False
     
     def get_responses(self, filters: Optional[Dict] = None) -> pd.DataFrame:
-        """Get responses with optional filtering"""
+        """Get responses with optional filtering - Updated to use core_responses"""
         conn = self.get_connection()
         
         query = """
             SELECT r.*, 
                    GROUP_CONCAT(DISTINCT al.analysis_type || ': ' || al.analysis_text) as analyses,
                    GROUP_CONCAT(DISTINCT qm.metric_type || ': ' || qm.metric_value) as quality_metrics
-            FROM responses r
+            FROM core_responses r
             LEFT JOIN analysis_results al ON r.response_id = al.response_id
             LEFT JOIN quality_metrics qm ON r.response_id = qm.response_id
         """
@@ -174,10 +186,10 @@ class VOCDatabase:
                     conditions.append(f"r.{key} = ?")
                     params.append(value)
                 elif key == 'date_from':
-                    conditions.append("r.date_of_interview >= ?")
+                    conditions.append("r.interview_date >= ?")
                     params.append(value)
                 elif key == 'date_to':
-                    conditions.append("r.date_of_interview <= ?")
+                    conditions.append("r.interview_date <= ?")
                     params.append(value)
             
             if conditions:
@@ -190,12 +202,12 @@ class VOCDatabase:
         return df
     
     def get_response_by_id(self, response_id: str) -> Optional[Dict]:
-        """Get a single response with all its data"""
+        """Get a single response with all its data - Updated to use core_responses"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         # Get core response
-        cursor.execute("SELECT * FROM responses WHERE response_id = ?", (response_id,))
+        cursor.execute("SELECT * FROM core_responses WHERE response_id = ?", (response_id,))
         response = cursor.fetchone()
         
         if not response:
@@ -269,21 +281,23 @@ class VOCDatabase:
             return False
     
     def migrate_csv_to_db(self, csv_path: str) -> int:
-        """Migrate existing CSV data to database"""
+        """Migrate existing CSV data to database - Updated to use core_responses schema"""
         try:
             df = pd.read_csv(csv_path)
             migrated_count = 0
             
             for _, row in df.iterrows():
                 response_data = {
-                                'response_id': row.get('response_id', f"migrated_{migrated_count}"),
-            'verbatim_response': row.get('verbatim_response', ''),
-            'subject': row.get('subject', ''),
-            'question': row.get('question', ''),
-            'deal_status': row.get('deal_status', ''),
-            'company': row.get('company', ''),
-            'interviewee_name': row.get('interviewee_name', ''),
-                    'date_of_interview': row.get('Date of Interview', ''),
+                    'response_id': row.get('response_id', f"migrated_{migrated_count}"),
+                    'verbatim_response': row.get('verbatim_response', ''),
+                    'subject': row.get('subject', ''),
+                    'question': row.get('question', ''),
+                    'deal_status': row.get('deal_status', ''),
+                    'company': row.get('company', ''),
+                    'interviewee_name': row.get('interviewee_name', ''),
+                    'interview_date': row.get('Date of Interview', '') or row.get('interview_date', ''),
+                    'file_source': row.get('file_source', ''),
+                    'sync_status': 'local_only'
                 }
                 
                 # Add analysis fields - check if they exist in the CSV
@@ -320,22 +334,22 @@ class VOCDatabase:
             return False
     
     def get_stats(self) -> Dict[str, Any]:
-        """Get database statistics"""
+        """Get database statistics - Updated to use core_responses"""
         conn = self.get_connection()
         cursor = conn.cursor()
         
         stats = {}
         
         # Count responses
-        cursor.execute("SELECT COUNT(*) FROM responses")
+        cursor.execute("SELECT COUNT(*) FROM core_responses")
         stats['total_responses'] = cursor.fetchone()[0]
         
         # Count by company
-        cursor.execute("SELECT company, COUNT(*) FROM responses GROUP BY company")
+        cursor.execute("SELECT company, COUNT(*) FROM core_responses GROUP BY company")
         stats['responses_by_company'] = dict(cursor.fetchall())
         
         # Count by deal status
-        cursor.execute("SELECT deal_status, COUNT(*) FROM responses GROUP BY deal_status")
+        cursor.execute("SELECT deal_status, COUNT(*) FROM core_responses GROUP BY deal_status")
         stats['responses_by_status'] = dict(cursor.fetchall())
         
         # Count analysis results
