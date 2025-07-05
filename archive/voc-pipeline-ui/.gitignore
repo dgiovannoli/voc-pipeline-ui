@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+*.log
+.venv/
+.env
+uploads/
+samples/
+.vscode/
+.idea/
+validated_quotes.csv
+stage1_output.csv
+voc_pipeline.db
