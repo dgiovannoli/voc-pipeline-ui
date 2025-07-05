@@ -277,20 +277,24 @@ class HybridDatabaseManager:
             with sqlite3.connect(self.sqlite_path) as conn:
                 cursor = conn.cursor()
                 
-                # Count by sync status
+                # Count by sync status - with debugging
+                logger.info("🔍 Querying core_responses sync_status...")
                 cursor.execute("""
                     SELECT sync_status, COUNT(*) 
                     FROM core_responses 
                     GROUP BY sync_status
                 """)
                 response_sync = dict(cursor.fetchall())
+                logger.info(f"✅ core_responses sync_status: {response_sync}")
                 
+                logger.info("🔍 Querying quote_analysis sync_status...")
                 cursor.execute("""
                     SELECT sync_status, COUNT(*) 
                     FROM quote_analysis 
                     GROUP BY sync_status
                 """)
                 analysis_sync = dict(cursor.fetchall())
+                logger.info(f"✅ quote_analysis sync_status: {analysis_sync}")
                 
                 return {
                     "supabase_available": bool(self.supabase),
@@ -302,6 +306,8 @@ class HybridDatabaseManager:
                 
         except Exception as e:
             logger.error(f"❌ Sync status check failed: {e}")
+            logger.error(f"❌ Error type: {type(e)}")
+            logger.error(f"❌ Error args: {e.args}")
             return {"error": str(e)}
     
     def get_data_for_sharing(self, filters: Optional[Dict] = None) -> pd.DataFrame:
