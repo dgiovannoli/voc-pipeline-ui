@@ -362,7 +362,7 @@ class Stage3FindingsAnalyzer:
                     'relevance_explanation': quote.get('relevance_explanation', ''),
                     'score': quote.get('score', 0),
                     'confidence': quote.get('confidence', 'medium'),
-                    'context_assessment': quote.get('context_assessment', 'neutral'),
+                    'context_keywords': quote.get('context_keywords', 'neutral'),
                     'question_relevance': quote.get('question_relevance', 'unrelated')
                 })
             
@@ -374,7 +374,7 @@ class Stage3FindingsAnalyzer:
             themes = self._extract_themes(company_quotes['relevance_explanation'].tolist())
             
             # Identify deal impact patterns
-            deal_impacts = company_quotes['context_assessment'].value_counts().to_dict()
+            deal_impacts = company_quotes['context_keywords'].value_counts().to_dict()
             
             pattern = {
                 'criterion': criterion,
@@ -493,22 +493,32 @@ class Stage3FindingsAnalyzer:
         # Calculate overall criterion score
         avg_score = sum(p['avg_score'] for p in patterns) / len(patterns)
         
-        # Generate strength findings for high scores
-        high_score_patterns = [p for p in patterns if p['avg_score'] >= 3.5]
-        if high_score_patterns:
-            strength_finding = self._create_enhanced_finding(criterion, high_score_patterns, 'strength', avg_score)
+        # Generate strength findings for high scores (strengths to leverage)
+        # Stage 2: 3.5+ = Critical/Exceptional feedback (strengths)
+        strength_patterns = [p for p in patterns if p['avg_score'] >= 3.5]
+        if strength_patterns:
+            strength_finding = self._create_enhanced_finding(criterion, strength_patterns, 'strength', avg_score)
             if strength_finding:
                 findings.append(strength_finding)
         
-        # Generate improvement findings for low scores
-        low_score_patterns = [p for p in patterns if p['avg_score'] <= 2.0]
-        if low_score_patterns:
-            improvement_finding = self._create_enhanced_finding(criterion, low_score_patterns, 'improvement', avg_score)
+        # Generate improvement findings for low scores (issues to address)
+        # Stage 2: 0-2.0 = Minor/Moderate feedback (areas needing improvement)
+        improvement_patterns = [p for p in patterns if p['avg_score'] <= 2.0]
+        if improvement_patterns:
+            improvement_finding = self._create_enhanced_finding(criterion, improvement_patterns, 'improvement', avg_score)
             if improvement_finding:
                 findings.append(improvement_finding)
         
-        # Generate trend findings for mixed patterns
-        if len(patterns) >= 3 and (len(high_score_patterns) > 0 and len(low_score_patterns) > 0):
+        # Generate neutral findings for middle-range scores (mixed feedback)
+        # Stage 2: 2.0-3.5 = Moderate/Important feedback (mixed signals)
+        neutral_patterns = [p for p in patterns if 2.0 < p['avg_score'] < 3.5]
+        if neutral_patterns and len(neutral_patterns) >= 1:  # Allow single patterns for mixed signals
+            neutral_finding = self._create_enhanced_finding(criterion, neutral_patterns, 'mixed_signal', avg_score)
+            if neutral_finding:
+                findings.append(neutral_finding)
+        
+        # Generate trend findings for mixed patterns across companies
+        if len(patterns) >= 3 and (len(strength_patterns) > 0 and len(improvement_patterns) > 0):
             trend_finding = self._create_trend_enhanced_finding(criterion, patterns, avg_score)
             if trend_finding:
                 findings.append(trend_finding)
@@ -534,7 +544,7 @@ class Stage3FindingsAnalyzer:
             formatted_quotes.append({
                 'text': quote.get('original_quote', ''),
                 'score': quote.get('score', 0),
-                'attribution': f"Score: {quote.get('score', 0)} - {quote.get('context_assessment', 'neutral')}"
+                'attribution': f"Score: {quote.get('score', 0)} - {quote.get('context_keywords', 'neutral')}"
             })
         
         return {
@@ -568,11 +578,11 @@ class Stage3FindingsAnalyzer:
         if score_std < 0.5:
             return None
         
-        # Identify trend direction
-        high_scores = [s for s in scores if s >= 3.0]
-        low_scores = [s for s in scores if s <= 2.0]
+        # Identify trend direction using Stage 2 scoring interpretation
+        strength_scores = [s for s in scores if s >= 3.5]  # Critical/Exceptional feedback
+        improvement_scores = [s for s in scores if s <= 2.0]  # Minor/Moderate feedback
         
-        if len(high_scores) > len(low_scores):
+        if len(strength_scores) > len(improvement_scores):
             trend_type = 'positive_trend'
         else:
             trend_type = 'negative_trend'
@@ -582,11 +592,22 @@ class Stage3FindingsAnalyzer:
     def _generate_enhanced_finding_text(self, criterion: str, patterns: List[Dict], finding_type: str, criterion_desc: str, best_pattern: Dict) -> str:
         """Generate enhanced finding text using Buried Wins v4.0 framework"""
         
+        # Map finding types to descriptive text for the LLM
+        finding_type_descriptions = {
+            'strength': 'strength/positive feedback to leverage',
+            'improvement': 'improvement area/issue to address', 
+            'mixed_signal': 'mixed feedback with both positive and negative signals',
+            'positive_trend': 'positive trend across companies',
+            'negative_trend': 'negative trend across companies'
+        }
+        
+        finding_description = finding_type_descriptions.get(finding_type, finding_type)
+        
         prompt = ChatPromptTemplate.from_template("""
             Generate an executive-ready finding using the Buried Wins Findings Criteria v4.0 framework.
             
             CRITERION: {criterion} - {criterion_desc}
-            FINDING TYPE: {finding_type}
+            FINDING TYPE: {finding_type} ({finding_description})
             ENHANCED CONFIDENCE: {confidence_score:.1f}/10.0
             CRITERIA MET: {criteria_met}/8 (Novelty, Actionability, Specificity, Materiality, Recurrence, Stakeholder Weight, Tension/Contrast, Metric/Quantification)
             
@@ -603,6 +624,7 @@ class Stage3FindingsAnalyzer:
             - Include material business implications
             - Be clear, direct, and executive-ready
             - Reference specific criteria met if relevant
+            - For mixed_signal: Highlight the conflicting feedback and business implications
             
             OUTPUT: Just the finding text, no additional formatting.
             """)
@@ -626,6 +648,7 @@ class Stage3FindingsAnalyzer:
                 criterion=criterion,
                 criterion_desc=criterion_desc,
                 finding_type=finding_type,
+                finding_description=finding_description,
                 confidence_score=best_pattern['enhanced_confidence'],
                 criteria_met=best_pattern.get('criteria_met', 0),
                 pattern_summary='\n'.join(pattern_summary),
