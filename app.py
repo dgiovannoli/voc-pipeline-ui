@@ -261,25 +261,27 @@ def save_stage1_to_supabase(csv_path):
         client_id = st.session_state.get('client_id', 'default')
         
         for _, row in df.iterrows():
+            # Log row keys for debugging
+            if saved_count == 0:
+                st.info(f"Row keys: {list(row.keys())}")
             response_data = {
-                'response_id': row.get('Response ID', ''),
-                'verbatim_response': row.get('Verbatim Response', ''),
-                'subject': row.get('Subject', ''),
-                'question': row.get('Question', ''),
-                'deal_status': row.get('Deal Status', 'closed_won'),
-                'company': row.get('Company Name', ''),
-                'interviewee_name': row.get('Interviewee Name', ''),
-                'interview_date': row.get('Date of Interview', '2024-01-01'),
+                'response_id': row.get('response_id', '') or row.get('Response ID', ''),
+                'verbatim_response': row.get('verbatim_response', '') or row.get('Verbatim Response', ''),
+                'subject': row.get('subject', '') or row.get('Subject', ''),
+                'question': row.get('question', '') or row.get('Question', ''),
+                'deal_status': row.get('deal_status', '') or row.get('Deal Status', 'closed_won'),
+                'company': row.get('company', '') or row.get('Company Name', ''),
+                'interviewee_name': row.get('interviewee_name', '') or row.get('Interviewee Name', ''),
+                'interview_date': row.get('interview_date', '') or row.get('Date of Interview', '2024-01-01'),
                 'file_source': 'stage1_processing',
                 'client_id': client_id  # Use session state client_id
             }
-            
+            if not response_data['response_id']:
+                st.warning(f"Blank response_id for row: {row}")
             if db.save_core_response(response_data):
                 saved_count += 1
-        
         st.success(f"✅ Saved {saved_count} quotes to database for client: {client_id}")
         return True
-        
     except Exception as e:
         st.error(f"❌ Failed to save to database: {e}")
         return False
