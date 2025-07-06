@@ -84,6 +84,7 @@ class SupabaseDatabase:
                 'interviewee_name': response_data.get('interviewee_name'),
                 'interview_date': response_data.get('interview_date'),
                 'file_source': response_data.get('file_source', ''),
+                'client_id': response_data.get('client_id', 'default'),
                 'created_at': datetime.now().isoformat()
             }
             
@@ -114,6 +115,7 @@ class SupabaseDatabase:
                 'deal_weighted_score': analysis_data.get('deal_weighted_score'),
                 'context_keywords': analysis_data.get('context_keywords', ''),
                 'question_relevance': analysis_data.get('question_relevance', 'unrelated'),
+                'client_id': analysis_data.get('client_id', 'default'),
                 'analysis_timestamp': datetime.now().isoformat()
             }
             
@@ -130,12 +132,15 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save quote analysis: {e}")
             return False
     
-    def get_core_responses(self, filters: Optional[Dict] = None) -> pd.DataFrame:
-        """Get core responses from Supabase"""
+    def get_core_responses(self, filters: Optional[Dict] = None, client_id: str = 'default') -> pd.DataFrame:
+        """Get core responses from Supabase, filtered by client_id for data siloing"""
         try:
             query = self.supabase.table('core_responses').select('*')
             
-            # Apply filters if provided
+            # Always filter by client_id for data siloing
+            query = query.eq('client_id', client_id)
+            
+            # Apply additional filters if provided
             if filters:
                 for key, value in filters.items():
                     if key in ['company', 'deal_status', 'interviewee_name']:
@@ -151,17 +156,20 @@ class SupabaseDatabase:
             result = query.execute()
             df = pd.DataFrame(result.data)
             
-            logger.info(f"📊 Retrieved {len(df)} core responses from Supabase")
+            logger.info(f"📊 Retrieved {len(df)} core responses from Supabase for client {client_id}")
             return df
             
         except Exception as e:
             logger.error(f"❌ Failed to get core responses: {e}")
             return pd.DataFrame()
     
-    def get_quote_analysis(self, quote_id: Optional[str] = None) -> pd.DataFrame:
-        """Get quote analysis from Supabase"""
+    def get_quote_analysis(self, quote_id: Optional[str] = None, client_id: str = 'default') -> pd.DataFrame:
+        """Get quote analysis from Supabase, filtered by client_id for data siloing"""
         try:
             query = self.supabase.table('quote_analysis').select('*')
+            
+            # Always filter by client_id for data siloing
+            query = query.eq('client_id', client_id)
             
             if quote_id:
                 query = query.eq('quote_id', quote_id)
@@ -169,30 +177,30 @@ class SupabaseDatabase:
             result = query.execute()
             df = pd.DataFrame(result.data)
             
-            logger.info(f"📊 Retrieved {len(df)} quote analyses from Supabase")
+            logger.info(f"📊 Retrieved {len(df)} quote analyses from Supabase for client {client_id}")
             return df
             
         except Exception as e:
             logger.error(f"❌ Failed to get quote analysis: {e}")
             return pd.DataFrame()
     
-    def get_unanalyzed_quotes(self) -> pd.DataFrame:
-        """Get quotes that haven't been analyzed yet"""
+    def get_unanalyzed_quotes(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get quotes that haven't been analyzed yet, filtered by client_id"""
         try:
-            # Get all core responses
-            core_df = self.get_core_responses()
+            # Get all core responses for this client
+            core_df = self.get_core_responses(client_id=client_id)
             
             if core_df.empty:
                 return pd.DataFrame()
             
-            # Get all analyzed quote IDs
-            analysis_df = self.get_quote_analysis()
+            # Get all analyzed quote IDs for this client
+            analysis_df = self.get_quote_analysis(client_id=client_id)
             analyzed_ids = set(analysis_df['quote_id'].unique()) if not analysis_df.empty else set()
             
             # Filter out already analyzed quotes
             unanalyzed_df = core_df[~core_df['response_id'].isin(analyzed_ids)]
             
-            logger.info(f"🔍 Found {len(unanalyzed_df)} unanalyzed quotes")
+            logger.info(f"🔍 Found {len(unanalyzed_df)} unanalyzed quotes for client {client_id}")
             return unanalyzed_df
             
         except Exception as e:

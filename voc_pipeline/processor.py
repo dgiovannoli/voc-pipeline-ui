@@ -17,6 +17,7 @@ import csv
 from io import StringIO
 import math
 import tiktoken
+import time
 
 # Add database import
 try:
@@ -30,16 +31,21 @@ logging.basicConfig(filename="qc.log",
                     level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
 
-def normalize_response_id(company: str, interviewee: str, chunk_index: int) -> str:
-    """Create normalized, unique Response ID"""
+def normalize_response_id(company: str, interviewee: str, chunk_index: int, client_id: str = None) -> str:
+    """Create normalized, unique Response ID with timestamp for uniqueness"""
     parts = []
+    if client_id:
+        parts.append(re.sub(r'[^a-zA-Z0-9]', '', client_id))
     if company:
         parts.append(re.sub(r'[^a-zA-Z0-9]', '', company))
     if interviewee:
         parts.append(re.sub(r'[^a-zA-Z0-9]', '', interviewee))
     if not parts:
         parts.append("Response")
-    return f"{'_'.join(parts)}_{chunk_index + 1}"
+    
+    # Add timestamp and chunk index for guaranteed uniqueness
+    timestamp = int(time.time() * 1000) % 1000000  # Last 6 digits of timestamp
+    return f"{'_'.join(parts)}_{timestamp}_{chunk_index + 1}"
 
 def extract_qa_segments(text: str) -> list:
     """Extract Q&A segments from transcript text"""
@@ -525,7 +531,7 @@ Analyze the provided interview chunk and extract the 1-2 RICHEST, MOST COMPREHEN
 
 [
   {{
-    "response_id": "{response_id}_1",
+    "response_id": "{response_id}",
     "key_insight": "first_comprehensive_insight_summary_with_specific_details",
     "verbatim_response": "first_complete_verbatim_response_with_full_context_and_specific_examples",
     "subject": "brief_subject_description_1",
@@ -636,7 +642,7 @@ Interview chunk to analyze:
                 return (chunk_index, [])
             
             # Prepare input for the chain
-            base_response_id = normalize_response_id(company, interviewee, chunk_index)
+            base_response_id = normalize_response_id(company, interviewee, chunk_index, client)
             chain_input = {
                 "chunk_text": cleaned_chunk,
                 "response_id": base_response_id,

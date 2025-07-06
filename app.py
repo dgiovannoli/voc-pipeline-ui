@@ -269,7 +269,8 @@ def save_stage1_to_supabase(csv_path):
                 'company': row.get('Company Name', ''),
                 'interviewee_name': row.get('Interviewee Name', ''),
                 'interview_date': row.get('Date of Interview', '2024-01-01'),
-                'file_source': 'stage1_processing'
+                'file_source': 'stage1_processing',
+                'client_id': row.get('Client ID', 'default')  # Add client_id for data siloing
             }
             
             if db.save_core_response(response_data):

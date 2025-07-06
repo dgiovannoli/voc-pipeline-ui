@@ -134,16 +134,16 @@ class SupabaseStage2Analyzer:
             }
         }
     
-    def load_stage1_data_from_supabase(self) -> pd.DataFrame:
-        """Load Stage 1 extracted quotes from Supabase"""
-        df = self.db.get_core_responses()
-        logger.info(f"📊 Loaded {len(df)} quotes from Supabase")
+    def load_stage1_data_from_supabase(self, client_id: str = 'default') -> pd.DataFrame:
+        """Load Stage 1 extracted quotes from Supabase, filtered by client_id"""
+        df = self.db.get_core_responses(client_id=client_id)
+        logger.info(f"📊 Loaded {len(df)} quotes from Supabase for client {client_id}")
         return df
     
-    def get_unanalyzed_quotes(self) -> pd.DataFrame:
-        """Get quotes that haven't been analyzed yet (incremental processing)"""
-        df = self.db.get_unanalyzed_quotes()
-        logger.info(f"🔍 Found {len(df)} unanalyzed quotes")
+    def get_unanalyzed_quotes(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get quotes that haven't been analyzed yet (incremental processing), filtered by client_id"""
+        df = self.db.get_unanalyzed_quotes(client_id=client_id)
+        logger.info(f"🔍 Found {len(df)} unanalyzed quotes for client {client_id}")
         return df
     
     def analyze_single_quote(self, quote_row: pd.Series) -> Optional[Dict]:
@@ -262,7 +262,7 @@ class SupabaseStage2Analyzer:
                     scores, weighted_scores,
                     parsed.get("priorities", {}), parsed.get("confidence", {}),
                     parsed.get("relevance_explanation", {}), context_keywords,
-                    parsed.get("question_relevance", {})
+                    parsed.get("question_relevance", {}), client_id='default'
                 )
                 
                 # Track metrics
@@ -345,8 +345,8 @@ class SupabaseStage2Analyzer:
                                 original_quote: str, subject: str, question: str,
                                 scores: Dict, weighted_scores: Dict, priorities: Dict, 
                                 confidence: Dict, relevance_explanations: Dict, context_keywords: str,
-                                question_relevance: Dict = None):
-        """Save analysis results to Supabase"""
+                                question_relevance: Dict = None, client_id: str = 'default'):
+        """Save analysis results to Supabase with client_id for data siloing"""
         
         for criterion in scores.keys():
             analysis_data = {
@@ -358,23 +358,24 @@ class SupabaseStage2Analyzer:
                 'relevance_explanation': relevance_explanations.get(criterion, ''),
                 'deal_weighted_score': weighted_scores.get(criterion, scores[criterion]),
                 'context_keywords': context_keywords,
-                'question_relevance': question_relevance.get(criterion, 'unrelated') if question_relevance else 'unrelated'
+                'question_relevance': question_relevance.get(criterion, 'unrelated') if question_relevance else 'unrelated',
+                'client_id': client_id  # Add client_id for data siloing
             }
             
             self.db.save_quote_analysis(analysis_data)
     
-    def process_incremental(self, force_reprocess: bool = False) -> Dict:
-        """Process quotes incrementally - only new ones unless forced"""
+    def process_incremental(self, force_reprocess: bool = False, client_id: str = 'default') -> Dict:
+        """Process quotes incrementally - only new ones unless forced, filtered by client_id"""
         
         logger.info("🚀 STAGE 2: INCREMENTAL QUOTE LABELING")
         logger.info("=" * 60)
         
         if force_reprocess:
             logger.info("📊 Processing ALL quotes (forced reprocess)")
-            quotes_df = self.load_stage1_data_from_supabase()
+            quotes_df = self.load_stage1_data_from_supabase(client_id=client_id)
         else:
             logger.info("📊 Processing only UNANALYZED quotes (incremental)")
-            quotes_df = self.get_unanalyzed_quotes()
+            quotes_df = self.get_unanalyzed_quotes(client_id=client_id)
         
         if quotes_df.empty:
             logger.info("✅ No quotes to process")
