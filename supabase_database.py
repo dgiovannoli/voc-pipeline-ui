@@ -1039,6 +1039,57 @@ class SupabaseDatabase:
                 'criteria_analyzed': 0
             }
 
+    def get_all_core_responses(self) -> pd.DataFrame:
+        """Get ALL core responses from Supabase without client_id filtering (for debugging)"""
+        try:
+            query = self.supabase.table('core_responses').select('*')
+            query = query.order('created_at', desc=True)
+            
+            result = query.execute()
+            df = pd.DataFrame(result.data)
+            
+            logger.info(f"📊 Retrieved {len(df)} total core responses from Supabase (all clients)")
+            return df
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to get all core responses: {e}")
+            return pd.DataFrame()
+
+    def get_client_summary(self) -> Dict[str, int]:
+        """Get summary of data by client_id"""
+        try:
+            df = self.get_all_core_responses()
+            if df.empty:
+                return {}
+            
+            client_counts = df['client_id'].value_counts().to_dict()
+            logger.info(f"📊 Client data summary: {client_counts}")
+            return client_counts
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to get client summary: {e}")
+            return {}
+
+    def merge_client_data(self, from_client_id: str, to_client_id: str) -> bool:
+        """Merge data from one client_id to another"""
+        try:
+            # Update core_responses
+            result = self.supabase.table('core_responses').update(
+                {'client_id': to_client_id}
+            ).eq('client_id', from_client_id).execute()
+            
+            # Update quote_analysis
+            result2 = self.supabase.table('quote_analysis').update(
+                {'client_id': to_client_id}
+            ).eq('client_id', from_client_id).execute()
+            
+            logger.info(f"✅ Merged data from {from_client_id} to {to_client_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to merge client data: {e}")
+            return False
+
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""
     return SupabaseDatabase() 
