@@ -9,11 +9,13 @@ from dotenv import load_dotenv
 import re
 from supabase_database import SupabaseDatabase
 from prompts.core_extraction import CORE_EXTRACTION_PROMPT
+from stage3_findings_analyzer import Stage3FindingsAnalyzer
 import yaml
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import json
+from stage5_executive_analyzer import run_stage5_analysis
 
 # Load environment variables from .env file
 load_dotenv()
@@ -127,7 +129,6 @@ def process_files():
         st.success(f"🎉 Successfully processed {processed_count} files with {len(combined_df)} total responses")
     else:
         st.error("Processing failed: No output was generated from any files. Please check your input files and try again.")
-        return
     
     st.session_state.current_step = 2
 
@@ -159,7 +160,7 @@ def load_prompt_template():
 PROCESSING_DETAILS = """
 ### Processing Details
 
-How the pipeline processes your interviews (16K-optimized version):
+How the pipeline extracts quotes from your interviews (16K-optimized version):
 
 **Batching & Parallel Processing:**
 - Multiple interviews are processed in parallel using Python's `ThreadPoolExecutor` for speed and efficiency.
@@ -174,28 +175,28 @@ How the pipeline processes your interviews (16K-optimized version):
 
 **Enhanced LLM Processing:**
 - Each chunk is sent to GPT-3.5-turbo-16k with comprehensive context
-- Extracts 3-5 insights per chunk (vs previous 1 insight per chunk)
-- Preserves much longer verbatim responses (200-800 words vs previous 20-50 words)
+- Extracts 3-5 quotes per chunk (vs previous 1 quote per chunk)
+- Preserves much longer verbatim quotes (200-800 words vs previous 20-50 words)
 - Focuses on detailed customer experiences, quantitative feedback, and specific examples
 
-**Improved Content Extraction:**
+**Improved Quote Extraction:**
 - Prioritizes detailed customer experiences with specific scenarios and examples
 - Captures quantitative feedback (metrics, timelines, ROI discussions)
 - Preserves comparative analysis and competitive evaluations
 - Maintains integration requirements and workflow details
 
 **Quality Assurance:**
-- Enhanced validation for richer, more contextually complete responses
-- Quality logging tracks response length and content preservation
-- Flags responses that lose too much context during processing
+- Enhanced validation for richer, more contextually complete quotes
+- Quality logging tracks quote length and content preservation
+- Flags quotes that lose too much context during processing
 
 **Performance:**
 - Fewer API calls due to larger chunks (more efficient token usage)
-- Higher quality insights due to better context preservation
-- Richer verbatim responses with full context and examples
+- Higher quality quotes due to better context preservation
+- Richer verbatim quotes with full context and examples
 
 ---
-This pipeline is optimized for the 16K token context window to deliver significantly richer insights and more complete verbatim responses.
+This pipeline is optimized for the 16K token context window to deliver significantly richer quotes and more complete customer insights.
 """
 
 # Constants
@@ -231,7 +232,7 @@ def process_files_with_progress():
             try:
                 df_temp = pd.read_csv(temp_output)
                 all_results.append(df_temp)
-                st.success(f"✅ {os.path.basename(path)}: {len(df_temp)} responses")
+                st.success(f"✅ {os.path.basename(path)}: {len(df_temp)} quotes extracted")
             except Exception as e:
                 st.warning(f"⚠️ {os.path.basename(path)}: {e}")
         
@@ -243,15 +244,15 @@ def process_files_with_progress():
     if all_results:
         combined_df = pd.concat(all_results, ignore_index=True)
         combined_df.to_csv(STAGE1_CSV, index=False)
-        st.success(f"🎉 Processed {len(all_results)} files with {len(combined_df)} total responses")
+        st.success(f"🎉 Processed {len(all_results)} files with {len(combined_df)} total quotes")
         st.session_state.current_step = 2
     else:
-        st.error("No results generated")
+        st.error("No quotes extracted")
 
 def save_stage1_to_supabase(csv_path):
     """Save Stage 1 results to Supabase"""
     if not SUPABASE_AVAILABLE:
-        st.error("❌ Supabase not available")
+        st.error("❌ Database not available")
         return False
     
     try:
@@ -274,17 +275,17 @@ def save_stage1_to_supabase(csv_path):
             if db.save_core_response(response_data):
                 saved_count += 1
         
-        st.success(f"✅ Saved {saved_count} responses to Supabase")
+        st.success(f"✅ Saved {saved_count} quotes to database")
         return True
         
     except Exception as e:
-        st.error(f"❌ Failed to save to Supabase: {e}")
+        st.error(f"❌ Failed to save to database: {e}")
         return False
 
 def run_stage2_analysis():
-    """Run Stage 2 analysis using Supabase"""
+    """Run Stage 2 analysis using database"""
     if not SUPABASE_AVAILABLE:
-        st.error("❌ Supabase not available")
+        st.error("❌ Database not available")
         return None
     
     try:
@@ -296,7 +297,7 @@ def run_stage2_analysis():
         return None
 
 def get_stage2_summary():
-    """Get Stage 2 summary from Supabase"""
+    """Get Stage 2 summary from database"""
     if not SUPABASE_AVAILABLE:
         return None
     
@@ -307,13 +308,39 @@ def get_stage2_summary():
         st.error(f"❌ Failed to get summary: {e}")
         return None
 
+def run_stage3_analysis():
+    """Run Stage 3 findings analysis using database"""
+    if not SUPABASE_AVAILABLE:
+        st.error("❌ Database not available")
+        return None
+    
+    try:
+        analyzer = Stage3FindingsAnalyzer()
+        result = analyzer.process_findings()
+        return result
+    except Exception as e:
+        st.error(f"❌ Stage 3 analysis failed: {e}")
+        return None
+
+def get_stage3_summary():
+    """Get Stage 3 enhanced findings summary from database"""
+    if not SUPABASE_AVAILABLE:
+        return None
+    
+    try:
+        summary = db.get_enhanced_findings_summary()
+        return summary
+    except Exception as e:
+        st.error(f"❌ Failed to get enhanced findings summary: {e}")
+        return None
+
 def show_supabase_status():
-    """Show Supabase connection status and data summary"""
-    st.subheader("🗄️ Supabase Database Status")
+    """Show database connection status and data summary"""
+    st.subheader("🗄️ Database Status")
     
     if not SUPABASE_AVAILABLE:
-        st.error("❌ Supabase not connected")
-        st.info("💡 Make sure your .env file contains SUPABASE_URL and SUPABASE_ANON_KEY")
+        st.error("❌ Database not connected")
+        st.info("💡 Make sure your .env file contains database credentials")
         return
     
     try:
@@ -331,10 +358,10 @@ def show_supabase_status():
             st.metric("Total Quotes", summary['total_quotes'])
         
         with col2:
-            st.metric("Quotes Analyzed", summary['quotes_with_scores'])
+            st.metric("Labeled Quotes", summary['quotes_with_scores'])
         
         with col3:
-            st.metric("Coverage", f"{summary['coverage_percentage']}%")
+            st.metric("Analysis Coverage", f"{summary['coverage_percentage']}%")
         
         # Deal outcome distribution
         if summary['deal_outcome_distribution']:
@@ -383,6 +410,902 @@ def show_supabase_status():
     except Exception as e:
         st.error(f"❌ Error getting database status: {e}")
 
+def run_stage4_analysis():
+    """Run Stage 4 theme analysis"""
+    try:
+        from stage4_theme_analyzer import run_stage4_analysis as run_stage4
+        return run_stage4()
+    except Exception as e:
+        st.error(f"Stage 4 analysis failed: {e}")
+        return {"status": "error", "message": str(e)}
+
+def get_stage4_summary():
+    """Get Stage 4 themes summary"""
+    try:
+        db = SupabaseDatabase()
+        return db.get_themes_summary()
+    except Exception as e:
+        st.error(f"Failed to get Stage 4 summary: {e}")
+        return {}
+
+def show_stage4_themes():
+    """Display Stage 4 themes analysis"""
+    st.subheader("🎯 Stage 4: Theme Generation")
+    
+    # Get summary
+    summary = get_stage4_summary()
+    
+    # Summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Themes", summary.get('total_themes', 0))
+    
+    with col2:
+        st.metric("High Strength", summary.get('high_strength', 0))
+    
+    with col3:
+        st.metric("Competitive", summary.get('competitive_themes', 0))
+    
+    with col4:
+        st.metric("Companies", summary.get('companies_covered', 0))
+    
+    # Run analysis button
+    if st.button("🚀 Generate Themes", type="primary"):
+        with st.spinner("Generating themes from findings..."):
+            result = run_stage4_analysis()
+            
+            if result.get("status") == "success":
+                st.success(f"✅ Generated {result.get('themes_generated', 0)} themes!")
+                st.rerun()
+            else:
+                st.error(f"❌ Theme generation failed: {result.get('message', 'Unknown error')}")
+    
+    # Display themes
+    db = SupabaseDatabase()
+    themes_df = db.get_themes()
+    
+    if not themes_df.empty:
+        st.subheader("📊 Generated Themes")
+        
+        # Filter options
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            strength_filter = st.selectbox(
+                "Filter by Strength",
+                ["All"] + list(themes_df['theme_strength'].unique())
+            )
+        
+        with col2:
+            category_filter = st.selectbox(
+                "Filter by Category",
+                ["All"] + list(themes_df['theme_category'].unique())
+            )
+        
+        with col3:
+            competitive_filter = st.selectbox(
+                "Competitive Themes",
+                ["All", "Yes", "No"]
+            )
+        
+        # Apply filters
+        filtered_df = themes_df.copy()
+        
+        if strength_filter != "All":
+            filtered_df = filtered_df[filtered_df['theme_strength'] == strength_filter]
+        
+        if category_filter != "All":
+            filtered_df = filtered_df[filtered_df['theme_category'] == category_filter]
+        
+        if competitive_filter != "All":
+            competitive_flag = competitive_filter == "Yes"
+            filtered_df = filtered_df[filtered_df['competitive_flag'] == competitive_flag]
+        
+        # Display themes
+        for _, theme in filtered_df.iterrows():
+            with st.expander(f"🎯 {theme['theme_statement'][:100]}..."):
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    st.markdown(f"**Statement:** {theme['theme_statement']}")
+                    st.markdown(f"**Category:** {theme['theme_category']}")
+                    st.markdown(f"**Strength:** {theme['theme_strength']}")
+                    st.markdown(f"**Companies:** {', '.join(theme['interview_companies']) if theme['interview_companies'] else 'N/A'}")
+                    
+                    if theme['business_implications']:
+                        st.markdown(f"**Business Implications:** {theme['business_implications']}")
+                    
+                    if theme['primary_theme_quote']:
+                        st.markdown(f"**Primary Quote:** {theme['primary_theme_quote'][:200]}...")
+                
+                with col2:
+                    st.metric("Impact Score", f"{theme['avg_confidence_score']:.1f}")
+                    st.metric("Confidence", f"{theme['avg_confidence_score']:.1f}")
+                    st.metric("Companies", theme['company_count'])
+                    st.metric("Findings", theme['finding_count'])
+                    
+                    if theme['competitive_flag']:
+                        st.success("🏆 Competitive Theme")
+        
+        # Export themes
+        if st.button("📥 Export Themes"):
+            csv = filtered_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Themes CSV",
+                data=csv,
+                file_name=f"themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+    
+    else:
+        st.info("No themes generated yet. Run Stage 4 analysis to generate themes from findings.")
+
+def get_stage5_summary():
+    """Get Stage 5 executive synthesis summary"""
+    try:
+        db = SupabaseDatabase()
+        return db.get_executive_synthesis_summary()
+    except Exception as e:
+        st.error(f"Failed to get Stage 5 summary: {e}")
+        return {}
+
+def show_stage5_synthesis():
+    """Display Stage 5 executive synthesis"""
+    st.subheader("🎯 Stage 5: Executive Synthesis")
+    
+    # Get summary
+    summary = get_stage5_summary()
+    
+    # Summary metrics
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Executive Themes", summary.get('total_executive_themes', 0))
+    
+    with col2:
+        st.metric("High Impact", summary.get('high_impact_themes', 0))
+    
+    with col3:
+        st.metric("Presentation Ready", summary.get('presentation_ready', 0))
+    
+    with col4:
+        st.metric("Competitive", summary.get('competitive_themes', 0))
+    
+    # Generate synthesis button
+    if st.button("🚀 Generate Executive Synthesis", type="primary"):
+        with st.spinner("Generating executive synthesis with criteria scorecard..."):
+            result = run_stage5_analysis()
+            
+            if result.get("status") == "success":
+                st.success(f"✅ Generated {result.get('executive_themes_generated', 0)} executive themes!")
+                st.rerun()
+            else:
+                st.error(f"❌ Synthesis failed: {result.get('message', 'Unknown error')}")
+    
+    # Display executive themes
+    db = SupabaseDatabase()
+    themes_df = db.get_executive_themes()
+    
+    if not themes_df.empty:
+        st.subheader("📊 Executive Themes")
+        
+        # Filter options
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            impact_filter = st.selectbox(
+                "Filter by Impact",
+                ["All"] + list(themes_df['business_impact_level'].unique())
+            )
+        
+        with col2:
+            readiness_filter = st.selectbox(
+                "Filter by Readiness",
+                ["All"] + list(themes_df['executive_readiness'].unique())
+            )
+        
+        with col3:
+            category_filter = st.selectbox(
+                "Filter by Category",
+                ["All"] + list(themes_df['theme_category'].unique())
+            )
+        
+        # Apply filters
+        filtered_df = themes_df.copy()
+        
+        if impact_filter != "All":
+            filtered_df = filtered_df[filtered_df['business_impact_level'] == impact_filter]
+        
+        if readiness_filter != "All":
+            filtered_df = filtered_df[filtered_df['executive_readiness'] == readiness_filter]
+        
+        if category_filter != "All":
+            filtered_df = filtered_df[filtered_df['theme_category'] == category_filter]
+        
+        # Display themes
+        for _, theme in filtered_df.iterrows():
+            with st.expander(f"🎯 {theme['theme_headline'][:100]}..."):
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    st.markdown(f"**Headline:** {theme['theme_headline']}")
+                    st.markdown(f"**Narrative:** {theme['narrative_explanation']}")
+                    st.markdown(f"**Category:** {theme['theme_category']}")
+                    st.markdown(f"**Impact Level:** {theme['business_impact_level']}")
+                    st.markdown(f"**Readiness:** {theme['executive_readiness']}")
+                    
+                    if theme['strategic_recommendations']:
+                        st.markdown(f"**Strategic Recommendations:** {theme['strategic_recommendations']}")
+                    
+                    if theme['competitive_context']:
+                        st.markdown(f"**Competitive Context:** {theme['competitive_context']}")
+                    
+                    if theme['primary_executive_quote']:
+                        st.markdown(f"**Primary Quote:** {theme['primary_executive_quote'][:200]}...")
+                
+                with col2:
+                    st.metric("Priority Rank", theme['priority_rank'])
+                    st.metric("Priority Score", f"{theme['priority_score']:.1f}")
+                    st.metric("Evidence Summary", theme['supporting_evidence_summary'])
+                    
+                    if theme['business_impact_level'] == 'High':
+                        st.success("🏆 High Impact")
+                    
+                    if theme['executive_readiness'] == 'Presentation':
+                        st.info("📋 Presentation Ready")
+        
+        # Export themes
+        if st.button("📥 Export Executive Themes"):
+            csv = filtered_df.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Executive Themes CSV",
+                data=csv,
+                file_name=f"executive_themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                mime="text/csv"
+            )
+    
+    else:
+        st.info("No executive themes generated yet. Run Stage 5 analysis to generate executive synthesis.")
+
+def show_stage5_criteria_scorecard():
+    """Display Stage 5 criteria scorecard"""
+    st.subheader("📊 Executive Criteria Scorecard")
+    
+    # Generate scorecard button
+    if st.button("📊 Generate Criteria Scorecard", type="primary"):
+        with st.spinner("Generating criteria scorecard..."):
+            db = SupabaseDatabase()
+            scorecard = db.generate_criteria_scorecard()
+            
+            if scorecard:
+                st.success("✅ Criteria scorecard generated successfully!")
+                st.session_state['scorecard_data'] = scorecard
+                st.rerun()
+            else:
+                st.error("❌ Failed to generate criteria scorecard")
+    
+    # Display scorecard if available
+    if 'scorecard_data' in st.session_state:
+        scorecard = st.session_state['scorecard_data']
+        
+        # Overall performance summary
+        overall = scorecard.get('overall_performance', {})
+        
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Performance Rating", overall.get('average_performance_rating', 'N/A'))
+        with col2:
+            st.metric("Criteria Analyzed", overall.get('total_criteria_analyzed', 0))
+        with col3:
+            st.metric("Top Performers", len(overall.get('top_performing_criteria', [])))
+        with col4:
+            st.metric("Critical Issues", len(overall.get('critical_attention_needed', [])))
+        
+        # Criteria performance table
+        st.subheader("🎯 Criteria Performance Details")
+        
+        criteria_details = scorecard.get('criteria_details', [])
+        if criteria_details:
+            # Create DataFrame for display
+            df = pd.DataFrame(criteria_details)
+            
+            # Color-code performance ratings
+            def color_performance(val):
+                if val == "EXCEPTIONAL":
+                    return "background-color: #d4edda; color: #155724"
+                elif val == "STRONG":
+                    return "background-color: #d1ecf1; color: #0c5460"
+                elif val == "GOOD":
+                    return "background-color: #fff3cd; color: #856404"
+                elif val == "NEEDS ATTENTION":
+                    return "background-color: #f8d7da; color: #721c24"
+                else:
+                    return "background-color: #f5c6cb; color: #721c24"
+            
+            # Display styled table
+            st.dataframe(
+                df[['criterion', 'performance_rating', 'avg_score', 'total_mentions', 
+                    'companies_affected', 'executive_priority', 'action_urgency']].style
+                .applymap(color_performance, subset=['performance_rating'])
+            )
+            
+            # Detailed view for each criterion
+            st.subheader("📋 Detailed Criteria Analysis")
+            
+            for criterion in criteria_details:
+                with st.expander(f"🎯 {criterion['criterion'].replace('_', ' ').title()} - {criterion['performance_rating']}"):
+                    col1, col2 = st.columns([2, 1])
+                    
+                    with col1:
+                        st.markdown(f"**Key Insights:** {criterion['key_insights']}")
+                        st.markdown(f"**Trend Direction:** {criterion['trend_direction']}")
+                        st.markdown(f"**Executive Priority:** {criterion['executive_priority']}")
+                        st.markdown(f"**Action Urgency:** {criterion['action_urgency']}")
+                        
+                        if criterion['sample_quotes']:
+                            st.markdown("**Sample Quotes:**")
+                            for i, quote in enumerate(criterion['sample_quotes'][:3], 1):
+                                st.write(f"{i}. {quote}")
+                    
+                    with col2:
+                        st.metric("Avg Score", f"{criterion['avg_score']:.2f}")
+                        st.metric("Mentions", criterion['total_mentions'])
+                        st.metric("Companies", criterion['companies_affected'])
+                        st.metric("Critical", criterion['critical_mentions'])
+            
+            # Deal impact analysis
+            deal_impact = scorecard.get('deal_impact_analysis', {})
+            if deal_impact:
+                st.subheader("💼 Deal Impact Analysis")
+                
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.markdown("**Criteria Affecting Lost Deals:**")
+                    for criterion in deal_impact.get('criteria_affecting_lost_deals', []):
+                        st.write(f"• {criterion.replace('_', ' ').title()}")
+                
+                with col2:
+                    st.markdown("**Criteria Winning Deals:**")
+                    for criterion in deal_impact.get('criteria_winning_deals', []):
+                        st.write(f"• {criterion.replace('_', ' ').title()}")
+        else:
+            st.info("No criteria details available in scorecard.")
+    
+    else:
+        st.info("No criteria scorecard available. Generate one to view detailed analysis.")
+
+def show_prompts_details():
+    st.title("📝 Prompts & Processing Details")
+    
+    # Create tabs for each stage
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["Stage 1: Extraction", "Stage 2: Scoring", "Stage 3: Findings", "Stage 4: Themes", "Stage 5: Executive Synthesis", "Configuration"])
+    
+    with tab1:
+        st.subheader("🎯 Stage 1: Core Response Extraction")
+        st.markdown("""
+        **Purpose**: Extract key insights and verbatim responses from interview transcripts
+        
+        **Process**:
+        - Token-based chunking with ~2K tokens per chunk
+        - Q&A-aware segmentation preserving conversation boundaries
+        - LLM processing with GPT-3.5-turbo-16k
+        - Extracts 3-5 insights per chunk with detailed verbatim responses
+        """)
+        
+        st.subheader("📋 Stage 1 Prompt Template")
+        prompt_content = load_prompt_template()
+        st.code(prompt_content, language='python')
+        
+        st.subheader("🔧 Stage 1 Configuration")
+        st.markdown("""
+        **Chunking Strategy**:
+        - Token-based chunking (not character-based)
+        - ~2K tokens per chunk for optimal context
+        - 200 token overlap for continuity
+        - Q&A-aware segmentation
+        
+        **Processing**:
+        - Parallel processing with ThreadPoolExecutor
+        - Quality-focused extraction targeting ~5 insights per chunk
+        - Enhanced validation for richer responses
+        """)
+    
+    with tab2:
+        st.subheader("🎯 Stage 2: Quote Labeling & Analysis")
+        st.markdown("""
+        **Purpose**: Score extracted quotes against 10 executive criteria using binary + intensity scoring
+        
+        **Scoring System**:
+        - **0**: Not relevant/not mentioned
+        - **1**: Slight mention/indirect relevance  
+        - **2**: Clear mention/direct relevance
+        - **3**: Strong emphasis/important feedback
+        - **4**: Critical feedback/deal-breaking issue
+        - **5**: Exceptional praise/deal-winning strength
+        """)
+        
+        st.subheader("📊 10 Executive Criteria")
+        criteria_info = """
+        1. **Product Capability**: Functionality, features, performance, core solution fit
+        2. **Implementation Onboarding**: Deployment ease, time-to-value, setup complexity
+        3. **Integration Technical Fit**: APIs, data compatibility, technical architecture
+        4. **Support Service Quality**: Post-sale support, responsiveness, expertise, SLAs
+        5. **Security Compliance**: Data protection, certifications, governance, risk management
+        6. **Market Position Reputation**: Brand trust, references, analyst recognition
+        7. **Vendor Stability**: Financial health, roadmap clarity, long-term viability
+        8. **Sales Experience Partnership**: Buying process quality, relationship building
+        9. **Commercial Terms**: Price, contract flexibility, ROI, total cost of ownership
+        10. **Speed Responsiveness**: Implementation timeline, decision-making speed, agility
+        """
+        st.markdown(criteria_info)
+        
+        st.subheader("📋 Stage 2 Prompt Template")
+        stage2_prompt = '''
+ANALYZE THIS QUOTE against the 10-criteria executive framework using BINARY + INTENSITY scoring.
+
+DEAL CONTEXT: {deal_status} deal
+
+QUOTE TO ANALYZE:
+Subject: {subject}
+Question: {question}
+Response: {verbatim_response}
+
+EVALUATION CRITERIA:
+{criteria}
+
+BINARY + INTENSITY SCORING SYSTEM:
+- 0 = Not relevant/not mentioned (omit from scores)
+- 1 = Slight mention/indirect relevance
+- 2 = Clear mention/direct relevance
+- 3 = Strong emphasis/important feedback
+- 4 = Critical feedback/deal-breaking issue
+- 5 = Exceptional praise/deal-winning strength
+
+TASK: Score this quote against ANY criteria that are even loosely relevant. Use the binary + intensity approach:
+1. First decide: Is this criterion relevant to the quote or question? (Binary: 0 or 1+)
+2. If relevant, then assess intensity: How important/impactful is this feedback? (1-5)
+3. Final score = Binary × Intensity (0 or 1-5)
+
+CONTEXT ANALYSIS:
+- Consider the QUESTION being asked - it provides crucial context
+- A question about "pricing" makes commercial_terms highly relevant
+- A question about "implementation" makes implementation_onboarding highly relevant
+- A question about "security" makes security_compliance highly relevant
+- If unsure about relevance, err on the side of inclusion and score it
+
+SCORING EXAMPLES:
+- Question: "How do you evaluate pricing?" + Response: "pricing is reasonable" → commercial_terms: 2 (clear mention)
+- Question: "What about security?" + Response: "we're concerned about data privacy" → security_compliance: 4 (critical concern)
+- Question: "How was setup?" + Response: "setup was easy" → implementation_onboarding: 3 (strong positive)
+- Question: "What about pricing?" + Response: "the product works well" → commercial_terms: 1 (slight mention)
+- Question: "How do you use Rev?" + Response: "We use it for depositions and hearings, and it saves us time." → product_capability: 3 (strong positive)
+- Question: "What frustrates you?" + Response: "Sometimes the transcript isn't accurate." → product_capability: 4 (critical issue)
+- Question: "What integrations would help?" + Response: "We use Dropbox and Clio." → integration_technical_fit: 2 (clear mention)
+- Question: "How do you rank criteria?" + Response: "Speed and cost are most important, then security." → speed_responsiveness: 4, commercial_terms: 4, security_compliance: 3
+- Question: "What about support?" + Response: "Support is fine, but not a big factor." → support_service_quality: 1 (minor mention)
+
+OUTPUT FORMAT (JSON only):
+{
+    "scores": {
+        "criterion_name": score_number
+    },
+    "priorities": {
+        "criterion_name": "critical|high|medium|low"
+    },
+    "confidence": {
+        "criterion_name": "high|medium|low"
+    },
+    "relevance_explanation": {
+        "criterion_name": "Brief explanation of how this quote relates to the criterion"
+    },
+    "context_assessment": {
+        "criterion_name": "deal_breaking|minor|neutral"
+    },
+    "question_relevance": {
+        "criterion_name": "direct|indirect|unrelated"
+    }
+}
+
+IMPORTANT: Only include criteria in "scores" that are relevant (score > 0). If a criterion is not mentioned or relevant, omit it entirely.
+        '''
+        st.code(stage2_prompt, language='python')
+        
+        st.subheader("🔧 Stage 2 Configuration")
+        st.markdown("""
+        **Deal Weighting**:
+        - Lost deals: 1.2x base multiplier
+        - Won deals: 0.9x base multiplier
+        - Critical feedback: 1.5x multiplier
+        - Minor feedback: 0.7x multiplier
+        
+        **Processing**:
+        - Incremental processing (only new quotes)
+        - Parallel processing with configurable workers
+        - Context-aware scoring based on question relevance
+        """)
+    
+    with tab3:
+        st.subheader("🎯 Stage 3: Findings Identification")
+        st.markdown("""
+        **Purpose**: Transform scored quotes into executive-ready findings using the Buried Wins Findings Criteria v4.0 framework
+        
+        **Finding Types**:
+        - **Strength**: High-performing areas (scores ≥ 3.5)
+        - **Improvement**: Areas needing attention (scores ≤ 2.0)
+        - **Positive Trend**: Consistent positive feedback across companies
+        - **Negative Trend**: Consistent negative feedback across companies
+        - **Priority Findings**: Enhanced confidence ≥ 4.0/10.0
+        - **Standard Findings**: Enhanced confidence ≥ 3.0/10.0
+        """)
+        
+        st.subheader("🔍 Buried Wins v4.0 Evaluation Criteria")
+        evaluation_criteria = """
+        **8 Core Evaluation Criteria**:
+        1. **Novelty**: The observation is new/unexpected, challenging assumptions
+        2. **Actionability**: Suggests clear steps, fixes, or actions to improve outcomes
+        3. **Specificity**: Precise, detailed, not generic - references particular features or processes
+        4. **Materiality**: Meaningful business impact affecting revenue, satisfaction, or positioning
+        5. **Recurrence**: Same observation across multiple interviews or sources
+        6. **Stakeholder Weight**: Comes from high-influence decision makers or critical personas
+        7. **Tension/Contrast**: Exposes tensions, tradeoffs, or significant contrasts
+        8. **Metric/Quantification**: Supported by tangible metrics, timeframes, or outcomes
+        """
+        st.markdown(evaluation_criteria)
+        
+        st.subheader("📋 Enhanced Stage 3 Prompt Template")
+        stage3_prompt = '''
+Generate an executive-ready finding using the Buried Wins Findings Criteria v4.0 framework.
+
+CRITERION: {criterion} - {criterion_desc}
+FINDING TYPE: {finding_type}
+ENHANCED CONFIDENCE: {confidence_score:.1f}/10.0
+CRITERIA MET: {criteria_met}/8 (Novelty, Actionability, Specificity, Materiality, Recurrence, Stakeholder Weight, Tension/Contrast, Metric/Quantification)
+
+PATTERN SUMMARY:
+{pattern_summary}
+
+SELECTED EVIDENCE:
+{selected_evidence}
+
+REQUIREMENTS (Buried Wins v4.0):
+- Write 2-3 sentences maximum
+- Focus on actionable insights that could influence executive decision-making
+- Use business language with specific impact
+- Include material business implications
+- Be clear, direct, and executive-ready
+- Reference specific criteria met if relevant
+
+OUTPUT: Just the finding text, no additional formatting.
+        '''
+        st.code(stage3_prompt, language='python')
+        
+        st.subheader("🎯 Enhanced Confidence Scoring")
+        st.markdown("""
+        **Confidence Calculation**:
+        - **Base Score**: Number of criteria met (2-8 points)
+        - **Stakeholder Multipliers**: Executive (1.5x), Budget Holder (1.5x), Champion (1.3x)
+        - **Decision Impact Multipliers**: Deal Tipping Point (2.0x), Differentiator (1.5x), Blocker (1.5x)
+        - **Evidence Strength Multipliers**: Strong Positive/Negative (1.3x), Perspective Shifting (1.3x)
+        
+        **Confidence Thresholds**:
+        - **Priority Finding**: ≥ 4.0/10.0
+        - **Standard Finding**: ≥ 3.0/10.0
+        - **Minimum Confidence**: ≥ 2.0/10.0
+        """)
+        
+        st.subheader("🔍 Enhanced Pattern Recognition")
+        st.markdown("""
+        **Pattern Thresholds**:
+        - Minimum 3 quotes to form a pattern
+        - Minimum 2 companies for cross-company validation
+        - Minimum 2 criteria met for valid findings
+        - Enhanced confidence scoring with stakeholder weighting
+        
+        **Quote Selection Logic**:
+        - Automated selection of optimal quotes (max 3 per finding)
+        - Priority scoring based on deal impact, stakeholder perspective, and sentiment
+        - Deal tipping point identification (deal breaker, critical, essential)
+        - Executive and budget holder perspective weighting
+        """)
+        
+        st.subheader("📈 Executive Insights & Output")
+        st.markdown("""
+        **Enhanced Output Format**:
+        - **Enhanced Confidence Scores**: 0-10 scale with detailed breakdown
+        - **Criteria Met Analysis**: 0-8 criteria evaluation
+        - **Priority Classification**: Priority vs Standard findings
+        - **Stakeholder Impact**: Executive, budget holder, and champion perspectives
+        - **Decision Impact**: Deal tipping points, differentiators, and blockers
+        - **Selected Evidence**: Automatically chosen optimal quotes
+        - **Cross-company Validation**: Multi-company pattern recognition
+        """)
+    
+    with tab4:
+        st.subheader("🎨 Stage 4: Theme Generation")
+        st.markdown("""
+        **Purpose**: Identify recurring patterns across companies and generate executive-ready themes
+        
+        **Theme Categories**:
+        - **Barrier**: Obstacles preventing success or adoption
+        - **Opportunity**: Areas for improvement or growth potential
+        - **Strategic**: Long-term business implications
+        - **Functional**: Operational or technical considerations
+        - **Competitive**: Market positioning and competitive advantages
+        """)
+        
+        st.subheader("📋 Stage 4 Prompt Template")
+        stage4_prompt = '''
+You are a senior research consultant for Buried Wins, specializing in executive communication for C-suite B2B SaaS clients.
+
+TASK: Analyze findings data to identify recurring patterns and generate executive-ready themes.
+
+FINDINGS DATA:
+{findings_summary}
+
+REQUIREMENTS:
+1. **Pattern Recognition**: Identify recurring themes across multiple companies
+2. **Executive Focus**: Focus on business impact and strategic implications
+3. **Evidence-Based**: Support themes with specific quotes and data
+4. **Actionable Insights**: Provide clear business implications
+
+THEME STRUCTURE:
+- **Theme Statement**: Executive-ready insight revealing business pattern
+- **Category**: Barrier, Opportunity, Strategic, Functional, or Competitive
+- **Strength**: High, Medium, or Emerging based on evidence
+- **Business Implications**: Strategic impact and recommendations
+- **Supporting Evidence**: Key quotes and data points
+
+OUTPUT FORMAT (JSON only):
+{
+    "themes": [
+        {
+            "theme_statement": "Executive-ready insight",
+            "theme_category": "Barrier|Opportunity|Strategic|Functional|Competitive",
+            "theme_strength": "High|Medium|Emerging",
+            "business_implications": "Strategic impact and recommendations",
+            "supporting_finding_ids": [1, 2, 3],
+            "primary_theme_quote": "Most representative quote",
+            "secondary_theme_quote": "Supporting quote",
+            "quote_attributions": "Company attribution",
+            "evidence_strength": "Strong|Moderate|Weak",
+            "competitive_flag": true/false
+        }
+    ]
+}
+        '''
+        st.code(stage4_prompt, language='python')
+        
+        st.subheader("🔍 Theme Qualification")
+        st.markdown("""
+        **Qualification Criteria**:
+        - Minimum 3 findings to form a theme
+        - Cross-company validation (2+ companies)
+        - Evidence strength assessment
+        - Competitive context identification
+        
+        **Strength Assessment**:
+        - **High**: Strong evidence across multiple companies
+        - **Medium**: Moderate evidence with clear patterns
+        - **Emerging**: Early indicators requiring monitoring
+        """)
+        
+        st.subheader("📊 Competitive Analysis")
+        st.markdown("""
+        **Competitive Themes**:
+        - Market positioning insights
+        - Competitive advantages/disadvantages
+        - Differentiation opportunities
+        - Threat assessment and response strategies
+        """)
+    
+    with tab5:
+        st.subheader("🏆 Stage 5: Executive Synthesis")
+        st.markdown("""
+        **Purpose**: Transform themes into C-suite ready narratives with criteria scorecard integration
+        
+        **Executive Framework**:
+        - **Punch Then Explain**: Bold headline + concise business narrative
+        - **Data-Anchored**: Include specific metrics from themes and criteria scorecard
+        - **Business Tension**: Highlight strategic implications and performance gaps
+        - **Executive Relevance**: Focus on decision-making impact and priority actions
+        - **Criteria Integration**: Reference specific criteria performance where relevant
+        """)
+        
+        st.subheader("📊 Criteria Scorecard Integration")
+        st.markdown("""
+        **Performance Ratings**:
+        - **EXCEPTIONAL**: Avg score ≥ 3.5, critical ratio ≥ 30%
+        - **STRONG**: Avg score ≥ 3.0, critical ratio ≥ 20%
+        - **GOOD**: Avg score ≥ 2.5
+        - **NEEDS ATTENTION**: Avg score ≥ 2.0
+        - **CRITICAL ISSUE**: Avg score < 2.0
+        
+        **Executive Priorities**:
+        - **IMMEDIATE ACTION**: High scores affecting multiple companies
+        - **HIGH PRIORITY**: Critical mentions requiring attention
+        - **MEDIUM PRIORITY**: Moderate scores with company impact
+        - **MONITOR**: Lower scores requiring observation
+        """)
+        
+        st.subheader("📋 Stage 5 Prompt Template")
+        stage5_prompt = '''
+You are a senior research consultant for Buried Wins, specializing in executive communication for C-suite B2B SaaS clients.
+
+THEME DATA:
+{theme_data}
+
+CRITERIA SCORECARD CONTEXT:
+{scorecard_context}
+
+TASK: Create an executive-ready synthesis that incorporates both theme insights AND criteria performance data.
+
+REQUIREMENTS:
+1. **Punch Then Explain**: Bold headline + concise business narrative
+2. **Data-Anchored**: Include specific metrics from both themes and criteria scorecard
+3. **Business Tension**: Highlight strategic implications and performance gaps
+4. **Executive Relevance**: Focus on decision-making impact and priority actions
+5. **Criteria Integration**: Reference specific criteria performance where relevant
+
+OUTPUT FORMAT (JSON only):
+{
+    "theme_headline": "Executive-ready headline following punch-then-explain principle",
+    "narrative_explanation": "2-3 sentence business narrative incorporating criteria performance",
+    "business_impact_level": "High|Medium|Emerging",
+    "strategic_recommendations": "High-level strategic implications with criteria-specific actions",
+    "executive_readiness": "Presentation|Report|Follow-up",
+    "criteria_connections": ["List of criteria this theme connects to"],
+    "performance_insights": "How this theme relates to criteria performance data"
+}
+
+IMPORTANT: 
+- Use exact quotes with response_id prefixes
+- Reference specific criteria performance ratings (EXCEPTIONAL, STRONG, GOOD, NEEDS ATTENTION, CRITICAL ISSUE)
+- Connect themes to criteria scorecard insights
+- Focus on business impact, not technical details
+- Use Buried Wins editorial style: conversational authority, clarity over cleverness, punch then explain
+        '''
+        st.code(stage5_prompt, language='python')
+        
+        st.subheader("🎯 Priority Scoring")
+        st.markdown("""
+        **Priority Score Calculation**:
+        - Competitive flag: 3.0x weight
+        - Theme strength: 2.0x weight
+        - Company count: 1.5x weight
+        - Average confidence: 1.0x weight
+        - Additional weight for high-impact criteria connections
+        
+        **Business Impact Levels**:
+        - **High**: Significant strategic implications
+        - **Medium**: Moderate business impact
+        - **Emerging**: Early indicators requiring attention
+        """)
+        
+        st.subheader("📋 Executive Readiness")
+        st.markdown("""
+        **Readiness Categories**:
+        - **Presentation**: Ready for C-suite presentation
+        - **Report**: Suitable for executive reports
+        - **Follow-up**: Requires additional analysis or context
+        
+        **Deal Impact Analysis**:
+        - Criteria affecting lost deals
+        - Criteria winning deals
+        - Performance breakdown by deal status
+        """)
+    
+    with tab6:
+        st.subheader("⚙️ Configuration & Settings")
+        st.markdown("""
+        **Database Configuration**:
+        - Supabase integration for all data storage
+        - Real-time synchronization
+        - Automatic schema management
+        - Row-level security policies
+        
+        **Processing Configuration**:
+        - Parallel processing with configurable workers
+        - Incremental processing for efficiency
+        - Quality metrics tracking
+        - Error handling and retry logic
+        """)
+        
+        st.subheader("🔧 Environment Variables")
+        env_vars = """
+Required Environment Variables:
+- OPENAI_API_KEY: Your OpenAI API key
+- SUPABASE_URL: Your Supabase project URL
+- SUPABASE_ANON_KEY: Your Supabase anonymous key
+
+Optional:
+- LOG_LEVEL: Logging level (INFO, DEBUG, WARNING, ERROR)
+        """
+        st.code(env_vars, language='bash')
+        
+        st.subheader("📊 Quality Assurance")
+        st.markdown("""
+        **Quality Metrics**:
+        - Quote coverage percentage
+        - Criteria performance tracking
+        - Processing error rates
+        - Data validation checks
+        
+        **Performance Monitoring**:
+        - Processing duration tracking
+        - Memory usage optimization
+        - API rate limiting
+        - Error recovery mechanisms
+        """)
+
+def show_welcome_screen():
+    st.title("🎤 Voice of Customer Pipeline")
+    st.markdown("### AI-Powered Quote Analysis & Insights")
+    
+    st.markdown("""
+    Welcome to the VOC Pipeline! This tool helps you extract and analyze customer quotes from interviews to uncover actionable insights.
+    
+    **Pipeline Overview:**
+    1. **📤 Upload** interview transcripts (.txt or .docx files)
+    2. **📊 Extract** customer quotes and responses
+    3. **🎯 Label** quotes against 10 evaluation criteria
+    4. **🔍 Identify** key findings and insights
+    5. **🎨 Generate** themes and patterns
+    6. **📈 Create** executive synthesis and recommendations
+    
+    **Key Features:**
+    - 🚀 **16K Token Optimization**: Processes longer, richer quotes
+    - 🎯 **10-Criteria Analysis**: Comprehensive executive framework
+    - 📊 **Real-time Analytics**: Live dashboards and visualizations
+    - ☁️ **Cloud Storage**: All data stored securely in database
+    - 🔄 **Incremental Processing**: Only analyze new quotes
+    """)
+    
+    # Quick start with better flow
+    st.subheader("🚀 Quick Start")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("""
+        **1. Upload & Extract**
+        - Go to "Upload Files" section
+        - Select your interview transcripts
+        - Click "Extract Quotes"
+        """)
+    
+    with col2:
+        st.markdown("""
+        **2. Analyze & Insights**
+        - Run "Label Quotes" to evaluate criteria
+        - Identify findings and generate themes
+        - Create executive summary
+        """)
+    
+    # Database status with better labels
+    st.subheader("🗄️ Database Status")
+    if SUPABASE_AVAILABLE:
+        st.success("✅ Database Connected - Ready to process quotes")
+        
+        # Show quick stats with better labels
+        try:
+            summary = get_stage2_summary()
+            if summary and 'total_quotes' in summary:
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total Quotes", summary['total_quotes'])
+                with col2:
+                    st.metric("Labeled Quotes", summary['quotes_with_scores'])
+                with col3:
+                    st.metric("Analysis Coverage", f"{summary['coverage_percentage']}%")
+        except:
+            st.info("No quotes in database yet. Start by uploading and processing files.")
+    else:
+        st.error("❌ Database Not Connected")
+        st.info("Please configure your .env file with database credentials")
+
+# Main Streamlit App Interface
 def main():
     st.set_page_config(
         page_title="VOC Pipeline UI",
@@ -397,378 +1320,326 @@ def main():
     if 'uploaded_paths' not in st.session_state:
         st.session_state.uploaded_paths = []
     
-    # Sidebar
-    with st.sidebar:
-        st.title("🎤 VOC Pipeline")
-        st.markdown("Voice of Customer Analysis")
-        
-        # Navigation
-        st.subheader("📋 Navigation")
-        if st.button("🏠 Home", use_container_width=True):
-            st.session_state.current_step = 1
-        if st.button("📤 Upload Files", use_container_width=True):
-            st.session_state.current_step = 2
-        if st.button("📊 Stage 1 Results", use_container_width=True):
-            st.session_state.current_step = 3
-        if st.button("🔍 Stage 2 Analysis", use_container_width=True):
-            st.session_state.current_step = 4
-        if st.button("📈 Export & Share", use_container_width=True):
-            st.session_state.current_step = 5
-        if st.button("🗄️ Database Status", use_container_width=True):
-            st.session_state.current_step = 6
-        if st.button("📝 Prompts & Details", use_container_width=True):
-            st.session_state.current_step = 7
-        
-        # Supabase status
-        st.subheader("🗄️ Database")
-        if SUPABASE_AVAILABLE:
-            st.success("✅ Supabase Connected")
-        else:
-            st.error("❌ Supabase Not Available")
+    # Sidebar navigation
+    st.sidebar.title("🎤 VOC Pipeline")
     
-    # Main content area
-    if st.session_state.current_step == 1:
+    # Navigation options with cleaner labels
+    nav_options = {
+        "🏠 Welcome": "welcome",
+        "📤 Upload Files": "upload",
+        "📊 Stage 1: Extract Quotes": "stage1",
+        "🎯 Stage 2: Label Quotes": "stage2",
+        "🔍 Stage 3: Findings": "stage3",
+        "🎨 Stage 4: Generate Themes": "stage4",
+        "📈 Stage 5: Executive Summary": "stage5",
+        "📝 Prompts & Details": "prompts",
+        "🗄️ Database Status": "database"
+    }
+    
+    # Determine default page based on current step
+    default_index = 0  # Welcome
+    if st.session_state.current_step == 2:
+        default_index = 3  # Stage 2: Label Quotes
+    elif st.session_state.current_step == 1:
+        default_index = 2  # Stage 1: Extract Quotes
+    
+    selected = st.sidebar.selectbox(
+        "Navigation",
+        list(nav_options.keys()),
+        index=default_index
+    )
+    
+    # Route to appropriate page
+    page = nav_options[selected]
+    
+    if page == "welcome":
         show_welcome_screen()
-    elif st.session_state.current_step == 2:
-        show_upload_section()
-    elif st.session_state.current_step == 3:
-        show_stage1_results()
-    elif st.session_state.current_step == 4:
-        show_stage2_analysis()
-    elif st.session_state.current_step == 5:
-        show_export_section()
-    elif st.session_state.current_step == 6:
-        show_supabase_status()
-    elif st.session_state.current_step == 7:
-        show_prompts_details()
-
-def show_upload_section():
-    st.title("📤 Upload Interview Files")
-    st.markdown("Upload your interview transcripts for processing")
-    
-    uploaded_files = st.file_uploader(
-        "Choose interview files",
-        type=['txt', 'docx'],
-        accept_multiple_files=True,
-        help="Upload interview transcripts in .txt or .docx format"
-    )
-    
-    if uploaded_files:
-        st.session_state.uploaded_paths = save_uploaded_files(uploaded_files)
-        st.success(f"✅ Uploaded {len(uploaded_files)} files")
+    elif page == "upload":
+        st.title("📤 Upload Interview Files")
+        st.markdown("Upload your interview transcripts to extract customer quotes and insights.")
         
-        # Show file details
-        st.subheader("📁 Uploaded Files")
-        for i, path in enumerate(st.session_state.uploaded_paths):
-            interviewee, company = extract_interviewee_and_company(os.path.basename(path))
-            st.write(f"**{i+1}.** {os.path.basename(path)}")
-            st.write(f"   - Interviewee: {interviewee}")
-            st.write(f"   - Company: {company}")
+        uploaded_files = st.file_uploader(
+            "Choose files",
+            type=['txt', 'docx'],
+            accept_multiple_files=True,
+            help="Select one or more interview transcript files"
+        )
         
-        # Process button
-        if st.button("🚀 Process Files", type="primary"):
-            with st.spinner("Processing files..."):
-                process_files_with_progress()
-
-def show_stage1_results():
-    st.title("📊 Stage 1 Results")
+        if uploaded_files:
+            st.session_state.uploaded_paths = save_uploaded_files(uploaded_files)
+            st.success(f"✅ Uploaded {len(uploaded_files)} files")
+            
+            # Show uploaded files
+            st.subheader("📁 Uploaded Files")
+            for i, path in enumerate(st.session_state.uploaded_paths):
+                st.write(f"{i+1}. {os.path.basename(path)}")
+            
+            # Process button with better UX
+            if st.button("🚀 Extract Quotes", type="primary", help="Process files to extract customer quotes"):
+                with st.spinner("Extracting quotes from interviews..."):
+                    process_files_with_progress()
+                    
+                    # Save to Supabase if available
+                    if SUPABASE_AVAILABLE and os.path.exists(STAGE1_CSV):
+                        if save_stage1_to_supabase(STAGE1_CSV):
+                            st.success("✅ Quotes extracted and saved to database")
+                            st.info("🔄 Auto-progressing to Stage 2: Quote Labeling...")
+                            # Auto-progress to Stage 2
+                            st.session_state.current_step = 2
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to save to database")
     
-    if not os.path.exists(STAGE1_CSV):
-        st.warning("⚠️ No Stage 1 results found. Please process some files first.")
-        return
-    
-    # Load and display results
-    df = load_csv(STAGE1_CSV)
-    
-    if df.empty:
-        st.error("❌ No data found in Stage 1 results")
-        return
-    
-    # Summary statistics
-    st.subheader("📈 Summary")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Total Responses", len(df))
-    
-    with col2:
-        unique_companies = df['Company Name'].nunique()
-        st.metric("Unique Companies", unique_companies)
-    
-    with col3:
-        unique_interviewees = df['Interviewee Name'].nunique()
-        st.metric("Unique Interviewees", unique_interviewees)
-    
-    # Save to Supabase
-    st.subheader("💾 Save to Database")
-    if st.button("💾 Save to Supabase", type="primary"):
-        if save_stage1_to_supabase(STAGE1_CSV):
-            st.success("✅ Data saved to Supabase successfully!")
-    
-    # Display data
-    st.subheader("📋 Response Data")
-    st.dataframe(df, use_container_width=True)
-    
-    # Download option
-    csv = df.to_csv(index=False)
-    st.download_button(
-        label="📥 Download CSV",
-        data=csv,
-        file_name="stage1_results.csv",
-        mime="text/csv"
-    )
-
-def show_stage2_analysis():
-    st.title("🔍 Stage 2 Analysis")
-    
-    if not SUPABASE_AVAILABLE:
-        st.error("❌ Supabase not available. Please configure your database connection.")
-        return
-    
-    # Check if we have data to analyze
-    summary = get_stage2_summary()
-    if not summary or summary.get('total_quotes', 0) == 0:
-        st.warning("⚠️ No data found in database. Please upload and process files first.")
-        return
-    
-    st.subheader("📊 Current Status")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Total Quotes", summary['total_quotes'])
-    
-    with col2:
-        st.metric("Analyzed", summary['quotes_with_scores'])
-    
-    with col3:
-        st.metric("Coverage", f"{summary['coverage_percentage']}%")
-    
-    # Run analysis
-    st.subheader("🚀 Run Analysis")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("🔄 Run Incremental Analysis", type="primary"):
-            with st.spinner("Running Stage 2 analysis..."):
-                result = run_stage2_analysis()
-                if result:
-                    st.success("✅ Analysis completed successfully!")
-                    st.rerun()
-    
-    with col2:
-        if st.button("🔄 Force Reprocess All", type="secondary"):
-            with st.spinner("Force reprocessing all quotes..."):
-                from enhanced_stage2_analyzer import run_supabase_analysis
-                result = run_supabase_analysis(force_reprocess=True)
-                if result:
-                    st.success("✅ Force reprocess completed!")
-                    st.rerun()
-    
-    # Display results
-    if summary['criteria_performance']:
-        st.subheader("📈 Analysis Results")
+    elif page == "stage1":
+        st.title("📊 Stage 1: Quote Extraction")
         
-        # Criteria performance chart
-        criteria_data = []
-        for criterion, perf in summary['criteria_performance'].items():
-            criteria_data.append({
-                'Criterion': criterion,
-                'Average Score': perf['average_score'],
-                'Mentions': perf['mention_count'],
-                'Coverage %': perf['coverage_percentage']
-            })
-        
-        criteria_df = pd.DataFrame(criteria_data)
-        criteria_df = criteria_df.sort_values('Average Score', ascending=False)
-        
-        # Color coding for scores
-        def score_color(val):
-            if val >= 3.5:
-                return 'background-color: #d4edda'  # Green for high scores
-            elif val >= 2.5:
-                return 'background-color: #fff3cd'  # Yellow for medium scores
-            else:
-                return 'background-color: #f8d7da'  # Red for low scores
-        
-        st.dataframe(criteria_df.style.applymap(score_color, subset=['Average Score']), 
-                    use_container_width=True)
-        
-        # Chart
-        fig = px.bar(criteria_df, x='Criterion', y='Average Score',
-                    title="Average Scores by Criterion",
-                    hover_data=['Mentions', 'Coverage %'])
-        st.plotly_chart(fig, use_container_width=True)
-
-def show_export_section():
-    st.title("📈 Export & Share")
-    
-    if not SUPABASE_AVAILABLE:
-        st.error("❌ Supabase not available")
-        return
-    
-    # Get data summary
-    summary = get_stage2_summary()
-    if not summary:
-        st.warning("⚠️ No data available for export")
-        return
-    
-    st.subheader("📊 Data Summary")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Total Quotes", summary['total_quotes'])
-    
-    with col2:
-        st.metric("Analyzed Quotes", summary['quotes_with_scores'])
-    
-    with col3:
-        st.metric("Coverage", f"{summary['coverage_percentage']}%")
-    
-    # Export options
-    st.subheader("📤 Export Options")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("📥 Export Core Responses", type="primary"):
-            try:
-                core_df = db.get_core_responses()
-                if not core_df.empty:
-                    csv = core_df.to_csv(index=False)
-                    st.download_button(
-                        label="📥 Download Core Responses CSV",
-                        data=csv,
-                        file_name=f"core_responses_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    st.warning("No core responses to export")
-            except Exception as e:
-                st.error(f"Export failed: {e}")
-    
-    with col2:
-        if st.button("📥 Export Quote Analysis", type="primary"):
-            try:
-                analysis_df = db.get_quote_analysis()
-                if not analysis_df.empty:
-                    csv = analysis_df.to_csv(index=False)
-                    st.download_button(
-                        label="📥 Download Quote Analysis CSV",
-                        data=csv,
-                        file_name=f"quote_analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                        mime="text/csv"
-                    )
-                else:
-                    st.warning("No quote analysis to export")
-            except Exception as e:
-                st.error(f"Export failed: {e}")
-    
-    # Data preview
-    st.subheader("👀 Data Preview")
-    
-    tab1, tab2 = st.tabs(["Core Responses", "Quote Analysis"])
-    
-    with tab1:
-        core_df = db.get_core_responses()
-        if not core_df.empty:
-            st.dataframe(core_df.head(10), use_container_width=True)
+        if os.path.exists(STAGE1_CSV):
+            st.success("✅ Quotes extracted successfully")
+            
+            # Load and display results
+            df = load_csv(STAGE1_CSV)
+            if not df.empty:
+                st.subheader("📋 Extracted Quotes")
+                st.dataframe(df, use_container_width=True)
+                
+                # Summary statistics with better labels
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Total Quotes", len(df))
+                with col2:
+                    # Safely check if Subject column exists
+                    if 'Subject' in df.columns:
+                        st.metric("Topics Covered", df['Subject'].nunique())
+                    else:
+                        st.metric("Topics Covered", "N/A")
+                with col3:
+                    # Safely check if Company Name column exists
+                    if 'Company Name' in df.columns:
+                        st.metric("Companies", df['Company Name'].nunique())
+                    else:
+                        st.metric("Companies", "N/A")
+                
+                # Export option
+                csv = df.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download Quotes",
+                    data=csv,
+                    file_name="extracted_quotes.csv",
+                    mime="text/csv"
+                )
+                
+                # Next step guidance
+                st.info("💡 **Next Step**: Run Stage 2 to label these quotes against evaluation criteria")
         else:
-            st.info("No core responses found")
+            st.info("📤 Please upload and process files first")
+            st.markdown(PROCESSING_DETAILS)
     
-    with tab2:
-        analysis_df = db.get_quote_analysis()
-        if not analysis_df.empty:
-            st.dataframe(analysis_df.head(10), use_container_width=True)
-        else:
-            st.info("No quote analysis found")
-
-def show_prompts_details():
-    st.title("📝 Prompts & Processing Details")
-    
-    st.markdown(PROCESSING_DETAILS)
-    
-    st.subheader("🔧 Configuration")
-    
-    # Show current configuration
-    config_path = "config/analysis_config.yaml"
-    if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
-            config_content = f.read()
-        st.code(config_content, language='yaml')
-    else:
-        st.info("No configuration file found")
-    
-    st.subheader("📋 Prompt Templates")
-    
-    # Show prompt template
-    prompt_content = load_prompt_template()
-    st.code(prompt_content, language='python')
-
-def show_welcome_screen():
-    st.title("🎤 Voice of Customer Pipeline")
-    st.markdown("### AI-Powered Interview Analysis & Insights")
-    
-    st.markdown("""
-    Welcome to the VOC Pipeline! This tool helps you extract valuable insights from customer interviews.
-    
-    **How it works:**
-    1. **📤 Upload** your interview transcripts (.txt or .docx files)
-    2. **🔍 Process** them through our AI pipeline to extract key insights
-    3. **📊 Analyze** the responses against 10 executive criteria
-    4. **📈 Export** and share your findings
-    
-    **Key Features:**
-    - 🚀 **16K Token Optimization**: Processes longer, richer responses
-    - 🎯 **10-Criteria Analysis**: Comprehensive executive framework
-    - 📊 **Real-time Analytics**: Live dashboards and visualizations
-    - ☁️ **Cloud Storage**: All data stored securely in Supabase
-    - 🔄 **Incremental Processing**: Only analyze new data
-    """)
-    
-    # Quick start
-    st.subheader("🚀 Quick Start")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.markdown("""
-        **1. Upload Files**
-        - Go to the Upload Files section
-        - Select your interview transcripts
-        - Click "Process Files"
-        """)
-    
-    with col2:
-        st.markdown("""
-        **2. View Results**
-        - Check Stage 1 Results for extracted insights
-        - Run Stage 2 Analysis for criteria scoring
-        - Export your findings
-        """)
-    
-    # Database status
-    st.subheader("🗄️ Database Status")
-    if SUPABASE_AVAILABLE:
-        st.success("✅ Supabase Connected - Ready to process data")
+    elif page == "stage2":
+        st.title("🎯 Stage 2: Quote Labeling & Analysis")
         
-        # Show quick stats
-        try:
+        if not SUPABASE_AVAILABLE:
+            st.error("❌ Database not available")
+            st.info("Please configure your .env file with database credentials")
+        else:
+            # Check if we have data
             summary = get_stage2_summary()
-            if summary and 'total_quotes' in summary:
+            if summary and summary.get('total_quotes', 0) > 0:
+                st.success(f"✅ Found {summary['total_quotes']} quotes ready for labeling")
+                
+                # Show current status with better labels
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Total Quotes", summary['total_quotes'])
                 with col2:
-                    st.metric("Analyzed", summary['quotes_with_scores'])
+                    st.metric("Labeled Quotes", summary['quotes_with_scores'])
                 with col3:
-                    st.metric("Coverage", f"{summary['coverage_percentage']}%")
-        except:
-            st.info("No data in database yet")
-    else:
-        st.error("❌ Supabase Not Connected")
-        st.info("Please configure your .env file with SUPABASE_URL and SUPABASE_ANON_KEY")
+                    st.metric("Analysis Coverage", f"{summary['coverage_percentage']}%")
+                
+                # Run analysis button with better UX
+                if st.button("🔄 Label Quotes", type="primary", help="Label quotes against 10 evaluation criteria"):
+                    with st.spinner("Labeling quotes against criteria..."):
+                        result = run_stage2_analysis()
+                        if result:
+                            st.success("✅ Quote labeling complete!")
+                            st.json(result)
+                        else:
+                            st.error("❌ Quote labeling failed")
+                
+                # Show results if available
+                if summary['quotes_with_scores'] > 0:
+                    st.subheader("📊 Labeling Results")
+                    
+                    # Criteria performance chart
+                    if summary['criteria_performance']:
+                        criteria_data = []
+                        for criterion, perf in summary['criteria_performance'].items():
+                            criteria_data.append({
+                                'Criterion': criterion,
+                                'Average Score': perf['average_score'],
+                                'Mentions': perf['mention_count'],
+                                'Coverage %': perf['coverage_percentage']
+                            })
+                        
+                        criteria_df = pd.DataFrame(criteria_data)
+                        fig = px.bar(criteria_df, x='Criterion', y='Average Score', 
+                                    title="Criteria Performance", color='Coverage %')
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # CTA button to go to Stage 3
+                        if st.button("🔍 Continue to Stage 3: Findings", type="primary", help="Move to the next stage to identify key findings"):
+                            st.session_state.current_step = 3
+                            st.rerun()
+            else:
+                st.info("📤 Please upload and process files first, then extract quotes")
+    
+    elif page == "stage3":
+        st.title("🔍 Stage 3: Findings Identification")
+        
+        if not SUPABASE_AVAILABLE:
+            st.error("❌ Database not available")
+        else:
+            # Check if we have Stage 2 data
+            stage2_summary = get_stage2_summary()
+            if not stage2_summary or stage2_summary.get('quotes_with_scores', 0) == 0:
+                st.info("📊 Please run Stage 2 quote scoring first")
+            else:
+                # Show current findings status
+                findings_summary = get_stage3_summary()
+                if findings_summary:
+                    st.success(f"✅ Found {findings_summary.get('total_findings', 0)} findings")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Findings", findings_summary.get('total_findings', 0))
+                    with col2:
+                        st.metric("Priority Findings", findings_summary.get('priority_findings', 0))
+                    with col3:
+                        st.metric("High Confidence", findings_summary.get('high_confidence_findings', 0))
+                    
+                    # Run analysis button
+                    if st.button("🔄 Identify Findings", type="primary", help="Identify key findings and insights from labeled quotes"):
+                        with st.spinner("Identifying findings and insights..."):
+                            result = run_stage3_analysis()
+                            if result:
+                                st.success("✅ Findings identification complete!")
+                                st.json(result)
+                            else:
+                                st.error("❌ Findings identification failed")
+                    
+                    # Show findings if available
+                    if findings_summary.get('total_findings', 0) > 0:
+                        st.subheader("🔍 Key Findings")
+                        # Display findings summary
+                        st.write(findings_summary)
+                        
+                        # CTA button to go to Stage 4
+                        if st.button("🎨 Continue to Stage 4: Generate Themes", type="primary", help="Move to the next stage to generate themes"):
+                            st.session_state.current_step = 4
+                            st.rerun()
+                else:
+                    st.info("📊 No findings available yet. Run the analysis to identify findings.")
+    
+    elif page == "stage4":
+        st.title("🎨 Stage 4: Theme Generation")
+        
+        if not SUPABASE_AVAILABLE:
+            st.error("❌ Database not available")
+        else:
+            # Check if we have Stage 3 data
+            findings_summary = get_stage3_summary()
+            if not findings_summary or findings_summary.get('total_findings', 0) == 0:
+                st.info("📊 Please run Stage 3 findings analysis first")
+            else:
+                # Show current themes status
+                themes_summary = get_stage4_summary()
+                if themes_summary:
+                    st.success(f"✅ Generated {themes_summary.get('total_themes', 0)} themes")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Total Themes", themes_summary.get('total_themes', 0))
+                    with col2:
+                        st.metric("Competitive Themes", themes_summary.get('competitive_themes', 0))
+                    with col3:
+                        st.metric("Strategic Themes", themes_summary.get('strategic_themes', 0))
+                    
+                    # Run analysis button
+                    if st.button("🔄 Generate Themes", type="primary", help="Generate themes from findings and insights"):
+                        with st.spinner("Generating themes from findings..."):
+                            result = run_stage4_analysis()
+                            if result:
+                                st.success("✅ Theme generation complete!")
+                                st.json(result)
+                            else:
+                                st.error("❌ Theme generation failed")
+                    
+                    # Show themes if available
+                    if themes_summary.get('total_themes', 0) > 0:
+                        st.subheader("🎨 Generated Themes")
+                        show_stage4_themes()
+                        
+                        # CTA button to go to Stage 5
+                        if st.button("📈 Continue to Stage 5: Executive Summary", type="primary", help="Move to the final stage to create executive synthesis"):
+                            st.session_state.current_step = 5
+                            st.rerun()
+                else:
+                    st.info("📊 No themes available yet. Run the analysis to generate themes.")
+    
+    elif page == "stage5":
+        st.title("📈 Stage 5: Executive Synthesis")
+        
+        if not SUPABASE_AVAILABLE:
+            st.error("❌ Database not available")
+        else:
+            # Check if we have Stage 4 data
+            themes_summary = get_stage4_summary()
+            if not themes_summary or themes_summary.get('total_themes', 0) == 0:
+                st.info("📊 Please run Stage 4 theme generation first")
+            else:
+                # Show current synthesis status
+                synthesis_summary = get_stage5_summary()
+                if synthesis_summary:
+                    st.success(f"✅ Executive synthesis available")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Executive Themes", synthesis_summary.get('executive_themes', 0))
+                    with col2:
+                        st.metric("Priority Areas", synthesis_summary.get('priority_areas', 0))
+                    with col3:
+                        st.metric("Quality Score", f"{synthesis_summary.get('quality_score', 0):.1f}")
+                    
+                    # Run analysis button
+                    if st.button("🔄 Create Synthesis", type="primary", help="Generate executive synthesis and recommendations"):
+                        with st.spinner("Creating executive synthesis..."):
+                            result = run_stage5_analysis()
+                            if result:
+                                st.success("✅ Executive synthesis complete!")
+                                st.json(result)
+                            else:
+                                st.error("❌ Executive synthesis failed")
+                    
+                    # Show synthesis if available
+                    if synthesis_summary.get('executive_themes', 0) > 0:
+                        st.subheader("📈 Executive Summary")
+                        show_stage5_synthesis()
+                        
+                        st.subheader("📊 Criteria Scorecard")
+                        show_stage5_criteria_scorecard()
+                        
+                        # Completion message
+                        st.success("🎉 **Pipeline Complete!** Your VOC analysis is ready for executive review.")
+                        st.info("💡 You can now export your findings or run additional analysis as needed.")
+                else:
+                    st.info("📊 No synthesis available yet. Run the analysis to create executive summary.")
+    
+    elif page == "prompts":
+        show_prompts_details()
+    
+    elif page == "database":
+        show_supabase_status()
 
+# Streamlit app runs automatically when this file is executed
 if __name__ == "__main__":
     main()
 
