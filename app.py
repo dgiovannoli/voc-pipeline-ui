@@ -1325,6 +1325,155 @@ def show_welcome_screen():
         st.error("❌ Database Not Connected")
         st.info("Please configure your .env file with database credentials")
 
+def show_database_management():
+    """Show database management interface for debugging client data issues"""
+    st.subheader("🗄️ Database Management")
+    
+    if not SUPABASE_AVAILABLE:
+        st.error("❌ Database not available")
+        return
+    
+    try:
+        # Get client summary
+        client_summary = db.get_client_summary()
+        
+        if not client_summary:
+            st.info("📊 No data found in database")
+            return
+        
+        st.subheader("📊 Data by Client")
+        
+        # Display client data summary
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Total Clients", len(client_summary))
+            st.metric("Total Records", sum(client_summary.values()))
+        
+        with col2:
+            # Show current client context
+            current_client = st.session_state.get('client_id', 'default')
+            current_count = client_summary.get(current_client, 0)
+            st.metric("Current Client Records", current_count)
+        
+        # Display client breakdown
+        st.subheader("🏢 Client Data Breakdown")
+        client_df = pd.DataFrame(list(client_summary.items()), columns=['Client ID', 'Record Count'])
+        client_df = client_df.sort_values('Record Count', ascending=False)
+        
+        # Create a bar chart
+        fig = px.bar(client_df, x='Client ID', y='Record Count', 
+                    title="Records by Client ID",
+                    color='Record Count')
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Show detailed table
+        st.dataframe(client_df, use_container_width=True)
+        
+        # Data management section
+        st.subheader("🔧 Data Management")
+        
+        # Merge data section
+        st.markdown("**Merge Data Between Clients**")
+        st.info("💡 Use this to consolidate data from different client IDs into one")
+        
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            from_client = st.selectbox(
+                "From Client ID",
+                list(client_summary.keys()),
+                help="Select the source client ID"
+            )
+        
+        with col2:
+            to_client = st.selectbox(
+                "To Client ID",
+                list(client_summary.keys()) + ['new_client'],
+                help="Select the target client ID"
+            )
+        
+        with col3:
+            if to_client == 'new_client':
+                new_client_id = st.text_input(
+                    "New Client ID",
+                    placeholder="Enter new client ID"
+                )
+            else:
+                new_client_id = to_client
+        
+        if st.button("🔄 Merge Data", type="primary", disabled=from_client == to_client):
+            if from_client == to_client:
+                st.warning("⚠️ Cannot merge to the same client ID")
+            elif to_client == 'new_client' and not new_client_id.strip():
+                st.warning("⚠️ Please enter a new client ID")
+            else:
+                target_client = new_client_id if to_client == 'new_client' else to_client
+                
+                with st.spinner(f"Merging data from {from_client} to {target_client}..."):
+                    success = db.merge_client_data(from_client, target_client)
+                    
+                    if success:
+                        st.success(f"✅ Successfully merged data from {from_client} to {target_client}")
+                        st.info("🔄 Refreshing data...")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to merge data")
+        
+        # Set current client section
+        st.subheader("🎯 Set Current Client")
+        st.info("💡 Change which client's data you want to work with")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            new_current_client = st.selectbox(
+                "Select Client ID",
+                list(client_summary.keys()),
+                index=list(client_summary.keys()).index(st.session_state.get('client_id', 'default')) if st.session_state.get('client_id', 'default') in client_summary else 0
+            )
+        
+        with col2:
+            if st.button("✅ Set as Current Client"):
+                st.session_state.client_id = new_current_client
+                st.success(f"✅ Current client set to: {new_current_client}")
+                st.info("🔄 Refreshing interface...")
+                st.rerun()
+        
+        # Show current client data
+        if st.session_state.get('client_id') in client_summary:
+            st.subheader(f"📊 Current Client Data: {st.session_state.client_id}")
+            
+            # Get current client data
+            current_df = db.get_core_responses(client_id=st.session_state.client_id)
+            
+            if not current_df.empty:
+                col1, col2, col3 = st.columns(3)
+                
+                with col1:
+                    st.metric("Total Quotes", len(current_df))
+                
+                with col2:
+                    if 'company' in current_df.columns:
+                        st.metric("Companies", current_df['company'].nunique())
+                    else:
+                        st.metric("Companies", "N/A")
+                
+                with col3:
+                    if 'interviewee_name' in current_df.columns:
+                        st.metric("Interviewees", current_df['interviewee_name'].nunique())
+                    else:
+                        st.metric("Interviewees", "N/A")
+                
+                # Show sample data
+                st.dataframe(current_df.head(10), use_container_width=True)
+            else:
+                st.info("📭 No data found for current client")
+    
+    except Exception as e:
+        st.error(f"❌ Error in database management: {e}")
+        st.exception(e)
+
 # Main Streamlit App Interface
 def main():
     st.set_page_config(
@@ -1383,7 +1532,8 @@ def main():
         "🎨 Stage 4: Generate Themes": "stage4",
         "📈 Stage 5: Executive Summary": "stage5",
         "📝 Prompts & Details": "prompts",
-        "🗄️ Database Status": "database"
+        "🗄️ Database Status": "database",
+        "🗄️ Database Management": "database_management"
     }
     
     # Determine default page based on current step
@@ -1491,6 +1641,38 @@ def main():
             st.error("❌ Database not available")
             st.info("Please configure your .env file with database credentials")
         else:
+            # Check for client data issues
+            client_summary = db.get_client_summary()
+            current_client = st.session_state.get('client_id', 'default')
+            current_count = client_summary.get(current_client, 0)
+            total_records = sum(client_summary.values())
+            
+            # Show warning if there's data but not for current client
+            if total_records > 0 and current_count == 0:
+                st.warning("⚠️ **Data Found But Not for Current Client**")
+                st.info(f"📊 Found {total_records} total records across {len(client_summary)} clients, but 0 for current client '{current_client}'")
+                st.info("💡 **Solution**: Go to 'Database Management' to see all data and set the correct client ID")
+                
+                # Show quick client switcher
+                if len(client_summary) > 1:
+                    st.subheader("🔧 Quick Fix: Switch Client")
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        available_clients = list(client_summary.keys())
+                        new_client = st.selectbox(
+                            "Select Client with Data",
+                            available_clients,
+                            index=0
+                        )
+                    
+                    with col2:
+                        if st.button("✅ Switch to This Client"):
+                            st.session_state.client_id = new_client
+                            st.success(f"✅ Switched to client: {new_client}")
+                            st.info("🔄 Refreshing...")
+                            st.rerun()
+            
             # Check if we have data
             summary = get_stage2_summary()
             if summary and summary.get('total_quotes', 0) > 0:
@@ -1688,6 +1870,8 @@ def main():
     
     elif page == "database":
         show_supabase_status()
+    elif page == "database_management":
+        show_database_management()
 
 # Streamlit app runs automatically when this file is executed
 if __name__ == "__main__":
