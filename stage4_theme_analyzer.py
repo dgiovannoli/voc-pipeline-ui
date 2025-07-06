@@ -74,11 +74,10 @@ class Stage4ThemeAnalyzer:
             }
         }
     
-    def get_findings_for_analysis(self) -> pd.DataFrame:
-        """Get findings with sufficient confidence for theme generation"""
-        min_confidence = self.config.get('stage4', {}).get('min_confidence_threshold', 3.0)
-        df = self.db.get_high_confidence_findings(min_confidence)
-        logger.info(f"📊 Loaded {len(df)} high-confidence findings for theme analysis")
+    def get_findings_for_analysis(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get findings from database for theme analysis"""
+        df = self.db.get_enhanced_findings(client_id=client_id)
+        logger.info(f"📊 Loaded {len(df)} findings from Supabase for client {client_id}")
         return df
     
     def analyze_finding_patterns(self, df: pd.DataFrame) -> Dict:
@@ -273,12 +272,13 @@ class Stage4ThemeAnalyzer:
         logger.info(f"✅ Generated {len(themes)} theme statements")
         return themes
     
-    def save_themes_to_supabase(self, themes: List[Dict]):
+    def save_themes_to_supabase(self, themes: List[Dict], client_id: str = 'default'):
         """Save themes to Supabase"""
         logger.info("💾 Saving themes to Supabase...")
         
         saved_count = 0
         for theme in themes:
+            theme['client_id'] = client_id  # Add client_id to each theme
             if self.db.save_theme(theme):
                 saved_count += 1
                 if theme['theme_strength'] == 'High':
@@ -286,17 +286,17 @@ class Stage4ThemeAnalyzer:
                 if theme['competitive_flag']:
                     self.processing_metrics["competitive_themes"] += 1
         
-        logger.info(f"✅ Saved {saved_count} themes to Supabase")
+        logger.info(f"✅ Saved {saved_count} themes to Supabase for client {client_id}")
         self.processing_metrics["themes_generated"] = saved_count
     
-    def process_themes(self) -> Dict:
+    def process_themes(self, client_id: str = 'default') -> Dict:
         """Main processing function for Stage 4"""
         
         logger.info("🚀 STAGE 4: THEME GENERATION")
         logger.info("=" * 60)
         
         # Get findings for analysis
-        df = self.get_findings_for_analysis()
+        df = self.get_findings_for_analysis(client_id=client_id)
         
         if df.empty:
             logger.info("✅ No findings available for theme generation")
@@ -322,7 +322,7 @@ class Stage4ThemeAnalyzer:
             return {"status": "no_themes", "message": "No themes generated"}
         
         # Save to Supabase
-        self.save_themes_to_supabase(themes)
+        self.save_themes_to_supabase(themes, client_id=client_id)
         
         # Generate summary
         summary = self.generate_summary_statistics(themes)
@@ -386,10 +386,10 @@ class Stage4ThemeAnalyzer:
         for category, count in summary['category_distribution'].items():
             logger.info(f"  {category}: {count}")
 
-def run_stage4_analysis():
+def run_stage4_analysis(client_id: str = 'default'):
     """Run Stage 4 theme analysis"""
     analyzer = Stage4ThemeAnalyzer()
-    return analyzer.process_themes()
+    return analyzer.process_themes(client_id=client_id)
 
 # Run the analysis
 if __name__ == "__main__":

@@ -258,6 +258,7 @@ def save_stage1_to_supabase(csv_path):
     try:
         df = pd.read_csv(csv_path)
         saved_count = 0
+        client_id = st.session_state.get('client_id', 'default')
         
         for _, row in df.iterrows():
             response_data = {
@@ -270,13 +271,13 @@ def save_stage1_to_supabase(csv_path):
                 'interviewee_name': row.get('Interviewee Name', ''),
                 'interview_date': row.get('Date of Interview', '2024-01-01'),
                 'file_source': 'stage1_processing',
-                'client_id': row.get('Client ID', 'default')  # Add client_id for data siloing
+                'client_id': client_id  # Use session state client_id
             }
             
             if db.save_core_response(response_data):
                 saved_count += 1
         
-        st.success(f"✅ Saved {saved_count} quotes to database")
+        st.success(f"✅ Saved {saved_count} quotes to database for client: {client_id}")
         return True
         
     except Exception as e:
@@ -290,8 +291,10 @@ def run_stage2_analysis():
         return None
     
     try:
-        from enhanced_stage2_analyzer import run_supabase_analysis
-        result = run_supabase_analysis()
+        from enhanced_stage2_analyzer import SupabaseStage2Analyzer
+        client_id = st.session_state.get('client_id', 'default')
+        analyzer = SupabaseStage2Analyzer()
+        result = analyzer.process_incremental(client_id=client_id)
         return result
     except Exception as e:
         st.error(f"❌ Stage 2 analysis failed: {e}")
@@ -303,7 +306,8 @@ def get_stage2_summary():
         return None
     
     try:
-        summary = db.get_summary_statistics()
+        client_id = st.session_state.get('client_id', 'default')
+        summary = db.get_summary_statistics(client_id=client_id)
         return summary
     except Exception as e:
         st.error(f"❌ Failed to get summary: {e}")
@@ -316,8 +320,9 @@ def run_stage3_analysis():
         return None
     
     try:
+        client_id = st.session_state.get('client_id', 'default')
         analyzer = Stage3FindingsAnalyzer()
-        result = analyzer.process_findings()
+        result = analyzer.process_findings(client_id=client_id)
         return result
     except Exception as e:
         st.error(f"❌ Stage 3 analysis failed: {e}")
@@ -329,7 +334,8 @@ def get_stage3_summary():
         return None
     
     try:
-        summary = db.get_enhanced_findings_summary()
+        client_id = st.session_state.get('client_id', 'default')
+        summary = db.get_enhanced_findings_summary(client_id=client_id)
         return summary
     except Exception as e:
         st.error(f"❌ Failed to get enhanced findings summary: {e}")
@@ -345,12 +351,16 @@ def show_supabase_status():
         return
     
     try:
-        # Get summary statistics
-        summary = db.get_summary_statistics()
+        # Get summary statistics with client_id filtering
+        client_id = st.session_state.get('client_id', 'default')
+        summary = db.get_summary_statistics(client_id=client_id)
         
         if "error" in summary:
             st.error(f"❌ Database error: {summary['error']}")
             return
+        
+        # Display client context
+        st.info(f"📊 Showing data for client: **{client_id}**")
         
         # Display statistics
         col1, col2, col3 = st.columns(3)
@@ -414,8 +424,11 @@ def show_supabase_status():
 def run_stage4_analysis():
     """Run Stage 4 theme analysis"""
     try:
-        from stage4_theme_analyzer import run_stage4_analysis as run_stage4
-        return run_stage4()
+        from stage4_theme_analyzer import Stage4ThemeAnalyzer
+        client_id = st.session_state.get('client_id', 'default')
+        analyzer = Stage4ThemeAnalyzer()
+        result = analyzer.process_themes(client_id=client_id)
+        return result
     except Exception as e:
         st.error(f"Stage 4 analysis failed: {e}")
         return {"status": "error", "message": str(e)}
@@ -423,8 +436,9 @@ def run_stage4_analysis():
 def get_stage4_summary():
     """Get Stage 4 themes summary"""
     try:
+        client_id = st.session_state.get('client_id', 'default')
         db = SupabaseDatabase()
-        return db.get_themes_summary()
+        return db.get_themes_summary(client_id=client_id)
     except Exception as e:
         st.error(f"Failed to get Stage 4 summary: {e}")
         return {}
@@ -463,8 +477,9 @@ def show_stage4_themes():
                 st.error(f"❌ Theme generation failed: {result.get('message', 'Unknown error')}")
     
     # Display themes
+    client_id = st.session_state.get('client_id', 'default')
     db = SupabaseDatabase()
-    themes_df = db.get_themes()
+    themes_df = db.get_themes(client_id=client_id)
     
     if not themes_df.empty:
         st.subheader("📊 Generated Themes")
@@ -545,8 +560,9 @@ def show_stage4_themes():
 def get_stage5_summary():
     """Get Stage 5 executive synthesis summary"""
     try:
+        client_id = st.session_state.get('client_id', 'default')
         db = SupabaseDatabase()
-        return db.get_executive_synthesis_summary()
+        return db.get_executive_synthesis_summary(client_id=client_id)
     except Exception as e:
         st.error(f"Failed to get Stage 5 summary: {e}")
         return {}
@@ -576,7 +592,8 @@ def show_stage5_synthesis():
     # Generate synthesis button
     if st.button("🚀 Generate Executive Synthesis", type="primary"):
         with st.spinner("Generating executive synthesis with criteria scorecard..."):
-            result = run_stage5_analysis()
+            client_id = st.session_state.get('client_id', 'default')
+            result = run_stage5_analysis(client_id=client_id)
             
             if result.get("status") == "success":
                 st.success(f"✅ Generated {result.get('executive_themes_generated', 0)} executive themes!")
@@ -585,8 +602,9 @@ def show_stage5_synthesis():
                 st.error(f"❌ Synthesis failed: {result.get('message', 'Unknown error')}")
     
     # Display executive themes
+    client_id = st.session_state.get('client_id', 'default')
     db = SupabaseDatabase()
-    themes_df = db.get_executive_themes()
+    themes_df = db.get_executive_themes(client_id=client_id)
     
     if not themes_df.empty:
         st.subheader("📊 Executive Themes")
@@ -676,8 +694,9 @@ def show_stage5_criteria_scorecard():
     # Generate scorecard button
     if st.button("📊 Generate Criteria Scorecard", type="primary"):
         with st.spinner("Generating criteria scorecard..."):
+            client_id = st.session_state.get('client_id', 'default')
             db = SupabaseDatabase()
-            scorecard = db.generate_criteria_scorecard()
+            scorecard = db.generate_criteria_scorecard(client_id=client_id)
             
             if scorecard:
                 st.success("✅ Criteria scorecard generated successfully!")
@@ -1320,9 +1339,39 @@ def main():
         st.session_state.current_step = 1
     if 'uploaded_paths' not in st.session_state:
         st.session_state.uploaded_paths = []
+    if 'client_id' not in st.session_state:
+        st.session_state.client_id = 'default'
     
     # Sidebar navigation
     st.sidebar.title("🎤 VOC Pipeline")
+    
+    # Client ID selector with persistence
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🏢 Client Settings")
+    
+    # Client ID input with validation
+    new_client_id = st.sidebar.text_input(
+        "Client ID",
+        value=st.session_state.client_id,
+        help="Enter a unique identifier for this client's data. This ensures data isolation between different clients.",
+        placeholder="e.g., client_123, acme_corp, project_alpha"
+    )
+    
+    # Validate and update client ID
+    if new_client_id != st.session_state.client_id:
+        if new_client_id.strip():
+            # Clean the client ID (alphanumeric and underscores only)
+            clean_client_id = re.sub(r'[^a-zA-Z0-9_]', '', new_client_id.strip())
+            if clean_client_id != new_client_id.strip():
+                st.sidebar.warning(f"⚠️ Client ID cleaned to: {clean_client_id}")
+            st.session_state.client_id = clean_client_id
+            st.sidebar.success(f"✅ Client ID set to: {clean_client_id}")
+        else:
+            st.session_state.client_id = 'default'
+            st.sidebar.info("ℹ️ Using default client ID")
+    
+    # Show current client context
+    st.sidebar.markdown(f"**Current Client:** `{st.session_state.client_id}`")
     
     # Navigation options with cleaner labels
     nav_options = {
