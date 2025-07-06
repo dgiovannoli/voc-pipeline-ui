@@ -461,27 +461,20 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get findings: {e}")
             return pd.DataFrame()
     
-    def get_enhanced_findings(self, criterion: Optional[str] = None, finding_type: Optional[str] = None, priority_level: Optional[str] = None) -> pd.DataFrame:
-        """Get enhanced findings from Supabase"""
+    def get_enhanced_findings(self, client_id: str = 'default', criterion: Optional[str] = None, finding_type: Optional[str] = None, priority_level: Optional[str] = None) -> pd.DataFrame:
+        """Get enhanced findings from Supabase, filtered by client_id"""
         try:
             query = self.supabase.table('enhanced_findings').select('*')
-            
+            query = query.eq('client_id', client_id)
             if criterion:
                 query = query.eq('criterion', criterion)
-            
             if finding_type:
                 query = query.eq('finding_type', finding_type)
-            
             if priority_level:
                 query = query.eq('priority_level', priority_level)
-            
-            # Order by enhanced_confidence desc
             query = query.order('enhanced_confidence', desc=True)
-            
             result = query.execute()
             df = pd.DataFrame(result.data)
-            
-            # Parse JSON fields
             if not df.empty:
                 if 'criteria_scores' in df.columns:
                     df['criteria_scores'] = df['criteria_scores'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
@@ -491,64 +484,16 @@ class SupabaseDatabase:
                     df['themes'] = df['themes'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
                 if 'deal_impacts' in df.columns:
                     df['deal_impacts'] = df['deal_impacts'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
-            
-            logger.info(f"📊 Retrieved {len(df)} enhanced findings from Supabase")
+            logger.info(f"📊 Retrieved {len(df)} enhanced findings from Supabase for client {client_id}")
             return df
-            
         except Exception as e:
             logger.error(f"❌ Failed to get enhanced findings: {e}")
             return pd.DataFrame()
-    
-    def get_findings_summary(self) -> Dict:
-        """Get summary statistics for findings"""
-        try:
-            # Get total findings count
-            total_findings = self.supabase.table('findings').select('id', count='exact').execute()
-            total_count = total_findings.count if total_findings.count is not None else 0
-            
-            if total_count == 0:
-                return {
-                    'total_findings': 0,
-                    'criteria_covered': 0,
-                    'finding_type_distribution': {},
-                    'average_impact_score': 0,
-                    'total_companies_affected': 0
-                }
-            
-            # Get findings by type
-            findings_data = self.supabase.table('findings').select('*').execute()
-            df = pd.DataFrame(findings_data.data)
-            
-            # Calculate statistics
-            criteria_covered = df['criterion'].nunique()
-            finding_types = df['finding_type'].value_counts().to_dict()
-            avg_impact = df['impact_score'].mean() if 'impact_score' in df.columns else 0
-            total_companies = df['companies_affected'].sum() if 'companies_affected' in df.columns else 0
-            
-            return {
-                'total_findings': total_count,
-                'criteria_covered': criteria_covered,
-                'finding_type_distribution': finding_types,
-                'average_impact_score': avg_impact,
-                'total_companies_affected': total_companies
-            }
-            
-        except Exception as e:
-            logger.error(f"Error getting findings summary: {e}")
-            return {
-                'total_findings': 0,
-                'criteria_covered': 0,
-                'finding_type_distribution': {},
-                'average_impact_score': 0,
-                'total_companies_affected': 0
-            }
 
-    def get_enhanced_findings_summary(self) -> Dict:
-        """Get enhanced findings summary statistics"""
+    def get_enhanced_findings_summary(self, client_id: str = 'default') -> Dict:
+        """Get enhanced findings summary statistics, filtered by client_id"""
         try:
-            # Get all enhanced findings
-            df = self.get_enhanced_findings()
-            
+            df = self.get_enhanced_findings(client_id=client_id)
             if df.empty:
                 return {
                     'total_findings': 0,
@@ -559,24 +504,15 @@ class SupabaseDatabase:
                     'average_confidence': 0.0,
                     'average_criteria_met': 0.0
                 }
-            
-            # Calculate summary statistics
             total_findings = len(df)
             priority_findings = len(df[df['priority_level'] == 'priority'])
             standard_findings = len(df[df['priority_level'] == 'standard'])
             low_findings = len(df[df['priority_level'] == 'low'])
-            
             criteria_covered = df['criterion'].nunique()
             average_confidence = df['enhanced_confidence'].mean()
             average_criteria_met = df['criteria_met'].mean()
-            
-            # Finding type distribution
             finding_type_distribution = df['finding_type'].value_counts().to_dict()
-            
-            # Priority level distribution
             priority_level_distribution = df['priority_level'].value_counts().to_dict()
-            
-            # Criteria performance
             criteria_performance = {}
             for criterion in df['criterion'].unique():
                 criterion_df = df[df['criterion'] == criterion]
@@ -585,7 +521,6 @@ class SupabaseDatabase:
                     'average_confidence': criterion_df['enhanced_confidence'].mean(),
                     'priority_findings': len(criterion_df[criterion_df['priority_level'] == 'priority'])
                 }
-            
             return {
                 'total_findings': total_findings,
                 'priority_findings': priority_findings,
@@ -598,7 +533,6 @@ class SupabaseDatabase:
                 'priority_level_distribution': priority_level_distribution,
                 'criteria_performance': criteria_performance
             }
-            
         except Exception as e:
             logger.error(f"❌ Failed to get enhanced findings summary: {e}")
             return {
