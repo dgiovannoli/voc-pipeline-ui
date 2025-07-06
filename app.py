@@ -1504,7 +1504,7 @@ def show_labeled_quotes():
 def show_findings():
     st.subheader("🔍 Findings (Stage 3 Results)")
     client_id = st.session_state.get('client_id', 'default')
-    df = db.get_enhanced_findings()
+    df = db.get_enhanced_findings(client_id=client_id)
     if df.empty:
         st.info("No findings found. Run Stage 3 analysis.")
         return
@@ -1514,7 +1514,6 @@ def show_findings():
     ]
     display_cols = [col for col in display_cols if col in df.columns]
     st.dataframe(df[display_cols], use_container_width=True)
-    # Export option
     csv = df.to_csv(index=False)
     st.download_button(
         label="📥 Download Findings CSV",
@@ -1753,21 +1752,18 @@ def main():
                     with col2:
                         st.metric("Priority Findings", findings_summary.get('priority_findings', 0))
                     with col3:
-                        st.metric("High Confidence", findings_summary.get('high_confidence_findings', 0))
-                    if st.button("🔄 Identify Findings", type="primary", help="Identify key findings and insights from labeled quotes"):
+                        st.metric("High Confidence", findings_summary.get('high_confidence_findings', findings_summary.get('priority_findings', 0)))
+                    if st.button("🔍 Identify Findings", type="primary", help="Identify key findings and insights from labeled quotes"):
                         with st.spinner("Identifying findings and insights..."):
                             result = run_stage3_analysis()
                             if result:
                                 st.success("✅ Findings identification complete!")
-                                # Show findings after processing
                                 show_findings()
-                                # CTA button to proceed to Stage 4
                                 if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
                                     st.session_state.current_step = 4
                                     st.rerun()
                             else:
                                 st.error("❌ Findings identification failed")
-                    # Always show findings if available
                     show_findings()
                     if findings_summary.get('total_findings', 0) > 0:
                         if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
