@@ -411,7 +411,7 @@ class SupabaseStage2Analyzer:
         self.save_processing_metadata(len(quotes_df), len(analyses), processing_duration)
         
         # Generate summary
-        summary = self.generate_summary_statistics()
+        summary = self.generate_summary_statistics(client_id)
         
         logger.info(f"\n✅ Stage 2 complete! Processed {len(analyses)} quotes in {processing_duration:.1f}s")
         self.print_summary_report(summary)
@@ -436,9 +436,9 @@ class SupabaseStage2Analyzer:
         }
         self.db.save_processing_metadata(metadata)
     
-    def generate_summary_statistics(self) -> Dict:
-        """Generate summary statistics from Supabase"""
-        return self.db.get_summary_statistics()
+    def generate_summary_statistics(self, client_id: str = 'default') -> Dict:
+        """Generate summary statistics from Supabase, filtered by client_id"""
+        return self.db.get_summary_statistics(client_id=client_id)
     
     def parse_json_response(self, response_text: str) -> Optional[Dict]:
         """Parse JSON response with fallback strategies"""

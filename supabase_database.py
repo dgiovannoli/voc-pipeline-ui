@@ -207,11 +207,11 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get unanalyzed quotes: {e}")
             return pd.DataFrame()
     
-    def get_summary_statistics(self) -> Dict[str, Any]:
-        """Get summary statistics from Supabase"""
+    def get_summary_statistics(self, client_id: str = 'default') -> Dict[str, Any]:
+        """Get summary statistics from Supabase, filtered by client_id for data siloing"""
         try:
             # Get core responses
-            core_df = self.get_core_responses()
+            core_df = self.get_core_responses(client_id=client_id)
             
             if core_df.empty:
                 return {
@@ -224,7 +224,7 @@ class SupabaseDatabase:
                 }
             
             # Get quote analysis
-            analysis_df = self.get_quote_analysis()
+            analysis_df = self.get_quote_analysis(client_id=client_id)
             
             # Calculate statistics
             total_quotes = len(core_df)
@@ -304,25 +304,25 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to delete core response: {e}")
             return False
     
-    def export_data(self, format: str = 'csv') -> str:
-        """Export data from Supabase"""
+    def export_data(self, format: str = 'csv', client_id: str = 'default') -> str:
+        """Export data from Supabase, filtered by client_id"""
         try:
             # Get all data
-            core_df = self.get_core_responses()
-            analysis_df = self.get_quote_analysis()
+            core_df = self.get_core_responses(client_id=client_id)
+            analysis_df = self.get_quote_analysis(client_id=client_id)
             
             if format.lower() == 'csv':
                 # Create export filename
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                core_filename = f"core_responses_{timestamp}.csv"
-                analysis_filename = f"quote_analysis_{timestamp}.csv"
+                core_filename = f"core_responses_{client_id}_{timestamp}.csv"
+                analysis_filename = f"quote_analysis_{client_id}_{timestamp}.csv"
                 
                 # Save to CSV
                 core_df.to_csv(core_filename, index=False)
                 analysis_df.to_csv(analysis_filename, index=False)
                 
-                logger.info(f"✅ Exported data to {core_filename} and {analysis_filename}")
-                return f"Exported {len(core_df)} core responses and {len(analysis_df)} analyses"
+                logger.info(f"✅ Exported data to {core_filename} and {analysis_filename} for client {client_id}")
+                return f"Exported {len(core_df)} core responses and {len(analysis_df)} analyses for client {client_id}"
             
             else:
                 raise ValueError(f"Unsupported export format: {format}")
@@ -331,14 +331,14 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to export data: {e}")
             return f"Export failed: {e}"
     
-    def get_scored_quotes(self) -> pd.DataFrame:
-        """Get all quotes with scores from Supabase for Stage 3 analysis"""
+    def get_scored_quotes(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get all quotes with scores from Supabase for Stage 3 analysis, filtered by client_id"""
         try:
             # Get core responses
-            core_df = self.get_core_responses()
+            core_df = self.get_core_responses(client_id=client_id)
             
             # Get quote analysis
-            analysis_df = self.get_quote_analysis()
+            analysis_df = self.get_quote_analysis(client_id=client_id)
             
             if core_df.empty or analysis_df.empty:
                 return pd.DataFrame()
@@ -357,7 +357,7 @@ class SupabaseDatabase:
             # Add original_quote column
             merged_df['original_quote'] = merged_df['verbatim_response'].str[:200]
             
-            logger.info(f"📊 Retrieved {len(merged_df)} scored quotes for Stage 3 analysis")
+            logger.info(f"📊 Retrieved {len(merged_df)} scored quotes for Stage 3 analysis for client {client_id}")
             return merged_df
             
         except Exception as e:
