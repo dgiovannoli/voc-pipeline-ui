@@ -324,7 +324,7 @@ def run_stage3_analysis():
     try:
         client_id = st.session_state.get('client_id', 'default')
         analyzer = Stage3FindingsAnalyzer()
-        result = analyzer.process_findings(client_id=client_id)
+        result = analyzer.process_enhanced_findings(client_id=client_id)
         return result
     except Exception as e:
         st.error(f"❌ Stage 3 analysis failed: {e}")
