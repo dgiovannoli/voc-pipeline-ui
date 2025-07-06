@@ -70,8 +70,45 @@ criteria:
     weight: 1.0
     priority_threshold: 0.8
 
-
+# Stage 3: Enhanced Findings Identification Configuration
+# Buried Wins v4.0 framework for executive-ready insights
+stage3:
+  confidence_thresholds:
+    priority_finding: 3.0      # Reduced from 4.0 for more inclusive analysis
+    standard_finding: 2.0      # Reduced from 3.0 for more inclusive analysis
+    minimum_confidence: 1.0    # Reduced from 2.0 for more inclusive analysis
   
+  pattern_thresholds:
+    minimum_quotes: 2          # Reduced from 3 to 2 for smaller datasets
+    minimum_companies: 1       # Reduced from 2 to 1 for single-company data
+    minimum_criteria_met: 1    # Reduced from 2 to 1 for more inclusive analysis
+  
+  stakeholder_multipliers:
+    executive_perspective: 1.5      # Executive decision makers
+    budget_holder_perspective: 1.5  # Budget/finance stakeholders
+    champion_perspective: 1.3       # Product champions
+    end_user_perspective: 1.0       # End users
+    it_technical_perspective: 1.0   # Technical stakeholders
+  
+  decision_impact_multipliers:
+    deal_tipping_point: 2.0         # Deal-breaking or deal-winning factors
+    differentiator_factor: 1.5      # Competitive differentiators
+    blocker_factor: 1.5             # Implementation blockers
+    high_salience: 1.4              # High business impact
+    medium_salience: 1.2            # Medium business impact
+    low_salience: 1.0               # Low business impact
+  
+  evidence_strength_multipliers:
+    strong_positive: 1.3            # Strong positive feedback
+    strong_negative: 1.3            # Strong negative feedback
+    perspective_shifting: 1.3       # Novel or unexpected insights
+    organizational_conflict: 1.2    # Internal tensions or conflicts
+    standard_evidence: 1.0          # Standard evidence
+  
+  batch_size: 100                   # Processing batch size
+  max_patterns_per_criterion: 5     # Maximum patterns per criterion
+  max_quotes_per_finding: 3         # Maximum quotes per finding
+
 # Quality control settings
 quality:
   min_confidence: "medium"   # Minimum confidence level to include in analysis
