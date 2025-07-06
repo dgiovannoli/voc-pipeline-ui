@@ -1476,6 +1476,53 @@ def show_database_management():
         st.error(f"❌ Error in database management: {e}")
         st.exception(e)
 
+# --- Add helper to show labeled quotes ---
+def show_labeled_quotes():
+    st.subheader("📋 Labeled Quotes (Stage 2 Results)")
+    client_id = st.session_state.get('client_id', 'default')
+    df = db.get_quote_analysis(client_id=client_id)
+    if df.empty:
+        st.info("No labeled quotes found. Run Stage 2 analysis.")
+        return
+    # Show a summary table
+    display_cols = [
+        'quote_id', 'criterion', 'score', 'priority', 'confidence',
+        'relevance_explanation', 'deal_weighted_score', 'context_keywords', 'question_relevance'
+    ]
+    display_cols = [col for col in display_cols if col in df.columns]
+    st.dataframe(df[display_cols], use_container_width=True)
+    # Export option
+    csv = df.to_csv(index=False)
+    st.download_button(
+        label="📥 Download Labeled Quotes CSV",
+        data=csv,
+        file_name="labeled_quotes.csv",
+        mime="text/csv"
+    )
+
+# --- Add helper to show findings ---
+def show_findings():
+    st.subheader("🔍 Findings (Stage 3 Results)")
+    client_id = st.session_state.get('client_id', 'default')
+    df = db.get_enhanced_findings()
+    if df.empty:
+        st.info("No findings found. Run Stage 3 analysis.")
+        return
+    display_cols = [
+        'criterion', 'finding_type', 'priority_level', 'enhanced_confidence',
+        'criteria_met', 'summary', 'selected_quotes', 'themes', 'deal_impacts'
+    ]
+    display_cols = [col for col in display_cols if col in df.columns]
+    st.dataframe(df[display_cols], use_container_width=True)
+    # Export option
+    csv = df.to_csv(index=False)
+    st.download_button(
+        label="📥 Download Findings CSV",
+        data=csv,
+        file_name="findings.csv",
+        mime="text/csv"
+    )
+
 # Main Streamlit App Interface
 def main():
     st.set_page_config(
@@ -1580,48 +1627,36 @@ def main():
             if st.button("🚀 Extract Quotes", type="primary", help="Process files to extract customer quotes"):
                 with st.spinner("Extracting quotes from interviews..."):
                     process_files_with_progress()
-                    
-                    # Save to Supabase if available
                     if SUPABASE_AVAILABLE and os.path.exists(STAGE1_CSV):
                         if save_stage1_to_supabase(STAGE1_CSV):
                             st.success("✅ Quotes extracted and saved to database")
-                            st.info("🔄 Auto-progressing to Stage 2: Quote Labeling...")
-                            # Auto-progress to Stage 2
-                            st.session_state.current_step = 2
+                            # Do NOT auto-progress. Stay on Stage 1 for review.
+                            st.session_state.current_step = 1
                             st.rerun()
                         else:
                             st.error("❌ Failed to save to database")
     
     elif page == "stage1":
         st.title("📊 Stage 1: Quote Extraction")
-        
         if os.path.exists(STAGE1_CSV):
             st.success("✅ Quotes extracted successfully")
-            
-            # Load and display results
             df = load_csv(STAGE1_CSV)
             if not df.empty:
                 st.subheader("📋 Extracted Quotes")
                 st.dataframe(df, use_container_width=True)
-                
-                # Summary statistics with better labels
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Total Quotes", len(df))
                 with col2:
-                    # Safely check if Subject column exists
                     if 'Subject' in df.columns:
                         st.metric("Topics Covered", df['Subject'].nunique())
                     else:
                         st.metric("Topics Covered", "N/A")
                 with col3:
-                    # Safely check if Company Name column exists
                     if 'Company Name' in df.columns:
                         st.metric("Companies", df['Company Name'].nunique())
                     else:
                         st.metric("Companies", "N/A")
-                
-                # Export option
                 csv = df.to_csv(index=False)
                 st.download_button(
                     label="📥 Download Quotes",
@@ -1629,37 +1664,32 @@ def main():
                     file_name="extracted_quotes.csv",
                     mime="text/csv"
                 )
-                
-                # Next step guidance
-                st.info("💡 **Next Step**: Run Stage 2 to label these quotes against evaluation criteria")
+                # CTA button to proceed to Stage 2
+                if st.button("🎯 Proceed to Stage 2: Label Quotes", type="primary"):
+                    st.session_state.current_step = 2
+                    st.rerun()
+                st.info("💡 Review your extracted quotes above. When ready, proceed to Stage 2 to label them.")
         else:
             st.info("📤 Please upload and process files first")
             st.markdown(PROCESSING_DETAILS)
     
     elif page == "stage2":
         st.title("🎯 Stage 2: Quote Labeling & Analysis")
-        
         if not SUPABASE_AVAILABLE:
             st.error("❌ Database not available")
             st.info("Please configure your .env file with database credentials")
         else:
-            # Check for client data issues
             client_summary = db.get_client_summary()
             current_client = st.session_state.get('client_id', 'default')
             current_count = client_summary.get(current_client, 0)
             total_records = sum(client_summary.values())
-            
-            # Show warning if there's data but not for current client
             if total_records > 0 and current_count == 0:
                 st.warning("⚠️ **Data Found But Not for Current Client**")
                 st.info(f"📊 Found {total_records} total records across {len(client_summary)} clients, but 0 for current client '{current_client}'")
                 st.info("💡 **Solution**: Go to 'Database Management' to see all data and set the correct client ID")
-                
-                # Show quick client switcher
                 if len(client_summary) > 1:
                     st.subheader("🔧 Quick Fix: Switch Client")
                     col1, col2 = st.columns(2)
-                    
                     with col1:
                         available_clients = list(client_summary.keys())
                         new_client = st.selectbox(
@@ -1667,20 +1697,15 @@ def main():
                             available_clients,
                             index=0
                         )
-                    
                     with col2:
                         if st.button("✅ Switch to This Client"):
                             st.session_state.client_id = new_client
                             st.success(f"✅ Switched to client: {new_client}")
                             st.info("🔄 Refreshing...")
                             st.rerun()
-            
-            # Check if we have data
             summary = get_stage2_summary()
             if summary and summary.get('total_quotes', 0) > 0:
                 st.success(f"✅ Found {summary['total_quotes']} quotes ready for labeling")
-                
-                # Show current status with better labels
                 col1, col2, col3 = st.columns(3)
                 with col1:
                     st.metric("Total Quotes", summary['total_quotes'])
@@ -1688,60 +1713,40 @@ def main():
                     st.metric("Labeled Quotes", summary['quotes_with_scores'])
                 with col3:
                     st.metric("Analysis Coverage", f"{summary['coverage_percentage']}%")
-                
-                # Run analysis button with better UX
                 if st.button("🔄 Label Quotes", type="primary", help="Label quotes against 10 evaluation criteria"):
                     with st.spinner("Labeling quotes against criteria..."):
                         result = run_stage2_analysis()
                         if result:
                             st.success("✅ Quote labeling complete!")
-                            st.json(result)
+                            # Show labeled quotes after processing
+                            show_labeled_quotes()
+                            # CTA button to proceed to Stage 3
+                            if st.button("🔍 Proceed to Stage 3: Identify Findings", type="primary"):
+                                st.session_state.current_step = 3
+                                st.rerun()
                         else:
                             st.error("❌ Quote labeling failed")
-                
-                # Show results if available
+                # Always show labeled quotes if available
+                show_labeled_quotes()
                 if summary['quotes_with_scores'] > 0:
-                    st.subheader("📊 Labeling Results")
-                    
-                    # Criteria performance chart
-                    if summary['criteria_performance']:
-                        criteria_data = []
-                        for criterion, perf in summary['criteria_performance'].items():
-                            criteria_data.append({
-                                'Criterion': criterion,
-                                'Average Score': perf['average_score'],
-                                'Mentions': perf['mention_count'],
-                                'Coverage %': perf['coverage_percentage']
-                            })
-                        
-                        criteria_df = pd.DataFrame(criteria_data)
-                        fig = px.bar(criteria_df, x='Criterion', y='Average Score', 
-                                    title="Criteria Performance", color='Coverage %')
-                        st.plotly_chart(fig, use_container_width=True)
-                        
-                        # CTA button to go to Stage 3
-                        if st.button("🔍 Continue to Stage 3: Findings", type="primary", help="Move to the next stage to identify key findings"):
-                            st.session_state.current_step = 3
-                            st.rerun()
+                    if st.button("🔍 Proceed to Stage 3: Identify Findings", type="primary"):
+                        st.session_state.current_step = 3
+                        st.rerun()
             else:
                 st.info("📤 Please upload and process files first, then extract quotes")
     
     elif page == "stage3":
         st.title("🔍 Stage 3: Findings Identification")
-        
         if not SUPABASE_AVAILABLE:
             st.error("❌ Database not available")
         else:
-            # Check if we have Stage 2 data
             stage2_summary = get_stage2_summary()
             if not stage2_summary or stage2_summary.get('quotes_with_scores', 0) == 0:
                 st.info("📊 Please run Stage 2 quote scoring first")
             else:
-                # Show current findings status
                 findings_summary = get_stage3_summary()
                 if findings_summary:
                     st.success(f"✅ Found {findings_summary.get('total_findings', 0)} findings")
-                    
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.metric("Total Findings", findings_summary.get('total_findings', 0))
@@ -1749,25 +1754,23 @@ def main():
                         st.metric("Priority Findings", findings_summary.get('priority_findings', 0))
                     with col3:
                         st.metric("High Confidence", findings_summary.get('high_confidence_findings', 0))
-                    
-                    # Run analysis button
                     if st.button("🔄 Identify Findings", type="primary", help="Identify key findings and insights from labeled quotes"):
                         with st.spinner("Identifying findings and insights..."):
                             result = run_stage3_analysis()
                             if result:
                                 st.success("✅ Findings identification complete!")
-                                st.json(result)
+                                # Show findings after processing
+                                show_findings()
+                                # CTA button to proceed to Stage 4
+                                if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
+                                    st.session_state.current_step = 4
+                                    st.rerun()
                             else:
                                 st.error("❌ Findings identification failed")
-                    
-                    # Show findings if available
+                    # Always show findings if available
+                    show_findings()
                     if findings_summary.get('total_findings', 0) > 0:
-                        st.subheader("🔍 Key Findings")
-                        # Display findings summary
-                        st.write(findings_summary)
-                        
-                        # CTA button to go to Stage 4
-                        if st.button("🎨 Continue to Stage 4: Generate Themes", type="primary", help="Move to the next stage to generate themes"):
+                        if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
                             st.session_state.current_step = 4
                             st.rerun()
                 else:
