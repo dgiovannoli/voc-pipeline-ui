@@ -74,17 +74,13 @@ class Stage5ExecutiveAnalyzer:
             }
         }
     
-    def get_themes_for_synthesis(self) -> pd.DataFrame:
-        """Get themes ready for executive synthesis"""
-        df = self.db.get_themes_for_executive_synthesis()
-        logger.info(f"📊 Loaded {len(df)} themes for executive synthesis")
-        return df
+    def get_themes_for_synthesis(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get themes from database for executive synthesis"""
+        return self.db.get_themes(client_id=client_id)
     
-    def generate_criteria_scorecard(self) -> Dict:
-        """Generate criteria scorecard from Stage 2 data"""
-        scorecard = self.db.generate_criteria_scorecard()
-        logger.info(f"📊 Generated criteria scorecard with {len(scorecard.get('criteria_details', []))} criteria")
-        return scorecard
+    def generate_criteria_scorecard(self, client_id: str = 'default') -> Dict:
+        """Generate criteria scorecard from database"""
+        return self.db.generate_criteria_scorecard(client_id=client_id)
     
     def generate_executive_synthesis(self, themes_df: pd.DataFrame, scorecard: Dict) -> List[Dict]:
         """Generate executive synthesis from themes with scorecard context"""
@@ -314,12 +310,13 @@ class Stage5ExecutiveAnalyzer:
         else:
             return "Customer insights"
     
-    def save_executive_themes(self, executive_themes: List[Dict]):
+    def save_executive_themes(self, executive_themes: List[Dict], client_id: str = 'default'):
         """Save executive themes to Supabase"""
         logger.info("💾 Saving executive themes to Supabase...")
         
         saved_count = 0
         for theme in executive_themes:
+            theme['client_id'] = client_id  # Add client_id to each theme
             if self.db.save_executive_theme(theme):
                 saved_count += 1
                 if theme.get('business_impact_level') == 'High':
@@ -330,17 +327,18 @@ class Stage5ExecutiveAnalyzer:
         logger.info(f"✅ Saved {saved_count} executive themes to Supabase")
         self.processing_metrics["executive_themes_generated"] = saved_count
     
-    def save_criteria_scorecard(self, scorecard: Dict):
+    def save_criteria_scorecard(self, scorecard: Dict, client_id: str = 'default'):
         """Save criteria scorecard to Supabase"""
         logger.info("💾 Saving criteria scorecard to Supabase...")
         
+        scorecard['client_id'] = client_id  # Add client_id to scorecard
         if self.db.save_criteria_scorecard(scorecard):
             self.processing_metrics["criteria_analyzed"] = len(scorecard.get('criteria_details', []))
             logger.info(f"✅ Saved criteria scorecard with {self.processing_metrics['criteria_analyzed']} criteria")
         else:
             logger.error("❌ Failed to save criteria scorecard")
     
-    def process_executive_synthesis(self) -> Dict:
+    def process_executive_synthesis(self, client_id: str = 'default') -> Dict:
         """Main processing function for Stage 5"""
         
         logger.info("🚀 STAGE 5: EXECUTIVE SYNTHESIS")
@@ -348,17 +346,17 @@ class Stage5ExecutiveAnalyzer:
         
         # Generate criteria scorecard
         logger.info("📊 Generating criteria scorecard...")
-        scorecard = self.generate_criteria_scorecard()
+        scorecard = self.generate_criteria_scorecard(client_id)
         
         if not scorecard:
             logger.info("✅ No criteria data available for scorecard generation")
             return {"status": "no_criteria_data", "message": "No criteria data available"}
         
         # Save scorecard
-        self.save_criteria_scorecard(scorecard)
+        self.save_criteria_scorecard(scorecard, client_id)
         
         # Get themes for synthesis
-        themes_df = self.get_themes_for_synthesis()
+        themes_df = self.get_themes_for_synthesis(client_id)
         
         if themes_df.empty:
             logger.info("✅ No themes available for executive synthesis")
@@ -374,7 +372,7 @@ class Stage5ExecutiveAnalyzer:
             return {"status": "no_executive_themes", "message": "No executive themes generated"}
         
         # Save executive themes
-        self.save_executive_themes(executive_themes)
+        self.save_executive_themes(executive_themes, client_id)
         
         # Generate summary
         summary = self.generate_summary_statistics(executive_themes, scorecard)
@@ -445,10 +443,10 @@ class Stage5ExecutiveAnalyzer:
         for category, count in summary['category_distribution'].items():
             logger.info(f"  {category}: {count}")
 
-def run_stage5_analysis():
+def run_stage5_analysis(client_id: str = 'default'):
     """Run Stage 5 executive synthesis analysis"""
     analyzer = Stage5ExecutiveAnalyzer()
-    return analyzer.process_executive_synthesis()
+    return analyzer.process_executive_synthesis(client_id=client_id)
 
 # Run the analysis
 if __name__ == "__main__":

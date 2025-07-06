@@ -154,10 +154,10 @@ class Stage3FindingsAnalyzer:
             }
         }
     
-    def get_scored_quotes(self) -> pd.DataFrame:
+    def get_scored_quotes(self, client_id: str = 'default') -> pd.DataFrame:
         """Get all quotes with scores from Supabase"""
-        df = self.db.get_scored_quotes()
-        logger.info(f"📊 Loaded {len(df)} scored quotes from Supabase")
+        df = self.db.get_scored_quotes(client_id=client_id)
+        logger.info(f"📊 Loaded {len(df)} scored quotes from Supabase for client {client_id}")
         return df
     
     def evaluate_finding_criteria(self, quotes_data: List[Dict]) -> Dict:
@@ -639,7 +639,7 @@ class Stage3FindingsAnalyzer:
             # Fallback text
             return f"Significant {finding_type} identified in {criterion} with confidence {best_pattern['enhanced_confidence']:.1f}/10.0 across {best_pattern.get('company_count', 1)} companies."
     
-    def save_enhanced_findings_to_supabase(self, findings: List[Dict]):
+    def save_enhanced_findings_to_supabase(self, findings: List[Dict], client_id: str = 'default'):
         """Save enhanced findings to Supabase"""
         logger.info("💾 Saving enhanced findings to Supabase...")
         
@@ -660,21 +660,22 @@ class Stage3FindingsAnalyzer:
                 'selected_quotes': json.dumps(finding['selected_quotes']),
                 'themes': json.dumps(finding['themes']),
                 'deal_impacts': json.dumps(finding['deal_impacts']),
-                'generated_at': finding['generated_at']
+                'generated_at': finding['generated_at'],
+                'client_id': client_id  # Add client_id for data siloing
             }
             
             self.db.save_enhanced_finding(db_finding)
         
-        logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase")
+        logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase for client {client_id}")
     
-    def process_enhanced_findings(self) -> Dict:
+    def process_enhanced_findings(self, client_id: str = 'default') -> Dict:
         """Main processing function for enhanced Stage 3"""
         
         logger.info("🚀 STAGE 3: ENHANCED FINDINGS IDENTIFICATION (Buried Wins v4.0)")
         logger.info("=" * 70)
         
         # Get scored quotes
-        df = self.get_scored_quotes()
+        df = self.get_scored_quotes(client_id=client_id)
         
         if df.empty:
             logger.info("✅ No scored quotes found for analysis")
@@ -691,7 +692,7 @@ class Stage3FindingsAnalyzer:
         self.processing_metrics["findings_generated"] = len(findings)
         
         # Save to Supabase
-        self.save_enhanced_findings_to_supabase(findings)
+        self.save_enhanced_findings_to_supabase(findings, client_id=client_id)
         
         # Generate summary
         summary = self.generate_enhanced_summary_statistics(findings, patterns)
@@ -772,10 +773,10 @@ class Stage3FindingsAnalyzer:
         for criterion, pattern_count in summary['patterns_by_criterion'].items():
             logger.info(f"  {criterion}: {pattern_count} patterns")
 
-def run_stage3_analysis():
+def run_stage3_analysis(client_id: str = 'default'):
     """Run enhanced Stage 3 findings analysis"""
     analyzer = Stage3FindingsAnalyzer()
-    return analyzer.process_enhanced_findings()
+    return analyzer.process_enhanced_findings(client_id=client_id)
 
 # Run the analysis
 if __name__ == "__main__":
