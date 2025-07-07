@@ -31,10 +31,11 @@ class SupabaseStage2Analyzer:
         self.config_path = config_path
         self.config = self.load_config()
         
+        # Use GPT-4o-mini with increased token limit
         self.llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo-16k",
+            model_name=self.config['processing'].get('model', 'gpt-4o-mini'),
             openai_api_key=os.getenv("OPENAI_API_KEY"),
-            max_tokens=4000,
+            max_tokens=self.config['processing'].get('max_tokens', 8000),
             temperature=0.3
         )
         
@@ -47,13 +48,16 @@ class SupabaseStage2Analyzer:
         # Store current client_id for data siloing
         self.current_client_id = 'default'
         
-        # Quality tracking
+        # Enhanced quality tracking
         self.quality_metrics = {
             "total_quotes_analyzed": 0,
             "quotes_with_scores": 0,
             "quotes_without_scores": 0,
             "criteria_coverage": set(),
-            "processing_errors": 0
+            "processing_errors": 0,
+            "truncated_quotes": 0,
+            "context_preservation_issues": 0,
+            "quotes_exceeding_length": 0
         }
     
     def load_config(self) -> Dict:
@@ -79,9 +83,17 @@ class SupabaseStage2Analyzer:
             },
             'processing': {
                 'max_workers': 4,
-                'max_quote_length': 1000,
+                'max_quote_length': 3000,  # Increased from 1000
+                'max_tokens': 8000,        # Added for GPT-4o-mini
+                'model': 'gpt-4o-mini',    # Upgraded model
                 'retry_attempts': 3,
                 'batch_size': 50
+            },
+            'quality_tracking': {
+                'track_truncation': True,
+                'track_context_loss': True,
+                'min_context_preservation': 0.8,
+                'truncation_warning_threshold': 0.9
             },
             'criteria': {
                 'product_capability': {
@@ -150,7 +162,7 @@ class SupabaseStage2Analyzer:
         return df
     
     def analyze_single_quote(self, quote_row: pd.Series) -> Optional[Dict]:
-        """Analyze a single quote with improved context-aware scoring"""
+        """Analyze a single quote with improved context-aware scoring and quality tracking"""
         
         quote_id = quote_row.get('response_id', 'unknown')
         verbatim_response = quote_row.get('verbatim_response', '')
@@ -159,6 +171,20 @@ class SupabaseStage2Analyzer:
         deal_status = quote_row.get('deal_status', 'unknown')
         company = quote_row.get('company', 'unknown')
         interviewee = quote_row.get('interviewee_name', 'unknown')
+        
+        # Quality tracking for truncation and context preservation
+        original_length = len(verbatim_response)
+        max_length = self.config['processing']['max_quote_length']
+        
+        if original_length > max_length:
+            self.quality_metrics["quotes_exceeding_length"] += 1
+            truncation_ratio = max_length / original_length
+            if truncation_ratio < self.config.get('quality_tracking', {}).get('min_context_preservation', 0.8):
+                self.quality_metrics["context_preservation_issues"] += 1
+                logger.warning(f"⚠️ Quote {quote_id}: Context preservation ratio {truncation_ratio:.2f} below threshold")
+            if truncation_ratio > self.config.get('quality_tracking', {}).get('truncation_warning_threshold', 0.9):
+                self.quality_metrics["truncated_quotes"] += 1
+                logger.warning(f"⚠️ Quote {quote_id}: {truncation_ratio:.1%} of quote truncated")
         
         # Extract context keywords for smarter weighting
         context_keywords = self.extract_context_keywords(verbatim_response, subject, question)
@@ -195,6 +221,9 @@ class SupabaseStage2Analyzer:
             - A question about "implementation" makes implementation_onboarding highly relevant
             - A question about "security" makes security_compliance highly relevant
             - If unsure about relevance, err on the side of inclusion and score it
+            - Pay attention to nuanced language, tone, and implicit feedback
+            - Capture both explicit statements and implied concerns or satisfaction
+            - Consider industry-specific terminology and context clues
             
             SCORING EXAMPLES:
             - Question: "How do you evaluate pricing?" + Response: "pricing is reasonable" → commercial_terms: 2 (clear mention)
@@ -234,7 +263,7 @@ class SupabaseStage2Analyzer:
         
         try:
             result = self.llm.invoke(prompt.format_messages(
-                verbatim_response=verbatim_response[:self.config['processing']['max_quote_length']],
+                verbatim_response=verbatim_response[:max_length],
                 subject=subject,
                 question=question,
                 criteria='\n'.join([f"- {k}: {v['description']}" for k, v in self.criteria.items()]),
@@ -282,7 +311,12 @@ class SupabaseStage2Analyzer:
                     "quote_id": quote_id,
                     "scores": scores,
                     "weighted_scores": weighted_scores,
-                    "context_assessment": parsed.get("context_assessment", {})
+                    "context_assessment": parsed.get("context_assessment", {}),
+                    "quality_metrics": {
+                        "original_length": original_length,
+                        "truncated_length": len(verbatim_response[:max_length]),
+                        "truncation_ratio": len(verbatim_response[:max_length]) / original_length if original_length > 0 else 1.0
+                    }
                 }
             else:
                 logger.warning(f"⚠️ Failed to parse JSON for quote {quote_id}. Raw output: {result.content}")
@@ -470,13 +504,25 @@ class SupabaseStage2Analyzer:
         return None
     
     def print_summary_report(self, summary: Dict):
-        """Print a comprehensive summary report"""
+        """Print a comprehensive summary report with quality metrics"""
         
         logger.info(f"\n📊 STAGE 2 SUMMARY REPORT (Binary + Intensity Scoring)")
         logger.info("=" * 60)
         logger.info(f"Total quotes in database: {summary['total_quotes']}")
         logger.info(f"Quotes with scores: {summary['quotes_with_scores']} ({summary['coverage_percentage']}%)")
         logger.info(f"Criteria covered: {len(summary['criteria_performance'])}/10")
+        
+        # Quality metrics section
+        logger.info(f"\n🔍 QUALITY METRICS:")
+        logger.info("-" * 40)
+        logger.info(f"Quotes exceeding length limit: {self.quality_metrics['quotes_exceeding_length']}")
+        logger.info(f"Quotes with truncation: {self.quality_metrics['truncated_quotes']}")
+        logger.info(f"Context preservation issues: {self.quality_metrics['context_preservation_issues']}")
+        logger.info(f"Processing errors: {self.quality_metrics['processing_errors']}")
+        
+        if self.quality_metrics['quotes_exceeding_length'] > 0:
+            truncation_percentage = (self.quality_metrics['truncated_quotes'] / self.quality_metrics['quotes_exceeding_length']) * 100
+            logger.info(f"Truncation rate: {truncation_percentage:.1f}% of long quotes")
         
         logger.info(f"\n🏢 Deal Outcome Distribution:")
         for outcome, count in summary['deal_outcome_distribution'].items():
@@ -522,6 +568,11 @@ class SupabaseStage2Analyzer:
         logger.info("3 = Strong emphasis/important feedback")
         logger.info("4 = Critical feedback/deal-breaking issue")
         logger.info("5 = Exceptional praise/deal-winning strength")
+        
+        logger.info(f"\n⚙️ CONFIGURATION:")
+        logger.info(f"Model: {self.config['processing'].get('model', 'gpt-4o-mini')}")
+        logger.info(f"Max quote length: {self.config['processing']['max_quote_length']} characters")
+        logger.info(f"Max tokens: {self.config['processing'].get('max_tokens', 8000)}")
 
 def run_supabase_analysis(force_reprocess: bool = False):
     """Run the Supabase-first quote analysis"""
