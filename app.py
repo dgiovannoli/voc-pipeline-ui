@@ -1896,9 +1896,12 @@ def main():
             if not stage2_summary or stage2_summary.get('quotes_with_scores', 0) == 0:
                 st.info("📊 Please run Stage 2 quote scoring first")
             else:
+                # Check if we have existing findings
                 findings_summary = get_stage3_summary()
-                if findings_summary:
-                    st.success(f"✅ Found {findings_summary.get('total_findings', 0)} findings")
+                
+                # Show current status
+                if findings_summary and findings_summary.get('total_findings', 0) > 0:
+                    st.success(f"✅ Found {findings_summary.get('total_findings', 0)} existing findings")
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.metric("Total Findings", findings_summary.get('total_findings', 0))
@@ -1906,27 +1909,48 @@ def main():
                         st.metric("Priority Findings", findings_summary.get('priority_findings', 0))
                     with col3:
                         st.metric("High Confidence", findings_summary.get('high_confidence_findings', findings_summary.get('priority_findings', 0)))
+                
+                # Run analysis button
+                col1, col2 = st.columns([3, 1])
+                with col1:
                     if st.button("🔍 Identify Findings", type="primary", help="Identify key findings and insights from labeled quotes"):
                         with st.spinner("Identifying findings and insights..."):
                             result = run_stage3_analysis()
-                            if result:
-                                st.success("✅ Findings identification complete!")
-                                # Only show findings once, after analysis or on page load
-                                show_findings()
-                                if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
-                                    st.session_state.current_step = 4
-                                    st.rerun()
+                            if result and result.get('status') == 'success':
+                                st.success(f"✅ Findings identification complete! Generated {result.get('findings_generated', 0)} findings")
+                                st.rerun()  # Force refresh to show new results
                             else:
                                 st.error("❌ Findings identification failed")
-                    else:
-                        # Only show findings once, not duplicated
-                        show_findings()
-                        if findings_summary.get('total_findings', 0) > 0:
-                            if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
-                                st.session_state.current_step = 4
-                                st.rerun()
+                
+                with col2:
+                    if findings_summary and findings_summary.get('total_findings', 0) > 0:
+                        if st.button("🔄 Force Reprocess", help="Clear existing findings and run fresh analysis"):
+                            with st.spinner("Clearing existing findings and running fresh analysis..."):
+                                # Clear existing findings
+                                try:
+                                    client_id = get_client_id()
+                                    db.supabase.table('enhanced_findings').delete().eq('client_id', client_id).execute()
+                                    st.success("✅ Cleared existing findings")
+                                    
+                                    # Run fresh analysis
+                                    result = run_stage3_analysis()
+                                    if result and result.get('status') == 'success':
+                                        st.success(f"✅ Fresh analysis complete! Generated {result.get('findings_generated', 0)} findings")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Fresh analysis failed")
+                                except Exception as e:
+                                    st.error(f"❌ Error during force reprocess: {e}")
+                
+                # Show findings (either existing or newly generated)
+                findings_summary = get_stage3_summary()  # Refresh summary
+                if findings_summary and findings_summary.get('total_findings', 0) > 0:
+                    show_findings()
+                    if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
+                        st.session_state.current_step = 4
+                        st.rerun()
                 else:
-                    st.info("📊 No findings available yet. Run the analysis to identify findings.")
+                    st.info("📊 No findings available yet. Click 'Identify Findings' to run the analysis.")
     
     elif page == "stage4":
         st.title("🎨 Stage 4: Theme Generation")
