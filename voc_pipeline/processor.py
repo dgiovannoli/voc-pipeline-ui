@@ -482,29 +482,32 @@ def _process_transcript_impl(
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
         input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
-        template="""CRITICAL INSTRUCTIONS FOR ENHANCED QUALITY ANALYSIS:
-- You have access to focused context windows (~7K tokens) containing 6-8 Q&A exchanges.
-- Extract the 1-2 RICHEST, MOST DETAILED insights from this chunk, prioritizing:
-  1. **Comprehensive Customer Experiences**: Complete scenarios with full context, specific examples, detailed explanations, and quantitative details
-  2. **Quantitative Feedback**: Specific metrics, timelines, ROI discussions, pricing details, accuracy percentages, workload distributions
-  3. **Comparative Analysis**: Before/after comparisons, competitive evaluations with specific differentiators and performance metrics
-  4. **Integration Requirements**: Workflow details, tool integration needs, process changes, technical specifications
-  5. **Strategic Perspectives**: Decision factors, risk assessments, future planning, business impact
+        template="""CRITICAL INSTRUCTIONS FOR CONTEXT-DRIVEN EXTRACTION:
+- You have access to focused context windows (~7K tokens) containing Q&A exchanges.
+- Focus on COMPLETE CONTEXT and MEANINGFUL Q&A PAIRS rather than arbitrary numbers.
+- Extract responses that provide complete thought processes, reasoning, and business context.
+- Some chunks may have 1 valuable Q&A pair, others may have 4 - let the content guide you.
 
-EXTRACTION STRATEGY:
-- Identify the 1-2 richest, most comprehensive responses in this chunk
-- Extract the COMPLETE verbatim response for each with full context and conversation flow
-- Create comprehensive key insights that capture the main themes and specific details
-- Focus on responses that provide complete context and detailed explanations
-- Choose responses that cover different aspects or themes when possible
-- If only one high-quality response exists, extract just that one
-- Prioritize responses with specific examples, metrics, and actionable insights
+CONTEXT-DRIVEN EXTRACTION STRATEGY:
+- **Evaluate the Context**: Look for complete Q&A exchanges that provide full context
+- **Preserve Thought Processes**: Capture responses that show complete reasoning and decision-making
+- **Maintain Conversation Flow**: Include related follow-up questions and clarifications
+- **Focus on Substance**: Prioritize responses with specific examples, metrics, and detailed explanations
+- **Natural Grouping**: Group related Q&A pairs that form a complete thought or scenario
+- **Quality Over Quantity**: Better to extract 1 comprehensive response than 2 fragmented ones
+
+EXTRACTION CRITERIA:
+1. **Complete Context**: Responses that provide full background, reasoning, and implications
+2. **Specific Examples**: Detailed scenarios, use cases, workflows, and quantitative details
+3. **Business Impact**: ROI discussions, decision factors, risk assessments, and strategic perspectives
+4. **Comparative Analysis**: Before/after comparisons, competitive evaluations, and performance metrics
+5. **Integration Details**: Workflow requirements, technical specifications, and process changes
+6. **Customer Experiences**: Complete scenarios with full context and specific outcomes
 
 VERBATIM RESPONSE RULES:
-- Include the COMPLETE response text (300-800 words for optimal context and richness)
+- Include the COMPLETE response text with full context and conversation flow
 - Preserve ALL context, examples, specific details, and quantitative information
-- Include relevant parts of the conversation flow for better understanding
-- Include follow-up questions and clarifications that add context
+- Include relevant follow-up questions and clarifications that add context
 - Remove only speaker labels, timestamps, and interviewer prompts
 - Keep filler words if they add emphasis or meaning
 - Maintain the natural flow and structure of the response
@@ -512,28 +515,27 @@ VERBATIM RESPONSE RULES:
 - Preserve comparative language and specific differentiators
 - Include workflow details, process descriptions, and technical specifications
 
-QUALITY-FOCUSED INSIGHTS:
-- Extract the 1-2 most comprehensive insights from the richest responses
-- Focus on responses that provide complete context and detailed explanations
-- Ensure each verbatim response captures the full conversation context
-- Choose responses that cover different topics or perspectives when possible
-- Only extract if the response contains substantial, actionable content
-- Prioritize responses with specific metrics, examples, and detailed workflows
+CONTEXT EVALUATION:
+- **High Context**: Complete scenarios with full background, specific examples, and detailed outcomes
+- **Medium Context**: Good detail but may be missing some background or follow-up context
+- **Low Context**: Brief responses with limited detail or incomplete scenarios
+- **Skip**: Acknowledgments, thank yous, or responses with insufficient context
 
-DIFFERENTIATION STRATEGY:
-- When multiple responses cover similar topics, extract the most detailed and specific one
-- Focus on responses that provide unique perspectives or specific examples
-- Include responses that show different aspects of the same topic (e.g., different use cases, workflows, or pain points)
-- Prioritize responses with quantitative details, specific processes, or technical specifications
-- Choose responses that provide the most complete picture of customer experiences
+EXTRACTION DECISION FRAMEWORK:
+1. **Start with Q&A Pairs**: Identify complete question-answer exchanges
+2. **Evaluate Context**: Assess the completeness and richness of each response
+3. **Group Related Content**: Combine related Q&A pairs that form complete thoughts
+4. **Prioritize Substance**: Focus on responses with specific examples, metrics, and detailed explanations
+5. **Maintain Flow**: Preserve conversation context and related follow-up questions
+6. **Quality Check**: Ensure each extracted response provides meaningful, actionable insights
 
-Analyze the provided interview chunk and extract the 1-2 RICHEST, MOST COMPREHENSIVE insights from the most detailed responses. Return ONLY a JSON array containing one or two objects:
+Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pairs. Return ONLY a JSON array containing the most valuable responses (quantity varies by content quality):
 
 [
   {{
     "response_id": "{response_id}",
-    "key_insight": "first_comprehensive_insight_summary_with_specific_details",
-    "verbatim_response": "first_complete_verbatim_response_with_full_context_and_specific_examples",
+    "key_insight": "comprehensive_insight_summary_with_specific_details",
+    "verbatim_response": "complete_verbatim_response_with_full_context_and_conversation_flow",
     "subject": "brief_subject_description_1",
     "question": "what_question_this_answers_1",
     "deal_status": "{deal_status}",
@@ -552,43 +554,19 @@ Analyze the provided interview chunk and extract the 1-2 RICHEST, MOST COMPREHEN
     "pain_points": "challenges_or_pain_points_with_detailed_context_1",
     "success_metrics": "success_criteria_and_metrics_with_specific_measurements_1",
     "future_plans": "future_plans_or_expansion_with_specific_timelines_1"
-  }},
-  {{
-    "response_id": "{response_id}_2",
-    "key_insight": "second_comprehensive_insight_summary_with_specific_details",
-    "verbatim_response": "second_complete_verbatim_response_with_full_context_and_specific_examples",
-    "subject": "brief_subject_description_2",
-    "question": "what_question_this_answers_2",
-    "deal_status": "{deal_status}",
-    "company": "{company}",
-    "interviewee_name": "{interviewee_name}",
-    "date_of_interview": "{date_of_interview}",
-    "findings": "key_finding_summary_with_specific_details_2",
-    "value_realization": "value_or_roi_metrics_with_quantitative_details_2",
-    "implementation_experience": "implementation_details_with_workflow_specifics_2",
-    "risk_mitigation": "risk_mitigation_approaches_with_specific_strategies_2",
-    "competitive_advantage": "competitive_positioning_with_specific_differentiators_2",
-    "customer_success": "customer_success_factors_with_measurable_outcomes_2",
-    "product_feedback": "product_feature_feedback_with_specific_examples_2",
-    "service_quality": "service_quality_assessment_with_quantitative_metrics_2",
-    "decision_factors": "decision_influencing_factors_with_specific_criteria_2",
-    "pain_points": "challenges_or_pain_points_with_detailed_context_2",
-    "success_metrics": "success_criteria_and_metrics_with_specific_measurements_2",
-    "future_plans": "future_plans_or_expansion_with_specific_timelines_2"
   }}
 ]
 
 Guidelines:
-- Extract the 1-2 richest, most comprehensive insights per chunk
-- Subject categories: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
-- Use "N/A" for fields that don't apply
-- Ensure all fields are populated with specific, actionable content
-- Return ONLY the JSON array, no other text
-- Focus on responses with specific examples, metrics, detailed explanations, and full context
-- Choose responses that provide the most complete picture and actionable insights
-- If only one rich insight exists, return an array with just one object
-- Skip chunks that only contain low-quality content (acknowledgments, thank yous, etc.)
-- Prioritize responses that show different aspects of similar topics (e.g., different use cases, workflows, or specific pain points)
+- **Let Content Guide Quantity**: Extract 1-4 responses based on the richness of the content
+- **Focus on Complete Context**: Prioritize responses that provide full background and reasoning
+- **Preserve Conversation Flow**: Include related follow-up questions and clarifications
+- **Subject Categories**: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
+- **Quality Threshold**: Only extract responses with substantial, actionable content
+- **Context Preservation**: Ensure each response captures the complete thought process
+- **Natural Grouping**: Group related Q&A pairs that form complete scenarios
+- **Skip Low-Quality**: Skip chunks with only acknowledgments, thank yous, or insufficient context
+- **Variable Output**: Some chunks may produce 1 response, others 4 - this is expected and correct
 
 Interview chunk to analyze:
 {chunk_text}"""
