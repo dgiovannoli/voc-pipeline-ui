@@ -14,9 +14,18 @@ scoring:
 
 processing:
   max_workers: 4             # Number of parallel workers
-  max_quote_length: 1000     # Maximum characters to send to LLM
+  max_quote_length: 3000     # Increased from 1000 to capture full context and nuance
+  max_tokens: 8000           # Increased token limit for GPT-4o-mini
   retry_attempts: 3          # Number of retry attempts on failure
   batch_size: 50             # Batch size for processing
+  model: "gpt-4o-mini"       # Upgraded from gpt-3.5-turbo-16k for better analysis
+
+# Quality tracking for truncation and context preservation
+quality_tracking:
+  track_truncation: true     # Track when quotes are truncated
+  track_context_loss: true   # Track potential context loss
+  min_context_preservation: 0.8  # Minimum context preservation ratio
+  truncation_warning_threshold: 0.9  # Warn when >90% of quote is used
 
 # 10-Criteria Executive Scorecard Framework
 criteria:
