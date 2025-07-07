@@ -583,7 +583,8 @@ def show_stage4_themes():
                 label="📥 Download Themes CSV",
                 data=csv,
                 file_name=f"themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
+                mime="text/csv",
+                key="download_themes"
             )
     
     else:
@@ -713,7 +714,8 @@ def show_stage5_synthesis():
                 label="📥 Download Executive Themes CSV",
                 data=csv,
                 file_name=f"executive_themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
+                mime="text/csv",
+                key="download_executive_themes"
             )
     
     else:
@@ -1527,7 +1529,8 @@ def show_labeled_quotes():
         label="📥 Download Labeled Quotes CSV",
         data=csv,
         file_name="labeled_quotes.csv",
-        mime="text/csv"
+        mime="text/csv",
+        key="download_labeled_quotes"
     )
 
 # --- Add helper to show findings ---
@@ -1549,7 +1552,8 @@ def show_findings():
         label="📥 Download Findings CSV",
         data=csv,
         file_name="findings.csv",
-        mime="text/csv"
+        mime="text/csv",
+        key="download_findings"
     )
 
 # Main Streamlit App Interface
@@ -1762,7 +1766,8 @@ def main():
                     label="📥 Download Quotes",
                     data=csv,
                     file_name="extracted_quotes.csv",
-                    mime="text/csv"
+                    mime="text/csv",
+                    key="download_extracted_quotes"
                 )
                 # CTA button to proceed to Stage 2
                 if st.button("🎯 Proceed to Stage 2: Label Quotes", type="primary"):
@@ -1818,15 +1823,10 @@ def main():
                         result = run_stage2_analysis()
                         if result:
                             st.success("✅ Quote labeling complete!")
-                            # Show labeled quotes after processing
-                            show_labeled_quotes()
-                            # CTA button to proceed to Stage 3
-                            if st.button("🔍 Proceed to Stage 3: Identify Findings", type="primary"):
-                                st.session_state.current_step = 3
-                                st.rerun()
+                            st.rerun()
                         else:
                             st.error("❌ Quote labeling failed")
-                # Always show labeled quotes if available
+                # Show labeled quotes if available
                 show_labeled_quotes()
                 if summary['quotes_with_scores'] > 0:
                     if st.button("🔍 Proceed to Stage 3: Identify Findings", type="primary"):
