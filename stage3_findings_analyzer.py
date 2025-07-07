@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 import logging
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 import yaml
 from collections import defaultdict, Counter
 import re
@@ -105,14 +105,14 @@ class Stage3FindingsAnalyzer:
         return {
             'stage3': {
                 'confidence_thresholds': {
-                    'priority_finding': 4.0,
-                    'standard_finding': 3.0,
-                    'minimum_confidence': 2.0
+                    'priority_finding': 3.0,
+                    'standard_finding': 2.0,
+                    'minimum_confidence': 1.0
                 },
                 'pattern_thresholds': {
-                    'minimum_quotes': 3,
-                    'minimum_companies': 2,
-                    'minimum_criteria_met': 2
+                    'minimum_quotes': 2,
+                    'minimum_companies': 1,
+                    'minimum_criteria_met': 1
                 },
                 'stakeholder_multipliers': {
                     'executive_perspective': 1.5,
@@ -318,6 +318,11 @@ class Stage3FindingsAnalyzer:
                 if (pattern['quote_count'] >= thresholds['minimum_quotes'] and
                     pattern['company_count'] >= thresholds['minimum_companies']):
                     
+                    # CRITICAL FIX: Ensure pattern has quotes_data
+                    if not pattern.get('quotes_data'):
+                        logger.warning(f"⚠️ Skipping pattern for {criterion} - no quotes_data found")
+                        continue
+                    
                     # Evaluate against Buried Wins criteria
                     criteria_scores = self.evaluate_finding_criteria(pattern['quotes_data'])
                     criteria_met = sum(criteria_scores.values())
@@ -329,10 +334,16 @@ class Stage3FindingsAnalyzer:
                         )
                         
                         if enhanced_confidence >= self.config['stage3']['confidence_thresholds']['minimum_confidence']:
+                            # CRITICAL FIX: Ensure selected_quotes is not empty
+                            selected_quotes = self.select_optimal_quotes(pattern['quotes_data'])
+                            if not selected_quotes:
+                                logger.warning(f"⚠️ Skipping pattern for {criterion} - select_optimal_quotes returned empty list")
+                                continue
+                            
                             pattern['enhanced_confidence'] = enhanced_confidence
                             pattern['criteria_scores'] = criteria_scores
                             pattern['criteria_met'] = criteria_met
-                            pattern['selected_quotes'] = self.select_optimal_quotes(pattern['quotes_data'])
+                            pattern['selected_quotes'] = selected_quotes
                             valid_patterns.append(pattern)
             
             if valid_patterns:
@@ -363,7 +374,9 @@ class Stage3FindingsAnalyzer:
                     'score': quote.get('score', 0),
                     'confidence': quote.get('confidence', 'medium'),
                     'context_keywords': quote.get('context_keywords', 'neutral'),
-                    'question_relevance': quote.get('question_relevance', 'unrelated')
+                    'question_relevance': quote.get('question_relevance', 'unrelated'),
+                    'response_id': quote.get('response_id', None),  # Ensure response_id is present
+                    'company': quote.get('company', company)  # Ensure company is present
                 })
             
             # Analyze sentiment patterns
@@ -454,21 +467,62 @@ class Stage3FindingsAnalyzer:
         return [word for word, count in keyword_counts.most_common(5)]
     
     def generate_enhanced_findings(self, patterns: Dict) -> List[Dict]:
-        """Generate findings with enhanced confidence scoring"""
+        """Generate findings with enhanced confidence scoring and credibility enforcement"""
         logger.info("🎯 Generating enhanced findings...")
         
         findings = []
+        used_primary_quote_ids: Set[str] = set()  # Track used primary quotes for recycling prevention
         
         for criterion, criterion_patterns in patterns.items():
             if not criterion_patterns:
                 continue
-            
             criterion_findings = self._generate_criterion_enhanced_findings(criterion, criterion_patterns)
-            findings.extend(criterion_findings)
-        
+            for finding in criterion_findings:
+                # --- CREDIBILITY/EVIDENCE ENFORCEMENT ---
+                # Count unique companies and unique quotes
+                companies = set()
+                unique_quote_ids = set()
+                for q in finding['selected_quotes']:
+                    # Try to get response_id if present in quote dict
+                    rid = q.get('response_id') or q.get('id') or q.get('quote_id')
+                    if rid:
+                        unique_quote_ids.add(rid)
+                    # Try to get company if present
+                    company = q.get('company')
+                    if company:
+                        companies.add(company)
+                # Fallback: use companies_affected and quote_count if not present
+                if not companies and finding.get('companies_affected'):
+                    companies = set([finding['companies_affected']])
+                if not unique_quote_ids and finding.get('quote_count'):
+                    unique_quote_ids = set([str(finding['quote_count'])])
+                num_companies = len(companies)
+                num_quotes = len(unique_quote_ids)
+                # --- Quote recycling prevention ---
+                primary_quote = finding['selected_quotes'][0] if finding['selected_quotes'] else None
+                primary_quote_id = primary_quote.get('response_id') if primary_quote else None
+                if primary_quote_id and primary_quote_id in used_primary_quote_ids:
+                    logger.warning(f"⚠️ Skipping finding for {criterion} - primary quote {primary_quote_id} already used in another finding")
+                    continue  # Block duplicate primary quote
+                if primary_quote_id:
+                    used_primary_quote_ids.add(primary_quote_id)
+                # --- Credibility tier assignment ---
+                if num_companies >= 3 and num_quotes >= 6:
+                    credibility_tier = 'Tier 1: Multi-company, strong evidence'
+                elif num_companies == 2 and num_quotes >= 3:
+                    credibility_tier = 'Tier 2: Two companies, moderate evidence'
+                elif num_companies == 1 and num_quotes >= 1:
+                    credibility_tier = 'Tier 3: Single company, anecdotal'
+                else:
+                    credibility_tier = 'Tier 4: Insufficient evidence (not saved)'
+                finding['credibility_tier'] = credibility_tier
+                # --- Block or downgrade based on evidence ---
+                if credibility_tier == 'Tier 4: Insufficient evidence (not saved)':
+                    logger.warning(f"⚠️ Skipping finding for {criterion} - insufficient evidence: {num_companies} companies, {num_quotes} quotes")
+                    continue
+                findings.append(finding)
         # Sort findings by confidence score
         findings.sort(key=lambda x: x['enhanced_confidence'], reverse=True)
-        
         # Classify findings by priority
         for finding in findings:
             if finding['enhanced_confidence'] >= self.config['stage3']['confidence_thresholds']['priority_finding']:
@@ -479,51 +533,138 @@ class Stage3FindingsAnalyzer:
                 self.processing_metrics["standard_findings"] += 1
             else:
                 finding['priority_level'] = 'low'
-        
-        logger.info(f"✅ Generated {len(findings)} enhanced findings")
+        logger.info(f"✅ Generated {len(findings)} enhanced findings (with credibility enforcement)")
         return findings
     
     def _generate_criterion_enhanced_findings(self, criterion: str, patterns: List[Dict]) -> List[Dict]:
-        """Generate findings for a specific criterion with enhanced analysis"""
+        """Generate findings for a specific criterion with enhanced analysis - REDESIGNED FOR HIGH-RELEVANCE FOCUS"""
         findings = []
         
         if not patterns:
             return findings
         
-        # Calculate overall criterion score
-        avg_score = sum(p['avg_score'] for p in patterns) / len(patterns)
+        # REDESIGNED APPROACH: Focus on high-relevance scores (≥3.0) only
+        # Stage 2 scoring interpretation:
+        # 0 = Not relevant/not mentioned
+        # 1 = Slight mention/indirect relevance  
+        # 2 = Clear mention/direct relevance
+        # 3 = Strong emphasis/important feedback (CUSTOMERS CARE)
+        # 4 = Critical feedback/deal-breaking issue (CUSTOMERS CARE)
+        # 5 = Exceptional praise/deal-winning strength (CUSTOMERS CARE)
         
-        # Generate strength findings for high scores (strengths to leverage)
-        # Stage 2: 3.5+ = Critical/Exceptional feedback (strengths)
-        strength_patterns = [p for p in patterns if p['avg_score'] >= 3.5]
-        if strength_patterns:
-            strength_finding = self._create_enhanced_finding(criterion, strength_patterns, 'strength', avg_score)
+        # Filter to only high-relevance patterns (scores ≥3.0)
+        high_relevance_patterns = [p for p in patterns if p['avg_score'] >= 3.0]
+        
+        if not high_relevance_patterns:
+            logger.info(f"⚠️ No high-relevance patterns (≥3.0) found for {criterion}")
+            return findings
+        
+        # Calculate overall criterion score for high-relevance patterns only
+        avg_score = sum(p['avg_score'] for p in high_relevance_patterns) / len(high_relevance_patterns)
+        
+        # Analyze sentiment within high-relevance patterns
+        # 3.0-3.4 = Important feedback (analyze sentiment)
+        # 3.5-4.4 = Critical feedback (analyze sentiment) 
+        # 4.5-5.0 = Exceptional feedback (analyze sentiment)
+        
+        # Group by sentiment intensity
+        important_patterns = [p for p in high_relevance_patterns if 3.0 <= p['avg_score'] < 3.5]
+        critical_patterns = [p for p in high_relevance_patterns if 3.5 <= p['avg_score'] < 4.5]
+        exceptional_patterns = [p for p in high_relevance_patterns if p['avg_score'] >= 4.5]
+        
+        # Generate findings based on sentiment analysis within high-relevance patterns
+        if exceptional_patterns:
+            # Exceptional scores (4.5-5.0) = Clear strengths to leverage
+            strength_finding = self._create_enhanced_finding(criterion, exceptional_patterns, 'strength', avg_score)
             if strength_finding:
                 findings.append(strength_finding)
         
-        # Generate improvement findings for low scores (issues to address)
-        # Stage 2: 0-2.0 = Minor/Moderate feedback (areas needing improvement)
-        improvement_patterns = [p for p in patterns if p['avg_score'] <= 2.0]
-        if improvement_patterns:
-            improvement_finding = self._create_enhanced_finding(criterion, improvement_patterns, 'improvement', avg_score)
-            if improvement_finding:
-                findings.append(improvement_finding)
+        if critical_patterns:
+            # Critical scores (3.5-4.4) = Need sentiment analysis
+            # Check if these are positive critical feedback or negative critical issues
+            sentiment = self._analyze_critical_sentiment(critical_patterns)
+            if sentiment == 'positive':
+                strength_finding = self._create_enhanced_finding(criterion, critical_patterns, 'strength', avg_score)
+                if strength_finding:
+                    findings.append(strength_finding)
+            elif sentiment == 'negative':
+                improvement_finding = self._create_enhanced_finding(criterion, critical_patterns, 'improvement', avg_score)
+                if improvement_finding:
+                    findings.append(improvement_finding)
+            else:  # mixed
+                mixed_finding = self._create_enhanced_finding(criterion, critical_patterns, 'mixed_signal', avg_score)
+                if mixed_finding:
+                    findings.append(mixed_finding)
         
-        # Generate neutral findings for middle-range scores (mixed feedback)
-        # Stage 2: 2.0-3.5 = Moderate/Important feedback (mixed signals)
-        neutral_patterns = [p for p in patterns if 2.0 < p['avg_score'] < 3.5]
-        if neutral_patterns and len(neutral_patterns) >= 1:  # Allow single patterns for mixed signals
-            neutral_finding = self._create_enhanced_finding(criterion, neutral_patterns, 'mixed_signal', avg_score)
-            if neutral_finding:
-                findings.append(neutral_finding)
+        if important_patterns:
+            # Important scores (3.0-3.4) = Need sentiment analysis
+            sentiment = self._analyze_important_sentiment(important_patterns)
+            if sentiment == 'positive':
+                strength_finding = self._create_enhanced_finding(criterion, important_patterns, 'strength', avg_score)
+                if strength_finding:
+                    findings.append(strength_finding)
+            elif sentiment == 'negative':
+                improvement_finding = self._create_enhanced_finding(criterion, important_patterns, 'improvement', avg_score)
+                if improvement_finding:
+                    findings.append(improvement_finding)
+            else:  # mixed
+                mixed_finding = self._create_enhanced_finding(criterion, important_patterns, 'mixed_signal', avg_score)
+                if mixed_finding:
+                    findings.append(mixed_finding)
         
-        # Generate trend findings for mixed patterns across companies
-        if len(patterns) >= 3 and (len(strength_patterns) > 0 and len(improvement_patterns) > 0):
-            trend_finding = self._create_trend_enhanced_finding(criterion, patterns, avg_score)
+        # Generate trend findings for mixed sentiment patterns across companies
+        if len(high_relevance_patterns) >= 3:
+            trend_finding = self._create_trend_enhanced_finding(criterion, high_relevance_patterns, avg_score)
             if trend_finding:
                 findings.append(trend_finding)
         
         return findings
+    
+    def _analyze_critical_sentiment(self, patterns: List[Dict]) -> str:
+        """Analyze sentiment of critical feedback (3.5-4.4 scores)"""
+        positive_indicators = ['excellent', 'great', 'love', 'perfect', 'amazing', 'outstanding', 'fantastic', 'superb']
+        negative_indicators = ['terrible', 'awful', 'hate', 'horrible', 'frustrating', 'annoying', 'broken', 'useless']
+        
+        positive_count = 0
+        negative_count = 0
+        
+        for pattern in patterns:
+            for quote in pattern.get('quotes_data', []):
+                text = quote.get('original_quote', '').lower()
+                if any(indicator in text for indicator in positive_indicators):
+                    positive_count += 1
+                if any(indicator in text for indicator in negative_indicators):
+                    negative_count += 1
+        
+        if positive_count > negative_count:
+            return 'positive'
+        elif negative_count > positive_count:
+            return 'negative'
+        else:
+            return 'mixed'
+    
+    def _analyze_important_sentiment(self, patterns: List[Dict]) -> str:
+        """Analyze sentiment of important feedback (3.0-3.4 scores)"""
+        positive_indicators = ['good', 'like', 'works well', 'helpful', 'useful', 'effective', 'satisfied']
+        negative_indicators = ['bad', 'dislike', 'doesn\'t work', 'unhelpful', 'useless', 'ineffective', 'dissatisfied']
+        
+        positive_count = 0
+        negative_count = 0
+        
+        for pattern in patterns:
+            for quote in pattern.get('quotes_data', []):
+                text = quote.get('original_quote', '').lower()
+                if any(indicator in text for indicator in positive_indicators):
+                    positive_count += 1
+                if any(indicator in text for indicator in negative_indicators):
+                    negative_count += 1
+        
+        if positive_count > negative_count:
+            return 'positive'
+        elif negative_count > positive_count:
+            return 'negative'
+        else:
+            return 'mixed'
     
     def _create_enhanced_finding(self, criterion: str, patterns: List[Dict], finding_type: str, avg_score: float) -> Optional[Dict]:
         """Create an enhanced finding with confidence scoring"""
@@ -533,6 +674,12 @@ class Stage3FindingsAnalyzer:
         # Use the highest confidence pattern for the finding
         best_pattern = max(patterns, key=lambda x: x['enhanced_confidence'])
         
+        # CRITICAL FIX: Ensure the pattern has selected_quotes and they are not empty
+        selected_quotes = best_pattern.get('selected_quotes', [])
+        if not selected_quotes:
+            logger.warning(f"⚠️ Skipping finding for {criterion} - no selected_quotes found in pattern")
+            return None
+        
         criterion_desc = self.criteria.get(criterion, {}).get('description', criterion)
         
         # Generate finding text using enhanced LLM prompt
@@ -540,12 +687,17 @@ class Stage3FindingsAnalyzer:
         
         # Format selected quotes with attribution
         formatted_quotes = []
-        for quote in best_pattern.get('selected_quotes', [])[:self.config['stage3']['max_quotes_per_finding']]:
+        for quote in selected_quotes[:self.config['stage3']['max_quotes_per_finding']]:
             formatted_quotes.append({
                 'text': quote.get('original_quote', ''),
                 'score': quote.get('score', 0),
                 'attribution': f"Score: {quote.get('score', 0)} - {quote.get('context_keywords', 'neutral')}"
             })
+        
+        # CRITICAL FIX: Double-check that we have at least one formatted quote
+        if not formatted_quotes:
+            logger.warning(f"⚠️ Skipping finding for {criterion} - no valid quotes after formatting")
+            return None
         
         return {
             'criterion': criterion,
@@ -566,11 +718,11 @@ class Stage3FindingsAnalyzer:
         }
     
     def _create_trend_enhanced_finding(self, criterion: str, patterns: List[Dict], avg_score: float) -> Optional[Dict]:
-        """Create a trend finding with enhanced analysis"""
+        """Create a trend finding with enhanced analysis - UPDATED FOR HIGH-RELEVANCE FOCUS"""
         if len(patterns) < 3:
             return None
         
-        # Analyze score distribution
+        # Analyze score distribution within high-relevance patterns (≥3.0)
         scores = [p['avg_score'] for p in patterns]
         score_std = pd.Series(scores).std()
         
@@ -578,14 +730,31 @@ class Stage3FindingsAnalyzer:
         if score_std < 0.5:
             return None
         
-        # Identify trend direction using Stage 2 scoring interpretation
-        strength_scores = [s for s in scores if s >= 3.5]  # Critical/Exceptional feedback
-        improvement_scores = [s for s in scores if s <= 2.0]  # Minor/Moderate feedback
+        # Analyze sentiment trends within high-relevance patterns
+        positive_sentiment_count = 0
+        negative_sentiment_count = 0
         
-        if len(strength_scores) > len(improvement_scores):
+        for pattern in patterns:
+            # Analyze sentiment for this pattern
+            if 3.0 <= pattern['avg_score'] < 3.5:
+                sentiment = self._analyze_important_sentiment([pattern])
+            elif 3.5 <= pattern['avg_score'] < 4.5:
+                sentiment = self._analyze_critical_sentiment([pattern])
+            else:  # 4.5+
+                sentiment = 'positive'  # Exceptional scores are positive
+            
+            if sentiment == 'positive':
+                positive_sentiment_count += 1
+            elif sentiment == 'negative':
+                negative_sentiment_count += 1
+        
+        # Determine trend direction based on sentiment analysis
+        if positive_sentiment_count > negative_sentiment_count:
             trend_type = 'positive_trend'
-        else:
+        elif negative_sentiment_count > positive_sentiment_count:
             trend_type = 'negative_trend'
+        else:
+            trend_type = 'mixed_trend'
         
         return self._create_enhanced_finding(criterion, patterns, trend_type, avg_score)
     
@@ -598,7 +767,8 @@ class Stage3FindingsAnalyzer:
             'improvement': 'improvement area/issue to address', 
             'mixed_signal': 'mixed feedback with both positive and negative signals',
             'positive_trend': 'positive trend across companies',
-            'negative_trend': 'negative trend across companies'
+            'negative_trend': 'negative trend across companies',
+            'mixed_trend': 'mixed sentiment trend across companies'
         }
         
         finding_description = finding_type_descriptions.get(finding_type, finding_type)
@@ -663,15 +833,14 @@ class Stage3FindingsAnalyzer:
             return f"Significant {finding_type} identified in {criterion} with confidence {best_pattern['enhanced_confidence']:.1f}/10.0 across {best_pattern.get('company_count', 1)} companies."
     
     def save_enhanced_findings_to_supabase(self, findings: List[Dict], client_id: str = 'default'):
-        """Save enhanced findings to Supabase"""
+        """Save enhanced findings to Supabase, including credibility tier"""
         logger.info("💾 Saving enhanced findings to Supabase...")
-        
         for finding in findings:
-            # Convert to database format
             db_finding = {
                 'criterion': finding['criterion'],
                 'finding_type': finding['finding_type'],
                 'priority_level': finding['priority_level'],
+                'credibility_tier': finding.get('credibility_tier', 'Unclassified'),
                 'title': finding['title'],
                 'description': finding['description'],
                 'enhanced_confidence': finding['enhanced_confidence'],
@@ -684,11 +853,9 @@ class Stage3FindingsAnalyzer:
                 'themes': json.dumps(finding['themes']),
                 'deal_impacts': json.dumps(finding['deal_impacts']),
                 'generated_at': finding['generated_at'],
-                'client_id': client_id  # Add client_id for data siloing
+                'client_id': client_id
             }
-            
-            self.db.save_enhanced_finding(db_finding)
-        
+            self.db.save_enhanced_finding(db_finding, client_id=client_id)
         logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase for client {client_id}")
     
     def process_enhanced_findings(self, client_id: str = 'default') -> Dict:
@@ -792,7 +959,7 @@ class Stage3FindingsAnalyzer:
         for priority, count in summary['priority_level_distribution'].items():
             logger.info(f"  {priority}: {count}")
         
-        logger.info(f"\n🔍 PATTERNS BY CRITERION:")
+        logger.info(f"\n📈 PATTERNS BY CRITERION:")
         for criterion, pattern_count in summary['patterns_by_criterion'].items():
             logger.info(f"  {criterion}: {pattern_count} patterns")
 

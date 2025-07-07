@@ -395,7 +395,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save finding: {e}")
             return False
     
-    def save_enhanced_finding(self, finding_data: Dict[str, Any]) -> bool:
+    def save_enhanced_finding(self, finding_data: Dict[str, Any], client_id: str = 'default') -> bool:
         """Save an enhanced finding to Supabase with Buried Wins v4.0 framework"""
         try:
             # Prepare data for Supabase
@@ -414,7 +414,8 @@ class SupabaseDatabase:
                 'selected_quotes': finding_data.get('selected_quotes', '[]'),
                 'themes': finding_data.get('themes', '[]'),
                 'deal_impacts': finding_data.get('deal_impacts', '{}'),
-                'generated_at': finding_data.get('generated_at', datetime.now().isoformat())
+                'generated_at': finding_data.get('generated_at', datetime.now().isoformat()),
+                'client_id': client_id  # Add client_id for data siloing
             }
             
             # Remove None values
@@ -580,29 +581,44 @@ class SupabaseDatabase:
             logger.error(f"Error getting high confidence findings: {e}")
             return pd.DataFrame()
 
-    def save_theme(self, theme_data: Dict) -> bool:
-        """Save a theme to the themes table"""
+    def save_theme(self, theme_data: Dict, client_id: str = 'default') -> bool:
+        """Save a theme to the themes table with client_id for data siloing"""
         try:
+            # Add client_id to theme data
+            theme_data['client_id'] = client_id
             response = self.supabase.table('themes').insert(theme_data).execute()
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Error saving theme: {e}")
             return False
 
-    def get_themes(self) -> pd.DataFrame:
-        """Get all themes from the themes table"""
+    def get_themes(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get all themes from the themes table, filtered by client_id"""
         try:
-            response = self.supabase.table('themes').select('*').order('created_at', desc=True).execute()
-            return pd.DataFrame(response.data)
+            response = self.supabase.table('themes').select('*').eq('client_id', client_id).order('created_at', desc=True).execute()
+            df = pd.DataFrame(response.data)
+            
+            # Parse JSON columns
+            if not df.empty:
+                if 'quotes' in df.columns:
+                    df['quotes'] = df['quotes'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                if 'supporting_finding_ids' in df.columns:
+                    df['supporting_finding_ids'] = df['supporting_finding_ids'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                if 'interview_companies' in df.columns:
+                    df['interview_companies'] = df['interview_companies'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                if 'deal_status_distribution' in df.columns:
+                    df['deal_status_distribution'] = df['deal_status_distribution'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+            
+            return df
         except Exception as e:
             logger.error(f"Error getting themes: {e}")
             return pd.DataFrame()
 
-    def get_themes_summary(self) -> Dict:
-        """Get summary statistics for themes"""
+    def get_themes_summary(self, client_id: str = 'default') -> Dict:
+        """Get summary statistics for themes, filtered by client_id"""
         try:
-            # Get total themes count
-            total_themes = self.supabase.table('themes').select('id', count='exact').execute()
+            # Get total themes count filtered by client_id
+            total_themes = self.supabase.table('themes').select('id', count='exact').eq('client_id', client_id).execute()
             total_count = total_themes.count if total_themes.count is not None else 0
             
             if total_count == 0:
@@ -614,8 +630,8 @@ class SupabaseDatabase:
                     'theme_categories': {}
                 }
             
-            # Get themes data
-            themes_data = self.supabase.table('themes').select('*').execute()
+            # Get themes data filtered by client_id
+            themes_data = self.supabase.table('themes').select('*').eq('client_id', client_id).execute()
             df = pd.DataFrame(themes_data.data)
             
             # Calculate statistics
@@ -698,18 +714,18 @@ class SupabaseDatabase:
             logger.error(f"Error getting themes for executive synthesis: {e}")
             return pd.DataFrame()
 
-    def generate_criteria_scorecard(self) -> Dict:
-        """Generate executive criteria scorecard from Stage 2 data"""
+    def generate_criteria_scorecard(self, client_id: str = 'default') -> Dict:
+        """Generate executive criteria scorecard from Stage 2 data, filtered by client_id"""
         try:
-            # Get quote analysis data
-            quote_analysis_response = self.supabase.table('quote_analysis').select('*').execute()
+            # Get quote analysis data filtered by client_id
+            quote_analysis_response = self.supabase.table('quote_analysis').select('*').eq('client_id', client_id).execute()
             quote_df = pd.DataFrame(quote_analysis_response.data)
             
             if quote_df.empty:
                 return {}
             
-            # Get core responses for company information
-            core_responses_response = self.supabase.table('core_responses').select('*').execute()
+            # Get core responses for company information filtered by client_id
+            core_responses_response = self.supabase.table('core_responses').select('*').eq('client_id', client_id).execute()
             core_df = pd.DataFrame(core_responses_response.data)
             
             # Merge data for analysis
@@ -909,10 +925,10 @@ class SupabaseDatabase:
             logger.error(f"Error saving criteria scorecard: {e}")
             return False
 
-    def get_executive_themes(self) -> pd.DataFrame:
-        """Get all executive themes"""
+    def get_executive_themes(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get all executive themes filtered by client_id"""
         try:
-            response = self.supabase.table('executive_themes').select('*').order('priority_score', desc=True).execute()
+            response = self.supabase.table('executive_themes').select('*').eq('client_id', client_id).order('priority_score', desc=True).execute()
             return pd.DataFrame(response.data)
         except Exception as e:
             logger.error(f"Error getting executive themes: {e}")
@@ -927,15 +943,15 @@ class SupabaseDatabase:
             logger.error(f"Error getting criteria scorecard: {e}")
             return pd.DataFrame()
 
-    def get_executive_synthesis_summary(self) -> Dict:
-        """Get summary statistics for executive synthesis"""
+    def get_executive_synthesis_summary(self, client_id: str = 'default') -> Dict:
+        """Get summary statistics for executive synthesis, filtered by client_id"""
         try:
-            # Get executive themes count
-            themes_response = self.supabase.table('executive_themes').select('id', count='exact').execute()
+            # Get executive themes count filtered by client_id
+            themes_response = self.supabase.table('executive_themes').select('id', count='exact').eq('client_id', client_id).execute()
             themes_count = themes_response.count if themes_response.count is not None else 0
             
-            # Get scorecard count
-            scorecard_response = self.supabase.table('criteria_scorecard').select('id', count='exact').execute()
+            # Get scorecard count filtered by client_id
+            scorecard_response = self.supabase.table('criteria_scorecard').select('id', count='exact').eq('client_id', client_id).execute()
             scorecard_count = scorecard_response.count if scorecard_response.count is not None else 0
             
             if themes_count == 0:
@@ -947,8 +963,8 @@ class SupabaseDatabase:
                     'criteria_analyzed': 0
                 }
             
-            # Get themes data for detailed stats
-            themes_data = self.supabase.table('executive_themes').select('*').execute()
+            # Get themes data for detailed stats filtered by client_id
+            themes_data = self.supabase.table('executive_themes').select('*').eq('client_id', client_id).execute()
             df = pd.DataFrame(themes_data.data)
             
             high_impact = len(df[df['business_impact_level'] == 'High'])
@@ -1023,6 +1039,79 @@ class SupabaseDatabase:
         except Exception as e:
             logger.error(f"❌ Failed to merge client data: {e}")
             return False
+
+    def get_theme_quotes(self, theme_id: str, client_id: str = 'default') -> pd.DataFrame:
+        """Get all quotes that contributed to a specific theme"""
+        try:
+            # First get the theme to find supporting finding IDs
+            theme_response = self.supabase.table('themes').select('*').eq('id', theme_id).eq('client_id', client_id).execute()
+            if not theme_response.data:
+                return pd.DataFrame()
+            
+            theme = theme_response.data[0]
+            supporting_finding_ids = theme.get('supporting_finding_ids', [])
+            
+            if not supporting_finding_ids:
+                return pd.DataFrame()
+            
+            # Get the findings
+            findings_response = self.supabase.table('enhanced_findings').select('*').in_('id', supporting_finding_ids).eq('client_id', client_id).execute()
+            findings_df = pd.DataFrame(findings_response.data)
+            
+            if findings_df.empty:
+                return pd.DataFrame()
+            
+            # Extract quotes from findings
+            all_quotes = []
+            for _, finding in findings_df.iterrows():
+                selected_quotes = finding.get('selected_quotes', [])
+                if selected_quotes:
+                    for quote_obj in selected_quotes:
+                        if isinstance(quote_obj, dict) and 'text' in quote_obj:
+                            all_quotes.append({
+                                'quote_text': quote_obj['text'],
+                                'finding_id': finding['id'],
+                                'finding_type': finding['finding_type'],
+                                'criterion': finding['criterion'],
+                                'impact_score': finding['impact_score'],
+                                'enhanced_confidence': finding['enhanced_confidence']
+                            })
+                        elif isinstance(quote_obj, str):
+                            all_quotes.append({
+                                'quote_text': quote_obj,
+                                'finding_id': finding['id'],
+                                'finding_type': finding['finding_type'],
+                                'criterion': finding['criterion'],
+                                'impact_score': finding['impact_score'],
+                                'enhanced_confidence': finding['enhanced_confidence']
+                            })
+            
+            # Get interviewee names for quotes
+            core_df = self.get_core_responses(client_id=client_id)
+            quotes_with_attribution = []
+            
+            for quote_data in all_quotes:
+                quote_text = quote_data['quote_text']
+                # Find interviewee by matching quote text
+                match = core_df[core_df['verbatim_response'].str.contains(quote_text[:50], na=False)]
+                if not match.empty:
+                    quote_data['interviewee_name'] = match.iloc[0]['interviewee_name']
+                    quote_data['company'] = match.iloc[0]['company']
+                    quote_data['subject'] = match.iloc[0]['subject']
+                    quote_data['question'] = match.iloc[0]['question']
+                else:
+                    quote_data['interviewee_name'] = 'Unknown'
+                    quote_data['company'] = 'Unknown'
+                    quote_data['subject'] = 'Unknown'
+                    quote_data['question'] = 'Unknown'
+                
+                quotes_with_attribution.append(quote_data)
+            
+            return pd.DataFrame(quotes_with_attribution)
+            
+        except Exception as e:
+            logger.error(f"Error getting theme quotes: {e}")
+            return pd.DataFrame()
 
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""
