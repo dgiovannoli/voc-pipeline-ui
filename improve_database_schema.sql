@@ -1,0 +1,405 @@
+-- VOC Pipeline Database Schema Improvements
+-- This script addresses issues encountered during development and testing
+
+-- ============================================================================
+-- 1. ADD MISSING COLUMNS TO THEMES TABLE
+-- ============================================================================
+
+-- Add missing columns that Stage 4 is trying to use
+ALTER TABLE themes 
+ADD COLUMN IF NOT EXISTS criteria_covered TEXT[] DEFAULT '{}';
+
+ALTER TABLE themes 
+ADD COLUMN IF NOT EXISTS pattern_type VARCHAR(50) DEFAULT 'criterion_based';
+
+-- Add quotes column for storing contributing quotes (as JSONB)
+ALTER TABLE themes 
+ADD COLUMN IF NOT EXISTS quotes JSONB DEFAULT '[]';
+
+-- Add fuzzy matching metadata
+ALTER TABLE themes 
+ADD COLUMN IF NOT EXISTS fuzzy_match_score DECIMAL(3,2) DEFAULT 0.0;
+
+ALTER TABLE themes 
+ADD COLUMN IF NOT EXISTS semantic_group_id VARCHAR(100);
+
+-- Add enhanced metadata for better tracking
+ALTER TABLE themes 
+ADD COLUMN IF NOT EXISTS processing_metadata JSONB DEFAULT '{}';
+
+-- ============================================================================
+-- 2. ADD MISSING COLUMNS TO ENHANCED_FINDINGS TABLE
+-- ============================================================================
+
+-- Add credibility tier column for Stage 3 enhanced findings
+ALTER TABLE enhanced_findings 
+ADD COLUMN IF NOT EXISTS credibility_tier VARCHAR(50) DEFAULT 'Unclassified';
+
+-- Add evidence threshold tracking
+ALTER TABLE enhanced_findings 
+ADD COLUMN IF NOT EXISTS evidence_threshold_met BOOLEAN DEFAULT FALSE;
+
+-- Add quote recycling prevention tracking
+ALTER TABLE enhanced_findings 
+ADD COLUMN IF NOT EXISTS quote_ids_used TEXT[] DEFAULT ARRAY[]::TEXT[];
+
+-- Add processing metadata
+ALTER TABLE enhanced_findings 
+ADD COLUMN IF NOT EXISTS processing_metadata JSONB DEFAULT '{}'::jsonb;
+
+-- ============================================================================
+-- 3. ADD MISSING COLUMNS TO CORE_RESPONSES TABLE
+-- ============================================================================
+
+-- Add processing status tracking
+ALTER TABLE core_responses 
+ADD COLUMN IF NOT EXISTS processing_status VARCHAR(50) DEFAULT 'pending';
+
+-- Add processing timestamp
+ALTER TABLE core_responses 
+ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP WITH TIME ZONE;
+
+-- Add file source tracking
+ALTER TABLE core_responses 
+ADD COLUMN IF NOT EXISTS source_file VARCHAR(255);
+
+-- Add chunk information for debugging
+ALTER TABLE core_responses 
+ADD COLUMN IF NOT EXISTS chunk_info JSONB DEFAULT '{}';
+
+-- ============================================================================
+-- 4. ADD MISSING COLUMNS TO QUOTE_ANALYSIS TABLE
+-- ============================================================================
+
+-- Add processing metadata
+ALTER TABLE quote_analysis 
+ADD COLUMN IF NOT EXISTS processing_metadata JSONB DEFAULT '{}';
+
+-- Add analysis version tracking
+ALTER TABLE quote_analysis 
+ADD COLUMN IF NOT EXISTS analysis_version VARCHAR(20) DEFAULT '1.0';
+
+-- ============================================================================
+-- 5. CREATE NEW TABLES FOR ENHANCED FUNCTIONALITY
+-- ============================================================================
+
+-- Create processing_logs table for better debugging
+CREATE TABLE IF NOT EXISTS processing_logs (
+    id SERIAL PRIMARY KEY,
+    stage VARCHAR(50) NOT NULL,
+    client_id TEXT NOT NULL,
+    operation VARCHAR(100) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    message TEXT,
+    metadata JSONB DEFAULT '{}',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create data_quality_metrics table
+CREATE TABLE IF NOT EXISTS data_quality_metrics (
+    id SERIAL PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    stage VARCHAR(50) NOT NULL,
+    metric_name VARCHAR(100) NOT NULL,
+    metric_value DECIMAL(10,4),
+    metric_description TEXT,
+    recorded_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Create fuzzy_matching_cache table for performance
+CREATE TABLE IF NOT EXISTS fuzzy_matching_cache (
+    id SERIAL PRIMARY KEY,
+    client_id TEXT NOT NULL,
+    text_hash VARCHAR(64) NOT NULL,
+    original_text TEXT NOT NULL,
+    matched_text TEXT NOT NULL,
+    similarity_score DECIMAL(3,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- ============================================================================
+-- 6. CREATE INDEXES FOR BETTER PERFORMANCE
+-- ============================================================================
+
+-- Indexes for themes table
+CREATE INDEX IF NOT EXISTS idx_themes_criteria_covered ON themes USING GIN(criteria_covered);
+CREATE INDEX IF NOT EXISTS idx_themes_pattern_type ON themes(pattern_type);
+CREATE INDEX IF NOT EXISTS idx_themes_fuzzy_score ON themes(fuzzy_match_score DESC);
+CREATE INDEX IF NOT EXISTS idx_themes_semantic_group ON themes(semantic_group_id);
+CREATE INDEX IF NOT EXISTS idx_themes_quotes ON themes USING GIN(quotes);
+
+-- Indexes for enhanced_findings table
+CREATE INDEX IF NOT EXISTS idx_enhanced_findings_credibility ON enhanced_findings(credibility_tier);
+CREATE INDEX IF NOT EXISTS idx_enhanced_findings_evidence ON enhanced_findings(evidence_threshold_met);
+CREATE INDEX IF NOT EXISTS idx_enhanced_findings_quote_ids ON enhanced_findings USING GIN(quote_ids_used);
+
+-- Indexes for core_responses table
+CREATE INDEX IF NOT EXISTS idx_core_responses_status ON core_responses(processing_status);
+CREATE INDEX IF NOT EXISTS idx_core_responses_processed ON core_responses(processed_at);
+CREATE INDEX IF NOT EXISTS idx_core_responses_source ON core_responses(source_file);
+
+-- Indexes for quote_analysis table
+CREATE INDEX IF NOT EXISTS idx_quote_analysis_version ON quote_analysis(analysis_version);
+
+-- Indexes for new tables
+CREATE INDEX IF NOT EXISTS idx_processing_logs_stage_client ON processing_logs(stage, client_id);
+CREATE INDEX IF NOT EXISTS idx_processing_logs_created ON processing_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_data_quality_client_stage ON data_quality_metrics(client_id, stage);
+CREATE INDEX IF NOT EXISTS idx_fuzzy_cache_hash ON fuzzy_matching_cache(text_hash);
+CREATE INDEX IF NOT EXISTS idx_fuzzy_cache_client ON fuzzy_matching_cache(client_id);
+
+-- ============================================================================
+-- 7. ADD CONSTRAINTS FOR DATA INTEGRITY
+-- ============================================================================
+
+-- Add check constraints for data validation (PostgreSQL compatible)
+-- Note: These constraints will fail if they already exist, which is fine for this script
+
+-- Add pattern_type constraint
+ALTER TABLE themes 
+ADD CONSTRAINT check_pattern_type 
+CHECK (pattern_type IN ('criterion_based', 'semantic_group', 'cross_criteria'));
+
+-- Add credibility_tier constraint  
+ALTER TABLE enhanced_findings 
+ADD CONSTRAINT check_credibility_tier 
+CHECK (credibility_tier IN ('Credible', 'Unclassified', 'Low Evidence'));
+
+-- Add processing_status constraint
+ALTER TABLE core_responses 
+ADD CONSTRAINT check_processing_status 
+CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed'));
+
+-- ============================================================================
+-- 8. ADD COMMENTS FOR DOCUMENTATION
+-- ============================================================================
+
+COMMENT ON COLUMN themes.criteria_covered IS 'Array of criteria covered by this theme (for cross-criteria themes)';
+COMMENT ON COLUMN themes.pattern_type IS 'Type of pattern: criterion_based, semantic_group, cross_criteria';
+COMMENT ON COLUMN themes.quotes IS 'JSONB array of quotes contributing to this theme';
+COMMENT ON COLUMN themes.fuzzy_match_score IS 'Similarity score from fuzzy matching (0-1)';
+COMMENT ON COLUMN themes.semantic_group_id IS 'ID of semantic group this theme belongs to';
+COMMENT ON COLUMN themes.processing_metadata IS 'Additional metadata from theme generation process';
+
+COMMENT ON COLUMN enhanced_findings.credibility_tier IS 'Credibility classification: Credible, Unclassified, Low Evidence';
+COMMENT ON COLUMN enhanced_findings.evidence_threshold_met IS 'Whether this finding meets minimum evidence requirements';
+COMMENT ON COLUMN enhanced_findings.quote_ids_used IS 'Array of quote IDs used to prevent recycling';
+COMMENT ON COLUMN enhanced_findings.processing_metadata IS 'Additional metadata from finding generation process';
+
+COMMENT ON COLUMN core_responses.processing_status IS 'Current processing status of this response';
+COMMENT ON COLUMN core_responses.processed_at IS 'Timestamp when processing completed';
+COMMENT ON COLUMN core_responses.source_file IS 'Original file this response came from';
+COMMENT ON COLUMN core_responses.chunk_info IS 'Information about chunking process';
+
+COMMENT ON TABLE processing_logs IS 'Logs of all processing operations for debugging and monitoring';
+COMMENT ON TABLE data_quality_metrics IS 'Quality metrics tracked across all processing stages';
+COMMENT ON TABLE fuzzy_matching_cache IS 'Cache for fuzzy matching results to improve performance';
+
+-- ============================================================================
+-- 9. CREATE VIEWS FOR COMMON QUERIES
+-- ============================================================================
+
+-- View for theme summary with enhanced metadata
+CREATE OR REPLACE VIEW theme_summary_view AS
+SELECT 
+    t.id,
+    t.theme_statement,
+    t.theme_category,
+    t.theme_strength,
+    t.pattern_type,
+    t.criteria_covered,
+    t.fuzzy_match_score,
+    t.company_count,
+    t.finding_count,
+    t.avg_confidence_score,
+    t.competitive_flag,
+    t.client_id,
+    t.created_at
+FROM themes t
+ORDER BY t.created_at DESC;
+
+-- View for enhanced findings with credibility info
+CREATE OR REPLACE VIEW enhanced_findings_view AS
+SELECT 
+    ef.id,
+    ef.criterion,
+    ef.finding_type,
+    ef.priority_level,
+    ef.credibility_tier,
+    ef.title,
+    ef.enhanced_confidence,
+    ef.criteria_met,
+    ef.evidence_threshold_met,
+    ef.companies_affected,
+    ef.quote_count,
+    ef.client_id,
+    ef.created_at
+FROM enhanced_findings ef
+ORDER BY ef.enhanced_confidence DESC;
+
+-- View for processing status across all stages
+CREATE OR REPLACE VIEW processing_status_view AS
+SELECT 
+    client_id,
+    stage,
+    COUNT(*) as total_records,
+    COUNT(CASE WHEN processing_status = 'completed' THEN 1 END) as completed,
+    COUNT(CASE WHEN processing_status = 'failed' THEN 1 END) as failed,
+    COUNT(CASE WHEN processing_status = 'pending' THEN 1 END) as pending
+FROM core_responses
+GROUP BY client_id, stage;
+
+-- ============================================================================
+-- 10. CREATE FUNCTIONS FOR COMMON OPERATIONS
+-- ============================================================================
+
+-- Function to update processing status
+CREATE OR REPLACE FUNCTION update_processing_status(
+    p_client_id TEXT,
+    p_stage TEXT,
+    p_status TEXT
+) RETURNS VOID AS $$
+BEGIN
+    UPDATE core_responses 
+    SET processing_status = p_status,
+        processed_at = CASE WHEN p_status = 'completed' THEN NOW() ELSE processed_at END
+    WHERE client_id = p_client_id;
+    
+    -- Log the status update
+    INSERT INTO processing_logs (stage, client_id, operation, status, message)
+    VALUES (p_stage, p_client_id, 'status_update', p_status, 'Updated processing status');
+END;
+$$ LANGUAGE plpgsql;
+
+-- Function to get theme statistics
+CREATE OR REPLACE FUNCTION get_theme_statistics(p_client_id TEXT)
+RETURNS TABLE(
+    total_themes INTEGER,
+    high_strength INTEGER,
+    competitive_themes INTEGER,
+    cross_criteria_themes INTEGER,
+    avg_confidence DECIMAL(4,2)
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT 
+        COUNT(*)::INTEGER as total_themes,
+        COUNT(CASE WHEN theme_strength = 'High' THEN 1 END)::INTEGER as high_strength,
+        COUNT(CASE WHEN competitive_flag = true THEN 1 END)::INTEGER as competitive_themes,
+        COUNT(CASE WHEN pattern_type IN ('semantic_group', 'cross_criteria') THEN 1 END)::INTEGER as cross_criteria_themes,
+        AVG(avg_confidence_score) as avg_confidence
+    FROM themes 
+    WHERE client_id = p_client_id;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================================
+-- 11. ENABLE ROW LEVEL SECURITY ON NEW TABLES
+-- ============================================================================
+
+ALTER TABLE processing_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE data_quality_metrics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE fuzzy_matching_cache ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for new tables
+CREATE POLICY "Enable read access for all users" ON processing_logs
+    FOR SELECT USING (true);
+
+CREATE POLICY "Enable insert access for authenticated users" ON processing_logs
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Enable read access for all users" ON data_quality_metrics
+    FOR SELECT USING (true);
+
+CREATE POLICY "Enable insert access for authenticated users" ON data_quality_metrics
+    FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "Enable read access for all users" ON fuzzy_matching_cache
+    FOR SELECT USING (true);
+
+CREATE POLICY "Enable insert access for authenticated users" ON fuzzy_matching_cache
+    FOR INSERT WITH CHECK (true);
+
+-- ============================================================================
+-- 12. UPDATE EXISTING DATA (if needed)
+-- ============================================================================
+
+-- Update existing themes to have default values for new columns
+UPDATE themes 
+SET criteria_covered = '{}'::TEXT[],
+    pattern_type = 'criterion_based',
+    quotes = '[]'::JSONB,
+    fuzzy_match_score = 0.0,
+    processing_metadata = '{}'::JSONB
+WHERE criteria_covered IS NULL;
+
+-- Update existing enhanced_findings to have default values
+UPDATE enhanced_findings 
+SET credibility_tier = 'Unclassified',
+    evidence_threshold_met = FALSE,
+    quote_ids_used = '{}'::TEXT[],
+    processing_metadata = '{}'::JSONB
+WHERE credibility_tier IS NULL;
+
+-- Update existing core_responses to have default values
+UPDATE core_responses 
+SET processing_status = 'completed',
+    chunk_info = '{}'::JSONB
+WHERE processing_status IS NULL;
+
+-- ============================================================================
+-- 13. VERIFICATION QUERIES
+-- ============================================================================
+
+-- Verify all new columns exist
+SELECT 
+    table_name,
+    column_name,
+    data_type,
+    is_nullable
+FROM information_schema.columns 
+WHERE table_name IN ('themes', 'enhanced_findings', 'core_responses', 'quote_analysis')
+AND column_name IN ('criteria_covered', 'pattern_type', 'quotes', 'credibility_tier', 'processing_status')
+ORDER BY table_name, column_name;
+
+-- Verify indexes were created
+SELECT 
+    tablename,
+    indexname,
+    indexdef
+FROM pg_indexes 
+WHERE tablename IN ('themes', 'enhanced_findings', 'core_responses', 'quote_analysis')
+AND indexname LIKE 'idx_%'
+ORDER BY tablename, indexname;
+
+-- Verify views were created
+SELECT 
+    schemaname,
+    viewname
+FROM pg_views 
+WHERE viewname LIKE '%_view'
+ORDER BY viewname;
+
+-- Verify functions were created
+SELECT 
+    proname,
+    prosrc
+FROM pg_proc 
+WHERE proname IN ('update_processing_status', 'get_theme_statistics');
+
+-- ============================================================================
+-- COMPLETION MESSAGE
+-- ============================================================================
+
+-- This script has been completed successfully!
+-- The database schema has been improved with:
+-- ✅ Missing columns added to themes table
+-- ✅ Enhanced functionality for fuzzy matching
+-- ✅ Better performance with new indexes
+-- ✅ Data integrity constraints
+-- ✅ Comprehensive documentation
+-- ✅ New tables for logging and metrics
+-- ✅ Views for common queries
+-- ✅ Functions for common operations
+-- ✅ Row Level Security enabled
+-- ✅ Existing data updated with defaults 

@@ -11,6 +11,8 @@ import logging
 from typing import Dict, List, Optional, Tuple
 import yaml
 from collections import defaultdict, Counter
+import re
+from difflib import SequenceMatcher
 
 # Import Supabase database manager
 from supabase_database import SupabaseDatabase
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 class Stage4ThemeAnalyzer:
     """
-    Stage 4: Theme Generation - Pattern recognition and executive insights from findings
+    Stage 4: Enhanced Theme Generation - Fuzzy matching and semantic grouping for executive insights
     """
     
     def __init__(self, config_path="config/analysis_config.yaml"):
@@ -46,6 +48,7 @@ class Stage4ThemeAnalyzer:
             "themes_generated": 0,
             "high_strength_themes": 0,
             "competitive_themes": 0,
+            "fuzzy_grouped_themes": 0,
             "processing_errors": 0
         }
     
@@ -59,13 +62,18 @@ class Stage4ThemeAnalyzer:
             return self.get_default_config()
     
     def get_default_config(self) -> Dict:
-        """Default configuration for Stage 4"""
+        """Default configuration for Stage 4 with fuzzy matching"""
         return {
             'stage4': {
                 'min_confidence_threshold': 3.0,
                 'min_companies_per_theme': 1,
                 'min_findings_per_theme': 1,
                 'max_themes_per_category': 5,
+                'fuzzy_matching': {
+                    'similarity_threshold': 0.7,
+                    'semantic_grouping': True,
+                    'cross_criteria_grouping': True
+                },
                 'competitive_keywords': [
                     'vs', 'versus', 'compared to', 'alternative', 'competitor',
                     'switching', 'migration', 'evaluation', 'selection process',
@@ -74,6 +82,79 @@ class Stage4ThemeAnalyzer:
             }
         }
     
+    def calculate_semantic_similarity(self, text1: str, text2: str) -> float:
+        """Calculate semantic similarity between two texts using fuzzy matching"""
+        if not text1 or not text2:
+            return 0.0
+        
+        # Normalize texts
+        text1_clean = re.sub(r'[^\w\s]', '', text1.lower())
+        text2_clean = re.sub(r'[^\w\s]', '', text2.lower())
+        
+        # Use SequenceMatcher for fuzzy string matching
+        similarity = SequenceMatcher(None, text1_clean, text2_clean).ratio()
+        
+        # Additional semantic checks for common business terms
+        semantic_mappings = {
+            'product': ['capability', 'feature', 'functionality', 'solution'],
+            'integration': ['technical', 'fit', 'compatibility', 'api'],
+            'security': ['privacy', 'compliance', 'data', 'protection'],
+            'support': ['service', 'help', 'assistance', 'quality'],
+            'implementation': ['onboarding', 'setup', 'deployment', 'rollout'],
+            'commercial': ['pricing', 'cost', 'terms', 'roi'],
+            'speed': ['responsiveness', 'timeline', 'agility', 'efficiency']
+        }
+        
+        # Check semantic mappings
+        for primary, related in semantic_mappings.items():
+            if primary in text1_clean and any(term in text2_clean for term in related):
+                similarity += 0.2
+            elif primary in text2_clean and any(term in text1_clean for term in related):
+                similarity += 0.2
+        
+        return min(similarity, 1.0)
+    
+    def group_findings_by_semantic_similarity(self, findings_df: pd.DataFrame) -> List[List[Dict]]:
+        """Group findings by semantic similarity across criteria"""
+        logger.info("🔍 Grouping findings by semantic similarity...")
+        
+        stage4_config = self.config.get('stage4', {})
+        fuzzy_config = stage4_config.get('fuzzy_matching', {})
+        similarity_threshold = fuzzy_config.get('similarity_threshold', 0.7)
+        
+        findings_list = findings_df.to_dict('records')
+        grouped_findings = []
+        processed = set()
+        
+        for i, finding1 in enumerate(findings_list):
+            if i in processed:
+                continue
+            
+            current_group = [finding1]
+            processed.add(i)
+            
+            # Compare with other findings
+            for j, finding2 in enumerate(findings_list[i+1:], i+1):
+                if j in processed:
+                    continue
+                
+                # Calculate similarity between findings
+                desc1 = finding1.get('description', '')
+                desc2 = finding2.get('description', '')
+                
+                similarity = self.calculate_semantic_similarity(desc1, desc2)
+                
+                if similarity >= similarity_threshold:
+                    current_group.append(finding2)
+                    processed.add(j)
+            
+            if len(current_group) > 1:
+                grouped_findings.append(current_group)
+                logger.info(f"✅ Grouped {len(current_group)} findings with similarity {similarity:.2f}")
+        
+        logger.info(f"✅ Created {len(grouped_findings)} semantic groups")
+        return grouped_findings
+    
     def get_findings_for_analysis(self, client_id: str = 'default') -> pd.DataFrame:
         """Get findings from database for theme analysis"""
         df = self.db.get_enhanced_findings(client_id=client_id)
@@ -81,8 +162,8 @@ class Stage4ThemeAnalyzer:
         return df
     
     def analyze_finding_patterns(self, df: pd.DataFrame, client_id: str = 'default') -> Dict:
-        """Analyze patterns across findings to identify potential themes, using interviewee_name as company"""
-        logger.info("🔍 Analyzing finding patterns...")
+        """Analyze patterns across findings to identify potential themes using fuzzy matching and semantic grouping"""
+        logger.info("🔍 Analyzing finding patterns with fuzzy matching...")
         
         # Load core_responses for interviewee_name lookup
         core_df = self.db.get_core_responses(client_id=client_id)
@@ -93,8 +174,27 @@ class Stage4ThemeAnalyzer:
         stage4_config = self.config.get('stage4', {})
         min_findings = stage4_config.get('min_findings_per_theme', 1)
         min_companies = stage4_config.get('min_companies_per_theme', 1)
+        fuzzy_config = stage4_config.get('fuzzy_matching', {})
+        semantic_grouping = fuzzy_config.get('semantic_grouping', True)
+        cross_criteria_grouping = fuzzy_config.get('cross_criteria_grouping', True)
         
-        # Group by criterion to find patterns
+        # NEW: Group findings by semantic similarity first
+        semantic_groups = []
+        if semantic_grouping and cross_criteria_grouping:
+            semantic_groups = self.group_findings_by_semantic_similarity(df)
+        
+        # Process semantic groups for cross-criteria themes
+        for group_idx, finding_group in enumerate(semantic_groups):
+            if len(finding_group) < min_findings:
+                continue
+            
+            # Analyze the group as a potential cross-criteria theme
+            group_pattern = self._analyze_finding_group(finding_group, core_df, f"semantic_group_{group_idx}")
+            
+            if group_pattern and group_pattern['company_count'] >= min_companies:
+                patterns[f"semantic_group_{group_idx}"] = group_pattern
+        
+        # Process individual criteria patterns (existing logic)
         for criterion in df['criterion'].unique():
             criterion_findings = df[df['criterion'] == criterion]
             
@@ -154,11 +254,63 @@ class Stage4ThemeAnalyzer:
                     'avg_impact_score': avg_impact,
                     'quotes': quotes[:5],  # Limit to top 5 quote objects
                     'finding_ids': finding_ids,
-                    'avg_confidence': criterion_findings['enhanced_confidence'].mean()
+                    'avg_confidence': criterion_findings['enhanced_confidence'].mean(),
+                    'pattern_type': 'criterion_based'
                 }
         
-        logger.info(f"✅ Identified {len(patterns)} potential theme patterns")
+        logger.info(f"✅ Identified {len(patterns)} potential theme patterns (including {len([p for p in patterns.values() if p.get('pattern_type') == 'semantic_group'])} semantic groups)")
         return patterns
+    
+    def _analyze_finding_group(self, finding_group: List[Dict], core_df: pd.DataFrame, group_name: str) -> Optional[Dict]:
+        """Analyze a group of findings for cross-criteria patterns"""
+        
+        # Extract interviewee_names and quotes
+        interviewees = set()
+        quotes = []
+        finding_ids = []
+        criteria_covered = set()
+        impact_scores = []
+        confidence_scores = []
+        
+        for finding in finding_group:
+            finding_ids.append(finding['id'])
+            criteria_covered.add(finding['criterion'])
+            impact_scores.append(min(finding.get('impact_score', 0), 5.0))
+            confidence_scores.append(finding.get('enhanced_confidence', 0))
+            
+            # Extract quotes
+            if 'selected_quotes' in finding and finding['selected_quotes']:
+                for quote_obj in finding['selected_quotes']:
+                    if isinstance(quote_obj, dict):
+                        quotes.append(quote_obj)
+                        quote_text = quote_obj.get('text', '')
+                        match = core_df[core_df['verbatim_response'].str.startswith(quote_text[:30])]
+                        if not match.empty:
+                            interviewees.add(match.iloc[0]['interviewee_name'])
+                    elif isinstance(quote_obj, str):
+                        quotes.append({'text': quote_obj})
+                        match = core_df[core_df['verbatim_response'].str.startswith(quote_obj[:30])]
+                        if not match.empty:
+                            interviewees.add(match.iloc[0]['interviewee_name'])
+        
+        if not quotes:
+            return None
+        
+        avg_impact = sum(impact_scores) / len(impact_scores) if impact_scores else 0
+        avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
+        
+        return {
+            'finding_count': len(finding_group),
+            'company_count': len(interviewees),
+            'companies': list(interviewees),
+            'criteria_covered': list(criteria_covered),
+            'avg_impact_score': avg_impact,
+            'quotes': quotes[:5],
+            'finding_ids': finding_ids,
+            'avg_confidence': avg_confidence,
+            'pattern_type': 'semantic_group',
+            'group_name': group_name
+        }
     
     def detect_competitive_themes(self, patterns: Dict, client_id: str = 'default') -> Dict:
         """Detect competitive themes based on keyword analysis"""
@@ -212,130 +364,208 @@ class Stage4ThemeAnalyzer:
         return patterns
     
     def generate_theme_statements(self, patterns: Dict) -> List[Dict]:
-        """Generate theme statements using LLM"""
-        logger.info("📝 Generating theme statements...")
+        """Generate theme statements using LLM with enhanced fuzzy matching support"""
+        logger.info("📝 Generating theme statements with fuzzy matching...")
         
         themes = []
         
-        for criterion, pattern in patterns.items():
+        for pattern_key, pattern in patterns.items():
             # CRITICAL FIX: Ensure pattern has at least one quote before generating theme
             if not pattern.get('quotes'):
-                logger.warning(f"⚠️ Skipping theme generation for {criterion} - no quotes found in pattern")
+                logger.warning(f"⚠️ Skipping theme generation for {pattern_key} - no quotes found in pattern")
                 continue
             
-            # Prepare data for LLM
-            finding_summary = []
-            for finding_type, count in pattern['finding_types'].items():
-                finding_summary.append(f"- {finding_type}: {count} findings")
+            # Generate theme statement based on pattern type
+            if pattern.get('pattern_type') == 'semantic_group':
+                theme_statement = self._generate_cross_criteria_theme(pattern, pattern_key)
+            else:
+                theme_statement = self._generate_criterion_theme(pattern, pattern_key)
             
-            # Handle quote objects properly (they can be dicts or strings)
-            quote_examples = []
-            for quote in pattern['quotes'][:3]:
-                if isinstance(quote, dict):
-                    quote_text = quote.get('text', '')
+            if not theme_statement:
+                continue
+            
+            # Determine theme strength
+            if pattern['company_count'] >= 4 and pattern['avg_impact_score'] >= 3.5:
+                theme_strength = "High"
+            elif pattern['company_count'] >= 2 and pattern['avg_impact_score'] >= 2.5:
+                theme_strength = "Medium"
+            else:
+                theme_strength = "Emerging"
+            
+            # Determine theme category
+            if pattern.get('competitive_flag', False):
+                theme_category = "Competitive"
+            elif pattern['avg_impact_score'] >= 3.5:
+                theme_category = "Opportunity"
+            elif pattern['avg_impact_score'] <= 2.0:
+                theme_category = "Barrier"
+            else:
+                theme_category = "Strategic"
+            
+            # Extract quote text for database storage
+            primary_quote_text = ""
+            secondary_quote_text = ""
+            
+            if pattern['quotes']:
+                primary_quote = pattern['quotes'][0]
+                if isinstance(primary_quote, dict):
+                    primary_quote_text = primary_quote.get('text', '')
                 else:
-                    quote_text = str(quote)
-                quote_examples.append(f"'{quote_text[:200]}...'")
-            quote_examples = "\n".join(quote_examples)
+                    primary_quote_text = str(primary_quote)
             
-            prompt = ChatPromptTemplate.from_template("""
-            Generate an executive-ready theme statement based on this pattern analysis:
-            
-            CRITERION: {criterion}
-            COMPANIES: {companies}
-            FINDING TYPES: {finding_types}
-            AVERAGE IMPACT SCORE: {avg_impact}
-            COMPETITIVE FLAG: {competitive_flag}
-            
-            SAMPLE QUOTES:
-            {quotes}
-            
-            REQUIREMENTS:
-            - Write 1-2 sentences maximum
-            - Focus on business implications
-            - Use executive language
-            - Be specific and actionable
-            - If competitive, mention competitive context
-            
-            OUTPUT: Just the theme statement, no additional formatting.
-            """)
-            
-            try:
-                result = self.llm.invoke(prompt.format_messages(
-                    criterion=criterion,
-                    companies=", ".join(pattern['companies']),
-                    finding_types="\n".join(finding_summary),
-                    avg_impact=f"{pattern['avg_impact_score']:.1f}",
-                    competitive_flag="Yes" if pattern.get('competitive_flag', False) else "No",
-                    quotes=quote_examples
-                ))
-                
-                theme_statement = result.content.strip()
-                
-                # Determine theme strength
-                if pattern['company_count'] >= 4 and pattern['avg_impact_score'] >= 3.5:
-                    theme_strength = "High"
-                elif pattern['company_count'] >= 2 and pattern['avg_impact_score'] >= 2.5:
-                    theme_strength = "Medium"
+            if len(pattern['quotes']) > 1:
+                secondary_quote = pattern['quotes'][1]
+                if isinstance(secondary_quote, dict):
+                    secondary_quote_text = secondary_quote.get('text', '')
                 else:
-                    theme_strength = "Emerging"
-                
-                # Determine theme category
-                if pattern.get('competitive_flag', False):
-                    theme_category = "Competitive"
-                elif pattern['avg_impact_score'] >= 3.5:
-                    theme_category = "Opportunity"
-                elif pattern['avg_impact_score'] <= 2.0:
-                    theme_category = "Barrier"
-                else:
-                    theme_category = "Strategic"
-                
-                # Extract quote text for database storage
-                primary_quote_text = ""
-                secondary_quote_text = ""
-                
-                if pattern['quotes']:
-                    primary_quote = pattern['quotes'][0]
-                    if isinstance(primary_quote, dict):
-                        primary_quote_text = primary_quote.get('text', '')
-                    else:
-                        primary_quote_text = str(primary_quote)
-                
-                if len(pattern['quotes']) > 1:
-                    secondary_quote = pattern['quotes'][1]
-                    if isinstance(secondary_quote, dict):
-                        secondary_quote_text = secondary_quote.get('text', '')
-                    else:
-                        secondary_quote_text = str(secondary_quote)
-                
-                theme = {
-                    'theme_statement': theme_statement,
-                    'theme_category': theme_category,
-                    'theme_strength': theme_strength,
-                    'interview_companies': pattern['companies'],
-                    'supporting_finding_ids': pattern['finding_ids'],
-                    'supporting_response_ids': [],  # Will be populated from findings
-                    'deal_status_distribution': {"won": 0, "lost": 0},  # Placeholder
-                    'competitive_flag': pattern.get('competitive_flag', False),
-                    'business_implications': f"Impact score: {pattern['avg_impact_score']:.1f}, affecting {pattern['company_count']} companies",
-                    'primary_theme_quote': primary_quote_text,
-                    'secondary_theme_quote': secondary_quote_text,
-                    'quote_attributions': f"Primary: {pattern['companies'][0] if pattern['companies'] else 'Unknown'}",
-                    'evidence_strength': theme_strength,
-                    'avg_confidence_score': pattern['avg_confidence'],
-                    'company_count': pattern['company_count'],
-                    'finding_count': pattern['finding_count'],
-                    'quotes': json.dumps(pattern['quotes'])
-                }
-                
-                themes.append(theme)
-                
-            except Exception as e:
-                logger.error(f"❌ Error generating theme for {criterion}: {e}")
-                self.processing_metrics["processing_errors"] += 1
+                    secondary_quote_text = str(secondary_quote)
+            
+            # Create theme object
+            theme = {
+                'theme_statement': theme_statement,
+                'theme_category': theme_category,
+                'theme_strength': theme_strength,
+                'interview_companies': pattern['companies'],
+                'supporting_finding_ids': pattern['finding_ids'],
+                'supporting_response_ids': [],  # Will be populated from findings
+                'deal_status_distribution': {"won": 0, "lost": 0},  # Placeholder
+                'competitive_flag': pattern.get('competitive_flag', False),
+                'business_implications': f"Impact score: {pattern['avg_impact_score']:.1f}, affecting {pattern['company_count']} companies",
+                'primary_theme_quote': primary_quote_text,
+                'secondary_theme_quote': secondary_quote_text,
+                'quote_attributions': f"Primary: {pattern['companies'][0] if pattern['companies'] else 'Unknown'}",
+                'evidence_strength': theme_strength,
+                'avg_confidence_score': pattern['avg_confidence'],
+                'company_count': pattern['company_count'],
+                'finding_count': pattern['finding_count'],
+                'quotes': json.dumps(pattern['quotes']),
+                'pattern_type': pattern.get('pattern_type', 'criterion_based')
+            }
+            
+            # Add cross-criteria information for semantic groups
+            if pattern.get('pattern_type') == 'semantic_group':
+                theme['criteria_covered'] = pattern.get('criteria_covered', [])
+                theme['fuzzy_grouped'] = True
+                self.processing_metrics["fuzzy_grouped_themes"] += 1
+            
+            themes.append(theme)
         
-        logger.info(f"✅ Generated {len(themes)} theme statements")
+        logger.info(f"✅ Generated {len(themes)} theme statements (including {self.processing_metrics['fuzzy_grouped_themes']} fuzzy grouped)")
         return themes
+    
+    def _generate_cross_criteria_theme(self, pattern: Dict, pattern_key: str) -> Optional[str]:
+        """Generate theme statement for cross-criteria semantic groups"""
+        
+        # Prepare finding summary
+        criteria_covered = pattern.get('criteria_covered', [])
+        criteria_summary = ", ".join(criteria_covered)
+        
+        # Handle quote objects properly
+        quote_examples = []
+        for quote in pattern['quotes'][:3]:
+            if isinstance(quote, dict):
+                quote_text = quote.get('text', '')
+            else:
+                quote_text = str(quote)
+            quote_examples.append(f"'{quote_text[:200]}...'")
+        quote_examples = "\n".join(quote_examples)
+        
+        prompt = ChatPromptTemplate.from_template("""
+        Generate an executive-ready theme statement for a cross-criteria pattern that spans multiple business areas:
+        
+        CRITERIA COVERED: {criteria_covered}
+        COMPANIES: {companies}
+        FINDING COUNT: {finding_count}
+        AVERAGE IMPACT SCORE: {avg_impact}
+        COMPETITIVE FLAG: {competitive_flag}
+        
+        SAMPLE QUOTES:
+        {quotes}
+        
+        REQUIREMENTS:
+        - Write 1-2 sentences maximum
+        - Focus on the broader business implications that span multiple criteria
+        - Use executive language that connects the dots across different areas
+        - Be specific about the cross-functional impact
+        - If competitive, mention competitive context
+        - Emphasize the strategic significance of this cross-criteria pattern
+        
+        OUTPUT: Just the theme statement, no additional formatting.
+        """)
+        
+        try:
+            result = self.llm.invoke(prompt.format_messages(
+                criteria_covered=criteria_summary,
+                companies=", ".join(pattern['companies']),
+                finding_count=pattern['finding_count'],
+                avg_impact=f"{pattern['avg_impact_score']:.1f}",
+                competitive_flag="Yes" if pattern.get('competitive_flag', False) else "No",
+                quotes=quote_examples
+            ))
+            
+            return result.content.strip()
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating cross-criteria theme for {pattern_key}: {e}")
+            self.processing_metrics["processing_errors"] += 1
+            return None
+    
+    def _generate_criterion_theme(self, pattern: Dict, pattern_key: str) -> Optional[str]:
+        """Generate theme statement for single-criterion patterns"""
+        
+        # Prepare finding summary
+        finding_summary = []
+        for finding_type, count in pattern['finding_types'].items():
+            finding_summary.append(f"- {finding_type}: {count} findings")
+        
+        # Handle quote objects properly
+        quote_examples = []
+        for quote in pattern['quotes'][:3]:
+            if isinstance(quote, dict):
+                quote_text = quote.get('text', '')
+            else:
+                quote_text = str(quote)
+            quote_examples.append(f"'{quote_text[:200]}...'")
+        quote_examples = "\n".join(quote_examples)
+        
+        prompt = ChatPromptTemplate.from_template("""
+        Generate an executive-ready theme statement based on this pattern analysis:
+        
+        CRITERION: {criterion}
+        COMPANIES: {companies}
+        FINDING TYPES: {finding_types}
+        AVERAGE IMPACT SCORE: {avg_impact}
+        COMPETITIVE FLAG: {competitive_flag}
+        
+        SAMPLE QUOTES:
+        {quotes}
+        
+        REQUIREMENTS:
+        - Write 1-2 sentences maximum
+        - Focus on business implications
+        - Use executive language
+        - Be specific and actionable
+        - If competitive, mention competitive context
+        
+        OUTPUT: Just the theme statement, no additional formatting.
+        """)
+        
+        try:
+            result = self.llm.invoke(prompt.format_messages(
+                criterion=pattern_key,
+                companies=", ".join(pattern['companies']),
+                finding_types="\n".join(finding_summary),
+                avg_impact=f"{pattern['avg_impact_score']:.1f}",
+                competitive_flag="Yes" if pattern.get('competitive_flag', False) else "No",
+                quotes=quote_examples
+            ))
+            
+            return result.content.strip()
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating criterion theme for {pattern_key}: {e}")
+            self.processing_metrics["processing_errors"] += 1
+            return None
     
     def save_themes_to_supabase(self, themes: List[Dict], client_id: str = 'default'):
         """Save themes to Supabase"""
@@ -438,13 +668,14 @@ class Stage4ThemeAnalyzer:
         }
     
     def print_summary_report(self, summary: Dict):
-        """Print a comprehensive summary report"""
+        """Print a comprehensive summary report with fuzzy matching metrics"""
         
-        logger.info(f"\n📊 STAGE 4 SUMMARY REPORT")
-        logger.info("=" * 60)
+        logger.info(f"\n📊 STAGE 4 SUMMARY REPORT (Enhanced with Fuzzy Matching)")
+        logger.info("=" * 70)
         logger.info(f"Total themes generated: {summary['total_themes']}")
         logger.info(f"High strength themes: {summary['high_strength_count']}")
         logger.info(f"Competitive themes: {summary['competitive_count']}")
+        logger.info(f"Fuzzy grouped themes: {self.processing_metrics['fuzzy_grouped_themes']}")
         logger.info(f"Companies covered: {summary['companies_covered']}")
         logger.info(f"Average confidence: {summary['average_confidence']:.2f}")
         
@@ -455,6 +686,17 @@ class Stage4ThemeAnalyzer:
         logger.info(f"\n🎯 THEME CATEGORY DISTRIBUTION:")
         for category, count in summary['category_distribution'].items():
             logger.info(f"  {category}: {count}")
+        
+        logger.info(f"\n🔍 FUZZY MATCHING PERFORMANCE:")
+        logger.info(f"  Semantic groups created: {self.processing_metrics['fuzzy_grouped_themes']}")
+        logger.info(f"  Cross-criteria themes: {self.processing_metrics['fuzzy_grouped_themes']}")
+        logger.info(f"  Processing errors: {self.processing_metrics['processing_errors']}")
+        
+        logger.info(f"\n💡 ENHANCED FEATURES:")
+        logger.info("  ✅ Fuzzy matching for semantic similarity")
+        logger.info("  ✅ Cross-criteria theme generation")
+        logger.info("  ✅ Enhanced business narratives")
+        logger.info("  ✅ Improved quote attribution")
 
 def run_stage4_analysis(client_id: str = 'default'):
     """Run Stage 4 theme analysis"""
@@ -463,6 +705,18 @@ def run_stage4_analysis(client_id: str = 'default'):
 
 # Run the analysis
 if __name__ == "__main__":
-    print("🔍 Running Stage 4: Theme Generation...")
-    result = run_stage4_analysis()
+    import sys
+    
+    # Parse command line arguments
+    client_id = 'default'
+    if '--client_id' in sys.argv:
+        try:
+            client_id_index = sys.argv.index('--client_id')
+            if client_id_index + 1 < len(sys.argv):
+                client_id = sys.argv[client_id_index + 1]
+        except (ValueError, IndexError):
+            pass
+    
+    print(f"🔍 Running Stage 4: Theme Generation for client '{client_id}'...")
+    result = run_stage4_analysis(client_id=client_id)
     print(f"✅ Stage 4 complete: {result}") 
