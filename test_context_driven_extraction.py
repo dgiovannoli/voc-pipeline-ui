@@ -43,98 +43,62 @@ def test_context_driven_prompt():
         """
     }
     
-    # Test the prompt generation
-    print("\n📋 Testing prompt generation...")
-    try:
-        generated_prompt = get_core_extraction_prompt(**test_params)
-        print("✅ Prompt generation successful")
-        print(f"📏 Prompt length: {len(generated_prompt)} characters")
-        
-        # Check for key context-driven elements
-        context_indicators = [
-            "CONTEXT-DRIVEN EXTRACTION",
-            "COMPLETE CONTEXT",
-            "MEANINGFUL Q&A PAIRS",
-            "Let Content Guide Quantity",
-            "Variable Output"
-        ]
-        
-        missing_indicators = []
-        for indicator in context_indicators:
-            if indicator not in generated_prompt:
-                missing_indicators.append(indicator)
-        
-        if missing_indicators:
-            print(f"⚠️ Missing context-driven indicators: {missing_indicators}")
-        else:
-            print("✅ All context-driven indicators present")
-        
-        # Check that old quantity-driven language is removed
-        old_indicators = [
-            "3-5 RICHEST",
-            "1-2 RICHEST",
-            "Extract the 3-5",
-            "Extract the 1-2"
-        ]
-        
-        found_old_indicators = []
-        for indicator in old_indicators:
-            if indicator in generated_prompt:
-                found_old_indicators.append(indicator)
-        
-        if found_old_indicators:
-            print(f"⚠️ Found old quantity-driven language: {found_old_indicators}")
-        else:
-            print("✅ No old quantity-driven language found")
-        
-    except Exception as e:
-        print(f"❌ Prompt generation failed: {e}")
-        return False
+    # Generate prompt
+    generated_prompt = get_core_extraction_prompt(**test_params)
     
-    # Test the raw prompt template
-    print("\n📋 Testing raw prompt template...")
-    try:
-        # Check the raw prompt for context-driven approach
-        if "CONTEXT-DRIVEN EXTRACTION" in CORE_EXTRACTION_PROMPT:
-            print("✅ Raw prompt uses context-driven approach")
-        else:
-            print("❌ Raw prompt still uses old approach")
-            return False
-        
-        # Check for variable output guidance
-        if "quantity varies by content quality" in CORE_EXTRACTION_PROMPT:
-            print("✅ Prompt includes variable output guidance")
-        else:
-            print("❌ Prompt missing variable output guidance")
-            return False
-        
-    except Exception as e:
-        print(f"❌ Raw prompt test failed: {e}")
-        return False
+    print("✅ Generated prompt successfully")
+    print(f"📏 Prompt length: {len(generated_prompt)} characters")
     
-    # Test JSON structure expectations
-    print("\n📋 Testing JSON structure expectations...")
-    try:
-        # The prompt should expect variable number of responses
-        if "quantity varies by content quality" in CORE_EXTRACTION_PROMPT:
-            print("✅ JSON structure allows variable responses")
+    # Check for key improvements
+    improvements = [
+        ("CRITICAL FIELD DEFINITIONS", "Field definitions added"),
+        ("SUBJECT: The main topic or area being discussed", "Subject definition clear"),
+        ("QUESTION: The actual question that was asked", "Question definition clear"),
+        ("✅ CORRECT:", "Correct examples provided"),
+        ("❌ INCORRECT:", "Incorrect examples provided"),
+        ("Question Format: Must be an actual question", "Question format requirement"),
+        ("How do you currently use the product?", "Proper question example"),
+        ("What challenges did you face during setup?", "Proper question example")
+    ]
+    
+    print("\n🔍 CHECKING IMPROVEMENTS:")
+    print("-" * 40)
+    
+    all_passed = True
+    for check, description in improvements:
+        if check in generated_prompt:
+            print(f"✅ {description}")
         else:
-            print("❌ JSON structure still expects fixed numbers")
-            return False
-        
-    except Exception as e:
-        print(f"❌ JSON structure test failed: {e}")
-        return False
+            print(f"❌ {description}")
+            all_passed = False
     
-    print("\n✅ PHASE 1 IMPLEMENTATION SUCCESSFUL!")
-    print("\n📊 SUMMARY:")
-    print("- Context-driven extraction strategy implemented")
-    print("- Removed arbitrary quantity constraints")
-    print("- Added variable output guidance")
-    print("- Preserved quality and context preservation")
-    print("- Ready for testing with real transcripts")
+    return all_passed
+
+def test_field_distinction():
+    """Test that the prompt clearly distinguishes between subject and question fields"""
     
-    return True
+    print("\n🎯 TESTING FIELD DISTINCTION")
+    print("=" * 40)
+    
+    # Check for clear field definitions
+    field_checks = [
+        ("SUBJECT: The main topic or area being discussed", "Subject definition"),
+        ("QUESTION: The actual question that was asked", "Question definition"),
+        ("Subject: \"Product Features\"", "Subject example"),
+        ("Question: \"How do you use Rev in your daily workflow?\"", "Question example"),
+        ("Question: \"Feedback on product features and their importance\" (This is a subject description, not a question)", "Incorrect example"),
+        ("Question Format: Must be an actual question (interrogative format), not a description", "Format requirement")
+    ]
+    
+    all_passed = True
+    for check, description in field_checks:
+        if check in CORE_EXTRACTION_PROMPT:
+            print(f"✅ {description}")
+        else:
+            print(f"❌ {description}")
+            all_passed = False
+    
+    return all_passed
 
 def test_prompt_consistency():
     """Test that all Stage 1 prompts are consistent"""
@@ -164,18 +128,77 @@ def test_prompt_consistency():
         print("❌ Stage 1 prompts are inconsistent")
         return False
 
-if __name__ == "__main__":
-    print("🚀 PHASE 1: CONTEXT-DRIVEN EXTRACTION TEST")
-    print("=" * 60)
+def test_quantity_guidance():
+    """Test that the prompt provides proper quantity guidance"""
     
-    # Run tests
-    prompt_test = test_context_driven_prompt()
-    consistency_test = test_prompt_consistency()
+    print("\n📊 TESTING QUANTITY GUIDANCE")
+    print("=" * 40)
     
-    if prompt_test and consistency_test:
-        print("\n🎉 ALL TESTS PASSED!")
-        print("Phase 1 implementation is ready for production use.")
+    quantity_checks = [
+        ("quantity varies by content quality", "Variable quantity guidance"),
+        ("Extract 1-8 responses based on the richness", "Quantity range specified"),
+        ("Some chunks may have 2 valuable Q&A pairs, others may have 8", "Variable output explanation"),
+        ("Variable Output: Some chunks may produce 2 responses, others 8", "Output variability"),
+        ("let the content guide you", "Content-driven approach")
+    ]
+    
+    all_passed = True
+    for check, description in quantity_checks:
+        if check in CORE_EXTRACTION_PROMPT:
+            print(f"✅ {description}")
+        else:
+            print(f"❌ {description}")
+            all_passed = False
+    
+    return all_passed
+
+def main():
+    """Run all tests"""
+    
+    print("🚀 PHASE 1: CONTEXT-DRIVEN EXTRACTION TEST SUITE")
+    print("=" * 70)
+    
+    # Run all tests
+    tests = [
+        ("Context-Driven Prompt", test_context_driven_prompt),
+        ("Field Distinction", test_field_distinction),
+        ("Prompt Consistency", test_prompt_consistency),
+        ("Quantity Guidance", test_quantity_guidance)
+    ]
+    
+    results = []
+    for test_name, test_func in tests:
+        print(f"\n🧪 Running: {test_name}")
+        print("-" * 50)
+        try:
+            result = test_func()
+            results.append((test_name, result))
+            print(f"Result: {'✅ PASSED' if result else '❌ FAILED'}")
+        except Exception as e:
+            print(f"❌ ERROR: {e}")
+            results.append((test_name, False))
+    
+    # Summary
+    print("\n" + "=" * 70)
+    print("📊 TEST SUMMARY")
+    print("=" * 70)
+    
+    passed = sum(1 for _, result in results if result)
+    total = len(results)
+    
+    for test_name, result in results:
+        status = "✅ PASSED" if result else "❌ FAILED"
+        print(f"{test_name:<25} {status}")
+    
+    print(f"\nOverall: {passed}/{total} tests passed")
+    
+    if passed == total:
+        print("🎉 ALL TESTS PASSED! Phase 1 implementation is ready.")
+        return True
     else:
-        print("\n❌ SOME TESTS FAILED!")
-        print("Please review the implementation before proceeding.")
-        sys.exit(1) 
+        print("⚠️  Some tests failed. Please review and fix issues.")
+        return False
+
+if __name__ == "__main__":
+    success = main()
+    sys.exit(0 if success else 1) 
