@@ -561,27 +561,17 @@ def show_stage4_themes():
                     if quotes:
                         for quote in quotes:
                             quote_text = quote.get('text', '')
-                            relevance_score = quote.get('relevance_score', None)
-                            sentiment = quote.get('sentiment', 'neutral')
+                            impact = quote.get('impact_score', None)
+                            confidence = quote.get('confidence_score', None)
                             attribution = quote.get('attribution', '')
                             st.markdown(f"- {quote_text}")
-                            
-                            # Display relevance score and sentiment with color coding
-                            if relevance_score is not None or sentiment != 'neutral':
+                            if impact is not None or confidence is not None:
                                 score_str = []
-                                if relevance_score is not None:
-                                    score_str.append(f"Relevance: {relevance_score:.1f}/5")
-                                
-                                # Color-coded sentiment display
-                                if sentiment == 'positive':
-                                    st.caption(f"{' | '.join(score_str)} | 🟢 Positive")
-                                elif sentiment == 'negative':
-                                    st.caption(f"{' | '.join(score_str)} | 🔴 Negative")
-                                elif sentiment == 'mixed':
-                                    st.caption(f"{' | '.join(score_str)} | 🟡 Mixed")
-                                else:  # neutral
-                                    st.caption(f"{' | '.join(score_str)} | ⚪ Neutral")
-                            
+                                if impact is not None:
+                                    score_str.append(f"Impact: {impact:.1f}/5")
+                                if confidence is not None:
+                                    score_str.append(f"Confidence: {confidence:.1f}/10")
+                                st.caption(' | '.join(score_str))
                             if attribution:
                                 st.caption(attribution)
                     else:
@@ -994,15 +984,40 @@ IMPORTANT: Only include criteria in "scores" that are relevant (score > 0). If a
         st.subheader("🎯 Stage 3: Findings Identification")
         st.markdown("""
         **Purpose**: Transform scored quotes into executive-ready findings using the Buried Wins Findings Criteria v4.0 framework
-        
-        **Finding Types**:
-        - **Strength**: High-performing areas (scores ≥ 3.5)
-        - **Improvement**: Areas needing attention (scores ≤ 2.0)
-        - **Positive Trend**: Consistent positive feedback across companies
-        - **Negative Trend**: Consistent negative feedback across companies
-        - **Priority Findings**: Enhanced confidence ≥ 4.0/10.0
-        - **Standard Findings**: Enhanced confidence ≥ 3.0/10.0
-        """)
+
+       **Scoring System**:
+        - **Relevance/Intensity (0–5):**
+        - 0 = Not relevant/not mentioned
+        - 1 = Slight mention
+        - 2 = Clear mention
+        - 3 = Strong mention
+        - 4 = Very strong mention
+        - 5 = Highest possible relevance/intensity
+    - **Sentiment:**
+        - positive
+        - negative
+        - neutral
+        - mixed
+
+                **How Scores and Findings Work**
+        | Relevance | Sentiment | Example Use                |
+        |-----------|-----------|---------------------------|
+        | 5         | Negative  | “Deal-breaker, must fix”  |
+        | 5         | Positive  | “Major strength”          |
+        | 3         | Neutral   | “Important, not polarizing” |
+        | 1         | Negative  | “Minor complaint”         |
+        | 0         | —         | Not mentioned             |
+
+        - **Relevance (0–5):** How important or salient the quote is for the criterion.
+        - **Sentiment:** Whether the feedback is positive, negative, neutral, or mixed.
+        - **Findings:**
+            - **Strengths:** High relevance (>= 3.5) + positive sentiment
+            - **Risks/Areas for Improvement:** High relevance (>= 3.5) + negative sentiment
+            - **Monitor:** Moderate relevance, any sentiment
+            - **Ignore:** Low relevance
+
+        **Note:**
+        The system now separates relevance and sentiment for clarity and better analytics.
         
         st.subheader("🔍 Buried Wins v4.0 Evaluation Criteria")
         evaluation_criteria = """
@@ -1018,152 +1033,8 @@ IMPORTANT: Only include criteria in "scores" that are relevant (score > 0). If a
         """
         st.markdown(evaluation_criteria)
         
-        st.subheader("📋 Enhanced Stage 3 Prompt Template")
-        stage3_prompt = '''
-Generate an executive-ready finding using the Buried Wins Findings Criteria v4.0 framework.
-
-CRITERION: {criterion} - {criterion_desc}
-FINDING TYPE: {finding_type}
-ENHANCED CONFIDENCE: {confidence_score:.1f}/10.0
-CRITERIA MET: {criteria_met}/8 (Novelty, Actionability, Specificity, Materiality, Recurrence, Stakeholder Weight, Tension/Contrast, Metric/Quantification)
-
-PATTERN SUMMARY:
-{pattern_summary}
-
-SELECTED EVIDENCE:
-{selected_evidence}
-
-REQUIREMENTS (Buried Wins v4.0):
-- Write 2-3 sentences maximum
-- Focus on actionable insights that could influence executive decision-making
-- Use business language with specific impact
-- Include material business implications
-- Be clear, direct, and executive-ready
-- Reference specific criteria met if relevant
-
-OUTPUT: Just the finding text, no additional formatting.
-        '''
-        st.code(stage3_prompt, language='python')
         
-        st.subheader("🎯 Enhanced Confidence Scoring")
-        st.markdown("""
-        **Confidence Calculation**:
-        - **Base Score**: Number of criteria met (2-8 points)
-        - **Stakeholder Multipliers**: Executive (1.5x), Budget Holder (1.5x), Champion (1.3x)
-        - **Decision Impact Multipliers**: Deal Tipping Point (2.0x), Differentiator (1.5x), Blocker (1.5x)
-        - **Evidence Strength Multipliers**: Strong Positive/Negative (1.3x), Perspective Shifting (1.3x)
-        
-        **Confidence Thresholds**:
-        - **Priority Finding**: ≥ 4.0/10.0
-        - **Standard Finding**: ≥ 3.0/10.0
-        - **Minimum Confidence**: ≥ 2.0/10.0
-        """)
-        
-        st.subheader("🔍 Enhanced Pattern Recognition")
-        st.markdown("""
-        **Pattern Thresholds**:
-        - Minimum 3 quotes to form a pattern
-        - Minimum 2 companies for cross-company validation
-        - Minimum 2 criteria met for valid findings
-        - Enhanced confidence scoring with stakeholder weighting
-        
-        **Quote Selection Logic**:
-        - Automated selection of optimal quotes (max 3 per finding)
-        - Priority scoring based on deal impact, stakeholder perspective, and sentiment
-        - Deal tipping point identification (deal breaker, critical, essential)
-        - Executive and budget holder perspective weighting
-        """)
-        
-        st.subheader("📈 Executive Insights & Output")
-        st.markdown("""
-        **Enhanced Output Format**:
-        - **Enhanced Confidence Scores**: 0-10 scale with detailed breakdown
-        - **Criteria Met Analysis**: 0-8 criteria evaluation
-        - **Priority Classification**: Priority vs Standard findings
-        - **Stakeholder Impact**: Executive, budget holder, and champion perspectives
-        - **Decision Impact**: Deal tipping points, differentiators, and blockers
-        - **Selected Evidence**: Automatically chosen optimal quotes
-        - **Cross-company Validation**: Multi-company pattern recognition
-        """)
-    
-    with tab4:
-        st.subheader("🎨 Stage 4: Theme Generation")
-        st.markdown("""
-        **Purpose**: Identify recurring patterns across companies and generate executive-ready themes
-        
-        **Theme Categories**:
-        - **Barrier**: Obstacles preventing success or adoption
-        - **Opportunity**: Areas for improvement or growth potential
-        - **Strategic**: Long-term business implications
-        - **Functional**: Operational or technical considerations
-        - **Competitive**: Market positioning and competitive advantages
-        """)
-        
-        st.subheader("📋 Stage 4 Prompt Template")
-        stage4_prompt = '''
-You are a senior research consultant for Buried Wins, specializing in executive communication for C-suite B2B SaaS clients.
-
-TASK: Analyze findings data to identify recurring patterns and generate executive-ready themes.
-
-FINDINGS DATA:
-{findings_summary}
-
-REQUIREMENTS:
-1. **Pattern Recognition**: Identify recurring themes across multiple companies
-2. **Executive Focus**: Focus on business impact and strategic implications
-3. **Evidence-Based**: Support themes with specific quotes and data
-4. **Actionable Insights**: Provide clear business implications
-
-THEME STRUCTURE:
-- **Theme Statement**: Executive-ready insight revealing business pattern
-- **Category**: Barrier, Opportunity, Strategic, Functional, or Competitive
-- **Strength**: High, Medium, or Emerging based on evidence
-- **Business Implications**: Strategic impact and recommendations
-- **Supporting Evidence**: Key quotes and data points
-
-OUTPUT FORMAT (JSON only):
-{
-    "themes": [
-        {
-            "theme_statement": "Executive-ready insight",
-            "theme_category": "Barrier|Opportunity|Strategic|Functional|Competitive",
-            "theme_strength": "High|Medium|Emerging",
-            "business_implications": "Strategic impact and recommendations",
-            "supporting_finding_ids": [1, 2, 3],
-            "primary_theme_quote": "Most representative quote",
-            "secondary_theme_quote": "Supporting quote",
-            "quote_attributions": "Company attribution",
-            "evidence_strength": "Strong|Moderate|Weak",
-            "competitive_flag": true/false
-        }
-    ]
-}
-        '''
-        st.code(stage4_prompt, language='python')
-        
-        st.subheader("🔍 Theme Qualification")
-        st.markdown("""
-        **Qualification Criteria**:
-        - Minimum 3 findings to form a theme
-        - Cross-company validation (2+ companies)
-        - Evidence strength assessment
-        - Competitive context identification
-        
-        **Strength Assessment**:
-        - **High**: Strong evidence across multiple companies
-        - **Medium**: Moderate evidence with clear patterns
-        - **Emerging**: Early indicators requiring monitoring
-        """)
-        
-        st.subheader("📊 Competitive Analysis")
-        st.markdown("""
-        **Competitive Themes**:
-        - Market positioning insights
-        - Competitive advantages/disadvantages
-        - Differentiation opportunities
-        - Threat assessment and response strategies
-        """)
-    
+        st.subheader("📋 Stage 5 Prompt Template")
     with tab5:
         st.subheader("🏆 Stage 5: Executive Synthesis")
         st.markdown("""
@@ -1180,10 +1051,10 @@ OUTPUT FORMAT (JSON only):
         st.subheader("📊 Criteria Scorecard Integration")
         st.markdown("""
         **Performance Ratings**:
-        - **EXCEPTIONAL**: Avg score ≥ 3.5, critical ratio ≥ 30%
-        - **STRONG**: Avg score ≥ 3.0, critical ratio ≥ 20%
-        - **GOOD**: Avg score ≥ 2.5
-        - **NEEDS ATTENTION**: Avg score ≥ 2.0
+        - **EXCEPTIONAL**: Avg score >= 3.5, critical ratio >= 30%
+        - **STRONG**: Avg score >= 3.0, critical ratio >= 20%
+        - **GOOD**: Avg score >= 2.5
+        - **NEEDS ATTENTION**: Avg score >= 2.0
         - **CRITICAL ISSUE**: Avg score < 2.0
         
         **Executive Priorities**:
@@ -1526,55 +1397,13 @@ def show_labeled_quotes():
     if df.empty:
         st.info("No labeled quotes found. Run Stage 2 analysis.")
         return
-    
-    # Show a summary table with new scoring system
+    # Show a summary table
     display_cols = [
-        'quote_id', 'criterion', 'relevance_score', 'sentiment', 'priority', 'confidence',
+        'quote_id', 'criterion', 'score', 'priority', 'confidence',
         'relevance_explanation', 'deal_weighted_score', 'context_keywords', 'question_relevance'
     ]
     display_cols = [col for col in display_cols if col in df.columns]
-    
-    # Create a styled dataframe with color coding for sentiment
-    styled_df = df[display_cols].copy()
-    
-    # Apply color coding to sentiment column
-    def color_sentiment(val):
-        if pd.isna(val):
-            return 'background-color: lightgray'
-        elif val == 'positive':
-            return 'background-color: lightgreen; color: darkgreen'
-        elif val == 'negative':
-            return 'background-color: lightcoral; color: darkred'
-        elif val == 'neutral':
-            return 'background-color: lightblue; color: darkblue'
-        else:
-            return 'background-color: lightyellow'
-    
-    # Apply styling
-    styled_df = styled_df.style.applymap(color_sentiment, subset=['sentiment'])
-    
-    # Display the styled dataframe
-    st.dataframe(styled_df, use_container_width=True)
-    
-    # Show scoring legend
-    st.markdown("**🎨 Sentiment Color Coding:**")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown("🟢 **Positive** - Favorable feedback")
-    with col2:
-        st.markdown("🔴 **Negative** - Critical feedback")
-    with col3:
-        st.markdown("🔵 **Neutral** - Balanced feedback")
-    with col4:
-        st.markdown("🟡 **Other** - Mixed or unclear")
-    
-    # Show relevance score legend
-    st.markdown("**📊 Relevance Score Interpretation:**")
-    st.markdown("- **0-1.9**: Low relevance/not mentioned")
-    st.markdown("- **2.0-2.9**: Clear mention/direct relevance")
-    st.markdown("- **3.0-3.9**: Strong emphasis/important feedback")
-    st.markdown("- **4.0-5.0**: Critical feedback/deal-breaking issue")
-    
+    st.dataframe(df[display_cols], use_container_width=True)
     # Export option
     csv = df.to_csv(index=False)
     st.download_button(

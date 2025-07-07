@@ -242,10 +242,10 @@ class Stage3FindingsAnalyzer:
         # Evidence strength multiplier
         evidence_strength_multiplier = 1.0
         for quote in quotes_data:
-            score = quote.get('score', 0)
-            if score >= 4:
+            relevance_score = quote.get('relevance_score', 0)
+            if relevance_score >= 4:
                 evidence_strength_multiplier = max(evidence_strength_multiplier, config['evidence_strength_multipliers']['strong_positive'])
-            elif score <= 1:
+            elif relevance_score <= 1:
                 evidence_strength_multiplier = max(evidence_strength_multiplier, config['evidence_strength_multipliers']['strong_negative'])
         
         # Calculate final confidence score
@@ -264,9 +264,9 @@ class Stage3FindingsAnalyzer:
             priority_score = 0
             
             # Primary priority factors
-            if quote.get('score', 0) >= 4:  # High scores
+            if quote.get('relevance_score', 0) >= 4:  # High scores
                 priority_score += 10
-            elif quote.get('score', 0) <= 1:  # Critical issues
+            elif quote.get('relevance_score', 0) <= 1:  # Critical issues
                 priority_score += 8
             
             # Deal tipping point priority
@@ -281,7 +281,7 @@ class Stage3FindingsAnalyzer:
                 priority_score += 10
             
             # Sentiment priority
-            if quote.get('score', 0) >= 4 or quote.get('score', 0) <= 1:
+            if quote.get('relevance_score', 0) >= 4 or quote.get('relevance_score', 0) <= 1:
                 priority_score += 5
             
             # Specificity bonus
@@ -372,10 +372,10 @@ class Stage3FindingsAnalyzer:
             # 3.0-3.9 = High relevance
             # 4.0-5.0 = Critical relevance
             
-            low_relevance = company_quotes[company_quotes['score'] < 2.0]
-            moderate_relevance = company_quotes[(company_quotes['score'] >= 2.0) & (company_quotes['score'] < 3.0)]
-            high_relevance = company_quotes[(company_quotes['score'] >= 3.0) & (company_quotes['score'] < 4.0)]
-            critical_relevance = company_quotes[company_quotes['score'] >= 4.0]
+            low_relevance = company_quotes[company_quotes['relevance_score'] < 2.0]
+            moderate_relevance = company_quotes[(company_quotes['relevance_score'] >= 2.0) & (company_quotes['relevance_score'] < 3.0)]
+            high_relevance = company_quotes[(company_quotes['relevance_score'] >= 3.0) & (company_quotes['relevance_score'] < 4.0)]
+            critical_relevance = company_quotes[company_quotes['relevance_score'] >= 4.0]
             
             # Create patterns for each relevance level that has quotes
             relevance_groups = [
@@ -391,20 +391,20 @@ class Stage3FindingsAnalyzer:
                 # Prepare quotes data for evaluation
                 quotes_data = []
                 for _, quote in quotes_subset.iterrows():
-                    quotes_data.append({
-                        'original_quote': quote.get('original_quote', ''),
-                        'relevance_explanation': quote.get('relevance_explanation', ''),
-                        'score': quote.get('score', 0),
-                        'confidence': quote.get('confidence', 'medium'),
-                        'context_keywords': quote.get('context_keywords', 'neutral'),
-                        'question_relevance': quote.get('question_relevance', 'unrelated'),
-                        'response_id': quote.get('response_id', None),
-                        'company': quote.get('company', company)
-                    })
+                                    quotes_data.append({
+                    'original_quote': quote.get('original_quote', ''),
+                    'relevance_explanation': quote.get('relevance_explanation', ''),
+                    'relevance_score': quote.get('relevance_score', 0),
+                    'confidence': quote.get('confidence', 'medium'),
+                    'context_keywords': quote.get('context_keywords', 'neutral'),
+                    'question_relevance': quote.get('question_relevance', 'unrelated'),
+                    'response_id': quote.get('response_id', None),
+                    'company': quote.get('company', company)
+                })
                 
                 # Analyze sentiment patterns within this relevance level
-                avg_score = quotes_subset['score'].mean()
-                score_std = quotes_subset['score'].std()
+                avg_score = quotes_subset['relevance_score'].mean()
+                score_std = quotes_subset['relevance_score'].std()
                 
                 # Extract common themes from relevance explanations
                 themes = self._extract_themes(quotes_subset['relevance_explanation'].tolist())
@@ -669,8 +669,8 @@ class Stage3FindingsAnalyzer:
         for quote in selected_quotes[:self.config['stage3']['max_quotes_per_finding']]:
             formatted_quotes.append({
                 'text': quote.get('original_quote', ''),
-                'score': quote.get('score', 0),
-                'attribution': f"Score: {quote.get('score', 0)} - {quote.get('context_keywords', 'neutral')}"
+                'score': quote.get('relevance_score', 0),
+                'attribution': f"Score: {quote.get('relevance_score', 0)} - {quote.get('context_keywords', 'neutral')}"
             })
         
         # Determine credibility tier based on evidence strength

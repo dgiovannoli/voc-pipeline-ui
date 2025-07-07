@@ -202,18 +202,28 @@ class SupabaseStage2Analyzer:
             EVALUATION CRITERIA:
             {criteria}
             
-            BINARY + INTENSITY SCORING SYSTEM:
-            - 0 = Not relevant/not mentioned (omit from scores)
-            - 1 = Slight mention/indirect relevance
-            - 2 = Clear mention/direct relevance
-            - 3 = Strong emphasis/important feedback
-            - 4 = Critical feedback/deal-breaking issue
-            - 5 = Exceptional praise/deal-winning strength
+            SEPARATED RELEVANCE + SENTIMENT SCORING SYSTEM:
             
-            TASK: Score this quote against ANY criteria that are even loosely relevant. Use the binary + intensity approach:
+            RELEVANCE/INTENSITY SCORE (0-5):
+            - 0 = Not relevant/not mentioned (omit from scores)
+            - 1 = Slight mention
+            - 2 = Clear mention
+            - 3 = Strong mention
+            - 4 = Very strong mention
+            - 5 = Highest possible relevance/intensity
+            
+            SENTIMENT/POLARITY (separate field):
+            - positive: Generally favorable, satisfied, enthusiastic, praise
+            - negative: Dissatisfied, frustrated, critical, complaints
+            - neutral: Balanced, factual, neither positive nor negative
+            - mixed: Contains both positive and negative elements
+            
+            TASK: Score this quote against ANY criteria that are even loosely relevant. Use the separated approach:
             1. First decide: Is this criterion relevant to the quote or question? (Binary: 0 or 1+)
-            2. If relevant, then assess intensity: How important/impactful is this feedback? (1-5)
-            3. Final score = Binary × Intensity (0 or 1-5)
+            2. If relevant, assess relevance/intensity: How important/impactful is this feedback? (1-5)
+            3. Separately assess sentiment: Is this feedback positive, negative, neutral, or mixed?
+            4. Final relevance score = Binary × Intensity (0 or 1-5)
+            5. Sentiment is independent of relevance score
             
             CONTEXT ANALYSIS:
             - Consider the QUESTION being asked - it provides crucial context
@@ -239,7 +249,10 @@ class SupabaseStage2Analyzer:
             OUTPUT FORMAT (JSON only):
             {{
                 "scores": {{
-                    "criterion_name": score_number
+                    "criterion_name": relevance_score_number
+                }},
+                "sentiments": {{
+                    "criterion_name": "positive|negative|neutral|mixed"
                 }},
                 "priorities": {{
                     "criterion_name": "critical|high|medium|low"
@@ -294,7 +307,8 @@ class SupabaseStage2Analyzer:
                     scores, weighted_scores,
                     parsed.get("priorities", {}), parsed.get("confidence", {}),
                     parsed.get("relevance_explanation", {}), context_keywords,
-                    parsed.get("question_relevance", {}), client_id=self.current_client_id
+                    parsed.get("question_relevance", {}), 
+                    parsed.get("sentiments", {}), client_id=self.current_client_id
                 )
                 
                 # Track metrics
@@ -382,7 +396,7 @@ class SupabaseStage2Analyzer:
                                 original_quote: str, subject: str, question: str,
                                 scores: Dict, weighted_scores: Dict, priorities: Dict, 
                                 confidence: Dict, relevance_explanations: Dict, context_keywords: str,
-                                question_relevance: Dict = None, client_id: str = 'default'):
+                                question_relevance: Dict = None, sentiments: Dict = None, client_id: str = 'default'):
         """Save analysis results to Supabase with client_id for data siloing"""
         
         for criterion in scores.keys():
@@ -396,6 +410,7 @@ class SupabaseStage2Analyzer:
                 'deal_weighted_score': weighted_scores.get(criterion, scores[criterion]),
                 'context_keywords': context_keywords,
                 'question_relevance': question_relevance.get(criterion, 'unrelated') if question_relevance else 'unrelated',
+                'sentiment': sentiments.get(criterion, 'neutral') if sentiments else 'neutral',
                 'client_id': client_id  # Add client_id for data siloing
             }
             
@@ -574,10 +589,10 @@ class SupabaseStage2Analyzer:
         logger.info(f"Max quote length: {self.config['processing']['max_quote_length']} characters")
         logger.info(f"Max tokens: {self.config['processing'].get('max_tokens', 8000)}")
 
-def run_supabase_analysis(force_reprocess: bool = False):
+def run_supabase_analysis(force_reprocess: bool = False, client_id: str = 'default'):
     """Run the Supabase-first quote analysis"""
     analyzer = SupabaseStage2Analyzer()
-    return analyzer.process_incremental(force_reprocess)
+    return analyzer.process_incremental(force_reprocess, client_id)
 
 # Run the analysis
 if __name__ == "__main__":
@@ -586,9 +601,17 @@ if __name__ == "__main__":
     # Check for force reprocess argument
     force_reprocess = "--force-reprocess" in sys.argv or "-f" in sys.argv
     
+    # Check for client_id argument
+    client_id = 'default'
+    for i, arg in enumerate(sys.argv):
+        if arg == '--client_id' and i + 1 < len(sys.argv):
+            client_id = sys.argv[i + 1]
+        elif arg.startswith('--client_id='):
+            client_id = arg.split('=')[1]
+    
     if force_reprocess:
-        print("🔄 Force reprocessing all quotes with new Binary + Intensity scoring system...")
-        run_supabase_analysis(force_reprocess=True)
+        print(f"🔄 Force reprocessing all quotes for client '{client_id}' with new Binary + Intensity scoring system...")
+        run_supabase_analysis(force_reprocess=True, client_id=client_id)
     else:
-        print("🔄 Running incremental analysis with new Binary + Intensity scoring system...")
-        run_supabase_analysis()
+        print(f"🔄 Running incremental analysis for client '{client_id}' with new Binary + Intensity scoring system...")
+        run_supabase_analysis(client_id=client_id)

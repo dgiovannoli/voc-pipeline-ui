@@ -55,7 +55,7 @@ def extract_interviewee_and_company(filename):
     return interviewee, company
 
 def get_client_id():
-    """Safely get client_id from session state, ensuring it's properly set"""
+    """
     client_id = st.session_state.get('client_id', '')
     
     # If client_id is not set or is default, show error and return None
@@ -67,7 +67,7 @@ def get_client_id():
     return client_id
 
 def validate_client_id():
-    """Validate that client_id is properly set, show error if not"""
+    """
     client_id = st.session_state.get('client_id', '')
     if not client_id or client_id == 'default':
         st.error("❌ **Client ID Required**")
@@ -98,7 +98,7 @@ def load_csv(path):
         return pd.DataFrame()
 
 def process_files():
-    """Process uploaded files using the modular pipeline CLI"""
+    """
     if not st.session_state.uploaded_paths:
         raise Exception("No files uploaded")
     
@@ -154,7 +154,7 @@ def process_files():
     st.session_state.current_step = 2
 
 def validate_and_build():
-    """Run validation and build final table"""
+    """
     if os.path.exists(STAGE1_CSV):
         # Validate
         subprocess.run([
@@ -227,7 +227,7 @@ VALIDATED_CSV = BASE / "validated_quotes.csv"
 RESPONSE_TABLE_CSV = BASE / "response_data_table.csv"
 
 def process_files_with_progress():
-    """Process uploaded files with progress tracking"""
+    """
     if not st.session_state.uploaded_paths:
         st.error("No files uploaded")
         return
@@ -271,7 +271,7 @@ def process_files_with_progress():
         st.error("No quotes extracted")
 
 def save_stage1_to_supabase(csv_path):
-    """Save Stage 1 results to Supabase"""
+    """
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return False
@@ -308,7 +308,7 @@ def save_stage1_to_supabase(csv_path):
         return False
 
 def run_stage2_analysis():
-    """Run Stage 2 analysis using database"""
+    """
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return None
@@ -324,7 +324,7 @@ def run_stage2_analysis():
         return None
 
 def get_stage2_summary():
-    """Get Stage 2 summary from database"""
+    """
     if not SUPABASE_AVAILABLE:
         return None
     
@@ -337,7 +337,7 @@ def get_stage2_summary():
         return None
 
 def run_stage3_analysis():
-    """Run Stage 3 findings analysis using database"""
+    """
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return None
@@ -352,7 +352,7 @@ def run_stage3_analysis():
         return None
 
 def get_stage3_summary():
-    """Get Stage 3 enhanced findings summary from database"""
+    """
     if not SUPABASE_AVAILABLE:
         return None
     
@@ -365,7 +365,7 @@ def get_stage3_summary():
         return None
 
 def show_supabase_status():
-    """Show database connection status and data summary"""
+    """
     st.subheader("🗄️ Database Status")
     
     if not SUPABASE_AVAILABLE:
@@ -445,7 +445,7 @@ def show_supabase_status():
         st.error(f"❌ Error getting database status: {e}")
 
 def run_stage4_analysis():
-    """Run Stage 4 theme analysis"""
+    """
     try:
         from stage4_theme_analyzer import Stage4ThemeAnalyzer
         client_id = get_client_id()  # Use helper function
@@ -457,7 +457,7 @@ def run_stage4_analysis():
         return {"status": "error", "message": str(e)}
 
 def get_stage4_summary():
-    """Get Stage 4 themes summary"""
+    """
     try:
         client_id = get_client_id()  # Use helper function
         db = SupabaseDatabase()
@@ -467,7 +467,7 @@ def get_stage4_summary():
         return {}
 
 def show_stage4_themes():
-    """Display Stage 4 themes analysis"""
+    """
     st.subheader("🎯 Stage 4: Theme Generation")
     
     # Get summary
@@ -561,27 +561,17 @@ def show_stage4_themes():
                     if quotes:
                         for quote in quotes:
                             quote_text = quote.get('text', '')
-                            relevance_score = quote.get('relevance_score', None)
-                            sentiment = quote.get('sentiment', 'neutral')
+                            impact = quote.get('impact_score', None)
+                            confidence = quote.get('confidence_score', None)
                             attribution = quote.get('attribution', '')
                             st.markdown(f"- {quote_text}")
-                            
-                            # Display relevance score and sentiment with color coding
-                            if relevance_score is not None or sentiment != 'neutral':
+                            if impact is not None or confidence is not None:
                                 score_str = []
-                                if relevance_score is not None:
-                                    score_str.append(f"Relevance: {relevance_score:.1f}/5")
-                                
-                                # Color-coded sentiment display
-                                if sentiment == 'positive':
-                                    st.caption(f"{' | '.join(score_str)} | 🟢 Positive")
-                                elif sentiment == 'negative':
-                                    st.caption(f"{' | '.join(score_str)} | 🔴 Negative")
-                                elif sentiment == 'mixed':
-                                    st.caption(f"{' | '.join(score_str)} | 🟡 Mixed")
-                                else:  # neutral
-                                    st.caption(f"{' | '.join(score_str)} | ⚪ Neutral")
-                            
+                                if impact is not None:
+                                    score_str.append(f"Impact: {impact:.1f}/5")
+                                if confidence is not None:
+                                    score_str.append(f"Confidence: {confidence:.1f}/10")
+                                st.caption(' | '.join(score_str))
                             if attribution:
                                 st.caption(attribution)
                     else:
@@ -601,7 +591,7 @@ def show_stage4_themes():
         st.info("No themes generated yet. Run Stage 4 analysis to generate themes from findings.")
 
 def get_stage5_summary():
-    """Get Stage 5 executive synthesis summary"""
+    """
     try:
         client_id = get_client_id()  # Use helper function
         db = SupabaseDatabase()
@@ -611,7 +601,7 @@ def get_stage5_summary():
         return {}
 
 def show_stage5_synthesis():
-    """Display Stage 5 executive synthesis"""
+    """
     st.subheader("🎯 Stage 5: Executive Synthesis")
     
     # Get summary
@@ -732,7 +722,7 @@ def show_stage5_synthesis():
         st.info("No executive themes generated yet. Run Stage 5 analysis to generate executive synthesis.")
 
 def show_stage5_criteria_scorecard():
-    """Display Stage 5 criteria scorecard"""
+    """
     st.subheader("📊 Executive Criteria Scorecard")
     
     # Generate scorecard button
@@ -994,15 +984,40 @@ IMPORTANT: Only include criteria in "scores" that are relevant (score > 0). If a
         st.subheader("🎯 Stage 3: Findings Identification")
         st.markdown("""
         **Purpose**: Transform scored quotes into executive-ready findings using the Buried Wins Findings Criteria v4.0 framework
-        
-        **Finding Types**:
-        - **Strength**: High-performing areas (scores ≥ 3.5)
-        - **Improvement**: Areas needing attention (scores ≤ 2.0)
-        - **Positive Trend**: Consistent positive feedback across companies
-        - **Negative Trend**: Consistent negative feedback across companies
-        - **Priority Findings**: Enhanced confidence ≥ 4.0/10.0
-        - **Standard Findings**: Enhanced confidence ≥ 3.0/10.0
-        """)
+
+       **Scoring System**:
+        - **Relevance/Intensity (0–5):**
+        - 0 = Not relevant/not mentioned
+        - 1 = Slight mention
+        - 2 = Clear mention
+        - 3 = Strong mention
+        - 4 = Very strong mention
+        - 5 = Highest possible relevance/intensity
+    - **Sentiment:**
+        - positive
+        - negative
+        - neutral
+        - mixed
+
+                **How Scores and Findings Work**
+        | Relevance | Sentiment | Example Use                |
+        |-----------|-----------|---------------------------|
+        | 5         | Negative  | “Deal-breaker, must fix”  |
+        | 5         | Positive  | “Major strength”          |
+        | 3         | Neutral   | “Important, not polarizing” |
+        | 1         | Negative  | “Minor complaint”         |
+        | 0         | —         | Not mentioned             |
+
+        - **Relevance (0–5):** How important or salient the quote is for the criterion.
+        - **Sentiment:** Whether the feedback is positive, negative, neutral, or mixed.
+        - **Findings:**
+            - **Strengths:** High relevance (>= 3.5) + positive sentiment
+            - **Risks/Areas for Improvement:** High relevance (>= 3.5) + negative sentiment
+            - **Monitor:** Moderate relevance, any sentiment
+            - **Ignore:** Low relevance
+
+        **Note:**
+        The system now separates relevance and sentiment for clarity and better analytics.
         
         st.subheader("🔍 Buried Wins v4.0 Evaluation Criteria")
         evaluation_criteria = """
@@ -1018,152 +1033,8 @@ IMPORTANT: Only include criteria in "scores" that are relevant (score > 0). If a
         """
         st.markdown(evaluation_criteria)
         
-        st.subheader("📋 Enhanced Stage 3 Prompt Template")
-        stage3_prompt = '''
-Generate an executive-ready finding using the Buried Wins Findings Criteria v4.0 framework.
-
-CRITERION: {criterion} - {criterion_desc}
-FINDING TYPE: {finding_type}
-ENHANCED CONFIDENCE: {confidence_score:.1f}/10.0
-CRITERIA MET: {criteria_met}/8 (Novelty, Actionability, Specificity, Materiality, Recurrence, Stakeholder Weight, Tension/Contrast, Metric/Quantification)
-
-PATTERN SUMMARY:
-{pattern_summary}
-
-SELECTED EVIDENCE:
-{selected_evidence}
-
-REQUIREMENTS (Buried Wins v4.0):
-- Write 2-3 sentences maximum
-- Focus on actionable insights that could influence executive decision-making
-- Use business language with specific impact
-- Include material business implications
-- Be clear, direct, and executive-ready
-- Reference specific criteria met if relevant
-
-OUTPUT: Just the finding text, no additional formatting.
-        '''
-        st.code(stage3_prompt, language='python')
         
-        st.subheader("🎯 Enhanced Confidence Scoring")
-        st.markdown("""
-        **Confidence Calculation**:
-        - **Base Score**: Number of criteria met (2-8 points)
-        - **Stakeholder Multipliers**: Executive (1.5x), Budget Holder (1.5x), Champion (1.3x)
-        - **Decision Impact Multipliers**: Deal Tipping Point (2.0x), Differentiator (1.5x), Blocker (1.5x)
-        - **Evidence Strength Multipliers**: Strong Positive/Negative (1.3x), Perspective Shifting (1.3x)
-        
-        **Confidence Thresholds**:
-        - **Priority Finding**: ≥ 4.0/10.0
-        - **Standard Finding**: ≥ 3.0/10.0
-        - **Minimum Confidence**: ≥ 2.0/10.0
-        """)
-        
-        st.subheader("🔍 Enhanced Pattern Recognition")
-        st.markdown("""
-        **Pattern Thresholds**:
-        - Minimum 3 quotes to form a pattern
-        - Minimum 2 companies for cross-company validation
-        - Minimum 2 criteria met for valid findings
-        - Enhanced confidence scoring with stakeholder weighting
-        
-        **Quote Selection Logic**:
-        - Automated selection of optimal quotes (max 3 per finding)
-        - Priority scoring based on deal impact, stakeholder perspective, and sentiment
-        - Deal tipping point identification (deal breaker, critical, essential)
-        - Executive and budget holder perspective weighting
-        """)
-        
-        st.subheader("📈 Executive Insights & Output")
-        st.markdown("""
-        **Enhanced Output Format**:
-        - **Enhanced Confidence Scores**: 0-10 scale with detailed breakdown
-        - **Criteria Met Analysis**: 0-8 criteria evaluation
-        - **Priority Classification**: Priority vs Standard findings
-        - **Stakeholder Impact**: Executive, budget holder, and champion perspectives
-        - **Decision Impact**: Deal tipping points, differentiators, and blockers
-        - **Selected Evidence**: Automatically chosen optimal quotes
-        - **Cross-company Validation**: Multi-company pattern recognition
-        """)
-    
-    with tab4:
-        st.subheader("🎨 Stage 4: Theme Generation")
-        st.markdown("""
-        **Purpose**: Identify recurring patterns across companies and generate executive-ready themes
-        
-        **Theme Categories**:
-        - **Barrier**: Obstacles preventing success or adoption
-        - **Opportunity**: Areas for improvement or growth potential
-        - **Strategic**: Long-term business implications
-        - **Functional**: Operational or technical considerations
-        - **Competitive**: Market positioning and competitive advantages
-        """)
-        
-        st.subheader("📋 Stage 4 Prompt Template")
-        stage4_prompt = '''
-You are a senior research consultant for Buried Wins, specializing in executive communication for C-suite B2B SaaS clients.
-
-TASK: Analyze findings data to identify recurring patterns and generate executive-ready themes.
-
-FINDINGS DATA:
-{findings_summary}
-
-REQUIREMENTS:
-1. **Pattern Recognition**: Identify recurring themes across multiple companies
-2. **Executive Focus**: Focus on business impact and strategic implications
-3. **Evidence-Based**: Support themes with specific quotes and data
-4. **Actionable Insights**: Provide clear business implications
-
-THEME STRUCTURE:
-- **Theme Statement**: Executive-ready insight revealing business pattern
-- **Category**: Barrier, Opportunity, Strategic, Functional, or Competitive
-- **Strength**: High, Medium, or Emerging based on evidence
-- **Business Implications**: Strategic impact and recommendations
-- **Supporting Evidence**: Key quotes and data points
-
-OUTPUT FORMAT (JSON only):
-{
-    "themes": [
-        {
-            "theme_statement": "Executive-ready insight",
-            "theme_category": "Barrier|Opportunity|Strategic|Functional|Competitive",
-            "theme_strength": "High|Medium|Emerging",
-            "business_implications": "Strategic impact and recommendations",
-            "supporting_finding_ids": [1, 2, 3],
-            "primary_theme_quote": "Most representative quote",
-            "secondary_theme_quote": "Supporting quote",
-            "quote_attributions": "Company attribution",
-            "evidence_strength": "Strong|Moderate|Weak",
-            "competitive_flag": true/false
-        }
-    ]
-}
-        '''
-        st.code(stage4_prompt, language='python')
-        
-        st.subheader("🔍 Theme Qualification")
-        st.markdown("""
-        **Qualification Criteria**:
-        - Minimum 3 findings to form a theme
-        - Cross-company validation (2+ companies)
-        - Evidence strength assessment
-        - Competitive context identification
-        
-        **Strength Assessment**:
-        - **High**: Strong evidence across multiple companies
-        - **Medium**: Moderate evidence with clear patterns
-        - **Emerging**: Early indicators requiring monitoring
-        """)
-        
-        st.subheader("📊 Competitive Analysis")
-        st.markdown("""
-        **Competitive Themes**:
-        - Market positioning insights
-        - Competitive advantages/disadvantages
-        - Differentiation opportunities
-        - Threat assessment and response strategies
-        """)
-    
+        st.subheader("📋 Stage 5 Prompt Template")
     with tab5:
         st.subheader("🏆 Stage 5: Executive Synthesis")
         st.markdown("""
@@ -1180,10 +1051,10 @@ OUTPUT FORMAT (JSON only):
         st.subheader("📊 Criteria Scorecard Integration")
         st.markdown("""
         **Performance Ratings**:
-        - **EXCEPTIONAL**: Avg score ≥ 3.5, critical ratio ≥ 30%
-        - **STRONG**: Avg score ≥ 3.0, critical ratio ≥ 20%
-        - **GOOD**: Avg score ≥ 2.5
-        - **NEEDS ATTENTION**: Avg score ≥ 2.0
+        - **EXCEPTIONAL**: Avg score >= 3.5, critical ratio >= 30%
+        - **STRONG**: Avg score >= 3.0, critical ratio >= 20%
+        - **GOOD**: Avg score >= 2.5
+        - **NEEDS ATTENTION**: Avg score >= 2.0
         - **CRITICAL ISSUE**: Avg score < 2.0
         
         **Executive Priorities**:
@@ -1370,7 +1241,7 @@ def show_welcome_screen():
         st.info("Please configure your .env file with database credentials")
 
 def show_database_management():
-    """Show database management interface for debugging client data issues"""
+    """
     st.subheader("🗄️ Database Management")
     
     if not SUPABASE_AVAILABLE:
@@ -1526,55 +1397,13 @@ def show_labeled_quotes():
     if df.empty:
         st.info("No labeled quotes found. Run Stage 2 analysis.")
         return
-    
-    # Show a summary table with new scoring system
+    # Show a summary table
     display_cols = [
-        'quote_id', 'criterion', 'relevance_score', 'sentiment', 'priority', 'confidence',
+        'quote_id', 'criterion', 'score', 'priority', 'confidence',
         'relevance_explanation', 'deal_weighted_score', 'context_keywords', 'question_relevance'
     ]
     display_cols = [col for col in display_cols if col in df.columns]
-    
-    # Create a styled dataframe with color coding for sentiment
-    styled_df = df[display_cols].copy()
-    
-    # Apply color coding to sentiment column
-    def color_sentiment(val):
-        if pd.isna(val):
-            return 'background-color: lightgray'
-        elif val == 'positive':
-            return 'background-color: lightgreen; color: darkgreen'
-        elif val == 'negative':
-            return 'background-color: lightcoral; color: darkred'
-        elif val == 'neutral':
-            return 'background-color: lightblue; color: darkblue'
-        else:
-            return 'background-color: lightyellow'
-    
-    # Apply styling
-    styled_df = styled_df.style.applymap(color_sentiment, subset=['sentiment'])
-    
-    # Display the styled dataframe
-    st.dataframe(styled_df, use_container_width=True)
-    
-    # Show scoring legend
-    st.markdown("**🎨 Sentiment Color Coding:**")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.markdown("🟢 **Positive** - Favorable feedback")
-    with col2:
-        st.markdown("🔴 **Negative** - Critical feedback")
-    with col3:
-        st.markdown("🔵 **Neutral** - Balanced feedback")
-    with col4:
-        st.markdown("🟡 **Other** - Mixed or unclear")
-    
-    # Show relevance score legend
-    st.markdown("**📊 Relevance Score Interpretation:**")
-    st.markdown("- **0-1.9**: Low relevance/not mentioned")
-    st.markdown("- **2.0-2.9**: Clear mention/direct relevance")
-    st.markdown("- **3.0-3.9**: Strong emphasis/important feedback")
-    st.markdown("- **4.0-5.0**: Critical feedback/deal-breaking issue")
-    
+    st.dataframe(df[display_cols], use_container_width=True)
     # Export option
     csv = df.to_csv(index=False)
     st.download_button(
