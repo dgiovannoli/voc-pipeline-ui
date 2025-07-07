@@ -269,26 +269,35 @@ class Stage4ThemeAnalyzer:
         quotes = []
         finding_ids = []
         criteria_covered = set()
-        impact_scores = []
+        relevance_scores = []
         confidence_scores = []
         
         for finding in finding_group:
             finding_ids.append(finding['id'])
             criteria_covered.add(finding['criterion'])
-            impact_scores.append(min(finding.get('impact_score', 0), 5.0))
+            relevance_scores.append(min(finding.get('impact_score', 0), 5.0))  # Keep using impact_score for now (will be updated in Stage 2)
             confidence_scores.append(finding.get('enhanced_confidence', 0))
             
-            # Extract quotes
+            # Extract quotes with relevance scores and sentiment
             if 'selected_quotes' in finding and finding['selected_quotes']:
                 for quote_obj in finding['selected_quotes']:
                     if isinstance(quote_obj, dict):
+                        # Add relevance score and sentiment to quote object
+                        quote_obj['relevance_score'] = finding.get('impact_score', 0)  # Use impact_score as relevance for now
+                        quote_obj['sentiment'] = 'neutral'  # Default sentiment (will be updated when Stage 2 is reprocessed)
                         quotes.append(quote_obj)
                         quote_text = quote_obj.get('text', '')
                         match = core_df[core_df['verbatim_response'].str.startswith(quote_text[:30])]
                         if not match.empty:
                             interviewees.add(match.iloc[0]['interviewee_name'])
                     elif isinstance(quote_obj, str):
-                        quotes.append({'text': quote_obj})
+                        # Convert string quote to dict with relevance and sentiment
+                        quote_dict = {
+                            'text': quote_obj,
+                            'relevance_score': finding.get('impact_score', 0),  # Use impact_score as relevance for now
+                            'sentiment': 'neutral'  # Default sentiment (will be updated when Stage 2 is reprocessed)
+                        }
+                        quotes.append(quote_dict)
                         match = core_df[core_df['verbatim_response'].str.startswith(quote_obj[:30])]
                         if not match.empty:
                             interviewees.add(match.iloc[0]['interviewee_name'])
@@ -296,7 +305,7 @@ class Stage4ThemeAnalyzer:
         if not quotes:
             return None
         
-        avg_impact = sum(impact_scores) / len(impact_scores) if impact_scores else 0
+        avg_relevance = sum(relevance_scores) / len(relevance_scores) if relevance_scores else 0
         avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
         
         return {
@@ -304,7 +313,7 @@ class Stage4ThemeAnalyzer:
             'company_count': len(interviewees),
             'companies': list(interviewees),
             'criteria_covered': list(criteria_covered),
-            'avg_impact_score': avg_impact,
+            'avg_impact_score': avg_relevance,  # Keep using avg_impact_score for compatibility
             'quotes': quotes[:5],
             'finding_ids': finding_ids,
             'avg_confidence': avg_confidence,
@@ -445,7 +454,6 @@ class Stage4ThemeAnalyzer:
             # Add cross-criteria information for semantic groups
             if pattern.get('pattern_type') == 'semantic_group':
                 theme['criteria_covered'] = pattern.get('criteria_covered', [])
-                theme['fuzzy_grouped'] = True
                 self.processing_metrics["fuzzy_grouped_themes"] += 1
             
             themes.append(theme)

@@ -108,7 +108,8 @@ class SupabaseDatabase:
             data = {
                 'quote_id': analysis_data.get('quote_id'),
                 'criterion': analysis_data.get('criterion'),
-                'score': analysis_data.get('score'),
+                'relevance_score': analysis_data.get('score'),  # Map 'score' to 'relevance_score'
+                'sentiment': analysis_data.get('sentiment', 'neutral'),
                 'priority': analysis_data.get('priority', 'medium'),
                 'confidence': analysis_data.get('confidence', 'medium'),
                 'relevance_explanation': analysis_data.get('relevance_explanation', ''),
@@ -237,9 +238,9 @@ class SupabaseDatabase:
                 for criterion in analysis_df['criterion'].unique():
                     criterion_data = analysis_df[analysis_df['criterion'] == criterion]
                     mentions = len(criterion_data)
-                    avg_score = criterion_data['deal_weighted_score'].mean()
-                    min_score = criterion_data['deal_weighted_score'].min()
-                    max_score = criterion_data['deal_weighted_score'].max()
+                    avg_score = criterion_data['relevance_score'].mean()
+                    min_score = criterion_data['relevance_score'].min()
+                    max_score = criterion_data['relevance_score'].max()
                     
                     criteria_performance[criterion] = {
                         "mention_count": mentions,
@@ -344,7 +345,7 @@ class SupabaseDatabase:
                 return pd.DataFrame()
             
             # Filter analysis to only scored quotes
-            scored_analysis = analysis_df[analysis_df['score'] > 0].copy()
+            scored_analysis = analysis_df[analysis_df['relevance_score'] > 0].copy()
             
             # Join the dataframes
             merged_df = scored_analysis.merge(
@@ -741,10 +742,10 @@ class SupabaseDatabase:
                     continue
                 
                 # Calculate metrics
-                avg_score = criterion_data['score'].mean()
+                avg_score = criterion_data['relevance_score'].mean()
                 total_mentions = len(criterion_data)
                 companies_affected = criterion_data['company'].nunique()
-                critical_mentions = len(criterion_data[criterion_data['score'] >= 4])
+                critical_mentions = len(criterion_data[criterion_data['relevance_score'] >= 4])
                 
                 # Calculate performance rating
                 performance_rating = self._calculate_performance_rating(avg_score, total_mentions, critical_mentions)
