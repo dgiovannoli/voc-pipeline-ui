@@ -11,6 +11,24 @@ CRITICAL INSTRUCTIONS FOR CONTEXT-DRIVEN EXTRACTION:
 - Extract responses that provide complete thought processes, reasoning, and business context.
 - Some chunks may have 2 valuable Q&A pairs, others may have 8 - let the content guide you.
 
+ENHANCED QUESTION DETECTION STRATEGY:
+Look for questions in these forms:
+- **Direct questions**: "What is...?" "How do you...?" "Why did you...?"
+- **Statement + Question**: "Speed and cost were priorities. Were there other criteria?"
+- **Embedded questions**: "I'm curious about..." followed by a question
+- **Clarifying questions**: "So you're saying..." followed by a question
+- **Multi-part questions**: Questions with multiple clauses or follow-ups
+- **Complex questions**: Questions embedded in longer explanations or statements
+- **Follow-up questions**: Questions that reference previous context
+
+EXAMPLES OF COMPLEX QUESTIONS TO CAPTURE:
+- "Speed and cost were your top two priority. And you just mentioned layout as kind of a nice to have something that made you feel comfortable in it. Were there any other criteria that you evaluated when comparing Rev to other vendors?"
+- "When it comes to the transcription work they had done, were there any needs or even criteria that were specific to legal?"
+- "With accuracy rating so high. Are there any files where it would be worth it to upgrade to a human transcriptionist first for accuracy purposes?"
+- "When you went to find a vendor, did you already know about Rev, or did you look at a few different vendors online through search?"
+
+DO NOT skip questions just because they are complex or have multiple parts.
+
 CONTEXT-DRIVEN EXTRACTION STRATEGY:
 - **Evaluate the Context**: Look for complete Q&A exchanges that provide full context
 - **Preserve Thought Processes**: Capture responses that show complete reasoning and decision-making
@@ -18,6 +36,7 @@ CONTEXT-DRIVEN EXTRACTION STRATEGY:
 - **Focus on Substance**: Prioritize responses with specific examples, metrics, and detailed explanations
 - **Natural Grouping**: Group related Q&A pairs that form a complete thought or scenario
 - **Quality Over Quantity**: Better to extract 2 comprehensive responses than 5 fragmented ones
+- **Capture All Valuable Content**: Don't skip responses just because they're brief or complex
 
 EXTRACTION CRITERIA:
 1. **Complete Context**: Responses that provide full background, reasoning, and implications
@@ -26,6 +45,8 @@ EXTRACTION CRITERIA:
 4. **Comparative Analysis**: Before/after comparisons, competitive evaluations, and performance metrics
 5. **Integration Details**: Workflow requirements, technical specifications, and process changes
 6. **Customer Experiences**: Complete scenarios with full context and specific outcomes
+7. **Brief but Important**: Short responses that contain key insights or decisions
+8. **Complex Discussions**: Multi-part exchanges that form complete thoughts
 
 VERBATIM RESPONSE RULES:
 - Include the COMPLETE response text with full context and conversation flow
@@ -37,12 +58,14 @@ VERBATIM RESPONSE RULES:
 - Include specific examples, metrics, detailed explanations, and follow-up context
 - Preserve comparative language and specific differentiators
 - Include workflow details, process descriptions, and technical specifications
+- Capture responses even if they are brief but contain important insights
 
 CONTEXT EVALUATION:
 - **High Context**: Complete scenarios with full background, specific examples, and detailed outcomes
 - **Medium Context**: Good detail but may be missing some background or follow-up context
 - **Low Context**: Brief responses with limited detail or incomplete scenarios
 - **Skip**: Acknowledgments, thank yous, or responses with insufficient context
+- **Include**: Brief responses that contain key decisions, preferences, or important insights
 
 EXTRACTION DECISION FRAMEWORK:
 1. **Start with Q&A Pairs**: Identify complete question-answer exchanges
@@ -51,6 +74,47 @@ EXTRACTION DECISION FRAMEWORK:
 4. **Prioritize Substance**: Focus on responses with specific examples, metrics, and detailed explanations
 5. **Maintain Flow**: Preserve conversation context and related follow-up questions
 6. **Quality Check**: Ensure each extracted response provides meaningful, actionable insights
+7. **Capture Edge Cases**: Include brief but important responses that contain key insights
+
+CRITICAL FIELD DEFINITIONS:
+- **SUBJECT**: The main topic or area being discussed (e.g., "Product Features", "Pricing", "Implementation")
+- **QUESTION**: The actual question that was asked to elicit this response. This must be a real question from the transcript, in interrogative form (e.g., "How do you evaluate pricing?", "What challenges did you face during implementation?").
+  - **Do NOT** use a subject description or summary as the question.
+  - **If you cannot find the actual question, set the field to 'UNKNOWN' and log a warning.**
+  - **Include complex questions with multiple clauses or embedded statements.**
+
+FIELD EXAMPLES:
+✅ CORRECT:
+- Subject: "Product Features"
+- Question: "How do you use Rev in your daily workflow?"
+
+❌ INCORRECT:
+- Subject: "Product Features" 
+- Question: "Feedback on product features and their importance" (This is a subject description, not a question)
+- Subject: "Pricing and Cost"
+- Question: "Consideration of pricing factors and cost evaluation" (This is a subject description, not a question)
+- Subject: "Integration"
+- Question: "Integration with other tools and platforms" (This is a subject description, not a question)
+- Subject: "Support"
+- Question: "Support and service quality feedback" (This is a subject description, not a question)
+
+✅ CORRECT:
+- Subject: "Pricing and Cost"
+- Question: "What factors do you consider when evaluating pricing?"
+
+VALIDATION RULES:
+- The "question" field **must** be an actual question from the transcript, in interrogative form (usually ends with a question mark, or starts with 'what', 'how', 'why', 'when', 'who', 'where', 'which').
+- If the question is missing or ambiguous, set the field to 'UNKNOWN'.
+- Never use a subject description, summary, or feedback statement as the question.
+- Log a warning if you cannot find a valid question.
+- **Include complex questions with multiple clauses or embedded statements.**
+
+IMPORTANT: Capture ALL question-response pairs, including:
+- Questions with multiple clauses or statements
+- Questions embedded in longer explanations
+- Follow-up questions within the same exchange
+- Questions that reference previous context
+- Brief but important responses
 
 Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pairs. Return ONLY a JSON array containing the most valuable responses (quantity varies by content quality):
 
@@ -58,8 +122,8 @@ Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pair
   {{
     "response_id": "{response_id}_1",
     "verbatim_response": "complete_verbatim_response_with_full_context_and_conversation_flow",
-    "subject": "brief_subject_description_1",
-    "question": "what_question_this_answers_1",
+    "subject": "Product Features",
+    "question": "How do you currently use the product?",
     "deal_status": "{deal_status}",
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
@@ -68,8 +132,8 @@ Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pair
   {{
     "response_id": "{response_id}_2",
     "verbatim_response": "complete_verbatim_response_with_full_context_and_conversation_flow",
-    "subject": "brief_subject_description_2",
-    "question": "what_question_this_answers_2",
+    "subject": "Implementation Process",
+    "question": "What challenges did you face during setup?",
     "deal_status": "{deal_status}",
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
@@ -82,11 +146,14 @@ Guidelines:
 - **Focus on Complete Context**: Prioritize responses that provide full background and reasoning
 - **Preserve Conversation Flow**: Include related follow-up questions and clarifications
 - **Subject Categories**: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
+- **Question Format**: Must be an actual question (interrogative format), not a description
 - **Quality Threshold**: Only extract responses with substantial, actionable content
 - **Context Preservation**: Ensure each response captures the complete thought process
 - **Natural Grouping**: Group related Q&A pairs that form complete scenarios
 - **Skip Low-Quality**: Skip chunks with only acknowledgments, thank yous, or insufficient context
 - **Variable Output**: Some chunks may produce 2 responses, others 8 - this is expected and correct
+- **Capture Complex Questions**: Include questions with multiple clauses, embedded statements, or complex structures
+- **Include Brief Responses**: Don't skip responses just because they're short if they contain important insights
 
 Interview chunk to analyze:
 {chunk_text}

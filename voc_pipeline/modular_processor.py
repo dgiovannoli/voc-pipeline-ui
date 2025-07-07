@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class ModularProcessor:
     """Modular processor for independent pipeline stages."""
     
-    def __init__(self, model_name: str = "gpt-3.5-turbo-16k", max_tokens: int = 4096, temperature: float = 0.1):
+    def __init__(self, model_name: str = "gpt-3.5-turbo-16k", max_tokens: int = 4096, temperature: float = 0.3):
         self.model_name = model_name
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -110,9 +110,9 @@ class ModularProcessor:
         logger.info(f"Extracted {len(full_text)} characters ({total_tokens} tokens) from transcript")
         logger.info(f"Text preview: {full_text[:200]}...")
         
-        # Create chunks using 16K-optimized approach with smaller chunks for comprehensive coverage
-        chunks = self._create_chunks(full_text, target_tokens=2000, overlap_tokens=200)
-        logger.info(f"Passing {len(chunks)} chunks to LLM with comprehensive coverage targeting ~3-5 insights per chunk")
+        # Create chunks using smaller chunks for better reliability and coverage
+        chunks = self._create_chunks(full_text, target_tokens=1000, overlap_tokens=200)
+        logger.info(f"Passing {len(chunks)} chunks to LLM with smaller chunks targeting ~2-3 insights per chunk")
         
         # Process each chunk
         all_responses = []
@@ -144,6 +144,18 @@ class ModularProcessor:
                 else:
                     response_text = str(result).strip()
                 
+                # Debug: Print raw LLM output
+                logger.info(f"LLM raw output for chunk {i}: {repr(response_text[:500])}...")
+                
+                # Fix JSON parsing: Strip markdown code blocks if present
+                if response_text.startswith('```json'):
+                    response_text = response_text[7:]  # Remove ```json
+                if response_text.startswith('```'):
+                    response_text = response_text[3:]  # Remove ```
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]  # Remove trailing ```
+                response_text = response_text.strip()
+                
                 # Parse JSON
                 try:
                     responses = json.loads(response_text)
@@ -152,12 +164,23 @@ class ModularProcessor:
                         for j, response in enumerate(responses):
                             if 'response_id' in response:
                                 response['response_id'] = f"{chunk_id}_{j+1}"
+                            # Output validation for 'question' field
+                            question = response.get('question', '')
+                            if not self._is_valid_question(question):
+                                logger.warning(f"[Stage1 Extraction] Invalid or missing question for response_id {response.get('response_id')}: '{question}'. Setting to 'UNKNOWN'.")
+                                response['question'] = 'UNKNOWN'
                         all_responses.extend(responses)
                     else:
                         responses['response_id'] = f"{chunk_id}_1"
+                        # Output validation for 'question' field
+                        question = responses.get('question', '')
+                        if not self._is_valid_question(question):
+                            logger.warning(f"[Stage1 Extraction] Invalid or missing question for response_id {responses.get('response_id')}: '{question}'. Setting to 'UNKNOWN'.")
+                            responses['question'] = 'UNKNOWN'
                         all_responses.append(responses)
                 except json.JSONDecodeError as e:
                     logger.warning(f"Failed to parse JSON from chunk {i}: {e}")
+                    logger.warning(f"Raw response was: {repr(response_text)}")
                     continue
                 
             except Exception as e:
@@ -178,11 +201,11 @@ class ModularProcessor:
         
         logger.info(f"Removed {len(all_responses) - len(unique_responses)} duplicate responses")
         
-        # Filter out very short responses (likely incomplete)
+        # Filter out very short responses (likely incomplete) - reduced threshold for better coverage
         quality_responses = []
         for response in unique_responses:
             verbatim = response.get('verbatim_response', '')
-            if len(verbatim.split()) >= 20:  # At least 20 words
+            if len(verbatim.split()) >= 10:  # Reduced from 20 to 10 words for better coverage
                 quality_responses.append(response)
         
         logger.info(f"Post-processing removed {len(unique_responses) - len(quality_responses)} additional duplicates")
@@ -353,17 +376,17 @@ class ModularProcessor:
         logger.info(f"Saved {saved_count} responses to database")
         return saved_count
     
-    def _create_chunks(self, text: str, target_tokens: int = 2000, overlap_tokens: int = 200) -> List[str]:
+    def _create_chunks(self, text: str, target_tokens: int = 1000, overlap_tokens: int = 400) -> List[str]:
         """
-        Create text chunks for processing using comprehensive coverage approach.
+        Create text chunks for processing using enhanced Q&A-aware chunking with better overlap.
         
         Args:
             text: Full transcript text
-            target_tokens: Target tokens per chunk (2K for comprehensive coverage)
-            overlap_tokens: Overlap between chunks (200 tokens for continuity)
+            target_tokens: Target tokens per chunk (1K for better reliability)
+            overlap_tokens: Overlap between chunks (400 tokens for better Q&A preservation)
             
         Returns:
-            List of text chunks optimized for comprehensive processing
+            List of text chunks optimized for comprehensive processing with enhanced Q&A preservation
         """
         import tiktoken
         
@@ -389,15 +412,15 @@ class ModularProcessor:
             # Decode back to text
             chunk_text = encoding.decode(chunk_tokens)
             
-            # Q&A-aware segmentation - try to break at natural conversation boundaries
+            # Enhanced Q&A-aware segmentation - try to break at natural conversation boundaries
             if end < len(tokens):
-                # Look for natural break points in the remaining text
-                remaining_tokens = tokens[end:end + 200]  # Look ahead 200 tokens
+                # Look for natural break points in the remaining text with extended lookahead
+                remaining_tokens = tokens[end:end + 500]  # Increased look ahead to 500 tokens
                 remaining_text = encoding.decode(remaining_tokens)
                 
                 # Find the best break point
                 break_point = self._find_break_point(chunk_text, remaining_text)
-                if break_point > len(chunk_text) * 0.7:  # Only break if we're not too far back
+                if break_point > len(chunk_text) * 0.6:  # More flexible break point (60% instead of 70%)
                     chunk_text = chunk_text[:break_point]
                     # Adjust end position based on actual text length
                     actual_tokens = encoding.encode(chunk_text)
@@ -405,19 +428,20 @@ class ModularProcessor:
             
             chunks.append(chunk_text)
             
-            # Move start position with overlap
+            # Move start position with enhanced overlap
             start = end - overlap_tokens
             if start >= len(tokens):
                 break
         
-        logger.info(f"Created {len(chunks)} chunks with comprehensive coverage token-based chunking")
+        logger.info(f"Created {len(chunks)} chunks with enhanced Q&A-aware token-based chunking")
         logger.info(f"Average chunk size: {sum(len(encoding.encode(chunk)) for chunk in chunks) // len(chunks)} tokens")
+        logger.info(f"Enhanced overlap: {overlap_tokens} tokens for better Q&A preservation")
         
         return chunks
     
     def _find_break_point(self, chunk_text: str, remaining_text: str) -> int:
         """
-        Find the best break point for Q&A-aware segmentation.
+        Find the best break point for enhanced Q&A-aware segmentation.
         
         Args:
             chunk_text: Current chunk text
@@ -426,7 +450,7 @@ class ModularProcessor:
         Returns:
             Best break point position in chunk_text
         """
-        # Look for conversation boundaries
+        # Enhanced conversation boundaries with more patterns
         break_patterns = [
             '\n\n',  # Double newline (speaker change)
             '.\n',   # End of sentence followed by newline
@@ -436,16 +460,92 @@ class ModularProcessor:
             '\nA:',  # Answer marker
             '\nInterviewer:',  # Interviewer marker
             '\nInterviewee:',  # Interviewee marker
+            '\nDrew Giovannoli:',  # Specific interviewer name
+            '\nCyrus Nazarian:',   # Specific interviewee name
+            '\nModerator:',        # Generic moderator
+            '\nSpeaker:',          # Generic speaker
+            '.\n\n',              # End of sentence with double newline
+            '?\n\n',              # Question with double newline
+            '!\n\n',              # Exclamation with double newline
         ]
         
         best_break = len(chunk_text)
         
+        # Look for break points in the latter 40% of the chunk (more flexible than 70%)
+        search_start = int(len(chunk_text) * 0.6)
+        
         for pattern in break_patterns:
-            pos = chunk_text.rfind(pattern)
-            if pos > len(chunk_text) * 0.7:  # Only use if it's in the latter part
+            pos = chunk_text.rfind(pattern, search_start)
+            if pos > search_start:
                 best_break = min(best_break, pos + len(pattern))
         
+        # If no good break point found, try to break at sentence boundaries
+        if best_break == len(chunk_text):
+            # Look for sentence endings in the latter part
+            sentence_endings = ['. ', '? ', '! ', '.\n', '?\n', '!\n']
+            for ending in sentence_endings:
+                pos = chunk_text.rfind(ending, search_start)
+                if pos > search_start:
+                    best_break = min(best_break, pos + len(ending))
+        
         return best_break
+    
+    def _is_valid_question(self, question: str) -> bool:
+        """Check if a string is a valid question (interrogative) with enhanced complex question support."""
+        if not question or not isinstance(question, str):
+            return False
+        q = question.strip()
+        
+        # Must end with a question mark or start with a question word
+        question_words = ("what", "how", "why", "when", "who", "where", "which", "is", "are", "do", "does", "did", "can", "could", "would", "should", "will", "has", "have", "had")
+        
+        # Basic validation
+        if q.endswith("?") or q.lower().startswith(question_words):
+            return True
+        
+        # Enhanced validation for complex questions
+        # Check for questions embedded in statements
+        q_lower = q.lower()
+        
+        # Look for question patterns within complex statements
+        complex_patterns = [
+            "were there any",
+            "did you",
+            "do you",
+            "would you",
+            "could you",
+            "should you",
+            "are there",
+            "is there",
+            "have you",
+            "has there",
+            "will you",
+            "can you",
+            "might you",
+            "must you",
+            "need you",
+            "want you",
+            "expect you",
+            "plan to",
+            "consider",
+            "think about",
+            "evaluate",
+            "compare",
+            "assess",
+            "review",
+            "analyze"
+        ]
+        
+        for pattern in complex_patterns:
+            if pattern in q_lower:
+                return True
+        
+        # Check for questions that start with statements but end with questions
+        # Example: "Speed and cost were priorities. Were there other criteria?"
+        if "." in q and any(word in q.split(".")[-1].lower() for word in question_words):
+            return True
+        
+        return False
     
     def run_full_pipeline(self, transcript_path: str, company: str, interviewee: str, 
                          deal_status: str, date_of_interview: str, 
