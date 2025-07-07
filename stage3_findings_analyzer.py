@@ -355,90 +355,173 @@ class Stage3FindingsAnalyzer:
         return patterns
     
     def _analyze_enhanced_company_patterns(self, criterion_data: pd.DataFrame, criterion: str) -> List[Dict]:
-        """Analyze patterns for a specific criterion across companies with enhanced data"""
+        """Analyze patterns for a specific criterion with loosened constraints - REDESIGNED FOR EVIDENCE-BACKED INSIGHTS"""
         patterns = []
         
         # Group by company
         company_groups = criterion_data.groupby('company')
         
         for company, company_quotes in company_groups:
-            if len(company_quotes) < 2:  # Need at least 2 quotes for pattern
+            # LOOSENED CONSTRAINT: Allow single quotes for strong evidence
+            if len(company_quotes) < 1:  # Changed from 2 to 1
                 continue
             
-            # Prepare quotes data for evaluation
-            quotes_data = []
-            for _, quote in company_quotes.iterrows():
-                quotes_data.append({
-                    'original_quote': quote.get('original_quote', ''),
-                    'relevance_explanation': quote.get('relevance_explanation', ''),
-                    'score': quote.get('score', 0),
-                    'confidence': quote.get('confidence', 'medium'),
-                    'context_keywords': quote.get('context_keywords', 'neutral'),
-                    'question_relevance': quote.get('question_relevance', 'unrelated'),
-                    'response_id': quote.get('response_id', None),  # Ensure response_id is present
-                    'company': quote.get('company', company)  # Ensure company is present
-                })
+            # NEW: Group quotes by score ranges to allow multiple patterns per company
+            # 0-1.9 = Low relevance (skip)
+            # 2.0-2.9 = Moderate relevance 
+            # 3.0-3.9 = High relevance
+            # 4.0-5.0 = Critical relevance
             
-            # Analyze sentiment patterns
-            avg_score = company_quotes['score'].mean()
-            score_std = company_quotes['score'].std()
+            low_relevance = company_quotes[company_quotes['score'] < 2.0]
+            moderate_relevance = company_quotes[(company_quotes['score'] >= 2.0) & (company_quotes['score'] < 3.0)]
+            high_relevance = company_quotes[(company_quotes['score'] >= 3.0) & (company_quotes['score'] < 4.0)]
+            critical_relevance = company_quotes[company_quotes['score'] >= 4.0]
             
-            # Extract common themes from relevance explanations
-            themes = self._extract_themes(company_quotes['relevance_explanation'].tolist())
+            # Create patterns for each relevance level that has quotes
+            relevance_groups = [
+                ('moderate', moderate_relevance, 2.0, 2.9),
+                ('high', high_relevance, 3.0, 3.9),
+                ('critical', critical_relevance, 4.0, 5.0)
+            ]
             
-            # Identify deal impact patterns
-            deal_impacts = company_quotes['context_keywords'].value_counts().to_dict()
-            
-            pattern = {
-                'criterion': criterion,
-                'company': company,
-                'quote_count': len(company_quotes),
-                'company_count': 1,  # Will be updated in cross-company analysis
-                'avg_score': avg_score,
-                'score_std': score_std,
-                'themes': themes,
-                'deal_impacts': deal_impacts,
-                'quotes_data': quotes_data,
-                'sample_quotes': company_quotes['original_quote'].head(3).tolist()
-            }
-            
-            patterns.append(pattern)
+            for relevance_level, quotes_subset, min_score, max_score in relevance_groups:
+                if len(quotes_subset) == 0:
+                    continue
+                
+                # Prepare quotes data for evaluation
+                quotes_data = []
+                for _, quote in quotes_subset.iterrows():
+                    quotes_data.append({
+                        'original_quote': quote.get('original_quote', ''),
+                        'relevance_explanation': quote.get('relevance_explanation', ''),
+                        'score': quote.get('score', 0),
+                        'confidence': quote.get('confidence', 'medium'),
+                        'context_keywords': quote.get('context_keywords', 'neutral'),
+                        'question_relevance': quote.get('question_relevance', 'unrelated'),
+                        'response_id': quote.get('response_id', None),
+                        'company': quote.get('company', company)
+                    })
+                
+                # Analyze sentiment patterns within this relevance level
+                avg_score = quotes_subset['score'].mean()
+                score_std = quotes_subset['score'].std()
+                
+                # Extract common themes from relevance explanations
+                themes = self._extract_themes(quotes_subset['relevance_explanation'].tolist())
+                
+                # Identify deal impact patterns
+                deal_impacts = quotes_subset['context_keywords'].value_counts().to_dict()
+                
+                # Evaluate finding criteria for this pattern
+                criteria_scores = self.evaluate_finding_criteria(quotes_data)
+                criteria_met = sum(1 for score in criteria_scores.values() if score > 0)
+                
+                # Calculate enhanced confidence score
+                enhanced_confidence = self.calculate_enhanced_confidence_score(quotes_data, criteria_scores)
+                
+                # Select optimal quotes for this pattern
+                selected_quotes = self.select_optimal_quotes(quotes_data, self.config['stage3']['max_quotes_per_finding'])
+                
+                pattern = {
+                    'criterion': criterion,
+                    'company': company,
+                    'relevance_level': relevance_level,
+                    'score_range': (min_score, max_score),
+                    'quote_count': len(quotes_subset),
+                    'company_count': 1,  # Will be updated in cross-company analysis
+                    'avg_score': avg_score,
+                    'score_std': score_std,
+                    'themes': themes,
+                    'deal_impacts': deal_impacts,
+                    'quotes_data': quotes_data,
+                    'selected_quotes': selected_quotes,
+                    'sample_quotes': quotes_subset['original_quote'].head(3).tolist(),
+                    'criteria_scores': criteria_scores,
+                    'criteria_met': criteria_met,
+                    'enhanced_confidence': enhanced_confidence
+                }
+                
+                patterns.append(pattern)
         
-        # Cross-company pattern analysis
+        # NEW: Simplified cross-company analysis - focus on individual patterns first
+        # Only group if there are truly similar patterns across companies
         cross_company_patterns = self._analyze_cross_company_patterns(patterns, criterion)
         
         return cross_company_patterns
     
     def _analyze_cross_company_patterns(self, company_patterns: List[Dict], criterion: str) -> List[Dict]:
-        """Analyze patterns across multiple companies"""
+        """Analyze patterns across multiple companies - REDESIGNED TO PRIORITIZE INDIVIDUAL PATTERNS"""
         if len(company_patterns) < 2:
             return company_patterns
         
-        # Group by similar themes and scores
+        # NEW APPROACH: Prioritize individual patterns, only group when truly similar
+        # Use fuzzy matching for theme similarity instead of exact matches
+        
+        # Group by similar themes using fuzzy matching
         theme_groups = defaultdict(list)
         for pattern in company_patterns:
-            theme_key = '|'.join(sorted(pattern['themes'][:3]))  # Top 3 themes
+            # Create a fuzzy theme key based on relevance level and score range
+            theme_key = f"{pattern['relevance_level']}_{pattern['score_range'][0]}-{pattern['score_range'][1]}"
+            
+            # Add company-specific themes if they exist
+            if pattern['themes']:
+                theme_key += f"_{'_'.join(pattern['themes'][:2])}"  # Top 2 themes
+            
             theme_groups[theme_key].append(pattern)
         
         cross_company_patterns = []
+        used_companies = set()
+        
+        # First, try to create cross-company patterns for similar themes
+        # BUT: Only if there are multiple companies with similar patterns
         for theme_key, patterns in theme_groups.items():
             if len(patterns) >= 2:  # Multiple companies with similar themes
-                # Combine patterns
-                combined_pattern = {
-                    'criterion': criterion,
-                    'companies': [p['company'] for p in patterns],
-                    'company_count': len(patterns),
-                    'quote_count': sum(p['quote_count'] for p in patterns),
-                    'avg_score': sum(p['avg_score'] for p in patterns) / len(patterns),
-                    'score_std': pd.Series([p['avg_score'] for p in patterns]).std(),
-                    'themes': list(set(theme for p in patterns for theme in p['themes'])),
-                    'deal_impacts': self._combine_deal_impacts([p['deal_impacts'] for p in patterns]),
-                    'quotes_data': [q for p in patterns for q in p['quotes_data']],
-                    'sample_quotes': [q for p in patterns for q in p['sample_quotes'][:2]]
-                }
-                cross_company_patterns.append(combined_pattern)
+                # Check if these are from different companies
+                companies = set(p['company'] for p in patterns)
+                if len(companies) >= 2:  # Actually different companies
+                    # Combine patterns
+                    combined_pattern = {
+                        'criterion': criterion,
+                        'companies': [p['company'] for p in patterns],
+                        'company_count': len(patterns),
+                        'quote_count': sum(p['quote_count'] for p in patterns),
+                        'avg_score': sum(p['avg_score'] for p in patterns) / len(patterns),
+                        'score_std': pd.Series([p['avg_score'] for p in patterns]).std(),
+                        'themes': list(set(theme for p in patterns for theme in p['themes'])),
+                        'deal_impacts': self._combine_deal_impacts([p['deal_impacts'] for p in patterns]),
+                        'quotes_data': [q for p in patterns for q in p['quotes_data']],
+                        'selected_quotes': [q for p in patterns for q in p['selected_quotes']],
+                        'sample_quotes': [q for p in patterns for q in p['sample_quotes'][:2]],
+                        'criteria_scores': self._combine_criteria_scores([p['criteria_scores'] for p in patterns]),
+                        'criteria_met': max(p['criteria_met'] for p in patterns),
+                        'enhanced_confidence': max(p['enhanced_confidence'] for p in patterns),
+                        'relevance_level': patterns[0]['relevance_level'],
+                        'score_range': patterns[0]['score_range'],
+                        'is_cross_company': True
+                    }
+                    cross_company_patterns.append(combined_pattern)
+                    
+                    # Mark companies as used
+                    for pattern in patterns:
+                        used_companies.add(pattern['company'])
+        
+        # Then, add individual company patterns that weren't used in cross-company patterns
+        # THIS IS THE KEY CHANGE: Individual patterns are valuable and should be included
+        for pattern in company_patterns:
+            if pattern['company'] not in used_companies:
+                # Mark as individual pattern
+                pattern['is_cross_company'] = False
+                cross_company_patterns.append(pattern)
         
         return cross_company_patterns
+    
+    def _combine_criteria_scores(self, criteria_scores_list: List[Dict]) -> Dict:
+        """Combine criteria scores from multiple patterns"""
+        combined = defaultdict(int)
+        for scores in criteria_scores_list:
+            for criterion, score in scores.items():
+                combined[criterion] += score
+        return dict(combined)
     
     def _combine_deal_impacts(self, deal_impacts_list: List[Dict]) -> Dict:
         """Combine deal impacts from multiple patterns"""
@@ -537,153 +620,49 @@ class Stage3FindingsAnalyzer:
         return findings
     
     def _generate_criterion_enhanced_findings(self, criterion: str, patterns: List[Dict]) -> List[Dict]:
-        """Generate findings for a specific criterion with enhanced analysis - REDESIGNED FOR HIGH-RELEVANCE FOCUS"""
+        """Generate findings for a specific criterion - REDESIGNED FOR MULTIPLE EVIDENCE-BACKED INSIGHTS"""
         findings = []
         
         if not patterns:
             return findings
         
-        # REDESIGNED APPROACH: Focus on high-relevance scores (≥3.0) only
-        # Stage 2 scoring interpretation:
-        # 0 = Not relevant/not mentioned
-        # 1 = Slight mention/indirect relevance  
-        # 2 = Clear mention/direct relevance
-        # 3 = Strong emphasis/important feedback (CUSTOMERS CARE)
-        # 4 = Critical feedback/deal-breaking issue (CUSTOMERS CARE)
-        # 5 = Exceptional praise/deal-winning strength (CUSTOMERS CARE)
+        # NEW APPROACH: Generate findings for each pattern based on evidence strength
+        # Each pattern represents a distinct insight that can stand alone
         
-        # Filter to only high-relevance patterns (scores ≥3.0)
-        high_relevance_patterns = [p for p in patterns if p['avg_score'] >= 3.0]
+        # Sort patterns by enhanced confidence score
+        sorted_patterns = sorted(patterns, key=lambda x: x['enhanced_confidence'], reverse=True)
         
-        if not high_relevance_patterns:
-            logger.info(f"⚠️ No high-relevance patterns (≥3.0) found for {criterion}")
-            return findings
+        for pattern in sorted_patterns:
+            # Generate finding for each pattern that meets minimum evidence threshold
+            if pattern['quote_count'] >= 1 and pattern['enhanced_confidence'] >= 1.0:  # Loosened threshold
+                finding = self._create_pattern_based_finding(criterion, pattern)
+                if finding:
+                    findings.append(finding)
         
-        # Calculate overall criterion score for high-relevance patterns only
-        avg_score = sum(p['avg_score'] for p in high_relevance_patterns) / len(high_relevance_patterns)
-        
-        # Analyze sentiment within high-relevance patterns
-        # 3.0-3.4 = Important feedback (analyze sentiment)
-        # 3.5-4.4 = Critical feedback (analyze sentiment) 
-        # 4.5-5.0 = Exceptional feedback (analyze sentiment)
-        
-        # Group by sentiment intensity
-        important_patterns = [p for p in high_relevance_patterns if 3.0 <= p['avg_score'] < 3.5]
-        critical_patterns = [p for p in high_relevance_patterns if 3.5 <= p['avg_score'] < 4.5]
-        exceptional_patterns = [p for p in high_relevance_patterns if p['avg_score'] >= 4.5]
-        
-        # Generate findings based on sentiment analysis within high-relevance patterns
-        if exceptional_patterns:
-            # Exceptional scores (4.5-5.0) = Clear strengths to leverage
-            strength_finding = self._create_enhanced_finding(criterion, exceptional_patterns, 'strength', avg_score)
-            if strength_finding:
-                findings.append(strength_finding)
-        
-        if critical_patterns:
-            # Critical scores (3.5-4.4) = Need sentiment analysis
-            # Check if these are positive critical feedback or negative critical issues
-            sentiment = self._analyze_critical_sentiment(critical_patterns)
-            if sentiment == 'positive':
-                strength_finding = self._create_enhanced_finding(criterion, critical_patterns, 'strength', avg_score)
-                if strength_finding:
-                    findings.append(strength_finding)
-            elif sentiment == 'negative':
-                improvement_finding = self._create_enhanced_finding(criterion, critical_patterns, 'improvement', avg_score)
-                if improvement_finding:
-                    findings.append(improvement_finding)
-            else:  # mixed
-                mixed_finding = self._create_enhanced_finding(criterion, critical_patterns, 'mixed_signal', avg_score)
-                if mixed_finding:
-                    findings.append(mixed_finding)
-        
-        if important_patterns:
-            # Important scores (3.0-3.4) = Need sentiment analysis
-            sentiment = self._analyze_important_sentiment(important_patterns)
-            if sentiment == 'positive':
-                strength_finding = self._create_enhanced_finding(criterion, important_patterns, 'strength', avg_score)
-                if strength_finding:
-                    findings.append(strength_finding)
-            elif sentiment == 'negative':
-                improvement_finding = self._create_enhanced_finding(criterion, important_patterns, 'improvement', avg_score)
-                if improvement_finding:
-                    findings.append(improvement_finding)
-            else:  # mixed
-                mixed_finding = self._create_enhanced_finding(criterion, important_patterns, 'mixed_signal', avg_score)
-                if mixed_finding:
-                    findings.append(mixed_finding)
-        
-        # Generate trend findings for mixed sentiment patterns across companies
-        if len(high_relevance_patterns) >= 3:
-            trend_finding = self._create_trend_enhanced_finding(criterion, high_relevance_patterns, avg_score)
-            if trend_finding:
-                findings.append(trend_finding)
+        # Generate additional trend findings if we have multiple patterns
+        # Note: Removed trend finding generation to focus on individual pattern-based findings
+        # Each pattern now generates its own finding for better granularity
         
         return findings
     
-    def _analyze_critical_sentiment(self, patterns: List[Dict]) -> str:
-        """Analyze sentiment of critical feedback (3.5-4.4 scores)"""
-        positive_indicators = ['excellent', 'great', 'love', 'perfect', 'amazing', 'outstanding', 'fantastic', 'superb']
-        negative_indicators = ['terrible', 'awful', 'hate', 'horrible', 'frustrating', 'annoying', 'broken', 'useless']
-        
-        positive_count = 0
-        negative_count = 0
-        
-        for pattern in patterns:
-            for quote in pattern.get('quotes_data', []):
-                text = quote.get('original_quote', '').lower()
-                if any(indicator in text for indicator in positive_indicators):
-                    positive_count += 1
-                if any(indicator in text for indicator in negative_indicators):
-                    negative_count += 1
-        
-        if positive_count > negative_count:
-            return 'positive'
-        elif negative_count > positive_count:
-            return 'negative'
-        else:
-            return 'mixed'
-    
-    def _analyze_important_sentiment(self, patterns: List[Dict]) -> str:
-        """Analyze sentiment of important feedback (3.0-3.4 scores)"""
-        positive_indicators = ['good', 'like', 'works well', 'helpful', 'useful', 'effective', 'satisfied']
-        negative_indicators = ['bad', 'dislike', 'doesn\'t work', 'unhelpful', 'useless', 'ineffective', 'dissatisfied']
-        
-        positive_count = 0
-        negative_count = 0
-        
-        for pattern in patterns:
-            for quote in pattern.get('quotes_data', []):
-                text = quote.get('original_quote', '').lower()
-                if any(indicator in text for indicator in positive_indicators):
-                    positive_count += 1
-                if any(indicator in text for indicator in negative_indicators):
-                    negative_count += 1
-        
-        if positive_count > negative_count:
-            return 'positive'
-        elif negative_count > positive_count:
-            return 'negative'
-        else:
-            return 'mixed'
-    
-    def _create_enhanced_finding(self, criterion: str, patterns: List[Dict], finding_type: str, avg_score: float) -> Optional[Dict]:
-        """Create an enhanced finding with confidence scoring"""
-        if not patterns:
+    def _create_pattern_based_finding(self, criterion: str, pattern: Dict) -> Optional[Dict]:
+        """Create a finding based on a single pattern - NEW METHOD FOR EVIDENCE-BACKED INSIGHTS"""
+        if not pattern:
             return None
         
-        # Use the highest confidence pattern for the finding
-        best_pattern = max(patterns, key=lambda x: x['enhanced_confidence'])
-        
-        # CRITICAL FIX: Ensure the pattern has selected_quotes and they are not empty
-        selected_quotes = best_pattern.get('selected_quotes', [])
+        # Ensure we have selected quotes
+        selected_quotes = pattern.get('selected_quotes', [])
         if not selected_quotes:
             logger.warning(f"⚠️ Skipping finding for {criterion} - no selected_quotes found in pattern")
             return None
         
         criterion_desc = self.criteria.get(criterion, {}).get('description', criterion)
         
-        # Generate finding text using enhanced LLM prompt
-        finding_text = self._generate_enhanced_finding_text(criterion, patterns, finding_type, criterion_desc, best_pattern)
+        # Determine finding type based on relevance level and sentiment
+        finding_type = self._determine_finding_type(pattern)
+        
+        # Generate finding text
+        finding_text = self._generate_pattern_based_finding_text(criterion, pattern, finding_type, criterion_desc)
         
         # Format selected quotes with attribution
         formatted_quotes = []
@@ -694,143 +673,109 @@ class Stage3FindingsAnalyzer:
                 'attribution': f"Score: {quote.get('score', 0)} - {quote.get('context_keywords', 'neutral')}"
             })
         
-        # CRITICAL FIX: Double-check that we have at least one formatted quote
-        if not formatted_quotes:
-            logger.warning(f"⚠️ Skipping finding for {criterion} - no valid quotes after formatting")
-            return None
+        # Determine credibility tier based on evidence strength
+        credibility_tier = self._determine_credibility_tier(pattern)
         
         return {
             'criterion': criterion,
             'finding_type': finding_type,
             'priority_level': 'standard',  # Will be updated in main function
-            'title': f"{criterion.replace('_', ' ').title()} {finding_type.title()}",
+            'title': f"{criterion.replace('_', ' ').title()} - {finding_type.title()} ({pattern['relevance_level']} relevance)",
             'description': finding_text,
-            'enhanced_confidence': best_pattern['enhanced_confidence'],
-            'criteria_scores': best_pattern.get('criteria_scores', {}),
-            'criteria_met': best_pattern.get('criteria_met', 0),
-            'impact_score': avg_score,
-            'companies_affected': best_pattern.get('company_count', len(patterns)),
-            'quote_count': best_pattern['quote_count'],
+            'enhanced_confidence': pattern['enhanced_confidence'],
+            'criteria_scores': pattern.get('criteria_scores', {}),
+            'criteria_met': pattern.get('criteria_met', 0),
+            'impact_score': pattern['avg_score'],
+            'companies_affected': pattern.get('company_count', 1),
+            'quote_count': pattern['quote_count'],
             'selected_quotes': formatted_quotes,
-            'themes': best_pattern['themes'],
-            'deal_impacts': best_pattern['deal_impacts'],
+            'themes': pattern['themes'],
+            'deal_impacts': pattern['deal_impacts'],
+            'relevance_level': pattern['relevance_level'],
+            'score_range': pattern['score_range'],
+            'is_cross_company': pattern.get('is_cross_company', False),
+            'credibility_tier': credibility_tier,
             'generated_at': datetime.now().isoformat()
         }
     
-    def _create_trend_enhanced_finding(self, criterion: str, patterns: List[Dict], avg_score: float) -> Optional[Dict]:
-        """Create a trend finding with enhanced analysis - UPDATED FOR HIGH-RELEVANCE FOCUS"""
-        if len(patterns) < 3:
-            return None
+    def _determine_finding_type(self, pattern: Dict) -> str:
+        """Determine finding type based on pattern characteristics"""
+        relevance_level = pattern.get('relevance_level', 'moderate')
+        avg_score = pattern.get('avg_score', 0)
         
-        # Analyze score distribution within high-relevance patterns (≥3.0)
-        scores = [p['avg_score'] for p in patterns]
-        score_std = pd.Series(scores).std()
-        
-        # Only create trend finding if there's significant variation
-        if score_std < 0.5:
-            return None
-        
-        # Analyze sentiment trends within high-relevance patterns
-        positive_sentiment_count = 0
-        negative_sentiment_count = 0
-        
-        for pattern in patterns:
-            # Analyze sentiment for this pattern
-            if 3.0 <= pattern['avg_score'] < 3.5:
-                sentiment = self._analyze_important_sentiment([pattern])
-            elif 3.5 <= pattern['avg_score'] < 4.5:
-                sentiment = self._analyze_critical_sentiment([pattern])
-            else:  # 4.5+
-                sentiment = 'positive'  # Exceptional scores are positive
-            
-            if sentiment == 'positive':
-                positive_sentiment_count += 1
-            elif sentiment == 'negative':
-                negative_sentiment_count += 1
-        
-        # Determine trend direction based on sentiment analysis
-        if positive_sentiment_count > negative_sentiment_count:
-            trend_type = 'positive_trend'
-        elif negative_sentiment_count > positive_sentiment_count:
-            trend_type = 'negative_trend'
-        else:
-            trend_type = 'mixed_trend'
-        
-        return self._create_enhanced_finding(criterion, patterns, trend_type, avg_score)
+        if relevance_level == 'critical':
+            if avg_score >= 4.5:
+                return 'exceptional_strength'
+            else:
+                return 'critical_issue'
+        elif relevance_level == 'high':
+            if avg_score >= 3.5:
+                return 'strong_positive'
+            else:
+                return 'important_feedback'
+        else:  # moderate
+            if avg_score >= 2.5:
+                return 'moderate_positive'
+            else:
+                return 'moderate_concern'
     
-    def _generate_enhanced_finding_text(self, criterion: str, patterns: List[Dict], finding_type: str, criterion_desc: str, best_pattern: Dict) -> str:
-        """Generate enhanced finding text using Buried Wins v4.0 framework"""
+    def _determine_credibility_tier(self, pattern: Dict) -> str:
+        """Determine credibility tier based on evidence strength"""
+        quote_count = pattern.get('quote_count', 0)
+        company_count = pattern.get('company_count', 1)
+        enhanced_confidence = pattern.get('enhanced_confidence', 0)
         
-        # Map finding types to descriptive text for the LLM
-        finding_type_descriptions = {
-            'strength': 'strength/positive feedback to leverage',
-            'improvement': 'improvement area/issue to address', 
-            'mixed_signal': 'mixed feedback with both positive and negative signals',
-            'positive_trend': 'positive trend across companies',
-            'negative_trend': 'negative trend across companies',
-            'mixed_trend': 'mixed sentiment trend across companies'
-        }
+        if company_count >= 3 and quote_count >= 6 and enhanced_confidence >= 3.0:
+            return 'Tier 1: Multi-company, strong evidence'
+        elif company_count >= 2 and quote_count >= 3 and enhanced_confidence >= 2.5:
+            return 'Tier 2: Two companies, moderate evidence'
+        elif company_count == 1 and quote_count >= 2 and enhanced_confidence >= 2.0:
+            return 'Tier 3: Single company, good evidence'
+        elif company_count == 1 and quote_count >= 1 and enhanced_confidence >= 1.5:
+            return 'Tier 4: Single company, anecdotal evidence'
+        else:
+            return 'Tier 5: Insufficient evidence'
+    
+    def _generate_pattern_based_finding_text(self, criterion: str, pattern: Dict, finding_type: str, criterion_desc: str) -> str:
+        """Generate finding text based on pattern characteristics"""
         
-        finding_description = finding_type_descriptions.get(finding_type, finding_type)
+        relevance_level = pattern.get('relevance_level', 'moderate')
+        avg_score = pattern.get('avg_score', 0)
+        quote_count = pattern.get('quote_count', 0)
+        company_count = pattern.get('company_count', 1)
+        themes = pattern.get('themes', [])
         
-        prompt = ChatPromptTemplate.from_template("""
-            Generate an executive-ready finding using the Buried Wins Findings Criteria v4.0 framework.
-            
-            CRITERION: {criterion} - {criterion_desc}
-            FINDING TYPE: {finding_type} ({finding_description})
-            ENHANCED CONFIDENCE: {confidence_score:.1f}/10.0
-            CRITERIA MET: {criteria_met}/8 (Novelty, Actionability, Specificity, Materiality, Recurrence, Stakeholder Weight, Tension/Contrast, Metric/Quantification)
-            
-            PATTERN SUMMARY:
-            {pattern_summary}
-            
-            SELECTED EVIDENCE:
-            {selected_evidence}
-            
-            REQUIREMENTS (Buried Wins v4.0):
-            - Write 2-3 sentences maximum
-            - Focus on actionable insights that could influence executive decision-making
-            - Use business language with specific impact
-            - Include material business implications
-            - Be clear, direct, and executive-ready
-            - Reference specific criteria met if relevant
-            - For mixed_signal: Highlight the conflicting feedback and business implications
-            
-            OUTPUT: Just the finding text, no additional formatting.
-            """)
+        # Base description
+        if relevance_level == 'critical':
+            if finding_type == 'exceptional_strength':
+                base_text = f"Exceptional feedback on {criterion_desc} with {avg_score:.1f} average score from {quote_count} quotes"
+            else:
+                base_text = f"Critical feedback on {criterion_desc} with {avg_score:.1f} average score from {quote_count} quotes"
+        elif relevance_level == 'high':
+            base_text = f"Strong feedback on {criterion_desc} with {avg_score:.1f} average score from {quote_count} quotes"
+        else:  # moderate
+            base_text = f"Moderate feedback on {criterion_desc} with {avg_score:.1f} average score from {quote_count} quotes"
         
-        # Create enhanced pattern summary
-        pattern_summary = []
-        for pattern in patterns[:3]:
-            summary = f"Company: {pattern.get('company', 'Multiple')}, Score: {pattern['avg_score']:.1f}, Quotes: {pattern['quote_count']}"
-            if pattern['themes']:
-                summary += f", Themes: {', '.join(pattern['themes'][:3])}"
-            pattern_summary.append(summary)
+        # Add company context
+        if company_count > 1:
+            base_text += f" across {company_count} companies"
+        else:
+            base_text += f" from {pattern.get('company', 'one company')}"
         
-        # Create selected evidence summary
-        selected_evidence = []
-        for quote in best_pattern.get('selected_quotes', [])[:2]:
-            evidence = f"Score {quote.get('score', 0)}: {quote.get('original_quote', '')[:150]}..."
-            selected_evidence.append(evidence)
+        # Add themes if available
+        if themes:
+            theme_text = ', '.join(themes[:3])  # Top 3 themes
+            base_text += f". Key themes: {theme_text}"
         
-        try:
-            result = self.llm.invoke(prompt.format_messages(
-                criterion=criterion,
-                criterion_desc=criterion_desc,
-                finding_type=finding_type,
-                finding_description=finding_description,
-                confidence_score=best_pattern['enhanced_confidence'],
-                criteria_met=best_pattern.get('criteria_met', 0),
-                pattern_summary='\n'.join(pattern_summary),
-                selected_evidence='\n'.join(selected_evidence)
-            ))
-            
-            return result.content.strip()
-            
-        except Exception as e:
-            logger.error(f"❌ Error generating enhanced finding text: {e}")
-            # Fallback text
-            return f"Significant {finding_type} identified in {criterion} with confidence {best_pattern['enhanced_confidence']:.1f}/10.0 across {best_pattern.get('company_count', 1)} companies."
+        # Add deal impact context
+        deal_impacts = pattern.get('deal_impacts', {})
+        if deal_impacts:
+            impact_items = [f"{impact} ({count})" for impact, count in deal_impacts.items() if count > 0]
+            if impact_items:
+                impact_text = ', '.join(impact_items[:2])  # Top 2 impacts
+                base_text += f". Deal impacts: {impact_text}"
+        
+        return base_text
     
     def save_enhanced_findings_to_supabase(self, findings: List[Dict], client_id: str = 'default'):
         """Save enhanced findings to Supabase, including credibility tier"""
@@ -970,6 +915,18 @@ def run_stage3_analysis(client_id: str = 'default'):
 
 # Run the analysis
 if __name__ == "__main__":
-    print("🔍 Running Enhanced Stage 3: Findings Identification (Buried Wins v4.0)...")
-    result = run_stage3_analysis()
+    import sys
+    
+    # Parse command line arguments
+    client_id = 'default'
+    if '--client_id' in sys.argv:
+        try:
+            client_id_index = sys.argv.index('--client_id')
+            if client_id_index + 1 < len(sys.argv):
+                client_id = sys.argv[client_id_index + 1]
+        except (ValueError, IndexError):
+            pass
+    
+    print(f"🔍 Running Enhanced Stage 3: Findings Identification (Buried Wins v4.0) for client '{client_id}'...")
+    result = run_stage3_analysis(client_id=client_id)
     print(f"✅ Enhanced Stage 3 complete: {result}") 

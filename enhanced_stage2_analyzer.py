@@ -44,6 +44,9 @@ class SupabaseStage2Analyzer:
         # Load criteria from config
         self.criteria = self.config.get('criteria', {})
         
+        # Store current client_id for data siloing
+        self.current_client_id = 'default'
+        
         # Quality tracking
         self.quality_metrics = {
             "total_quotes_analyzed": 0,
@@ -262,7 +265,7 @@ class SupabaseStage2Analyzer:
                     scores, weighted_scores,
                     parsed.get("priorities", {}), parsed.get("confidence", {}),
                     parsed.get("relevance_explanation", {}), context_keywords,
-                    parsed.get("question_relevance", {}), client_id='default'
+                    parsed.get("question_relevance", {}), client_id=self.current_client_id
                 )
                 
                 # Track metrics
@@ -366,6 +369,9 @@ class SupabaseStage2Analyzer:
     
     def process_incremental(self, force_reprocess: bool = False, client_id: str = 'default') -> Dict:
         """Process quotes incrementally - only new ones unless forced, filtered by client_id"""
+        
+        # Set current client_id for data siloing
+        self.current_client_id = client_id
         
         logger.info("🚀 STAGE 2: INCREMENTAL QUOTE LABELING")
         logger.info("=" * 60)
