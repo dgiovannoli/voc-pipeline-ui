@@ -54,6 +54,27 @@ def extract_interviewee_and_company(filename):
             break
     return interviewee, company
 
+def get_client_id():
+    """Safely get client_id from session state, ensuring it's properly set"""
+    client_id = st.session_state.get('client_id', '')
+    
+    # If client_id is not set or is default, show error and return None
+    if not client_id or client_id == 'default':
+        st.error("❌ **Client ID Required**")
+        st.info("Please set a client ID in the sidebar before proceeding.")
+        st.stop()
+    
+    return client_id
+
+def validate_client_id():
+    """Validate that client_id is properly set, show error if not"""
+    client_id = st.session_state.get('client_id', '')
+    if not client_id or client_id == 'default':
+        st.error("❌ **Client ID Required**")
+        st.info("Please set a client ID in the sidebar before proceeding.")
+        return False
+    return True
+
 def save_uploaded_files(uploaded_files, upload_dir="uploads"):
     """
     Save uploaded Streamlit files to disk and return a list of file paths.
@@ -258,7 +279,7 @@ def save_stage1_to_supabase(csv_path):
     try:
         df = pd.read_csv(csv_path)
         saved_count = 0
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         
         for _, row in df.iterrows():
             # Log row keys for debugging
@@ -294,7 +315,7 @@ def run_stage2_analysis():
     
     try:
         from enhanced_stage2_analyzer import SupabaseStage2Analyzer
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         analyzer = SupabaseStage2Analyzer()
         result = analyzer.process_incremental(client_id=client_id)
         return result
@@ -308,7 +329,7 @@ def get_stage2_summary():
         return None
     
     try:
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         summary = db.get_summary_statistics(client_id=client_id)
         return summary
     except Exception as e:
@@ -322,7 +343,7 @@ def run_stage3_analysis():
         return None
     
     try:
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         analyzer = Stage3FindingsAnalyzer()
         result = analyzer.process_enhanced_findings(client_id=client_id)
         return result
@@ -336,7 +357,7 @@ def get_stage3_summary():
         return None
     
     try:
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         summary = db.get_enhanced_findings_summary(client_id=client_id)
         return summary
     except Exception as e:
@@ -354,7 +375,7 @@ def show_supabase_status():
     
     try:
         # Get summary statistics with client_id filtering
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         summary = db.get_summary_statistics(client_id=client_id)
         
         if "error" in summary:
@@ -427,7 +448,7 @@ def run_stage4_analysis():
     """Run Stage 4 theme analysis"""
     try:
         from stage4_theme_analyzer import Stage4ThemeAnalyzer
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         analyzer = Stage4ThemeAnalyzer()
         result = analyzer.process_themes(client_id=client_id)
         return result
@@ -438,7 +459,7 @@ def run_stage4_analysis():
 def get_stage4_summary():
     """Get Stage 4 themes summary"""
     try:
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         db = SupabaseDatabase()
         return db.get_themes_summary(client_id=client_id)
     except Exception as e:
@@ -479,7 +500,7 @@ def show_stage4_themes():
                 st.error(f"❌ Theme generation failed: {result.get('message', 'Unknown error')}")
     
     # Display themes
-    client_id = st.session_state.get('client_id', 'default')
+    client_id = get_client_id()  # Use helper function
     db = SupabaseDatabase()
     themes_df = db.get_themes(client_id=client_id)
     
@@ -534,18 +555,27 @@ def show_stage4_themes():
                     if theme['business_implications']:
                         st.markdown(f"**Business Implications:** {theme['business_implications']}")
                     
-                    if theme['primary_theme_quote']:
-                        st.markdown(f"**Primary Quote:** {theme['primary_theme_quote'][:200]}...")
-                
-                with col2:
-                    st.metric("Impact Score", f"{theme['avg_confidence_score']:.1f}")
-                    st.metric("Confidence", f"{theme['avg_confidence_score']:.1f}")
-                    st.metric("Companies", theme['company_count'])
-                    st.metric("Findings", theme['finding_count'])
-                    
-                    if theme['competitive_flag']:
-                        st.success("🏆 Competitive Theme")
-        
+                    # Show all contributing quotes
+                    st.markdown("**All Contributing Quotes:**")
+                    quotes = theme.get('quotes', [])
+                    if quotes:
+                        for quote in quotes:
+                            quote_text = quote.get('text', '')
+                            impact = quote.get('impact_score', None)
+                            confidence = quote.get('confidence_score', None)
+                            attribution = quote.get('attribution', '')
+                            st.markdown(f"- {quote_text}")
+                            if impact is not None or confidence is not None:
+                                score_str = []
+                                if impact is not None:
+                                    score_str.append(f"Impact: {impact:.1f}/5")
+                                if confidence is not None:
+                                    score_str.append(f"Confidence: {confidence:.1f}/10")
+                                st.caption(' | '.join(score_str))
+                            if attribution:
+                                st.caption(attribution)
+                    else:
+                        st.warning("No detailed quote information available for this theme.")
         # Export themes
         if st.button("📥 Export Themes"):
             csv = filtered_df.to_csv(index=False)
@@ -562,7 +592,7 @@ def show_stage4_themes():
 def get_stage5_summary():
     """Get Stage 5 executive synthesis summary"""
     try:
-        client_id = st.session_state.get('client_id', 'default')
+        client_id = get_client_id()  # Use helper function
         db = SupabaseDatabase()
         return db.get_executive_synthesis_summary(client_id=client_id)
     except Exception as e:
@@ -594,7 +624,7 @@ def show_stage5_synthesis():
     # Generate synthesis button
     if st.button("🚀 Generate Executive Synthesis", type="primary"):
         with st.spinner("Generating executive synthesis with criteria scorecard..."):
-            client_id = st.session_state.get('client_id', 'default')
+            client_id = get_client_id()  # Use helper function
             result = run_stage5_analysis(client_id=client_id)
             
             if result.get("status") == "success":
@@ -604,7 +634,7 @@ def show_stage5_synthesis():
                 st.error(f"❌ Synthesis failed: {result.get('message', 'Unknown error')}")
     
     # Display executive themes
-    client_id = st.session_state.get('client_id', 'default')
+    client_id = get_client_id()  # Use helper function
     db = SupabaseDatabase()
     themes_df = db.get_executive_themes(client_id=client_id)
     
@@ -696,7 +726,7 @@ def show_stage5_criteria_scorecard():
     # Generate scorecard button
     if st.button("📊 Generate Criteria Scorecard", type="primary"):
         with st.spinner("Generating criteria scorecard..."):
-            client_id = st.session_state.get('client_id', 'default')
+            client_id = get_client_id()  # Use helper function
             db = SupabaseDatabase()
             scorecard = db.generate_criteria_scorecard(client_id=client_id)
             
@@ -1354,7 +1384,7 @@ def show_database_management():
         
         with col2:
             # Show current client context
-            current_client = st.session_state.get('client_id', 'default')
+            current_client = get_client_id()  # Use helper function
             current_count = client_summary.get(current_client, 0)
             st.metric("Current Client Records", current_count)
         
@@ -1432,7 +1462,7 @@ def show_database_management():
             new_current_client = st.selectbox(
                 "Select Client ID",
                 list(client_summary.keys()),
-                index=list(client_summary.keys()).index(st.session_state.get('client_id', 'default')) if st.session_state.get('client_id', 'default') in client_summary else 0
+                index=list(client_summary.keys()).index(get_client_id()) if get_client_id() in client_summary else 0
             )
         
         with col2:
@@ -1479,7 +1509,7 @@ def show_database_management():
 # --- Add helper to show labeled quotes ---
 def show_labeled_quotes():
     st.subheader("📋 Labeled Quotes (Stage 2 Results)")
-    client_id = st.session_state.get('client_id', 'default')
+    client_id = get_client_id()  # Use helper function
     df = db.get_quote_analysis(client_id=client_id)
     if df.empty:
         st.info("No labeled quotes found. Run Stage 2 analysis.")
@@ -1503,7 +1533,7 @@ def show_labeled_quotes():
 # --- Add helper to show findings ---
 def show_findings():
     st.subheader("🔍 Findings (Stage 3 Results)")
-    client_id = st.session_state.get('client_id', 'default')
+    client_id = get_client_id()  # Use helper function
     df = db.get_enhanced_findings(client_id=client_id)
     if df.empty:
         st.info("No findings found. Run Stage 3 analysis.")
@@ -1537,38 +1567,103 @@ def main():
     if 'uploaded_paths' not in st.session_state:
         st.session_state.uploaded_paths = []
     if 'client_id' not in st.session_state:
-        st.session_state.client_id = 'default'
+        st.session_state.client_id = ''  # Start with empty client_id to force input
     
     # Sidebar navigation
     st.sidebar.title("🎤 VOC Pipeline")
     
-    # Client ID selector with persistence
+    # Client ID selector with persistence and validation
     st.sidebar.markdown("---")
     st.sidebar.subheader("🏢 Client Settings")
     
-    # Client ID input with validation
-    new_client_id = st.sidebar.text_input(
-        "Client ID",
-        value=st.session_state.client_id,
-        help="Enter a unique identifier for this client's data. This ensures data isolation between different clients.",
-        placeholder="e.g., client_123, acme_corp, project_alpha"
-    )
+    # Check if client_id is properly set (not default or empty)
+    current_client_id = st.session_state.get('client_id', '')
+    is_client_set = current_client_id and current_client_id != 'default'
     
-    # Validate and update client ID
-    if new_client_id != st.session_state.client_id:
-        if new_client_id.strip():
-            # Clean the client ID (alphanumeric and underscores only)
-            clean_client_id = re.sub(r'[^a-zA-Z0-9_]', '', new_client_id.strip())
+    if not is_client_set:
+        # Force client ID input if not properly set
+        st.sidebar.warning("⚠️ **Client ID Required**")
+        st.sidebar.info("Please enter a client ID to continue. This ensures your data is properly organized.")
+        
+        # Client ID input with strict validation
+        new_client_id = st.sidebar.text_input(
+            "🔑 Client ID *",
+            value="",
+            help="Enter a unique identifier for this client's data. This ensures data isolation between different clients.",
+            placeholder="e.g., Rev, AcmeCorp, ProjectAlpha",
+            key="client_id_input"
+        )
+        
+        # Validate client ID
+        if new_client_id:
+            # Clean the client ID (alphanumeric, underscores, and periods only)
+            clean_client_id = re.sub(r'[^a-zA-Z0-9_.]', '', new_client_id.strip())
+            
             if clean_client_id != new_client_id.strip():
                 st.sidebar.warning(f"⚠️ Client ID cleaned to: {clean_client_id}")
-            st.session_state.client_id = clean_client_id
-            st.sidebar.success(f"✅ Client ID set to: {clean_client_id}")
+            
+            if len(clean_client_id) < 2:
+                st.sidebar.error("❌ Client ID must be at least 2 characters long")
+            elif clean_client_id.lower() in ['default', 'test', 'demo', 'example']:
+                st.sidebar.error("❌ Please use a meaningful client ID, not a placeholder")
+            else:
+                st.session_state.client_id = clean_client_id
+                st.sidebar.success(f"✅ Client ID set to: {clean_client_id}")
+                st.sidebar.info("🔄 Refreshing interface...")
+                st.rerun()
         else:
-            st.session_state.client_id = 'default'
-            st.sidebar.info("ℹ️ Using default client ID")
-    
-    # Show current client context
-    st.sidebar.markdown(f"**Current Client:** `{st.session_state.client_id}`")
+            st.sidebar.error("❌ Client ID is required to continue")
+            
+        # Show helpful examples
+        st.sidebar.markdown("**💡 Examples:**")
+        st.sidebar.markdown("- `Rev` (for Rev company)")
+        st.sidebar.markdown("- `AcmeCorp` (for Acme Corporation)")
+        st.sidebar.markdown("- `ProjectAlpha` (for specific project)")
+        st.sidebar.markdown("- `Client_2024` (for time-based organization)")
+        
+    else:
+        # Client ID is properly set - show current status and allow changes
+        st.sidebar.success(f"✅ **Current Client:** `{current_client_id}`")
+        
+        # Show client data summary if available
+        if SUPABASE_AVAILABLE:
+            try:
+                client_summary = db.get_client_summary()
+                current_count = client_summary.get(current_client_id, 0)
+                total_records = sum(client_summary.values())
+                
+                if current_count > 0:
+                    st.sidebar.metric("📊 Your Records", current_count)
+                else:
+                    st.sidebar.info("📭 No data yet for this client")
+                    
+                if total_records > current_count:
+                    st.sidebar.info(f"📈 {total_records - current_count} records for other clients")
+                    
+            except Exception as e:
+                st.sidebar.warning("⚠️ Could not load client data")
+        
+        # Option to change client ID
+        if st.sidebar.button("🔄 Change Client ID", help="Switch to a different client"):
+            st.session_state.client_id = ''
+            st.sidebar.info("🔄 Please enter a new client ID above")
+            st.rerun()
+        
+        # Option to see all clients (if database available)
+        if SUPABASE_AVAILABLE:
+            try:
+                client_summary = db.get_client_summary()
+                if len(client_summary) > 1:
+                    st.sidebar.markdown("---")
+                    st.sidebar.markdown("**🔍 Other Clients:**")
+                    for client, count in sorted(client_summary.items()):
+                        if client != current_client_id:
+                            if st.sidebar.button(f"📊 {client} ({count} records)", key=f"switch_{client}"):
+                                st.session_state.client_id = client
+                                st.sidebar.success(f"✅ Switched to: {client}")
+                                st.rerun()
+            except:
+                pass
     
     # Navigation options with cleaner labels
     nav_options = {
@@ -1586,10 +1681,16 @@ def main():
     
     # Determine default page based on current step
     default_index = 0  # Welcome
-    if st.session_state.current_step == 2:
-        default_index = 3  # Stage 2: Label Quotes
-    elif st.session_state.current_step == 1:
+    if st.session_state.current_step == 1:
         default_index = 2  # Stage 1: Extract Quotes
+    elif st.session_state.current_step == 2:
+        default_index = 3  # Stage 2: Label Quotes
+    elif st.session_state.current_step == 3:
+        default_index = 4  # Stage 3: Findings
+    elif st.session_state.current_step == 4:
+        default_index = 5  # Stage 4: Generate Themes
+    elif st.session_state.current_step == 5:
+        default_index = 6  # Stage 5: Executive Summary
     
     selected = st.sidebar.selectbox(
         "Navigation",
@@ -1679,7 +1780,7 @@ def main():
             st.info("Please configure your .env file with database credentials")
         else:
             client_summary = db.get_client_summary()
-            current_client = st.session_state.get('client_id', 'default')
+            current_client = get_client_id()  # Use helper function
             current_count = client_summary.get(current_client, 0)
             total_records = sum(client_summary.values())
             if total_records > 0 and current_count == 0:
@@ -1758,17 +1859,20 @@ def main():
                             result = run_stage3_analysis()
                             if result:
                                 st.success("✅ Findings identification complete!")
+                                # Only show findings once, after analysis or on page load
                                 show_findings()
                                 if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
                                     st.session_state.current_step = 4
                                     st.rerun()
                             else:
                                 st.error("❌ Findings identification failed")
-                    show_findings()
-                    if findings_summary.get('total_findings', 0) > 0:
-                        if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
-                            st.session_state.current_step = 4
-                            st.rerun()
+                    else:
+                        # Only show findings once, not duplicated
+                        show_findings()
+                        if findings_summary.get('total_findings', 0) > 0:
+                            if st.button("🎨 Proceed to Stage 4: Generate Themes", type="primary"):
+                                st.session_state.current_step = 4
+                                st.rerun()
                 else:
                     st.info("📊 No findings available yet. Run the analysis to identify findings.")
     
@@ -1787,34 +1891,12 @@ def main():
                 themes_summary = get_stage4_summary()
                 if themes_summary:
                     st.success(f"✅ Generated {themes_summary.get('total_themes', 0)} themes")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Total Themes", themes_summary.get('total_themes', 0))
-                    with col2:
-                        st.metric("Competitive Themes", themes_summary.get('competitive_themes', 0))
-                    with col3:
-                        st.metric("Strategic Themes", themes_summary.get('strategic_themes', 0))
-                    
-                    # Run analysis button
-                    if st.button("🔄 Generate Themes", type="primary", help="Generate themes from findings and insights"):
-                        with st.spinner("Generating themes from findings..."):
-                            result = run_stage4_analysis()
-                            if result:
-                                st.success("✅ Theme generation complete!")
-                                st.json(result)
-                            else:
-                                st.error("❌ Theme generation failed")
-                    
-                    # Show themes if available
-                    if themes_summary.get('total_themes', 0) > 0:
-                        st.subheader("🎨 Generated Themes")
-                        show_stage4_themes()
-                        
-                        # CTA button to go to Stage 5
-                        if st.button("📈 Continue to Stage 5: Executive Summary", type="primary", help="Move to the final stage to create executive synthesis"):
-                            st.session_state.current_step = 5
-                            st.rerun()
+                    # Only keep the main theme display section
+                    show_stage4_themes()
+                    # CTA button to go to Stage 5
+                    if st.button("📈 Continue to Stage 5: Executive Summary", type="primary", help="Move to the final stage to create executive synthesis"):
+                        st.session_state.current_step = 5
+                        st.rerun()
                 else:
                     st.info("📊 No themes available yet. Run the analysis to generate themes.")
     

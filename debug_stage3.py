@@ -4,7 +4,7 @@ from stage3_findings_analyzer import Stage3FindingsAnalyzer
 
 def debug_stage3():
     analyzer = Stage3FindingsAnalyzer()
-    df = analyzer.get_scored_quotes('Rev.')
+    df = analyzer.get_scored_quotes('Rev')
     print(f"Loaded {len(df)} scored quotes")
     
     patterns = analyzer.identify_enhanced_patterns(df)
