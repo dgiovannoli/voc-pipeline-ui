@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 import logging
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Tuple, Set, Any
 import yaml
 from collections import defaultdict, Counter
 import re
@@ -344,7 +344,15 @@ class Stage3FindingsAnalyzer:
                             pattern['criteria_scores'] = criteria_scores
                             pattern['criteria_met'] = criteria_met
                             pattern['selected_quotes'] = selected_quotes
-                            valid_patterns.append(pattern)
+                            
+                            # NEW: Validate evidence threshold
+                            if self._validate_evidence_threshold(pattern):
+                                pattern['evidence_threshold_met'] = True
+                                valid_patterns.append(pattern)
+                                logger.info(f"✅ Pattern for {criterion} meets evidence threshold")
+                            else:
+                                logger.warning(f"⚠️ Pattern for {criterion} does not meet evidence threshold - skipping")
+                                continue
             
             if valid_patterns:
                 # Sort by enhanced confidence score
@@ -532,29 +540,120 @@ class Stage3FindingsAnalyzer:
         return dict(combined)
     
     def _extract_themes(self, explanations: List[str]) -> List[str]:
-        """Extract common themes from relevance explanations"""
+        """Extract specific, actionable themes from relevance explanations"""
         if not explanations:
             return []
         
-        # Enhanced keyword extraction
-        keywords = []
-        for explanation in explanations:
-            # Extract key phrases
-            words = explanation.lower().split()
-            for i, word in enumerate(words):
-                if len(word) > 4 and word not in ['about', 'their', 'this', 'that', 'with', 'from']:
-                    keywords.append(word)
+        # Combine all explanations for analysis
+        combined_text = ' '.join(explanations).lower()
         
-        # Count and return top themes
-        keyword_counts = Counter(keywords)
-        return [word for word, count in keyword_counts.most_common(5)]
+        # Enhanced theme extraction with more specific patterns
+        themes = []
+        
+        # Look for specific feature mentions
+        feature_patterns = [
+            r'accuracy|precision|quality',
+            r'speed|fast|quick|turnaround',
+            r'cost|price|pricing|affordable',
+            r'ease of use|user friendly|simple',
+            r'integration|api|technical',
+            r'security|compliance|privacy',
+            r'support|service|help',
+            r'reliability|stability|dependable',
+            r'scalability|growth|expansion',
+            r'customization|flexibility|adaptable'
+        ]
+        
+        for pattern in feature_patterns:
+            if re.search(pattern, combined_text):
+                # Extract the specific feature mentioned
+                matches = re.findall(pattern, combined_text)
+                if matches:
+                    # Create more specific theme
+                    feature = matches[0]
+                    if feature in ['accuracy', 'precision', 'quality']:
+                        themes.append('transcription accuracy and quality')
+                    elif feature in ['speed', 'fast', 'quick', 'turnaround']:
+                        themes.append('speed and turnaround time')
+                    elif feature in ['cost', 'price', 'pricing', 'affordable']:
+                        themes.append('cost effectiveness and pricing')
+                    elif feature in ['ease of use', 'user friendly', 'simple']:
+                        themes.append('ease of use and user experience')
+                    elif feature in ['integration', 'api', 'technical']:
+                        themes.append('technical integration capabilities')
+                    elif feature in ['security', 'compliance', 'privacy']:
+                        themes.append('security and compliance features')
+                    elif feature in ['support', 'service', 'help']:
+                        themes.append('customer support and service quality')
+                    elif feature in ['reliability', 'stability', 'dependable']:
+                        themes.append('reliability and system stability')
+                    elif feature in ['scalability', 'growth', 'expansion']:
+                        themes.append('scalability for business growth')
+                    elif feature in ['customization', 'flexibility', 'adaptable']:
+                        themes.append('customization and flexibility options')
+        
+        # Look for business impact themes
+        business_patterns = [
+            r'deal breaker|critical|essential',
+            r'differentiator|unique|competitive',
+            r'roi|return on investment|value',
+            r'efficiency|productivity|time saving',
+            r'risk|concern|issue|problem'
+        ]
+        
+        for pattern in business_patterns:
+            if re.search(pattern, combined_text):
+                matches = re.findall(pattern, combined_text)
+                if matches:
+                    impact = matches[0]
+                    if impact in ['deal breaker', 'critical', 'essential']:
+                        themes.append('critical business requirements')
+                    elif impact in ['differentiator', 'unique', 'competitive']:
+                        themes.append('competitive differentiation factors')
+                    elif impact in ['roi', 'return on investment', 'value']:
+                        themes.append('return on investment and value')
+                    elif impact in ['efficiency', 'productivity', 'time saving']:
+                        themes.append('operational efficiency gains')
+                    elif impact in ['risk', 'concern', 'issue', 'problem']:
+                        themes.append('risk mitigation and concerns')
+        
+        # Look for specific use case themes
+        use_case_patterns = [
+            r'legal|law|attorney|lawyer',
+            r'medical|healthcare|patient',
+            r'research|academic|university',
+            r'business|corporate|enterprise',
+            r'government|public sector'
+        ]
+        
+        for pattern in use_case_patterns:
+            if re.search(pattern, combined_text):
+                matches = re.findall(pattern, combined_text)
+                if matches:
+                    use_case = matches[0]
+                    if use_case in ['legal', 'law', 'attorney', 'lawyer']:
+                        themes.append('legal industry specific needs')
+                    elif use_case in ['medical', 'healthcare', 'patient']:
+                        themes.append('healthcare compliance requirements')
+                    elif use_case in ['research', 'academic', 'university']:
+                        themes.append('academic research applications')
+                    elif use_case in ['business', 'corporate', 'enterprise']:
+                        themes.append('enterprise business solutions')
+                    elif use_case in ['government', 'public sector']:
+                        themes.append('government sector requirements')
+        
+        # Remove duplicates and limit to top 5 most specific themes
+        unique_themes = list(set(themes))
+        unique_themes.sort(key=lambda x: len(x), reverse=True)  # Prefer longer, more specific themes
+        
+        return unique_themes[:5]
     
     def generate_enhanced_findings(self, patterns: Dict) -> List[Dict]:
         """Generate findings with enhanced confidence scoring and credibility enforcement"""
         logger.info("🎯 Generating enhanced findings...")
         
         findings = []
-        used_primary_quote_ids: Set[str] = set()  # Track used primary quotes for recycling prevention
+        used_quote_ids: Set[str] = set()  # Track ALL used quote IDs for recycling prevention
         
         for criterion, criterion_patterns in patterns.items():
             if not criterion_patterns:
@@ -569,7 +668,7 @@ class Stage3FindingsAnalyzer:
                     # Try to get response_id if present in quote dict
                     rid = q.get('response_id') or q.get('id') or q.get('quote_id')
                     if rid:
-                        unique_quote_ids.add(rid)
+                        unique_quote_ids.add(str(rid))
                     # Try to get company if present
                     company = q.get('company')
                     if company:
@@ -581,14 +680,22 @@ class Stage3FindingsAnalyzer:
                     unique_quote_ids = set([str(finding['quote_count'])])
                 num_companies = len(companies)
                 num_quotes = len(unique_quote_ids)
-                # --- Quote recycling prevention ---
-                primary_quote = finding['selected_quotes'][0] if finding['selected_quotes'] else None
-                primary_quote_id = primary_quote.get('response_id') if primary_quote else None
-                if primary_quote_id and primary_quote_id in used_primary_quote_ids:
-                    logger.warning(f"⚠️ Skipping finding for {criterion} - primary quote {primary_quote_id} already used in another finding")
-                    continue  # Block duplicate primary quote
-                if primary_quote_id:
-                    used_primary_quote_ids.add(primary_quote_id)
+                
+                # --- IMPROVED Quote recycling prevention ---
+                # Check if ANY quote in this finding has been used before
+                quote_already_used = False
+                for quote_id in unique_quote_ids:
+                    if quote_id in used_quote_ids:
+                        quote_already_used = True
+                        break
+                
+                if quote_already_used:
+                    logger.warning(f"⚠️ Skipping finding for {criterion} - quotes already used in another finding")
+                    continue  # Block finding with recycled quotes
+                
+                # Add all quote IDs to used set
+                used_quote_ids.update(unique_quote_ids)
+                
                 # --- Credibility tier assignment ---
                 if num_companies >= 3 and num_quotes >= 6:
                     credibility_tier = 'Tier 1: Multi-company, strong evidence'
@@ -599,13 +706,17 @@ class Stage3FindingsAnalyzer:
                 else:
                     credibility_tier = 'Tier 4: Insufficient evidence (not saved)'
                 finding['credibility_tier'] = credibility_tier
+                
                 # --- Block or downgrade based on evidence ---
                 if credibility_tier == 'Tier 4: Insufficient evidence (not saved)':
                     logger.warning(f"⚠️ Skipping finding for {criterion} - insufficient evidence: {num_companies} companies, {num_quotes} quotes")
                     continue
+                
                 findings.append(finding)
+        
         # Sort findings by confidence score
         findings.sort(key=lambda x: x['enhanced_confidence'], reverse=True)
+        
         # Classify findings by priority
         for finding in findings:
             if finding['enhanced_confidence'] >= self.config['stage3']['confidence_thresholds']['priority_finding']:
@@ -616,6 +727,7 @@ class Stage3FindingsAnalyzer:
                 self.processing_metrics["standard_findings"] += 1
             else:
                 finding['priority_level'] = 'low'
+        
         logger.info(f"✅ Generated {len(findings)} enhanced findings (with credibility enforcement)")
         return findings
     
@@ -646,57 +758,46 @@ class Stage3FindingsAnalyzer:
         return findings
     
     def _create_pattern_based_finding(self, criterion: str, pattern: Dict) -> Optional[Dict]:
-        """Create a finding based on a single pattern - NEW METHOD FOR EVIDENCE-BACKED INSIGHTS"""
-        if not pattern:
+        """Create a finding from a validated pattern"""
+        try:
+            # Get criterion description
+            criterion_desc = self.criteria.get(criterion, {}).get('description', criterion.replace('_', ' ').title())
+            
+            # Determine finding type based on pattern characteristics
+            finding_type = self._determine_finding_type(pattern)
+            
+            # Determine credibility tier
+            credibility_tier = self._determine_credibility_tier(pattern)
+            
+            # Generate finding text
+            description = self._generate_pattern_based_finding_text(criterion, pattern, finding_type, criterion_desc)
+            
+            # Create finding
+            finding = {
+                'criterion': criterion,
+                'finding_type': finding_type,
+                'priority_level': 'standard',  # Will be updated in main function
+                'credibility_tier': credibility_tier,
+                'title': f"{criterion.replace('_', ' ').title()} - {finding_type.replace('_', ' ').title()} ({pattern.get('relevance_level', 'moderate')} relevance)",
+                'description': description,
+                'enhanced_confidence': pattern.get('enhanced_confidence', 0),
+                'criteria_scores': pattern.get('criteria_scores', {}),
+                'criteria_met': pattern.get('criteria_met', 0),
+                'impact_score': pattern.get('avg_score', 0),
+                'companies_affected': pattern.get('company_count', 1),
+                'quote_count': pattern.get('quote_count', 0),
+                'selected_quotes': pattern.get('selected_quotes', []),
+                'themes': pattern.get('themes', []),
+                'deal_impacts': pattern.get('deal_impacts', {}),
+                'generated_at': datetime.now().isoformat(),
+                'evidence_threshold_met': pattern.get('evidence_threshold_met', False)  # Pass through from validated pattern
+            }
+            
+            return finding
+            
+        except Exception as e:
+            logger.error(f"❌ Error creating finding for {criterion}: {e}")
             return None
-        
-        # Ensure we have selected quotes
-        selected_quotes = pattern.get('selected_quotes', [])
-        if not selected_quotes:
-            logger.warning(f"⚠️ Skipping finding for {criterion} - no selected_quotes found in pattern")
-            return None
-        
-        criterion_desc = self.criteria.get(criterion, {}).get('description', criterion)
-        
-        # Determine finding type based on relevance level and sentiment
-        finding_type = self._determine_finding_type(pattern)
-        
-        # Generate finding text
-        finding_text = self._generate_pattern_based_finding_text(criterion, pattern, finding_type, criterion_desc)
-        
-        # Format selected quotes with attribution
-        formatted_quotes = []
-        for quote in selected_quotes[:self.config['stage3']['max_quotes_per_finding']]:
-            formatted_quotes.append({
-                'text': quote.get('original_quote', ''),
-                'score': quote.get('relevance_score', 0),
-                'attribution': f"Score: {quote.get('relevance_score', 0)} - {quote.get('context_keywords', 'neutral')}"
-            })
-        
-        # Determine credibility tier based on evidence strength
-        credibility_tier = self._determine_credibility_tier(pattern)
-        
-        return {
-            'criterion': criterion,
-            'finding_type': finding_type,
-            'priority_level': 'standard',  # Will be updated in main function
-            'title': f"{criterion.replace('_', ' ').title()} - {finding_type.title()} ({pattern['relevance_level']} relevance)",
-            'description': finding_text,
-            'enhanced_confidence': pattern['enhanced_confidence'],
-            'criteria_scores': pattern.get('criteria_scores', {}),
-            'criteria_met': pattern.get('criteria_met', 0),
-            'impact_score': pattern['avg_score'],
-            'companies_affected': pattern.get('company_count', 1),
-            'quote_count': pattern['quote_count'],
-            'selected_quotes': formatted_quotes,
-            'themes': pattern['themes'],
-            'deal_impacts': pattern['deal_impacts'],
-            'relevance_level': pattern['relevance_level'],
-            'score_range': pattern['score_range'],
-            'is_cross_company': pattern.get('is_cross_company', False),
-            'credibility_tier': credibility_tier,
-            'generated_at': datetime.now().isoformat()
-        }
     
     def _determine_finding_type(self, pattern: Dict) -> str:
         """Determine finding type based on pattern characteristics"""
@@ -798,6 +899,7 @@ class Stage3FindingsAnalyzer:
                 'themes': json.dumps(finding['themes']),
                 'deal_impacts': json.dumps(finding['deal_impacts']),
                 'generated_at': finding['generated_at'],
+                'evidence_threshold_met': finding.get('evidence_threshold_met', False),
                 'client_id': client_id
             }
             self.db.save_enhanced_finding(db_finding, client_id=client_id)
@@ -907,6 +1009,32 @@ class Stage3FindingsAnalyzer:
         logger.info(f"\n📈 PATTERNS BY CRITERION:")
         for criterion, pattern_count in summary['patterns_by_criterion'].items():
             logger.info(f"  {criterion}: {pattern_count} patterns")
+
+    def _validate_evidence_threshold(self, pattern: Dict) -> bool:
+        """Validate if a pattern meets evidence threshold requirements - RELAXED FOR BETTER INSIGHTS"""
+        quote_count = pattern.get('quote_count', 0)
+        company_count = pattern.get('company_count', 0)
+        enhanced_confidence = pattern.get('enhanced_confidence', 0)
+        criteria_met = pattern.get('criteria_met', 0)
+        
+        # RELAXED Evidence threshold requirements
+        min_quotes = 2  # Reduced from 3
+        min_companies = 1
+        min_confidence = 2.0  # Reduced from 3.0
+        min_criteria_met = 2  # Reduced from 4
+        
+        # Cross-company findings need higher evidence
+        if company_count > 1:
+            min_quotes = 3  # Reduced from 5
+            min_companies = 2
+        
+        # Check all thresholds
+        meets_quotes = quote_count >= min_quotes
+        meets_companies = company_count >= min_companies
+        meets_confidence = enhanced_confidence >= min_confidence
+        meets_criteria = criteria_met >= min_criteria_met
+        
+        return meets_quotes and meets_companies and meets_confidence and meets_criteria
 
 def run_stage3_analysis(client_id: str = 'default'):
     """Run enhanced Stage 3 findings analysis"""

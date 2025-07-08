@@ -416,6 +416,7 @@ class SupabaseDatabase:
                 'themes': finding_data.get('themes', '[]'),
                 'deal_impacts': finding_data.get('deal_impacts', '{}'),
                 'generated_at': finding_data.get('generated_at', datetime.now().isoformat()),
+                'evidence_threshold_met': finding_data.get('evidence_threshold_met', False),
                 'client_id': client_id  # Add client_id for data siloing
             }
             
@@ -614,6 +615,15 @@ class SupabaseDatabase:
         except Exception as e:
             logger.error(f"Error getting themes: {e}")
             return pd.DataFrame()
+
+    def delete_theme(self, theme_id: str, client_id: str = 'default') -> bool:
+        """Delete a theme from the themes table"""
+        try:
+            response = self.supabase.table('themes').delete().eq('id', theme_id).eq('client_id', client_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logger.error(f"Error deleting theme: {e}")
+            return False
 
     def get_themes_summary(self, client_id: str = 'default') -> Dict:
         """Get summary statistics for themes, filtered by client_id"""
