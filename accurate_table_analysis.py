@@ -27,7 +27,7 @@ def analyze_core_pipeline_tables():
             'used_by': ['stage4_theme_analyzer.py'],
             'essential': True
         },
-        'themes': {
+        'stage4_themes': {
             'stage': 'Stage 4',
             'usage': 'Theme generation and storage', 
             'used_by': ['app.py', 'stage5_executive_analyzer.py'],
@@ -92,7 +92,7 @@ def check_table_data():
     db = SupabaseDatabase()
     
     # Check core pipeline tables
-    core_tables = ['stage1_data_responses', 'stage3_findings', 'themes']
+    core_tables = ['stage1_data_responses', 'stage3_findings', 'stage4_themes']
     
     for table in core_tables:
         try:
@@ -122,7 +122,7 @@ def generate_cleanup_recommendations():
     print("\n✅ KEEP (Core Pipeline):")
     print("  - stage1_data_responses (Stage 1)")
     print("  - stage3_findings (Stage 3)") 
-    print("  - themes (Stage 4)")
+    print("  - stage4_themes (Stage 4)")
     
     print("\n⚠️ CONSIDER REMOVING (Experimental/Legacy):")
     print("  - scorecard_themes (Stage 4B experimental)")
@@ -156,7 +156,7 @@ def main():
     generate_cleanup_recommendations()
     
     print("\n✅ Analysis Complete!")
-    print("💡 Core pipeline only uses 3 tables: stage1_data_responses, stage3_findings, themes")
+    print("💡 Core pipeline only uses 3 tables: stage1_data_responses, stage3_findings, stage4_themes")
 
 if __name__ == "__main__":
     main() 
