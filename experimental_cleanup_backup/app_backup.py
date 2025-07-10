@@ -731,7 +731,10 @@ def show_stage5_synthesis():
     else:
         st.info("No executive themes generated yet. Run Stage 5 analysis to generate executive synthesis.")
 
-
+def show_stage5_criteria_scorecard():
+    """Display Stage 5 criteria scorecard"""
+    st.subheader("📊 Executive Criteria Scorecard")
+    
     # Generate scorecard button
     if st.button("📊 Generate Criteria Scorecard", type="primary"):
         with st.spinner("Generating criteria scorecard..."):
@@ -1991,7 +1994,7 @@ def main():
             if not stage2_summary or stage2_summary.get('quotes_with_scores', 0) == 0:
                 st.info("📊 Please run Stage 2 quote scoring first")
             else:
-                
+                from scorecard_theme_ui import display_scorecard_themes
                 client_id = get_client_id()
                 db = SupabaseDatabase()
                 try:
