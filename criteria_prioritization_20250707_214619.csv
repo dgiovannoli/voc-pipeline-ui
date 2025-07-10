@@ -1,0 +1,11 @@
+criterion,priority_score,high_relevance_quotes,total_quotes,relevance_ratio,companies_affected,meets_thresholds,positive_quotes,negative_quotes,neutral_quotes
+commercial_terms,2.25,33,62,53.2%,12,True,20,9,32
+product_capability,2.25,135,226,59.7%,14,True,131,29,54
+speed_responsiveness,2.25,31,55,56.4%,9,True,34,7,14
+security_compliance,2.25,10,19,52.6%,8,True,6,1,12
+integration_technical_fit,1.6666666666666665,8,36,22.2%,4,True,10,0,26
+market_position_reputation,0.9375,5,40,12.5%,9,False,18,2,20
+sales_experience_partnership,0.6486486486486488,4,37,10.8%,10,False,20,1,16
+support_service_quality,0.3409090909090909,5,110,4.5%,13,False,27,8,71
+implementation_onboarding,0.31746031746031744,8,189,4.2%,14,False,65,9,114
+vendor_stability,0.0,0,4,0.0%,3,False,0,1,3

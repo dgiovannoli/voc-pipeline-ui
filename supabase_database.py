@@ -142,7 +142,7 @@ class SupabaseDatabase:
             query = query.eq('client_id', client_id)
             
             # Apply additional filters if provided
-            if filters:
+            if filters and isinstance(filters, dict):
                 for key, value in filters.items():
                     if key in ['company', 'deal_status', 'interviewee_name']:
                         query = query.eq(key, value)
@@ -410,13 +410,15 @@ class SupabaseDatabase:
                 'criteria_scores': finding_data.get('criteria_scores', '{}'),
                 'criteria_met': finding_data.get('criteria_met', 0),
                 'impact_score': finding_data.get('impact_score'),
-                'companies_affected': finding_data.get('companies_affected'),
-                'quote_count': finding_data.get('quote_count'),
+                'companies_affected': int(finding_data.get('companies_affected', 0)) if isinstance(finding_data.get('companies_affected'), (int, str)) and str(finding_data.get('companies_affected', 0)).isdigit() else 0,
+                'quote_count': int(finding_data.get('quote_count', 0)) if isinstance(finding_data.get('quote_count'), (int, str)) and str(finding_data.get('quote_count', 0)).isdigit() else 0,
                 'selected_quotes': finding_data.get('selected_quotes', '[]'),
                 'themes': finding_data.get('themes', '[]'),
                 'deal_impacts': finding_data.get('deal_impacts', '{}'),
                 'generated_at': finding_data.get('generated_at', datetime.now().isoformat()),
                 'evidence_threshold_met': finding_data.get('evidence_threshold_met', False),
+                'interview_companies': finding_data.get('interview_companies', []) if isinstance(finding_data.get('interview_companies'), list) else [],
+                'interviewee_names': finding_data.get('interviewee_names', []) if isinstance(finding_data.get('interviewee_names'), list) else [],
                 'client_id': client_id  # Add client_id for data siloing
             }
             

@@ -1698,6 +1698,7 @@ def main():
                     
             except Exception as e:
                 st.sidebar.warning("⚠️ Could not load client data")
+                # Don't show the full error in sidebar to avoid cluttering
         
         # Option to change client ID
         if st.sidebar.button("🔄 Change Client ID", help="Switch to a different client"):
@@ -1718,7 +1719,8 @@ def main():
                                 st.session_state.client_id = client
                                 st.sidebar.success(f"✅ Switched to: {client}")
                                 st.rerun()
-            except:
+            except Exception as e:
+                # Silently handle errors in sidebar to avoid cluttering
                 pass
     
     # Navigation options with cleaner labels
@@ -1728,7 +1730,8 @@ def main():
         "📊 Stage 1: Extract Quotes": "stage1",
         "🎯 Stage 2: Label Quotes": "stage2",
         "🔍 Stage 3: Findings": "stage3",
-        "🎨 Stage 4: Generate Themes": "stage4",
+        "🎨 Stage 4A: Generate Interview Themes": "stage4a",
+        "🗂️ Stage 4B: Generate Scorecard Themes": "stage4b",
         "📈 Stage 5: Executive Summary": "stage5",
         "📝 Prompts & Details": "prompts",
         "🗄️ Database Status": "database",
@@ -1836,30 +1839,33 @@ def main():
             st.error("❌ Database not available")
             st.info("Please configure your .env file with database credentials")
         else:
-            client_summary = db.get_client_summary()
-            current_client = get_client_id()  # Use helper function
-            current_count = client_summary.get(current_client, 0)
-            total_records = sum(client_summary.values())
-            if total_records > 0 and current_count == 0:
-                st.warning("⚠️ **Data Found But Not for Current Client**")
-                st.info(f"📊 Found {total_records} total records across {len(client_summary)} clients, but 0 for current client '{current_client}'")
-                st.info("💡 **Solution**: Go to 'Database Management' to see all data and set the correct client ID")
-                if len(client_summary) > 1:
-                    st.subheader("🔧 Quick Fix: Switch Client")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        available_clients = list(client_summary.keys())
-                        new_client = st.selectbox(
-                            "Select Client with Data",
-                            available_clients,
-                            index=0
-                        )
-                    with col2:
-                        if st.button("✅ Switch to This Client"):
-                            st.session_state.client_id = new_client
-                            st.success(f"✅ Switched to client: {new_client}")
-                            st.info("🔄 Refreshing...")
-                            st.rerun()
+            try:
+                client_summary = db.get_client_summary()
+                current_client = get_client_id()  # Use helper function
+                current_count = client_summary.get(current_client, 0)
+                total_records = sum(client_summary.values())
+                if total_records > 0 and current_count == 0:
+                    st.warning("⚠️ **Data Found But Not for Current Client**")
+                    st.info(f"📊 Found {total_records} total records across {len(client_summary)} clients, but 0 for current client '{current_client}'")
+                    st.info("💡 **Solution**: Go to 'Database Management' to see all data and set the correct client ID")
+                    if len(client_summary) > 1:
+                        st.subheader("🔧 Quick Fix: Switch Client")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            available_clients = list(client_summary.keys())
+                            new_client = st.selectbox(
+                                "Select Client with Data",
+                                available_clients,
+                                index=0
+                            )
+                        with col2:
+                            if st.button("✅ Switch to This Client"):
+                                st.session_state.client_id = new_client
+                                st.success(f"✅ Switched to client: {new_client}")
+                                st.info("🔄 Refreshing...")
+                                st.rerun()
+            except Exception as e:
+                st.error(f"❌ Error loading client data: {e}")
             summary = get_stage2_summary()
             if summary and summary.get('total_quotes', 0) > 0:
                 st.success(f"✅ Found {summary['total_quotes']} quotes ready for labeling")
@@ -1952,6 +1958,66 @@ def main():
                 else:
                     st.info("📊 No findings available yet. Click 'Identify Findings' to run the analysis.")
     
+    elif page == "stage4a":
+        st.title("🎨 Stage 4A: Generate Interview Themes")
+        st.write("DEBUG: Stage 4A page loaded")
+        
+        if not SUPABASE_AVAILABLE:
+            st.error("❌ Database not available")
+        else:
+            # Check if we have Stage 3 data
+            findings_summary = get_stage3_summary()
+            if not findings_summary or findings_summary.get('total_findings', 0) == 0:
+                st.info("📊 Please run Stage 3 findings analysis first")
+            else:
+                # Show current themes status
+                themes_summary = get_stage4_summary()
+                if themes_summary:
+                    st.success(f"✅ Generated {themes_summary.get('total_themes', 0)} interview themes")
+                    # Display interview-based themes
+                    show_stage4_themes()
+                    # CTA button to go to Stage 5
+                    if st.button("📈 Continue to Stage 5: Executive Summary", type="primary", help="Move to the final stage to create executive synthesis"):
+                        st.session_state.current_step = 5
+                        st.rerun()
+                else:
+                    st.info("📊 No interview themes available yet. Run the analysis to generate themes.")
+
+    elif page == "stage4b":
+        st.title("🗂️ Stage 4B: Generate Scorecard Themes")
+        st.write("DEBUG: Stage 4B page loaded")
+
+        if not SUPABASE_AVAILABLE:
+            st.error("❌ Database not available")
+        else:
+            stage2_summary = get_stage2_summary()
+            if not stage2_summary or stage2_summary.get('quotes_with_scores', 0) == 0:
+                st.info("📊 Please run Stage 2 quote scoring first")
+            else:
+                from scorecard_theme_ui import display_scorecard_themes
+                client_id = get_client_id()
+                db = SupabaseDatabase()
+                try:
+                    response = db.supabase.table('scorecard_themes').select('*').eq('client_id', client_id).execute()
+                    existing_themes = response.data
+                except Exception as e:
+                    existing_themes = []
+                if existing_themes:
+                    st.success(f"✅ Found {len(existing_themes)} existing scorecard themes")
+                    display_scorecard_themes(client_id)
+                else:
+                    st.info("📊 No scorecard themes found. Generate them using the button below.")
+                    if st.button("🚀 Generate Scorecard Themes", type="primary", help="Generate scorecard-driven themes with semantic merging"):
+                        from stage4b_scorecard_analyzer import Stage4BScorecardAnalyzer
+                        with st.spinner("Generating scorecard themes with semantic merging..."):
+                            analyzer = Stage4BScorecardAnalyzer()
+                            result = analyzer.process_scorecard_themes(client_id=client_id)
+                            if result and result.get('status') == 'success':
+                                st.success(f"✅ Scorecard theme generation complete! Generated {result.get('scorecard_themes_generated', 0)} themes")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Scorecard theme generation failed: {result.get('message', 'Unknown error')}")
+
     elif page == "stage4":
         st.title("🎨 Stage 4: Theme Generation")
         

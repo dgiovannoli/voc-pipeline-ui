@@ -129,6 +129,8 @@ class Stage5ExecutiveAnalyzer:
         4. **Executive Relevance**: Focus on decision-making impact and priority actions
         5. **Criteria Integration**: Reference specific criteria performance where relevant
         
+        CRITICAL: You MUST respond with ONLY valid JSON. No additional text, explanations, or formatting outside the JSON structure.
+        
         OUTPUT FORMAT (JSON only):
         {{
             "theme_headline": "Executive-ready headline following punch-then-explain principle",
@@ -146,6 +148,7 @@ class Stage5ExecutiveAnalyzer:
         - Connect themes to criteria scorecard insights
         - Focus on business impact, not technical details
         - Use Buried Wins editorial style: conversational authority, clarity over cleverness, punch then explain
+        - RESPOND WITH ONLY THE JSON OBJECT - NO OTHER TEXT
         """)
         
         try:
@@ -154,7 +157,23 @@ class Stage5ExecutiveAnalyzer:
                 scorecard_context=self._format_scorecard_for_llm(scorecard)
             ))
             
-            synthesis = json.loads(result.content)
+            # Try to parse JSON with better error handling
+            try:
+                synthesis = json.loads(result.content)
+            except json.JSONDecodeError as json_error:
+                logger.warning(f"JSON parsing failed for theme {theme.get('id')}: {json_error}")
+                logger.warning(f"LLM response: {result.content[:200]}...")
+                
+                # Create fallback synthesis structure
+                synthesis = {
+                    "theme_headline": f"Executive Action Required: {theme.get('theme_statement', 'N/A')[:50]}...",
+                    "narrative_explanation": f"Analysis of {theme.get('theme_statement', 'N/A')} with business implications for Rev.",
+                    "business_impact_level": "Medium",
+                    "strategic_recommendations": "Review theme statement and criteria performance for strategic implications.",
+                    "executive_readiness": "Report",
+                    "criteria_connections": [],
+                    "performance_insights": "Theme requires manual review for performance insights."
+                }
             
             # Add metadata
             synthesis['original_theme_id'] = theme.get('id')

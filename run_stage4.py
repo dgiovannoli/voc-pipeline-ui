@@ -16,7 +16,8 @@ def main():
     print()
     
     try:
-        result = run_stage4_analysis()
+        client_id = 'Rev'  # Use Rev client for theme generation
+        result = run_stage4_analysis(client_id=client_id)
         
         if result["status"] == "success":
             print("✅ Stage 4 completed successfully!")

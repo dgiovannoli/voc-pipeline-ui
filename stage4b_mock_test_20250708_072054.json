@@ -1,0 +1,204 @@
+{
+  "timestamp": "2025-07-08T07:20:54.177802",
+  "criteria_prioritization": {
+    "ease_of_use": {
+      "priority_score": 0.85,
+      "priority_rank": 1,
+      "high_relevance_quotes": 45,
+      "total_quotes": 60,
+      "companies_affected": 8,
+      "relevance_ratio": 0.75,
+      "meets_prioritization_thresholds": true
+    },
+    "customer_support": {
+      "priority_score": 0.72,
+      "priority_rank": 2,
+      "high_relevance_quotes": 38,
+      "total_quotes": 55,
+      "companies_affected": 7,
+      "relevance_ratio": 0.69,
+      "meets_prioritization_thresholds": true
+    },
+    "product_features": {
+      "priority_score": 0.68,
+      "priority_rank": 3,
+      "high_relevance_quotes": 32,
+      "total_quotes": 48,
+      "companies_affected": 6,
+      "relevance_ratio": 0.67,
+      "meets_prioritization_thresholds": true
+    }
+  },
+  "scorecard_themes": [
+    {
+      "theme_title": "Rev's Ease of Use Drives Significant Time Savings and Competitive Edge",
+      "scorecard_criterion": "ease_of_use",
+      "sentiment_direction": "positive",
+      "client_performance_summary": "Clients report that Rev's user-friendly interface saves them 10-15 hours per week, leading to increased productivity and deal wins.",
+      "strategic_note": "This ease of use not only enhances customer satisfaction but also directly contributes to revenue growth and client retention.",
+      "competitive_positioning": "Rev's ease of use is highlighted as superior to competitor X, making it a preferred choice for clients seeking efficiency.",
+      "buyer_decision_impact": "The ease of use has been pivotal in securing a $300K deal for one client, demonstrating its influence on buyer decisions.",
+      "concrete_examples": [
+        "User-friendly dashboard that reduces training time by 50%",
+        "Automated reporting feature that saves 10 hours per week"
+      ],
+      "customer_quotes": [
+        "The ease of use is excellent and saves us 10-15 hours per week.",
+        "We love the ease of use - it's better than competitor X."
+      ],
+      "business_metrics": {
+        "deal_impact": "1 deal won totaling $300K due to ease of use",
+        "time_savings": "10-15 hours saved per week",
+        "cost_impact": "$300K generated from a single deal",
+        "competitive_advantage": "Superior ease of use compared to competitor X"
+      },
+      "competitive_intelligence": {
+        "competitor_mentions": 1,
+        "industry_benchmarks": 0,
+        "market_positioning": 0,
+        "competitive_advantage": "Strong competitive advantage",
+        "differentiation_opportunities": [],
+        "market_gaps": []
+      },
+      "business_impact": {
+        "revenue_correlation": {
+          "deal_win_rate": 1.0,
+          "deal_wins": 1,
+          "deal_losses": 0,
+          "revenue_mentions": 1,
+          "correlation_strength": "Strong"
+        },
+        "retention_impact": {
+          "retention_score": 0.5,
+          "retention_mentions": 0,
+          "churn_mentions": 0,
+          "renewal_mentions": 0,
+          "impact_level": "Low"
+        },
+        "growth_opportunities": [],
+        "risks": [],
+        "overall_impact_score": 0.6000000000000001
+      },
+      "companies_represented": 3,
+      "quote_count": 3,
+      "overall_quality_score": 0.85
+    },
+    {
+      "theme_title": "Exceptional Customer Support Drives Significant Time Savings and Deal Wins",
+      "scorecard_criterion": "customer_support",
+      "sentiment_direction": "positive",
+      "client_performance_summary": "Rev's customer support saves clients 10-15 hours per week, directly contributing to a $300K deal win for one client.",
+      "strategic_note": "This exceptional support not only enhances client satisfaction but also strengthens retention and growth opportunities, making Rev a preferred choice in the market.",
+      "competitive_positioning": "Clients report that Rev's customer support is superior to competitor X, highlighting a key differentiator in the industry.",
+      "buyer_decision_impact": "The outstanding customer support has directly influenced buyer decisions, with one client stating it won them a significant deal worth $300K.",
+      "concrete_examples": [
+        "10-15 hours saved per week due to responsive customer support",
+        "Support quality rated higher than competitor X"
+      ],
+      "customer_quotes": [
+        "The customer support is excellent and saves us 10-15 hours per week.",
+        "We love the customer support - it's better than competitor X.",
+        "The customer support directly won us a $300K deal."
+      ],
+      "business_metrics": {
+        "deal_impact": "1 deal won due to this capability",
+        "time_savings": "10-15 hours saved per week",
+        "cost_impact": "$300K generated from a deal win",
+        "competitive_advantage": "Rev's support is rated higher than competitor X"
+      },
+      "competitive_intelligence": {
+        "competitor_mentions": 1,
+        "industry_benchmarks": 0,
+        "market_positioning": 0,
+        "competitive_advantage": "Strong competitive advantage",
+        "differentiation_opportunities": [],
+        "market_gaps": []
+      },
+      "business_impact": {
+        "revenue_correlation": {
+          "deal_win_rate": 1.0,
+          "deal_wins": 1,
+          "deal_losses": 0,
+          "revenue_mentions": 1,
+          "correlation_strength": "Strong"
+        },
+        "retention_impact": {
+          "retention_score": 0.5,
+          "retention_mentions": 0,
+          "churn_mentions": 0,
+          "renewal_mentions": 0,
+          "impact_level": "Low"
+        },
+        "growth_opportunities": [],
+        "risks": [],
+        "overall_impact_score": 0.6000000000000001
+      },
+      "companies_represented": 3,
+      "quote_count": 3,
+      "overall_quality_score": 0.85
+    },
+    {
+      "theme_title": "Rev's Superior Product Features Drive Significant Time Savings and Competitive Wins",
+      "scorecard_criterion": "product_features",
+      "sentiment_direction": "positive",
+      "client_performance_summary": "Clients report that Rev's product features save them 10-15 hours per week, enhancing productivity and enabling them to secure high-value deals.",
+      "strategic_note": "This efficiency not only boosts client satisfaction but also directly influences revenue growth through increased deal closures.",
+      "competitive_positioning": "Rev's features are praised as superior to competitor X, providing better functionality and value, which is critical in a competitive landscape.",
+      "buyer_decision_impact": "The ability to save significant time and win high-value contracts directly influences buyer decisions, as evidenced by a $300K deal won by one client.",
+      "concrete_examples": [
+        "Time-saving automation that reduces manual input by 10-15 hours per week",
+        "Enhanced reporting capabilities that helped secure a $300K deal"
+      ],
+      "customer_quotes": [
+        "The product features is excellent and saves us 10-15 hours per week",
+        "We love the product features - it's better than competitor X",
+        "The product features directly won us a $300K deal"
+      ],
+      "business_metrics": {
+        "deal_impact": "1 deal won valued at $300K due to product features",
+        "time_savings": "10-15 hours saved per week",
+        "cost_impact": "Potentially $300K generated from new business",
+        "competitive_advantage": "Rev's features outperform competitor X in both functionality and user satisfaction"
+      },
+      "competitive_intelligence": {
+        "competitor_mentions": 1,
+        "industry_benchmarks": 0,
+        "market_positioning": 0,
+        "competitive_advantage": "Strong competitive advantage",
+        "differentiation_opportunities": [],
+        "market_gaps": []
+      },
+      "business_impact": {
+        "revenue_correlation": {
+          "deal_win_rate": 1.0,
+          "deal_wins": 1,
+          "deal_losses": 0,
+          "revenue_mentions": 1,
+          "correlation_strength": "Strong"
+        },
+        "retention_impact": {
+          "retention_score": 0.5,
+          "retention_mentions": 0,
+          "churn_mentions": 0,
+          "renewal_mentions": 0,
+          "impact_level": "Low"
+        },
+        "growth_opportunities": [],
+        "risks": [],
+        "overall_impact_score": 0.6000000000000001
+      },
+      "companies_represented": 3,
+      "quote_count": 3,
+      "overall_quality_score": 0.85
+    }
+  ],
+  "convergence_opportunities": [],
+  "summary_statistics": {
+    "total_criteria": 3,
+    "prioritized_criteria": 3,
+    "total_themes": 3,
+    "avg_theme_quality": 0.85,
+    "avg_impact_score": 0.6000000000000001,
+    "convergence_opportunities": 0
+  }
+}

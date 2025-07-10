@@ -4,6 +4,7 @@ import pinecone
 from pinecone import Pinecone as PineconeClient, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
 from loaders.transcript_loader import TranscriptLoader
+from loaders.csv_loader import CSVLoader
 
 def clean_metadata_for_pinecone(metadata):
     """Remove None values from metadata as Pinecone only accepts string, number, boolean, or list of strings"""
@@ -16,9 +17,24 @@ def clean_metadata_for_pinecone(metadata):
 def ingest_to_pinecone(paths):
     load_dotenv()
 
-    # 1) Load + chunk
-    loader = TranscriptLoader()
+    # Ensure paths is a list
+    if isinstance(paths, str):
+        paths = [paths]
+    print(f"[DEBUG] paths argument type: {type(paths)}, value: {paths}")
+    # Fix extension check to handle both list and string
+    first_path = paths[0]
+    ext = os.path.splitext(first_path)[1].lower()
+    if ext == ".csv":
+        print("[DEBUG] Using CSVLoader for CSV file.")
+        loader = CSVLoader()
+    else:
+        print("[DEBUG] Using TranscriptLoader for TXT/DOCX file.")
+        loader = TranscriptLoader()
     docs = loader.load_and_chunk(paths)
+    print(f"[DEBUG] Loaded {len(docs)} documents from {loader.__class__.__name__}.load_and_chunk({paths})")
+    if docs:
+        print(f"[DEBUG] First document metadata: {docs[0].get('metadata', {})}")
+        print(f"[DEBUG] First document text: {docs[0].get('text', '')[:200]}...")
 
     # —————————— ensure every chunk has interview_id & chunk_index ——————————
     for idx, d in enumerate(docs):
@@ -37,14 +53,25 @@ def ingest_to_pinecone(paths):
     # 2) Initialize Pinecone v2 client
     pine_api = os.getenv("PINECONE_API_KEY")
     pine_env = os.getenv("PINECONE_ENVIRONMENT")
-    client = PineconeClient(api_key=pine_api, endpoint=os.getenv("PINECONE_ENDPOINT"))
+    pine_endpoint = os.getenv("PINECONE_ENDPOINT")
+    env_index_name = os.getenv("PINECONE_INDEX_NAME")
+    print(f"[DEBUG] PINECONE_INDEX_NAME from env: {env_index_name}")
+    client = PineconeClient(api_key=pine_api, endpoint=pine_endpoint)
 
-    index_name = os.getenv("PINECONE_INDEX_NAME")
+    index_name = env_index_name
+    print(f"[DEBUG] Using index_name: {index_name}")
+    if index_name != "vocstore":
+        raise ValueError(f"[ERROR] Pinecone index name is '{index_name}', but it should be 'vocstore'. Please check your .env and environment.")
+
     # 3) Ensure index exists
     existing = client.list_indexes().names()
     if index_name not in existing:
-        spec = ServerlessSpec(cloud="aws", region=pine_env)
+        # Use correct region and cloud
+        spec = ServerlessSpec(cloud="aws", region="us-east-1")
+        print(f"Index '{index_name}' not found. Creating with cloud='aws', region='us-east-1'.")
         client.create_index(name=index_name, dimension=1536, metric="cosine", spec=spec)
+    else:
+        print(f"Index '{index_name}' already exists. Skipping creation.")
 
     # 4) Create embeddings
     embeddings = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))

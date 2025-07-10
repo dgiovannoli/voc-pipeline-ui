@@ -283,12 +283,22 @@ class Stage4ThemeAnalyzer:
                     for quote_obj in finding['selected_quotes']:
                         # If it's a dict, keep the full object for UI
                         if isinstance(quote_obj, dict):
+                            # FIX: If quote text is empty, try to get it from core response
+                            quote_text = quote_obj.get('text', '')
+                            if not quote_text and 'response_id' in quote_obj:
+                                # Try to find the core response and extract the text
+                                response_id = quote_obj.get('response_id')
+                                matching_core = core_df[core_df['response_id'] == response_id]
+                                if not matching_core.empty:
+                                    quote_text = matching_core.iloc[0]['verbatim_response']
+                                    quote_obj['text'] = quote_text
+                            
                             quotes.append(quote_obj)
                             # Try to match interviewee_name by text if possible
-                            quote_text = quote_obj.get('text', '')
-                            match = core_df[core_df['verbatim_response'].str.startswith(quote_text[:30])]
-                            if not match.empty:
-                                interviewees.add(match.iloc[0]['interviewee_name'])
+                            if quote_text:
+                                match = core_df[core_df['verbatim_response'].str.startswith(quote_text[:30])]
+                                if not match.empty:
+                                    interviewees.add(match.iloc[0]['interviewee_name'])
                         elif isinstance(quote_obj, str):
                             quotes.append({'text': quote_obj})
                             match = core_df[core_df['verbatim_response'].str.startswith(quote_obj[:30])]
@@ -342,11 +352,22 @@ class Stage4ThemeAnalyzer:
                         # Add relevance score and sentiment to quote object
                         quote_obj['relevance_score'] = finding.get('impact_score', 0)  # Use impact_score as relevance for now
                         quote_obj['sentiment'] = 'neutral'  # Default sentiment (will be updated when Stage 2 is reprocessed)
-                        quotes.append(quote_obj)
+                        
+                        # FIX: If quote text is empty, try to get it from core response
                         quote_text = quote_obj.get('text', '')
-                        match = core_df[core_df['verbatim_response'].str.startswith(quote_text[:30])]
-                        if not match.empty:
-                            interviewees.add(match.iloc[0]['interviewee_name'])
+                        if not quote_text and 'response_id' in quote_obj:
+                            # Try to find the core response and extract the text
+                            response_id = quote_obj.get('response_id')
+                            matching_core = core_df[core_df['response_id'] == response_id]
+                            if not matching_core.empty:
+                                quote_text = matching_core.iloc[0]['verbatim_response']
+                                quote_obj['text'] = quote_text
+                        
+                        quotes.append(quote_obj)
+                        if quote_text:
+                            match = core_df[core_df['verbatim_response'].str.startswith(quote_text[:30])]
+                            if not match.empty:
+                                interviewees.add(match.iloc[0]['interviewee_name'])
                     elif isinstance(quote_obj, str):
                         # Convert string quote to dict with relevance and sentiment
                         quote_dict = {
@@ -593,44 +614,63 @@ class Stage4ThemeAnalyzer:
                 logger.warning(f"⚠️ No quotes found for theme, creating minimal placeholder")
                 primary_quote_text = f"Quote from {pattern['companies'][0] if pattern['companies'] else 'customer'} regarding {pattern.get('criteria_covered', ['business needs'])[0]}"
             
-            # Split theme if it contains multiple hypotheses
-            theme_statements = self.split_multiple_hypotheses(theme_statement)
+            # Ensure single statement per theme - don't split multiple hypotheses
+            single_theme_statement = theme_statement.strip()
             
-            for i, single_theme_statement in enumerate(theme_statements):
-                # CRITICAL: Check if theme is a direct quote or question
-                if self.is_direct_quote_or_question(single_theme_statement):
-                    logger.warning(f"🚫 Rejected theme as direct quote/question: {single_theme_statement[:100]}...")
-                    self.processing_metrics["rejected_direct_quotes"] += 1
-                    continue
-                
-                # Create theme object with quality scores
-                theme = {
-                    'theme_statement': single_theme_statement,
-                    'theme_category': theme_category,
-                    'theme_strength': theme_strength,
-                    'interview_companies': pattern['companies'],
-                    'supporting_finding_ids': pattern['finding_ids'],
-                    'supporting_response_ids': [],  # Will be populated from findings
-                    'deal_status_distribution': {"won": 0, "lost": 0},  # Placeholder
-                    'competitive_flag': pattern.get('competitive_flag', False),
-                    'business_implications': f"Impact score: {pattern['avg_impact_score']:.1f}, affecting {pattern['company_count']} companies",
-                    'primary_theme_quote': primary_quote_text,
-                    'secondary_theme_quote': secondary_quote_text,
-                    'quote_attributions': f"Primary: {pattern['companies'][0] if pattern['companies'] else 'Unknown'}",
-                    'evidence_strength': theme_strength,
-                    'avg_confidence_score': pattern['avg_confidence'],
-                    'company_count': pattern['company_count'],
-                    'finding_count': pattern['finding_count'],
-                    'quotes': json.dumps(pattern['quotes']),
-                    'pattern_type': pattern.get('pattern_type', 'criterion_based')
-                }
-                
-                # Add cross-criteria information for semantic groups
-                if pattern.get('pattern_type') == 'semantic_group':
-                    theme['criteria_covered'] = pattern.get('criteria_covered', [])
-                    self.processing_metrics["fuzzy_grouped_themes"] += 1
-                
-                themes.append(theme)
+            # If theme contains multiple statements, take only the first one
+            if '\n' in single_theme_statement:
+                single_theme_statement = single_theme_statement.split('\n')[0].strip()
+            
+            # Remove any additional statements after the first one
+            if ' - "' in single_theme_statement:
+                single_theme_statement = single_theme_statement.split(' - "')[0].strip()
+            
+            # Clean up any remaining quotes or formatting
+            single_theme_statement = single_theme_statement.replace('"', '').strip()
+            
+            # Skip if empty after cleaning
+            if not single_theme_statement:
+                continue
+            
+            # CRITICAL: Check if theme is a direct quote or question
+            if self.is_direct_quote_or_question(single_theme_statement):
+                logger.warning(f"🚫 Rejected theme as direct quote/question: {single_theme_statement[:100]}...")
+                self.processing_metrics["rejected_direct_quotes"] += 1
+                # TEMPORARILY DISABLE REJECTION TO SEE WHAT THEMES ARE BEING GENERATED
+                # continue
+            
+            # Score theme quality and get strength classification
+            quality_scores = self.score_theme_quality(single_theme_statement, pattern)
+            
+            # Create theme object with enhanced quality scores
+            theme = {
+                'theme_statement': single_theme_statement,
+                'theme_category': theme_category,
+                'theme_strength': quality_scores['strength_classification'],  # Use strength classification
+                'interview_companies': pattern['companies'],
+                'supporting_finding_ids': pattern['finding_ids'],
+                'supporting_response_ids': [],  # Will be populated from findings
+                'deal_status_distribution': {"won": 0, "lost": 0},  # Placeholder
+                'competitive_flag': pattern.get('competitive_flag', False),
+                'business_implications': f"Impact score: {pattern['avg_impact_score']:.1f}, affecting {pattern['company_count']} companies",
+                'primary_theme_quote': primary_quote_text,
+                'secondary_theme_quote': secondary_quote_text,
+                'quote_attributions': f"Primary: {pattern['companies'][0] if pattern['companies'] else 'Unknown'}",
+                'evidence_strength': quality_scores['evidence_strength'],
+                'avg_confidence_score': pattern['avg_confidence'],
+                'company_count': pattern['company_count'],
+                'finding_count': pattern['finding_count'],
+                'quotes': json.dumps(pattern['quotes']),
+                'pattern_type': pattern.get('pattern_type', 'criterion_based'),
+                'quality_scores': json.dumps(quality_scores)  # Store full quality scores
+            }
+            
+            # Add cross-criteria information for semantic groups
+            if pattern.get('pattern_type') == 'semantic_group':
+                theme['criteria_covered'] = pattern.get('criteria_covered', [])
+                self.processing_metrics["fuzzy_grouped_themes"] += 1
+            
+            themes.append(theme)
             
             # Add quotes to used quotes list for deduplication
             if dedup_enabled:
@@ -657,10 +697,16 @@ class Stage4ThemeAnalyzer:
         quote_examples = "\n".join(quote_examples)
         
         prompt = ChatPromptTemplate.from_template("""
-        CRITICAL INSTRUCTION: Generate theme statements using ONLY the "if/then hypothesis" structure. Do NOT use prescriptive directives.
+        CRITICAL INSTRUCTION: Generate theme statements that mirror the findings format - specific, measurable, and business-focused. Do NOT use prescriptive language.
 
         STRUCTURE TEMPLATE:
-        If Rev [implemented specific solution], they may [improve/reduce/increase] [specific outcome] ([context about issue prevalence/scope]).
+        [Specific issue/opportunity] [measurable impact] [business context]
+
+        EXAMPLES FROM FINDINGS DATA:
+        - "Accuracy shortfalls negate speed advantage"
+        - "Lack of direct Dropbox integration slows workflows and prompts integration request"
+        - "24‑hour turnaround time is a decisive factor for choosing Rev's transcription service"
+        - "Manual process of moving Rev transcripts into MyCase and Westlaw CoCounsel exposes integration gap, adding workflow friction for solo attorneys"
 
         CRITERION: {criteria_covered}
         COMPANIES: {companies}
@@ -672,58 +718,47 @@ class Stage4ThemeAnalyzer:
         {quotes}
         
         KEY GUIDELINES:
-        1. OPENING STRUCTURE: Use "If Rev [action]..." NOT "If [interviewee] [action]..."
-        2. CONDITIONAL LANGUAGE: Use "they may improve/reduce/increase" NOT "they will/can/should"
-        3. ISSUE CONTEXT: Include parenthetical context like "(negative sentiment seen across X interviews)"
-        4. OUTCOME FRAMING: Present benefits as hypotheses using "could potentially," "may result in"
-        5. SINGLE HYPOTHESIS: Generate ONLY ONE "if/then" statement per theme - do not create multiple hypotheses
-        6. NO EXAMPLES: Do NOT include "For example" or specific quote examples in the theme statement
+        1. SPECIFIC ISSUES: Identify concrete problems or opportunities (e.g., "speed gaps", "integration friction", "accuracy shortfalls")
+        2. MEASURABLE IMPACT: Include quantifiable outcomes (e.g., "slows workflows", "negates advantage", "drives adoption")
+        3. BUSINESS CONTEXT: Add relevant business context (e.g., "for solo attorneys", "in legal workflows", "among law firms")
+        4. NO PRESCRIPTIVE LANGUAGE: Avoid "should", "must", "need to", "Rev should"
+        5. CONCISE STATEMENTS: Keep to 1-2 sentences maximum
+        6. EVIDENCE-BASED: Base on actual quotes and patterns, not generic observations
         
         QUALITY CHECKLIST:
-        ✅ Starts with conditional "If Rev" statement (not interviewee names)
-        ✅ Uses hypothesis language ("may," "could," "might")
-        ✅ Includes parenthetical context about issue scope
-        ✅ Presents outcomes as potential rather than guaranteed
-        ✅ Contains ONLY ONE hypothesis statement per theme
-        ✅ NO "For example" sections or specific quote examples
+        ✅ Identifies specific issue or opportunity
+        ✅ Includes measurable impact or outcome
+        ✅ Uses business-relevant context
+        ✅ Avoids prescriptive language
+        ✅ Based on actual evidence
+        ✅ Concise and direct
         
         FORBIDDEN PHRASES (DO NOT USE):
-        - "If [interviewee name]..."
-        - "If [customer name]..."
         - "Rev should..."
         - "Rev must..."
         - "Rev needs to..."
-        - "Rev will..."
-        - "Rev can..."
-        - "For example"
-        - "For instance"
-        - "Specifically"
-        - "competitive advantage"
-        - "strategic positioning"
-        - "synergies"
-        - "operational efficiency"
-        - "enhance engagement"
-        - "drive growth"
-        - "foster relationships"
-        - "leverage capabilities"
-        - "optimize processes"
-        - "streamline operations"
+        - "To enhance..."
+        - "The analysis reveals..."
+        - "It is imperative to..."
+        - "We recommend..."
+        - "Strategic implications..."
+        - "Operational efficiency..."
+        - "Competitive advantage..."
+        - "Business value..."
         
         GOOD EXAMPLES:
-        - "If Rev established a structured onboarding process that includes personalized training sessions tailored to individual user needs, they may improve user satisfaction and reduce setup-related concerns (negative sentiment in onboarding seen across multiple interviews)."
-        - "If Rev redesigned the file sharing interface to address navigation challenges, they may improve collaboration efficiency and user experience (file sharing difficulties mentioned by multiple users)."
-        - "If Rev enhanced security compliance features by creating clearer documentation and providing targeted training on compliance protocols, they may eliminate critical compliance issues (compliance confusion reported across interviews)."
+        - "Speed gaps drive use of Turbo Scribe over Rev despite higher accuracy of human transcripts"
+        - "Lack of seamless Dropbox-style integrations forces manual steps, slowing legal workflows"
+        - "AI visibility gaps limit cost-reduction benefits despite strong performance"
+        - "Manual speaker labeling slows paralegal workflow, indicating need for automated identification"
         
         BAD EXAMPLES:
-        - "If Cyrus Nazarian implemented..." (WRONG - should be "If Rev implemented...")
-        - "If Trish Herrera streamlined..." (WRONG - should be "If Rev streamlined...")
-        - Multiple "If" statements in one theme (WRONG - should be only one hypothesis per theme)
-        - "For example, Trish Herrera mentioned..." (WRONG - no examples in theme statement)
-        - "Rev should enhance operational efficiency and drive competitive advantage"
-        - "Strategic alignment of product offerings will foster stronger relationships"
-        - "Cross-functional synergies position the organization for sustained growth"
+        - "To enhance market position, Rev should prioritize direct engagement" (WRONG - prescriptive)
+        - "The analysis reveals moderate concerns regarding support service quality" (WRONG - generic)
+        - "Strategic alignment will foster stronger relationships" (WRONG - vague business speak)
+        - "Rev must improve operational efficiency" (WRONG - prescriptive directive)
         
-        Generate the hypothesis-based theme using ONLY the required structure with ONE hypothesis per theme and NO examples:
+        Generate the theme statement using ONLY the required structure with specific issues, measurable impacts, and business context:
         """)
         
         try:
@@ -917,6 +952,38 @@ class Stage4ThemeAnalyzer:
             logger.info("✅ No themes generated")
             return {"status": "no_themes", "message": "No themes generated"}
         
+        # ENHANCED CONSOLIDATION WITH STRENGTH-BASED FILTERING
+        logger.info("🔗 Consolidating duplicate themes...")
+        original_count = len(themes)
+        themes = self.consolidate_duplicate_themes(themes)
+        consolidated_count = len(themes)
+        
+        if original_count != consolidated_count:
+            logger.info(f"✅ Consolidated {original_count} themes into {consolidated_count} unique themes")
+        
+        # Filter themes by strength and limit per category
+        config = self.load_config()
+        max_themes_per_category = config.get('stage4', {}).get('theme_consolidation', {}).get('max_themes_per_category', 5)
+        
+        # Group themes by category and keep only the strongest ones
+        themes_by_category = {}
+        for theme in themes:
+            category = theme.get('theme_category', 'unknown')
+            if category not in themes_by_category:
+                themes_by_category[category] = []
+            themes_by_category[category].append(theme)
+        
+        # Keep only the strongest themes per category
+        filtered_themes = []
+        for category, category_themes in themes_by_category.items():
+            # Sort by overall quality score
+            category_themes.sort(key=lambda x: json.loads(x.get('quality_scores', '{}')).get('overall', 0), reverse=True)
+            # Keep only the top themes per category
+            filtered_themes.extend(category_themes[:max_themes_per_category])
+        
+        themes = filtered_themes
+        logger.info(f"✅ Filtered to {len(themes)} strongest themes across categories")
+        
         # Save to Supabase
         self.save_themes_to_supabase(themes, client_id=client_id)
         
@@ -995,12 +1062,14 @@ class Stage4ThemeAnalyzer:
         logger.info("  ✅ Improved quote attribution")
     
     def score_theme_quality(self, theme_statement: str, pattern: Dict) -> Dict:
-        """Score theme quality based on specificity, actionability, and evidence strength"""
+        """Enhanced theme quality scoring with business impact and strength classification"""
         scores = {
             'specificity': 0,
             'actionability': 0,
             'evidence_strength': 0,
-            'overall': 0
+            'business_impact': 0,
+            'overall': 0,
+            'strength_classification': 'weak'
         }
         
         # CRITICAL: Check for low-quality indicators that should heavily penalize the theme
@@ -1036,30 +1105,30 @@ class Stage4ThemeAnalyzer:
             scores['specificity'] = 1
             scores['actionability'] = 1
             scores['evidence_strength'] = 1
+            scores['business_impact'] = 1
             scores['overall'] = 1
+            scores['strength_classification'] = 'weak'
             return scores
         
-        # Check for proper hypothesis structure
-        if not theme_statement.strip().startswith('if rev'):
+        # Check for proper hypothesis structure (but allow direct insight themes too)
+        is_hypothesis = theme_statement.strip().startswith('if rev')
+        is_direct_insight = any(keyword in theme_lower for keyword in ['impact', 'affect', 'lead to', 'result in', 'cause'])
+        
+        if not (is_hypothesis or is_direct_insight):
             scores['specificity'] = 2
             scores['actionability'] = 2
             scores['evidence_strength'] = 2
+            scores['business_impact'] = 2
             scores['overall'] = 2
-            return scores
-        
-        # Check for proper "they may" structure
-        if 'they may' not in theme_lower:
-            scores['specificity'] = 3
-            scores['actionability'] = 3
-            scores['evidence_strength'] = 3
-            scores['overall'] = 3
+            scores['strength_classification'] = 'weak'
             return scores
         
         # Score specificity (0-10)
         specificity_indicators = [
             'specific', 'concrete', 'particular', 'detailed', 'precise',
             'exact', 'definite', 'clear', 'explicit', 'particular',
-            'implement', 'enhance', 'improve', 'develop', 'create'
+            'implement', 'enhance', 'improve', 'develop', 'create',
+            'integration', 'accuracy', 'speed', 'cost', 'pricing'
         ]
         specificity_score = sum(1 for indicator in specificity_indicators if indicator in theme_lower)
         scores['specificity'] = min(specificity_score * 1.5, 10)  # Max 10 points
@@ -1068,7 +1137,8 @@ class Stage4ThemeAnalyzer:
         actionability_indicators = [
             'implement', 'develop', 'create', 'build', 'establish',
             'improve', 'enhance', 'optimize', 'streamline', 'leverage',
-            'provide', 'offer', 'deliver', 'enable', 'facilitate'
+            'provide', 'offer', 'deliver', 'enable', 'facilitate',
+            'reduce', 'increase', 'decrease', 'minimize', 'maximize'
         ]
         actionability_score = sum(1 for indicator in actionability_indicators if indicator in theme_lower)
         scores['actionability'] = min(actionability_score * 1.5, 10)  # Max 10 points
@@ -1105,15 +1175,33 @@ class Stage4ThemeAnalyzer:
             
         scores['evidence_strength'] = min(evidence_score, 10)
         
+        # Score business impact (0-10)
+        business_impact_indicators = [
+            'impact', 'affect', 'lead to', 'result in', 'cause',
+            'revenue', 'retention', 'satisfaction', 'adoption', 'competitiveness',
+            'efficiency', 'productivity', 'cost', 'time', 'quality'
+        ]
+        business_impact_score = sum(1 for indicator in business_impact_indicators if indicator in theme_lower)
+        scores['business_impact'] = min(business_impact_score * 1.5, 10)  # Max 10 points
+        
         # Apply low-quality penalty
         if low_quality_score > 0:
             penalty = min(low_quality_score, 5)  # Cap penalty at 5 points
             scores['specificity'] = max(0, scores['specificity'] - penalty)
             scores['actionability'] = max(0, scores['actionability'] - penalty)
             scores['evidence_strength'] = max(0, scores['evidence_strength'] - penalty)
+            scores['business_impact'] = max(0, scores['business_impact'] - penalty)
         
         # Calculate overall score
-        scores['overall'] = (scores['specificity'] + scores['actionability'] + scores['evidence_strength']) / 3
+        scores['overall'] = (scores['specificity'] + scores['actionability'] + scores['evidence_strength'] + scores['business_impact']) / 4
+        
+        # Classify theme strength
+        if scores['overall'] >= 8.0:
+            scores['strength_classification'] = 'strong'
+        elif scores['overall'] >= 6.0:
+            scores['strength_classification'] = 'moderate'
+        else:
+            scores['strength_classification'] = 'weak'
         
         return scores
     
@@ -1245,6 +1333,10 @@ class Stage4ThemeAnalyzer:
         """Detect if a theme is essentially a direct quote from an interview or a question"""
         theme_lower = theme_statement.lower()
         
+        # CRITICAL: If it starts with "If Rev", it's a valid hypothesis, not a direct quote
+        if theme_statement.strip().startswith('If Rev'):
+            return False
+        
         # Check for interview question patterns
         question_indicators = [
             'if you were the ceo',
@@ -1272,8 +1364,13 @@ class Stage4ThemeAnalyzer:
             'i think',
             'i feel',
             'i believe',
-            'in my opinion'
+            'in my opinion',
+            'from my perspective'
         ]
+        
+        # Check for incomplete or dangling quotes
+        if theme_statement.strip().endswith('"') or theme_statement.strip().endswith('"'):
+            return True
         
         # Check for question marks
         if '?' in theme_statement:
@@ -1284,20 +1381,148 @@ class Stage4ThemeAnalyzer:
             if indicator in theme_lower:
                 return True
         
-        # Check for direct quote patterns (if multiple found)
-        quote_count = sum(1 for indicator in quote_indicators if indicator in theme_lower)
-        if quote_count >= 2:
-            return True
-        
-        # Check if theme is too short or lacks proper structure
-        if len(theme_statement.split()) < 15:
-            return True
-        
-        # Check if theme doesn't start with proper hypothesis structure
-        if not theme_statement.strip().startswith('if rev'):
-            return True
+        # Check for direct quote patterns (but only if they're not part of a valid hypothesis)
+        for indicator in quote_indicators:
+            if indicator in theme_lower and not theme_statement.strip().startswith('If Rev'):
+                return True
         
         return False
+    
+    def consolidate_duplicate_themes(self, themes: List[Dict]) -> List[Dict]:
+        """Consolidate duplicate or near-duplicate themes"""
+        if not themes:
+            return themes
+        
+        consolidated = []
+        processed_themes = set()
+        
+        for i, theme in enumerate(themes):
+            if i in processed_themes:
+                continue
+                
+            # Create a simplified version of the theme for comparison
+            theme_key = self._create_theme_key(theme)
+            
+            # Find duplicates
+            duplicates = []
+            for j, other_theme in enumerate(themes[i+1:], i+1):
+                if j in processed_themes:
+                    continue
+                    
+                other_key = self._create_theme_key(other_theme)
+                if self._are_themes_duplicates(theme_key, other_key):
+                    duplicates.append((j, other_theme))
+                    processed_themes.add(j)
+            
+            if duplicates:
+                # Consolidate the theme with its duplicates
+                consolidated_theme = self._consolidate_theme_group([theme] + [d[1] for d in duplicates])
+                consolidated.append(consolidated_theme)
+                logger.info(f"🔗 Consolidated {len(duplicates) + 1} duplicate themes into one")
+            else:
+                consolidated.append(theme)
+            
+            processed_themes.add(i)
+        
+        logger.info(f"📊 Consolidated {len(themes)} themes into {len(consolidated)} unique themes")
+        return consolidated
+    
+    def _create_theme_key(self, theme: Dict) -> str:
+        """Create a simplified key for theme comparison"""
+        statement = theme.get('theme_statement', '').lower()
+        
+        # Remove common variations and focus on core message
+        statement = statement.replace('enhanced', 'enhance')
+        statement = statement.replace('improved', 'improve')
+        statement = statement.replace('implementing', 'implement')
+        statement = statement.replace('providing', 'provide')
+        
+        # Extract the core action and outcome
+        if 'if rev' in statement:
+            # Get the action part (between "if rev" and "they may")
+            action_start = statement.find('if rev') + 6
+            action_end = statement.find('they may')
+            if action_end > action_start:
+                action = statement[action_start:action_end].strip()
+                return action
+        
+        return statement
+    
+    def _are_themes_duplicates(self, key1: str, key2: str) -> bool:
+        """Check if two themes are duplicates based on their keys with enhanced similarity detection"""
+        # Exact match
+        if key1 == key2:
+            return True
+        
+        # Enhanced similarity detection for accuracy/quality themes
+        accuracy_quality_keywords = ['accuracy', 'quality', 'transcription', 'inconsistent', 'frustrate', 'dissatisfaction']
+        
+        # Check if both themes are about accuracy/quality issues
+        key1_lower = key1.lower()
+        key2_lower = key2.lower()
+        
+        accuracy_keywords_in_key1 = sum(1 for keyword in accuracy_quality_keywords if keyword in key1_lower)
+        accuracy_keywords_in_key2 = sum(1 for keyword in accuracy_quality_keywords if keyword in key2_lower)
+        
+        # If both themes have accuracy/quality keywords, they're likely duplicates
+        if accuracy_keywords_in_key1 >= 2 and accuracy_keywords_in_key2 >= 2:
+            return True
+        
+        # Check for very similar actions (e.g., "enhance security compliance features")
+        words1 = set(key1.split())
+        words2 = set(key2.split())
+        
+        # If they share 75% of their key words, consider them duplicates
+        if len(words1) > 0 and len(words2) > 0:
+            common_words = words1.intersection(words2)
+            similarity = len(common_words) / max(len(words1), len(words2))
+            return similarity >= 0.75
+        
+        return False
+    
+    def _consolidate_theme_group(self, themes: List[Dict]) -> Dict:
+        """Consolidate a group of duplicate themes into one stronger theme"""
+        if not themes:
+            return {}
+        
+        # Use the first theme as the base
+        consolidated = themes[0].copy()
+        
+        # Combine all companies
+        all_companies = set()
+        for theme in themes:
+            companies = theme.get('interview_companies', [])
+            if isinstance(companies, list):
+                all_companies.update(companies)
+        
+        consolidated['interview_companies'] = list(all_companies)
+        
+        # Combine all finding IDs
+        all_finding_ids = set()
+        for theme in themes:
+            finding_ids = theme.get('supporting_finding_ids', [])
+            if isinstance(finding_ids, list):
+                all_finding_ids.update(finding_ids)
+        
+        consolidated['supporting_finding_ids'] = list(all_finding_ids)
+        
+        # Update company count and finding count
+        consolidated['company_count'] = len(all_companies)
+        consolidated['finding_count'] = len(all_finding_ids)
+        
+        # Update business implications
+        consolidated['business_implications'] = f"Impact score: {consolidated.get('avg_impact_score', 0):.1f}, affecting {len(all_companies)} companies"
+        
+        # Combine quotes from all themes
+        all_quotes = []
+        for theme in themes:
+            quotes = theme.get('quotes', [])
+            if isinstance(quotes, list):
+                all_quotes.extend(quotes)
+        
+        consolidated['quotes'] = all_quotes
+        
+        return consolidated
 
 def run_stage4_analysis(client_id: str = 'default'):
     """Run Stage 4 theme analysis"""

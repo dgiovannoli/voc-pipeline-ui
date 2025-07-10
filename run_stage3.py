@@ -6,6 +6,7 @@ Run this script to generate executive findings with automated confidence scoring
 
 import os
 import sys
+import argparse
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -13,8 +14,16 @@ load_dotenv()
 
 def main():
     """Run enhanced Stage 3 analysis"""
+    
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Run Stage 3: Enhanced Findings Identification')
+    parser.add_argument('--client_id', type=str, default='default', 
+                       help='Client ID to process (default: default)')
+    args = parser.parse_args()
+    
     print("🎯 Stage 3: Enhanced Findings Identification (Buried Wins v4.0)")
     print("=" * 70)
+    print(f"📋 Processing client: {args.client_id}")
     
     try:
         from stage3_findings_analyzer import Stage3FindingsAnalyzer
@@ -22,9 +31,9 @@ def main():
         # Initialize analyzer
         analyzer = Stage3FindingsAnalyzer()
         
-        # Run enhanced analysis
+        # Run enhanced analysis with specified client ID
         print("🔍 Processing scored quotes and generating enhanced findings...")
-        result = analyzer.process_enhanced_findings()
+        result = analyzer.process_enhanced_findings(client_id='Rev')  # Changed from 'default' to 'Rev'
         
         if result and result.get('status') == 'success':
             print(f"✅ Enhanced Stage 3 complete!")
