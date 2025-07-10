@@ -2407,14 +2407,28 @@ class Stage3FindingsAnalyzer:
         """Load the LLM prompt from Context/Findings Prompt.txt and append criteria from Context/Findings Criteria.txt."""
         prompt = ""
         try:
-            with open('Context/Findings Prompt.txt', 'r') as f:
-                prompt = f.read()
+            # Try different encodings to handle the file
+            encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+            
+            for encoding in encodings:
+                try:
+                    with open('Context/Findings Prompt.txt', 'r', encoding=encoding) as f:
+                        prompt = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+            
+            if not prompt:
+                logger.error("Could not read findings prompt file with any encoding")
+                return ""
+                
         except Exception as e:
             logger.error(f"Could not load LLM prompt: {e}")
-            prompt = ""
+            return ""
+            
         # Optionally append criteria
         try:
-            with open('Context/Findings Criteria.txt', 'r') as f:
+            with open('Context/Findings Criteria.txt', 'r', encoding='utf-8') as f:
                 criteria = f.read()
             prompt += "\n\n# Buried Wins Findings Criteria (Reference)\n" + criteria
         except Exception as e:
