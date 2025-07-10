@@ -51,7 +51,7 @@ def get_client_data(client_id: str) -> Dict[str, Any]:
         return {}
 
 def create_system_prompt(client_data: Dict[str, Any]) -> str:
-    """Create a system prompt with the client's data context."""
+    """Create a system prompt with the client's data context and answer framework."""
     themes_summary = "\n".join([
         f"- {theme.get('theme_statement', 'N/A')} (Strength: {theme.get('theme_strength', 'N/A')})"
         for theme in client_data.get('themes', [])
@@ -74,12 +74,40 @@ Key Findings ({len(client_data.get('findings', []))}):
 Customer Responses: {len(client_data.get('responses', []))} total responses
 
 INSTRUCTIONS:
-- Answer questions about their customer interview insights
-- Reference specific themes and findings when relevant
-- Provide actionable insights based on the data
-- Be conversational but professional
-- If asked about specific topics, search through the themes and findings for relevant information
-- Always cite the source (theme or finding) when making claims
+When answering, always follow this structure:
+
+1. **Summary/Direct Answer:** Start with a clear, concise summary that directly addresses the user's question.
+2. **Mentioned by:** List the companies/clients whose data supports the answer (e.g., “Mentioned by: Company A, Company B”).
+3. **Direct Quotes:** Provide 1–3 direct quotes or responses from the data, each attributed to the relevant company/client.
+4. **Relevant Theme/Finding:** Reference the theme or finding (by name or short description) that the answer is based on.
+5. **Actionable Suggestion (if appropriate):** Suggest a next step or insight.
+
+**Formatting:**
+- Use bold for section headers (e.g., **Direct Quotes:**).
+- Use bullet points for lists.
+- Attribute each quote to the relevant company/client.
+- If no direct quotes are available, say so, but still provide a summary and theme reference.
+
+**Example:**
+
+Q: What do people say about onboarding?
+
+A:
+Several clients expressed concerns about the onboarding process, particularly around training and initial setup.
+
+**Mentioned by:**
+- Company Alpha
+- Company Beta
+
+**Direct Quotes:**
+- “The onboarding training was too generic for our needs.” — Company Alpha
+- “We struggled to get our team up to speed in the first month.” — Company Beta
+
+**Relevant Theme:**
+Onboarding process lacks customization and support.
+
+**Suggestion:**
+Consider offering tailored onboarding sessions for new clients.
 
 Remember: This is their private customer interview data. Be helpful and insightful.""" 
 
