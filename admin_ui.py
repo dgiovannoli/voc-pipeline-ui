@@ -337,3 +337,100 @@ def show_admin_utilities():
     
     with tab3:
         show_welcome_screen() 
+
+def show_admin_panel():
+    """Show admin panel with various management options."""
+    st.title("🔧 Admin Panel")
+    
+    tabs = st.tabs([
+        "Database Status",
+        "Database Management",
+        "Welcome",
+        "Stage 3 Findings LLM Prompt & Process"
+    ])
+    
+    with tabs[0]:
+        st.header("User Management")
+        st.info("Manage users, roles, and permissions.")
+        # Placeholder for user management UI
+        st.write("User management UI goes here.")
+    
+    with tabs[1]:
+        st.header("Logs")
+        st.info("View system logs and application events.")
+        # Placeholder for logs UI
+        st.write("Logs UI goes here.")
+    
+    with tabs[2]:
+        st.header("Settings")
+        st.info("Configure application settings.")
+        # Placeholder for settings UI
+        st.write("Settings UI goes here.")
+    
+    with tabs[3]:
+        st.header("Stage 3 Findings LLM Prompt & Process")
+        st.markdown("""
+### Actual LLM Prompt Used for Findings Extraction
+
+The following is the **exact LLM prompt** used for Stage 3 findings extraction. This prompt is designed to generate executive-ready findings from structured interview response data, using automated confidence scoring and strict criteria. The criteria and methodology are based on the Buried Wins framework, as detailed in `Context/Findings Criteria.docx`.
+
+<details><summary>Click to expand full LLM prompt</summary>
+""")
+        try:
+            # Try different encodings to handle the file
+            encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+            findings_prompt = None
+            
+            for encoding in encodings:
+                try:
+                    with open('Context/Findings Prompt.txt', 'r', encoding=encoding) as f:
+                        findings_prompt = f.read()
+                    break
+                except UnicodeDecodeError:
+                    continue
+            
+            if findings_prompt:
+                st.code(findings_prompt, language="text")
+            else:
+                st.error("Could not read findings prompt file with any encoding. File may be corrupted.")
+                st.info("The prompt file contains encoding issues. Please check the file manually.")
+        except Exception as e:
+            st.error(f"Could not load findings prompt: {e}")
+            st.info("The prompt file may have encoding issues or be missing.")
+        
+        st.markdown("""
+</details>
+
+---
+
+### Chunking/Tokenization & Processing Details
+- **LLM Model:** gpt-4o-mini (via LangChain)
+- **Max Tokens:** 4000 per call
+- **Batch Size:** All responses processed in single LLM call
+- **Chunking:** Full dataset sent to LLM with structured prompt
+- **Criteria:** 8 Buried Wins criteria (see prompt above)
+- **Confidence Scoring:** Automated using multipliers for stakeholder, impact, and evidence strength
+- **Deduplication:** Semantic deduplication handled by LLM
+- **Edge Case Gold:** Single-source findings allowed only for executive+high salience+deal tipping point
+
+### Processing Flow
+1. **Data Preparation:** Convert stage1_data_responses to CSV format
+2. **Prompt Assembly:** Load prompt from Context/Findings Prompt.txt + append criteria
+3. **LLM Call:** Send full dataset and prompt to GPT-4o-mini
+4. **Output Parsing:** Extract JSON response with findings_csv and summary
+5. **Database Save:** Parse findings and save to stage3_findings table
+6. **Summary Generation:** Display processing metrics and results
+
+### Quality Assurance
+- **Multi-source requirement:** Minimum 2 interviews (except Edge Case Gold)
+- **Criteria threshold:** At least 2 of 8 criteria must be met
+- **Confidence scoring:** Automated calculation using stakeholder/impact/evidence multipliers
+- **Quote attribution:** All quotes must include Response_ID for traceability
+- **Executive focus:** Findings designed for executive decision-making
+
+### Reference Documents
+- **Primary Prompt:** `Context/Findings Prompt.txt` (LLM system message)
+- **Criteria Definition:** `Context/Findings Criteria.docx` (evaluation framework)
+- **Output Format:** JSON with findings_csv and response_table_csv
+- **Quality Standards:** Buried Wins v4.0 framework
+""") 
