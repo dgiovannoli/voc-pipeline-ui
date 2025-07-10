@@ -713,12 +713,12 @@ class Stage3FindingsAnalyzer:
         
         return unique_themes[:5]
     
-    def generate_enhanced_findings(self, patterns: Dict) -> List[Dict]:
+    def generate_stage3_findings(self, patterns: Dict) -> List[Dict]:
         """Generate findings using pattern-based finding generation (one per pattern)"""
         logger.info("🎯 Generating enhanced findings using pattern-based approach...")
         findings = []
         for criterion, criterion_patterns in patterns.items():
-            criterion_findings = self._generate_criterion_enhanced_findings(criterion, criterion_patterns)
+            criterion_findings = self._generate_criterion_stage3_findings(criterion, criterion_patterns)
             findings.extend(criterion_findings)
         if findings:
             logger.info(f"BEFORE DEDUPLICATION: {len(findings)} findings generated.")
@@ -730,7 +730,7 @@ class Stage3FindingsAnalyzer:
             logger.warning("⚠️ No findings generated - check pattern extraction...")
         return findings
     
-    def _generate_criterion_enhanced_findings(self, criterion: str, patterns: List[Dict]) -> List[Dict]:
+    def _generate_criterion_stage3_findings(self, criterion: str, patterns: List[Dict]) -> List[Dict]:
         """Generate findings for a specific criterion - REDESIGNED FOR MULTIPLE EVIDENCE-BACKED INSIGHTS"""
         findings = []
         
@@ -1150,7 +1150,7 @@ class Stage3FindingsAnalyzer:
         
         return ','.join(met_criteria) if met_criteria else 'Specificity,Materiality'
     
-    def save_enhanced_findings_to_supabase(self, findings: List[Dict], client_id: str = 'default'):
+    def save_stage3_findings_to_supabase(self, findings: List[Dict], client_id: str = 'default'):
         """Save enhanced findings to Supabase, including credibility tier"""
         logger.info("💾 Saving enhanced findings to Supabase...")
         for finding in findings:
@@ -1181,19 +1181,19 @@ class Stage3FindingsAnalyzer:
             self.db.save_enhanced_finding(db_finding, client_id=client_id)
         logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase for client {client_id}")
     
-    def process_enhanced_findings(self, client_id: str = 'default') -> Dict:
+    def process_stage3_findings(self, client_id: str = 'default') -> Dict:
         """Main processing function for enhanced Stage 3 (per-quote findings)"""
         logger.info("🚀 STAGE 3: ENHANCED FINDINGS IDENTIFICATION (Buried Wins v4.0) [PER-QUOTE MODE]")
         logger.info("=" * 70)
 
-        # Get core responses directly (not quote_analysis)
-        core_responses_df = self.db.get_core_responses(client_id=client_id)
+        # Get core responses directly (not stage2_response_labeling)
+        stage1_data_responses_df = self.db.get_stage1_data_responses(client_id=client_id)
         
-        if len(core_responses_df) == 0:
+        if len(stage1_data_responses_df) == 0:
             logger.info("✅ No core responses found for analysis")
             return {"status": "no_data", "message": "No core responses available"}
 
-        self.processing_metrics["total_quotes_processed"] = len(core_responses_df)
+        self.processing_metrics["total_quotes_processed"] = len(stage1_data_responses_df)
 
         # Track findings per quote to ensure diversity
         findings_per_quote = {}
@@ -1201,7 +1201,7 @@ class Stage3FindingsAnalyzer:
         
         findings = []  # Initialize findings list
         debug_count = 0
-        for idx, row in core_responses_df.iterrows():
+        for idx, row in stage1_data_responses_df.iterrows():
             response = row.to_dict()
             # Convert response to quote format for processing
             quote = {
@@ -1285,7 +1285,7 @@ class Stage3FindingsAnalyzer:
         logger.info(f"✅ Generated {len(findings)} findings using per-quote approach (NO DEDUPLICATION - PRESERVE INTERVIEW SIGNALS)")
 
         # Save to Supabase
-        self.save_enhanced_findings_to_supabase(findings, client_id=client_id)
+        self.save_stage3_findings_to_supabase(findings, client_id=client_id)
 
         # Generate summary
         summary = self.generate_enhanced_summary_statistics(findings, {})
@@ -1295,7 +1295,7 @@ class Stage3FindingsAnalyzer:
 
         return {
             "status": "success",
-            "quotes_processed": len(core_responses_df),
+            "quotes_processed": len(stage1_data_responses_df),
             "findings_generated": len(findings),
             "priority_findings": self.processing_metrics.get("priority_findings", 0),
             "standard_findings": self.processing_metrics.get("standard_findings", 0),
@@ -1682,7 +1682,7 @@ class Stage3FindingsAnalyzer:
             'metric_quantification': 0
         }
         
-        # Use verbatim_response for core responses, fallback to text for quote_analysis
+        # Use verbatim_response for core responses, fallback to text for stage2_response_labeling
         text = quote.get('verbatim_response', quote.get('text', '')).lower()
         
         # Novelty: New/unexpected observation
@@ -2000,7 +2000,7 @@ class Stage3FindingsAnalyzer:
     
     def _generate_finding_statement_from_quote(self, quote: Dict, criterion: str, finding_type: str) -> str:
         """Generate executive-ready finding statement directly from quote content with business focus"""
-        # Use verbatim_response for core responses, fallback to text for quote_analysis
+        # Use verbatim_response for core responses, fallback to text for stage2_response_labeling
         text = quote.get('verbatim_response', quote.get('text', '')).strip()
         stakeholder = quote.get('stakeholder_weight', '')
         
@@ -2149,7 +2149,7 @@ class Stage3FindingsAnalyzer:
                 else:
                     return "User feedback reveals specific improvement opportunities that directly impact competitive positioning and market expansion, with gaps creating significant competitive vulnerability"
         
-        # Original logic for quote_analysis with pre-assigned criteria
+        # Original logic for stage2_response_labeling with pre-assigned criteria
         else:
             # Generate finding based on criterion and insights with business focus
             if criterion == 'speed_responsiveness':
@@ -2460,7 +2460,7 @@ class Stage3FindingsAnalyzer:
 def run_stage3_analysis(client_id: str = 'default'):
     """Run enhanced Stage 3 findings analysis"""
     analyzer = Stage3FindingsAnalyzer()
-    return analyzer.process_enhanced_findings(client_id=client_id)
+    return analyzer.process_stage3_findings(client_id=client_id)
 
 # Run the analysis
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ ALTER TABLE themes DROP COLUMN IF EXISTS semantic_group_id;
 ALTER TABLE themes DROP COLUMN IF EXISTS scorecard_theme_id;
 -- Drop unused column from themes
 ALTER TABLE themes DROP COLUMN IF EXISTS synthesis_theme_id;
--- Drop unused column from enhanced_findings
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
--- Drop unused column from enhanced_findings
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
+-- Drop unused column from stage3_findings
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
+-- Drop unused column from stage3_findings
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS sentiment_alignment_score;

@@ -46,7 +46,7 @@ def run_schema_update():
         
         try:
             # Check if the new columns exist
-            analysis_df = db.get_quote_analysis(client_id='Rev')
+            analysis_df = db.get_stage2_response_labeling(client_id='Rev')
             if not analysis_df.empty:
                 print(f"   📊 Found {len(analysis_df)} existing analyses")
                 

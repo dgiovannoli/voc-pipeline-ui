@@ -67,10 +67,10 @@ def test_save_theme():
         
         # Immediately retrieve it
         print("\n📖 Retrieving saved theme...")
-        themes_df = db.get_themes(client_id='Rev')
+        stage4_themes_df = db.get_stage4_themes(client_id='Rev')
         
-        if not themes_df.empty:
-            latest_theme = themes_df.iloc[0]
+        if not stage4_themes_df.empty:
+            latest_theme = stage4_themes_df.iloc[0]
             print(f"✅ Retrieved theme: {latest_theme['theme_statement']}")
             
             # Check quotes field
@@ -88,7 +88,7 @@ def test_save_theme():
             else:
                 print(f"❌ Quotes field is None or empty")
         else:
-            print("❌ No themes found after save")
+            print("❌ No stage4_themes found after save")
     else:
         print("❌ Failed to save theme")
 

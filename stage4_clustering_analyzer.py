@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class Stage4ClusteringAnalyzer:
     """
-    Stage 4: Clustering-Based Theme Generation - Uses agglomerative clustering and LLM for high-quality themes
+    Stage 4: Clustering-Based Theme Generation - Uses agglomerative clustering and LLM for high-quality stage4_themes
     """
     
     def __init__(self, config_path="config/analysis_config.yaml"):
@@ -51,9 +51,9 @@ class Stage4ClusteringAnalyzer:
         # Processing metrics
         self.processing_metrics = {
             "total_findings_processed": 0,
-            "themes_generated": 0,
-            "high_strength_themes": 0,
-            "competitive_themes": 0,
+            "stage4_themes_generated": 0,
+            "high_strength_stage4_themes": 0,
+            "competitive_stage4_themes": 0,
             "clusters_formed": 0,
             "processing_errors": 0
         }
@@ -75,7 +75,7 @@ class Stage4ClusteringAnalyzer:
                 'min_companies_per_theme': 2,
                 'min_findings_per_theme': 1,
                 'min_quotes_per_theme': 2,
-                'max_themes_per_category': 8,
+                'max_stage4_themes_per_category': 8,
                 'clustering': {
                     'target_clusters': 20,  # Target 10-30 clusters
                     'similarity_threshold': 0.5,  # Start with 0.5, adjust based on results
@@ -100,7 +100,7 @@ class Stage4ClusteringAnalyzer:
     def get_findings_for_analysis(self, client_id: str = 'default') -> pd.DataFrame:
         """Get findings for clustering analysis"""
         try:
-            findings_df = self.db.get_enhanced_findings(client_id=client_id)
+            findings_df = self.db.get_stage3_findings(client_id=client_id)
             
             if findings_df.empty:
                 logger.warning(f"No findings found for client {client_id}")
@@ -213,7 +213,7 @@ class Stage4ClusteringAnalyzer:
             if 'impact_score' in cluster_findings.columns:
                 avg_impact = float(cluster_findings['impact_score'].mean())
             
-            # Check for competitive themes
+            # Check for competitive stage4_themes
             competitive_flag = self._check_competitive_cluster(cluster_findings)
             
             # Get supporting quotes
@@ -240,7 +240,7 @@ class Stage4ClusteringAnalyzer:
         return clusters
     
     def _check_competitive_cluster(self, cluster_findings: pd.DataFrame) -> bool:
-        """Check if cluster contains competitive themes"""
+        """Check if cluster contains competitive stage4_themes"""
         stage4_config = self.config.get('stage4', {})
         competitive_keywords = stage4_config.get('competitive_keywords', [])
         
@@ -257,7 +257,7 @@ class Stage4ClusteringAnalyzer:
         """Generate theme statements using LLM for each cluster"""
         logger.info("📝 Generating theme statements using LLM...")
         
-        themes = []
+        stage4_themes = []
         logger.debug(f"generate_theme_statements: clusters type={type(clusters)}, len={len(clusters)}")
         
         for cluster in clusters:
@@ -302,13 +302,13 @@ class Stage4ClusteringAnalyzer:
                     'client_id': client_id
                 }
                 
-                themes.append(theme)
+                stage4_themes.append(theme)
                 
                 # Update metrics
                 if theme_strength == 'High':
-                    self.processing_metrics["high_strength_themes"] += 1
+                    self.processing_metrics["high_strength_stage4_themes"] += 1
                 if cluster.get('competitive_flag', False):
-                    self.processing_metrics["competitive_themes"] += 1
+                    self.processing_metrics["competitive_stage4_themes"] += 1
                 
                 logger.debug(f"Generated theme for cluster {cluster.get('cluster_id', 'unknown')}: {theme_statement[:100]}...")
                 
@@ -317,8 +317,8 @@ class Stage4ClusteringAnalyzer:
                 self.processing_metrics["processing_errors"] += 1
                 continue
         
-        logger.info(f"✅ Generated {len(themes)} theme statements")
-        return themes
+        logger.info(f"✅ Generated {len(stage4_themes)} theme statements")
+        return stage4_themes
     
     def _generate_cluster_theme(self, cluster: Dict) -> Optional[str]:
         """Generate theme statement for a cluster using LLM"""
@@ -418,15 +418,15 @@ class Stage4ClusteringAnalyzer:
         else:
             return "Strategic"
     
-    def save_themes_to_supabase(self, themes: List[Dict], client_id: str = 'default'):
-        """Save themes to Supabase database"""
-        logger.info(f"💾 Saving {len(themes)} themes to Supabase...")
-        logger.debug(f"save_themes_to_supabase: themes type={type(themes)}, len={len(themes)}")
+    def save_stage4_themes_to_supabase(self, stage4_themes: List[Dict], client_id: str = 'default'):
+        """Save stage4_themes to Supabase database"""
+        logger.info(f"💾 Saving {len(stage4_themes)} stage4_themes to Supabase...")
+        logger.debug(f"save_stage4_themes_to_supabase: stage4_themes type={type(stage4_themes)}, len={len(stage4_themes)}")
         
         saved_count = 0
         skipped_count = 0
         
-        for theme in themes:
+        for theme in stage4_themes:
             try:
                 logger.debug(f"Saving theme: {theme.get('theme_statement', '')[:80]}")
                 result = self.db.save_theme(theme, client_id=client_id)
@@ -438,29 +438,29 @@ class Stage4ClusteringAnalyzer:
                 logger.error(f"❌ Error saving theme: {e}")
                 skipped_count += 1
         
-        logger.info(f"✅ Saved {saved_count} themes to Supabase for client {client_id}")
+        logger.info(f"✅ Saved {saved_count} stage4_themes to Supabase for client {client_id}")
         if skipped_count > 0:
-            logger.warning(f"⚠️ Skipped {skipped_count} themes due to save failures")
+            logger.warning(f"⚠️ Skipped {skipped_count} stage4_themes due to save failures")
         
-        self.processing_metrics["themes_generated"] = saved_count
+        self.processing_metrics["stage4_themes_generated"] = saved_count
     
-    def purge_old_themes(self, client_id: str = 'default'):
-        """Purge old themes for the client"""
+    def purge_old_stage4_themes(self, client_id: str = 'default'):
+        """Purge old stage4_themes for the client"""
         try:
-            # Delete existing themes for this client
-            result = self.db.supabase.table('themes').delete().eq('client_id', client_id).execute()
-            logger.info(f"🗑️ Purged old themes for client {client_id}")
+            # Delete existing stage4_themes for this client
+            result = self.db.supabase.table('stage4_themes').delete().eq('client_id', client_id).execute()
+            logger.info(f"🗑️ Purged old stage4_themes for client {client_id}")
         except Exception as e:
-            logger.error(f"❌ Error purging old themes: {e}")
+            logger.error(f"❌ Error purging old stage4_themes: {e}")
     
-    def process_themes(self, client_id: str = 'default') -> Dict:
+    def process_stage4_themes(self, client_id: str = 'default') -> Dict:
         """Main processing function for clustering-based Stage 4"""
         
         logger.info("🚀 STAGE 4: CLUSTERING-BASED THEME GENERATION")
         logger.info("=" * 60)
         
-        # Purge old themes first
-        self.purge_old_themes(client_id)
+        # Purge old stage4_themes first
+        self.purge_old_stage4_themes(client_id)
         
         # Get findings for analysis
         findings_df = self.get_findings_for_analysis(client_id=client_id)
@@ -491,52 +491,52 @@ class Stage4ClusteringAnalyzer:
         
         # Generate theme statements
         logger.info("📝 Starting theme generation...")
-        themes = self.generate_theme_statements(clusters, client_id=client_id)
-        logger.info(f"📝 Theme generation complete: {len(themes)} themes")
+        stage4_themes = self.generate_theme_statements(clusters, client_id=client_id)
+        logger.info(f"📝 Theme generation complete: {len(stage4_themes)} stage4_themes")
         
-        if not themes:
-            logger.info("✅ No themes generated")
-            return {"status": "no_themes", "message": "No themes generated"}
+        if not stage4_themes:
+            logger.info("✅ No stage4_themes generated")
+            return {"status": "no_stage4_themes", "message": "No stage4_themes generated"}
         
         # Save to Supabase
         logger.info("💾 Starting theme save...")
-        self.save_themes_to_supabase(themes, client_id=client_id)
+        self.save_stage4_themes_to_supabase(stage4_themes, client_id=client_id)
         logger.info("💾 Theme save complete")
         
         # Generate summary
-        summary = self.generate_summary_statistics(themes)
+        summary = self.generate_summary_statistics(stage4_themes)
         
-        logger.info(f"\n✅ Stage 4 complete! Generated {len(themes)} themes from {len(clusters)} clusters")
+        logger.info(f"\n✅ Stage 4 complete! Generated {len(stage4_themes)} stage4_themes from {len(clusters)} clusters")
         self.print_summary_report(summary)
         
         return {
             "status": "success",
-            "themes_generated": len(themes),
+            "stage4_themes_generated": len(stage4_themes),
             "clusters_formed": len(clusters),
-            "high_strength_themes": self.processing_metrics["high_strength_themes"],
-            "competitive_themes": self.processing_metrics["competitive_themes"],
+            "high_strength_stage4_themes": self.processing_metrics["high_strength_stage4_themes"],
+            "competitive_stage4_themes": self.processing_metrics["competitive_stage4_themes"],
             "summary": summary
         }
     
-    def generate_summary_statistics(self, themes: List[Dict]) -> Dict:
-        """Generate summary statistics for themes"""
-        if not themes:
+    def generate_summary_statistics(self, stage4_themes: List[Dict]) -> Dict:
+        """Generate summary statistics for stage4_themes"""
+        if not stage4_themes:
             return {}
         
-        total_themes = len(themes)
-        high_strength = sum(1 for theme in themes if theme.get('theme_strength') == 'High')
-        competitive = sum(1 for theme in themes if theme.get('competitive_flag', False))
+        total_stage4_themes = len(stage4_themes)
+        high_strength = sum(1 for theme in stage4_themes if theme.get('theme_strength') == 'High')
+        competitive = sum(1 for theme in stage4_themes if theme.get('competitive_flag', False))
         
         # Get unique companies
         all_companies = set()
-        for theme in themes:
+        for theme in stage4_themes:
             companies = theme.get('interview_companies', [])
             all_companies.update(companies)
         
         return {
-            'total_themes': total_themes,
+            'total_stage4_themes': total_stage4_themes,
             'high_strength': high_strength,
-            'competitive_themes': competitive,
+            'competitive_stage4_themes': competitive,
             'companies_covered': len(all_companies),
             'clusters_formed': self.processing_metrics["clusters_formed"]
         }
@@ -546,9 +546,9 @@ class Stage4ClusteringAnalyzer:
         logger.info("\n" + "=" * 60)
         logger.info("📊 STAGE 4 SUMMARY REPORT")
         logger.info("=" * 60)
-        logger.info(f"🎯 Total Themes Generated: {summary.get('total_themes', 0)}")
+        logger.info(f"🎯 Total Themes Generated: {summary.get('total_stage4_themes', 0)}")
         logger.info(f"🏆 High Strength Themes: {summary.get('high_strength', 0)}")
-        logger.info(f"🏅 Competitive Themes: {summary.get('competitive_themes', 0)}")
+        logger.info(f"🏅 Competitive Themes: {summary.get('competitive_stage4_themes', 0)}")
         logger.info(f"🏢 Companies Covered: {summary.get('companies_covered', 0)}")
         logger.info(f"🔗 Clusters Formed: {summary.get('clusters_formed', 0)}")
         logger.info("=" * 60)
@@ -557,7 +557,7 @@ def run_stage4_clustering_analysis(client_id: str = 'default'):
     """Run clustering-based Stage 4 analysis"""
     try:
         analyzer = Stage4ClusteringAnalyzer()
-        result = analyzer.process_themes(client_id=client_id)
+        result = analyzer.process_stage4_themes(client_id=client_id)
         return result
     except Exception as e:
         logger.error(f"❌ Error in Stage 4 clustering analysis: {e}")

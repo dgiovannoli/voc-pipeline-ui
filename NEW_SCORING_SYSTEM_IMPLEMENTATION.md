@@ -40,14 +40,14 @@ This document outlines the implementation of the new separated relevance/intensi
 
 ```sql
 -- Add new sentiment column
-ALTER TABLE quote_analysis ADD COLUMN sentiment VARCHAR CHECK (sentiment IN ('positive', 'negative', 'neutral', 'mixed'));
+ALTER TABLE stage2_response_labeling ADD COLUMN sentiment VARCHAR CHECK (sentiment IN ('positive', 'negative', 'neutral', 'mixed'));
 
 -- Rename existing score column to relevance_score for clarity
-ALTER TABLE quote_analysis RENAME COLUMN score TO relevance_score;
+ALTER TABLE stage2_response_labeling RENAME COLUMN score TO relevance_score;
 
 -- Add computed columns for easy filtering
-ALTER TABLE quote_analysis ADD COLUMN is_high_relevance BOOLEAN GENERATED ALWAYS AS (relevance_score >= 4) STORED;
-ALTER TABLE quote_analysis ADD COLUMN is_deal_impacting BOOLEAN GENERATED ALWAYS AS (
+ALTER TABLE stage2_response_labeling ADD COLUMN is_high_relevance BOOLEAN GENERATED ALWAYS AS (relevance_score >= 4) STORED;
+ALTER TABLE stage2_response_labeling ADD COLUMN is_deal_impacting BOOLEAN GENERATED ALWAYS AS (
     (relevance_score >= 4 AND sentiment = 'negative') OR 
     (relevance_score >= 4 AND sentiment = 'positive')
 ) STORED;
@@ -66,7 +66,7 @@ ALTER TABLE quote_analysis ADD COLUMN is_deal_impacting BOOLEAN GENERATED ALWAYS
 
 ### 3. Database Save Function Updates (`supabase_database.py`)
 
-**Updated `save_quote_analysis()`:**
+**Updated `save_stage2_response_labeling()`:**
 - Maps 'score' to 'relevance_score' for backward compatibility
 - Adds sentiment field to saved data
 - Handles the new column structure

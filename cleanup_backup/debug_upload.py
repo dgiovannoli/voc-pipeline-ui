@@ -150,7 +150,7 @@ def check_supabase_data():
         db = SupabaseDatabase()
         
         # Get all core responses
-        responses = db.get_core_responses()
+        responses = db.get_stage1_data_responses()
         print(f"📊 Total core responses in database: {len(responses)}")
         
         if len(responses) > 0:

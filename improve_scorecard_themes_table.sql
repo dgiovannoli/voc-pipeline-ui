@@ -62,5 +62,5 @@ COMMENT ON COLUMN scorecard_themes.created_at IS 'Timestamp when theme was creat
 CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Add embedding columns for OpenAI (1536-dim) embeddings
-ALTER TABLE core_responses ADD COLUMN IF NOT EXISTS embedding vector(1536);
+ALTER TABLE stage1_data_responses ADD COLUMN IF NOT EXISTS embedding vector(1536);
 ALTER TABLE scorecard_themes ADD COLUMN IF NOT EXISTS embedding vector(1536); 

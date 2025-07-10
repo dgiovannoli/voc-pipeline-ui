@@ -24,7 +24,7 @@ st.write("voc_pipeline.db exists:", os.path.exists("voc_pipeline.db"))
 **Fix**: Updated the INSERT statement to include the `sync_status` column:
 ```python
 cursor.execute("""
-    INSERT OR REPLACE INTO core_responses 
+    INSERT OR REPLACE INTO stage1_data_responses 
     (response_id, verbatim_response, subject, question, deal_status, 
      company, interviewee_name, interview_date, file_source, sync_status)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

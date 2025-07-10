@@ -16,7 +16,7 @@ Your VOC Pipeline UI is now fully functional both locally and ready for producti
 
 ### 2. **Database Schema Fixes**
 - ✅ **Database reinitialized** with correct schema
-- ✅ **sync_status column** properly added to core_responses table
+- ✅ **sync_status column** properly added to stage1_data_responses table
 - ✅ **Production database fix script** verified schema integrity
 - ✅ **Backup created** for safety
 

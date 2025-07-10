@@ -25,7 +25,7 @@ def simple_ingest(csv_path, client_id="Rev"):
     # Initialize database
     db = SupabaseDatabase()
 
-    # Insert each document into core_responses
+    # Insert each document into stage1_data_responses
     for idx, doc in enumerate(docs):
         meta = doc["metadata"]
         response_data = {

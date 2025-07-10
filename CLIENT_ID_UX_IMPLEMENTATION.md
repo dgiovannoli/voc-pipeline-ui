@@ -42,10 +42,10 @@ All tables include a `client_id` column for data isolation:
 
 ```sql
 -- Example from add_client_id_to_tables.sql
-ALTER TABLE core_responses ADD COLUMN client_id TEXT DEFAULT 'default';
-ALTER TABLE quote_analysis ADD COLUMN client_id TEXT DEFAULT 'default';
+ALTER TABLE stage1_data_responses ADD COLUMN client_id TEXT DEFAULT 'default';
+ALTER TABLE stage2_response_labeling ADD COLUMN client_id TEXT DEFAULT 'default';
 ALTER TABLE findings ADD COLUMN client_id TEXT DEFAULT 'default';
-ALTER TABLE enhanced_findings ADD COLUMN client_id TEXT DEFAULT 'default';
+ALTER TABLE stage3_findings ADD COLUMN client_id TEXT DEFAULT 'default';
 ALTER TABLE themes ADD COLUMN client_id TEXT DEFAULT 'default';
 ALTER TABLE executive_themes ADD COLUMN client_id TEXT DEFAULT 'default';
 ALTER TABLE criteria_scorecard ADD COLUMN client_id TEXT DEFAULT 'default';
@@ -92,8 +92,8 @@ All database methods now accept and use client_id:
 
 ```python
 # Example: Getting quotes for specific client
-def get_core_responses(self, client_id: str = 'default') -> pd.DataFrame:
-    query = f"SELECT * FROM core_responses WHERE client_id = '{client_id}'"
+def get_stage1_data_responses(self, client_id: str = 'default') -> pd.DataFrame:
+    query = f"SELECT * FROM stage1_data_responses WHERE client_id = '{client_id}'"
     return self.execute_query(query)
 ```
 
@@ -106,7 +106,7 @@ Each stage analyzer accepts client_id parameter:
 def process_incremental(self, force_reprocess: bool = False, client_id: str = 'default') -> Dict:
 
 # Stage 3  
-def process_enhanced_findings(self, client_id: str = 'default') -> Dict:
+def process_stage3_findings(self, client_id: str = 'default') -> Dict:
 
 # Stage 4
 def process_themes(self, client_id: str = 'default') -> Dict:
@@ -202,7 +202,7 @@ Client ID: project_alpha_2024
 print(f"Current client_id: {st.session_state.get('client_id', 'not_set')}")
 
 # Check database for client data
-df = db.get_core_responses(client_id='your_client_id')
+df = db.get_stage1_data_responses(client_id='your_client_id')
 print(f"Found {len(df)} records for client")
 ```
 

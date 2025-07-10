@@ -12,7 +12,7 @@ def analyze_specific_issues():
     
     # Get database responses
     db = SupabaseDatabase()
-    df = db.get_core_responses(client_id='Rev')
+    df = db.get_stage1_data_responses(client_id='Rev')
     cyrus_responses = df[df['interviewee_name'].str.contains('Cyrus', case=False, na=False)]
     
     print(f"📊 TOTAL CYRUS RESPONSES: {len(cyrus_responses)}")

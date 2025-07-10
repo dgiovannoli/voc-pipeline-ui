@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class Stage5ExecutiveAnalyzer:
     """
-    Stage 5: Executive Synthesis - Transform themes into C-suite ready narratives with criteria scorecard
+    Stage 5: Executive Synthesis - Transform stage4_themes into C-suite ready narratives with criteria scorecard
     """
     
     def __init__(self, config_path="config/analysis_config.yaml"):
@@ -42,10 +42,10 @@ class Stage5ExecutiveAnalyzer:
         
         # Processing metrics
         self.processing_metrics = {
-            "total_themes_processed": 0,
-            "executive_themes_generated": 0,
-            "high_impact_themes": 0,
-            "competitive_themes": 0,
+            "total_stage4_themes_processed": 0,
+            "executive_stage4_themes_generated": 0,
+            "high_impact_stage4_themes": 0,
+            "competitive_stage4_themes": 0,
             "criteria_analyzed": 0,
             "processing_errors": 0
         }
@@ -64,7 +64,7 @@ class Stage5ExecutiveAnalyzer:
         return {
             'stage5': {
                 'min_theme_strength': 'Medium',
-                'max_executive_themes': 10,
+                'max_executive_stage4_themes': 10,
                 'priority_score_weights': {
                     'competitive_flag': 3.0,
                     'theme_strength': 2.0,
@@ -74,39 +74,39 @@ class Stage5ExecutiveAnalyzer:
             }
         }
     
-    def get_themes_for_synthesis(self, client_id: str = 'default') -> pd.DataFrame:
-        """Get themes from database for executive synthesis"""
-        return self.db.get_themes(client_id=client_id)
+    def get_stage4_themes_for_synthesis(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get stage4_themes from database for executive synthesis"""
+        return self.db.get_stage4_themes(client_id=client_id)
     
     def generate_criteria_scorecard(self, client_id: str = 'default') -> Dict:
         """Generate criteria scorecard from database"""
         return self.db.generate_criteria_scorecard(client_id=client_id)
     
-    def generate_executive_synthesis(self, themes_df: pd.DataFrame, scorecard: Dict) -> List[Dict]:
-        """Generate executive synthesis from themes with scorecard context"""
+    def generate_executive_synthesis(self, stage4_themes_df: pd.DataFrame, scorecard: Dict) -> List[Dict]:
+        """Generate executive synthesis from stage4_themes with scorecard context"""
         logger.info("🎯 Generating executive synthesis...")
         
-        executive_themes = []
+        executive_stage4_themes = []
         
-        for _, theme in themes_df.iterrows():
+        for _, theme in stage4_themes_df.iterrows():
             try:
                 synthesis = self._generate_single_executive_theme(theme, scorecard)
                 if synthesis:
-                    executive_themes.append(synthesis)
+                    executive_stage4_themes.append(synthesis)
                     
             except Exception as e:
                 logger.error(f"Error generating synthesis for theme {theme.get('id')}: {e}")
                 self.processing_metrics["processing_errors"] += 1
         
         # Sort by priority score
-        executive_themes.sort(key=lambda x: x.get('priority_score', 0), reverse=True)
+        executive_stage4_themes.sort(key=lambda x: x.get('priority_score', 0), reverse=True)
         
         # Assign priority ranks
-        for i, theme in enumerate(executive_themes, 1):
+        for i, theme in enumerate(executive_stage4_themes, 1):
             theme['priority_rank'] = i
         
-        logger.info(f"✅ Generated {len(executive_themes)} executive themes")
-        return executive_themes
+        logger.info(f"✅ Generated {len(executive_stage4_themes)} executive stage4_themes")
+        return executive_stage4_themes
     
     def _generate_single_executive_theme(self, theme: pd.Series, scorecard: Dict) -> Optional[Dict]:
         """Generate executive synthesis for a single theme"""
@@ -124,7 +124,7 @@ class Stage5ExecutiveAnalyzer:
         
         REQUIREMENTS:
         1. **Punch Then Explain**: Bold headline + concise business narrative
-        2. **Data-Anchored**: Include specific metrics from both themes and criteria scorecard
+        2. **Data-Anchored**: Include specific metrics from both stage4_themes and criteria scorecard
         3. **Business Tension**: Highlight strategic implications and performance gaps
         4. **Executive Relevance**: Focus on decision-making impact and priority actions
         5. **Criteria Integration**: Reference specific criteria performance where relevant
@@ -145,7 +145,7 @@ class Stage5ExecutiveAnalyzer:
         IMPORTANT: 
         - Use exact quotes with response_id prefixes
         - Reference specific criteria performance ratings (EXCEPTIONAL, STRONG, GOOD, NEEDS ATTENTION, CRITICAL ISSUE)
-        - Connect themes to criteria scorecard insights
+        - Connect stage4_themes to criteria scorecard insights
         - Focus on business impact, not technical details
         - Use Buried Wins editorial style: conversational authority, clarity over cleverness, punch then explain
         - RESPOND WITH ONLY THE JSON OBJECT - NO OTHER TEXT
@@ -329,22 +329,22 @@ class Stage5ExecutiveAnalyzer:
         else:
             return "Customer insights"
     
-    def save_executive_themes(self, executive_themes: List[Dict], client_id: str = 'default'):
-        """Save executive themes to Supabase"""
-        logger.info("💾 Saving executive themes to Supabase...")
+    def save_executive_stage4_themes(self, executive_stage4_themes: List[Dict], client_id: str = 'default'):
+        """Save executive stage4_themes to Supabase"""
+        logger.info("💾 Saving executive stage4_themes to Supabase...")
         
         saved_count = 0
-        for theme in executive_themes:
+        for theme in executive_stage4_themes:
             theme['client_id'] = client_id  # Add client_id to each theme
             if self.db.save_executive_theme(theme):
                 saved_count += 1
                 if theme.get('business_impact_level') == 'High':
-                    self.processing_metrics["high_impact_themes"] += 1
+                    self.processing_metrics["high_impact_stage4_themes"] += 1
                 if theme.get('theme_category') == 'Competitive':
-                    self.processing_metrics["competitive_themes"] += 1
+                    self.processing_metrics["competitive_stage4_themes"] += 1
         
-        logger.info(f"✅ Saved {saved_count} executive themes to Supabase")
-        self.processing_metrics["executive_themes_generated"] = saved_count
+        logger.info(f"✅ Saved {saved_count} executive stage4_themes to Supabase")
+        self.processing_metrics["executive_stage4_themes_generated"] = saved_count
     
     def save_criteria_scorecard(self, scorecard: Dict, client_id: str = 'default'):
         """Save criteria scorecard to Supabase"""
@@ -374,52 +374,52 @@ class Stage5ExecutiveAnalyzer:
         # Save scorecard
         self.save_criteria_scorecard(scorecard, client_id)
         
-        # Get themes for synthesis
-        themes_df = self.get_themes_for_synthesis(client_id)
+        # Get stage4_themes for synthesis
+        stage4_themes_df = self.get_stage4_themes_for_synthesis(client_id)
         
-        if themes_df.empty:
-            logger.info("✅ No themes available for executive synthesis")
-            return {"status": "no_themes", "message": "No themes available"}
+        if stage4_themes_df.empty:
+            logger.info("✅ No stage4_themes available for executive synthesis")
+            return {"status": "no_stage4_themes", "message": "No stage4_themes available"}
         
-        self.processing_metrics["total_themes_processed"] = len(themes_df)
+        self.processing_metrics["total_stage4_themes_processed"] = len(stage4_themes_df)
         
         # Generate executive synthesis
-        executive_themes = self.generate_executive_synthesis(themes_df, scorecard)
+        executive_stage4_themes = self.generate_executive_synthesis(stage4_themes_df, scorecard)
         
-        if not executive_themes:
-            logger.info("✅ No executive themes generated")
-            return {"status": "no_executive_themes", "message": "No executive themes generated"}
+        if not executive_stage4_themes:
+            logger.info("✅ No executive stage4_themes generated")
+            return {"status": "no_executive_stage4_themes", "message": "No executive stage4_themes generated"}
         
-        # Save executive themes
-        self.save_executive_themes(executive_themes, client_id)
+        # Save executive stage4_themes
+        self.save_executive_stage4_themes(executive_stage4_themes, client_id)
         
         # Generate summary
-        summary = self.generate_summary_statistics(executive_themes, scorecard)
+        summary = self.generate_summary_statistics(executive_stage4_themes, scorecard)
         
-        logger.info(f"\n✅ Stage 5 complete! Generated {len(executive_themes)} executive themes")
+        logger.info(f"\n✅ Stage 5 complete! Generated {len(executive_stage4_themes)} executive stage4_themes")
         self.print_summary_report(summary)
         
         return {
             "status": "success",
-            "themes_processed": len(themes_df),
-            "executive_themes_generated": len(executive_themes),
-            "high_impact_themes": self.processing_metrics["high_impact_themes"],
-            "competitive_themes": self.processing_metrics["competitive_themes"],
+            "stage4_themes_processed": len(stage4_themes_df),
+            "executive_stage4_themes_generated": len(executive_stage4_themes),
+            "high_impact_stage4_themes": self.processing_metrics["high_impact_stage4_themes"],
+            "competitive_stage4_themes": self.processing_metrics["competitive_stage4_themes"],
             "criteria_analyzed": self.processing_metrics["criteria_analyzed"],
             "summary": summary,
             "processing_metrics": self.processing_metrics
         }
     
-    def generate_summary_statistics(self, executive_themes: List[Dict], scorecard: Dict) -> Dict:
+    def generate_summary_statistics(self, executive_stage4_themes: List[Dict], scorecard: Dict) -> Dict:
         """Generate summary statistics"""
         
         # Executive theme statistics
-        impact_distribution = Counter(theme.get('business_impact_level', 'Unknown') for theme in executive_themes)
-        readiness_distribution = Counter(theme.get('executive_readiness', 'Unknown') for theme in executive_themes)
-        category_distribution = Counter(theme.get('theme_category', 'Unknown') for theme in executive_themes)
+        impact_distribution = Counter(theme.get('business_impact_level', 'Unknown') for theme in executive_stage4_themes)
+        readiness_distribution = Counter(theme.get('executive_readiness', 'Unknown') for theme in executive_stage4_themes)
+        category_distribution = Counter(theme.get('theme_category', 'Unknown') for theme in executive_stage4_themes)
         
         # Priority score statistics
-        priority_scores = [theme.get('priority_score', 0) for theme in executive_themes]
+        priority_scores = [theme.get('priority_score', 0) for theme in executive_stage4_themes]
         avg_priority_score = sum(priority_scores) / len(priority_scores) if priority_scores else 0
         
         # Scorecard statistics
@@ -427,15 +427,15 @@ class Stage5ExecutiveAnalyzer:
         criteria_details = scorecard.get('criteria_details', [])
         
         return {
-            'total_executive_themes': len(executive_themes),
+            'total_executive_stage4_themes': len(executive_stage4_themes),
             'impact_distribution': dict(impact_distribution),
             'readiness_distribution': dict(readiness_distribution),
             'category_distribution': dict(category_distribution),
             'average_priority_score': round(avg_priority_score, 2),
             'overall_criteria_performance': overall_performance.get('average_performance_rating', 'N/A'),
             'total_criteria_analyzed': len(criteria_details),
-            'high_impact_count': self.processing_metrics["high_impact_themes"],
-            'competitive_count': self.processing_metrics["competitive_themes"]
+            'high_impact_count': self.processing_metrics["high_impact_stage4_themes"],
+            'competitive_count': self.processing_metrics["competitive_stage4_themes"]
         }
     
     def print_summary_report(self, summary: Dict):
@@ -443,9 +443,9 @@ class Stage5ExecutiveAnalyzer:
         
         logger.info(f"\n📊 STAGE 5 SUMMARY REPORT")
         logger.info("=" * 60)
-        logger.info(f"Total executive themes generated: {summary['total_executive_themes']}")
-        logger.info(f"High impact themes: {summary['high_impact_count']}")
-        logger.info(f"Competitive themes: {summary['competitive_count']}")
+        logger.info(f"Total executive stage4_themes generated: {summary['total_executive_stage4_themes']}")
+        logger.info(f"High impact stage4_themes: {summary['high_impact_count']}")
+        logger.info(f"Competitive stage4_themes: {summary['competitive_count']}")
         logger.info(f"Average priority score: {summary['average_priority_score']}")
         logger.info(f"Overall criteria performance: {summary['overall_criteria_performance']}")
         logger.info(f"Total criteria analyzed: {summary['total_criteria_analyzed']}")
@@ -481,9 +481,9 @@ if __name__ == "__main__":
         
         if result["status"] == "success":
             print("✅ Stage 5 completed successfully!")
-            print(f"📊 Executive themes generated: {result['executive_themes_generated']}")
-            print(f"🏆 High impact themes: {result['high_impact_themes']}")
-            print(f"🏅 Competitive themes: {result['competitive_themes']}")
+            print(f"📊 Executive stage4_themes generated: {result['executive_stage4_themes_generated']}")
+            print(f"🏆 High impact stage4_themes: {result['high_impact_stage4_themes']}")
+            print(f"🏅 Competitive stage4_themes: {result['competitive_stage4_themes']}")
             print(f"📋 Criteria analyzed: {result['criteria_analyzed']}")
         else:
             print(f"⚠️ Stage 5 completed with status: {result['status']}")

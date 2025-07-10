@@ -8,7 +8,7 @@
 -- 1. LEGACY TABLES (Replaced by enhanced versions)
 -- These were created during development but are no longer used
 
--- Legacy findings table (replaced by enhanced_findings)
+-- Legacy findings table (replaced by stage3_findings)
 DROP TABLE IF EXISTS findings CASCADE;
 
 -- Legacy trend_analysis table (functionality moved to criteria scorecard)
@@ -22,9 +22,9 @@ DROP TABLE IF EXISTS processing_metadata CASCADE;
 -- ============================================================================
 
 -- ✅ CORE TABLES (Actively Used):
--- - core_responses (Stage 1 output)
--- - quote_analysis (Stage 2 output) 
--- - enhanced_findings (Stage 3 output)
+-- - stage1_data_responses (Stage 1 output)
+-- - stage2_response_labeling (Stage 2 output) 
+-- - stage3_findings (Stage 3 output)
 -- - themes (Stage 4 output)
 -- - executive_themes (Stage 5 output)
 -- - criteria_scorecard (Stage 5 output)
@@ -42,7 +42,7 @@ DROP TABLE IF EXISTS processing_metadata CASCADE;
 SELECT 
     table_name,
     CASE 
-        WHEN table_name IN ('core_responses', 'quote_analysis', 'enhanced_findings', 'themes', 'executive_themes', 'criteria_scorecard') THEN 'Core Table'
+        WHEN table_name IN ('stage1_data_responses', 'stage2_response_labeling', 'stage3_findings', 'themes', 'executive_themes', 'criteria_scorecard') THEN 'Core Table'
         WHEN table_name IN ('processing_logs', 'data_quality_metrics', 'fuzzy_matching_cache') THEN 'Enhancement Table'
         ELSE 'Other'
     END as table_type
@@ -54,19 +54,19 @@ ORDER BY table_type, table_name;
 
 -- Count records in remaining tables
 SELECT 
-    'core_responses' as table_name,
+    'stage1_data_responses' as table_name,
     COUNT(*) as record_count
-FROM core_responses
+FROM stage1_data_responses
 UNION ALL
 SELECT 
-    'quote_analysis' as table_name,
+    'stage2_response_labeling' as table_name,
     COUNT(*) as record_count
-FROM quote_analysis
+FROM stage2_response_labeling
 UNION ALL
 SELECT 
-    'enhanced_findings' as table_name,
+    'stage3_findings' as table_name,
     COUNT(*) as record_count
-FROM enhanced_findings
+FROM stage3_findings
 UNION ALL
 SELECT 
     'themes' as table_name,
@@ -89,14 +89,14 @@ ORDER BY table_name;
 -- ============================================================================
 
 -- Tables Removed:
--- ✅ findings (replaced by enhanced_findings)
+-- ✅ findings (replaced by stage3_findings)
 -- ✅ trend_analysis (functionality in criteria_scorecard)
 -- ✅ processing_metadata (replaced by processing_logs)
 
 -- Tables Kept:
--- ✅ core_responses (Stage 1)
--- ✅ quote_analysis (Stage 2) 
--- ✅ enhanced_findings (Stage 3)
+-- ✅ stage1_data_responses (Stage 1)
+-- ✅ stage2_response_labeling (Stage 2) 
+-- ✅ stage3_findings (Stage 3)
 -- ✅ themes (Stage 4)
 -- ✅ executive_themes (Stage 5)
 -- ✅ criteria_scorecard (Stage 5)

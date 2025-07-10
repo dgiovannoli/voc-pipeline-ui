@@ -23,9 +23,9 @@ def main():
         "ALTER TABLE themes DROP COLUMN IF EXISTS scorecard_theme_id;",
         "ALTER TABLE themes DROP COLUMN IF EXISTS synthesis_theme_id;",
         "",
-        "-- Remove unused columns from enhanced_findings table",
-        "ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;",
-        "ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS sentiment_alignment_score;"
+        "-- Remove unused columns from stage3_findings table",
+        "ALTER TABLE stage3_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;",
+        "ALTER TABLE stage3_findings DROP COLUMN IF EXISTS sentiment_alignment_score;"
     ]
     
     for cmd in cleanup_commands:
@@ -47,16 +47,16 @@ def main():
     print("\n🔍 Current Database State:")
     try:
         # Check themes table
-        result = db.supabase.table('themes').select('*').limit(1).execute()
+        result = db.supabase.table('stage4_themes').select('*').limit(1).execute()
         if result.data:
             sample = result.data[0]
             print(f"  themes table columns: {list(sample.keys())}")
         
-        # Check enhanced_findings table
-        result = db.supabase.table('enhanced_findings').select('*').limit(1).execute()
+        # Check stage3_findings table
+        result = db.supabase.table('stage3_findings').select('*').limit(1).execute()
         if result.data:
             sample = result.data[0]
-            print(f"  enhanced_findings table columns: {list(sample.keys())}")
+            print(f"  stage3_findings table columns: {list(sample.keys())}")
             
     except Exception as e:
         print(f"  ❌ Error checking database: {e}")

@@ -8,7 +8,7 @@ url = os.environ.get('SUPABASE_URL')
 key = os.environ.get('SUPABASE_SERVICE_KEY')
 supabase: Client = create_client(url, key)
 
-response = supabase.table('enhanced_findings').select('*').eq('client_id', 'Rev').order('created_at', desc=True).limit(10).execute()
+response = supabase.table('stage3_findings').select('*').eq('client_id', 'Rev').order('created_at', desc=True).limit(10).execute()
 findings = response.data
 
 print('Sample of 10 most recent findings:')

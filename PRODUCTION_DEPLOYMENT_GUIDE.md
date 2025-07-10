@@ -38,8 +38,8 @@ python production_fix.py info
 ```
 
 This should show:
-- ✅ `sync_status` column in `core_responses` table
-- ✅ `sync_status` column in `quote_analysis` table
+- ✅ `sync_status` column in `stage1_data_responses` table
+- ✅ `sync_status` column in `stage2_response_labeling` table
 - ✅ Correct number of records
 
 ### Test the Supabase Sync
@@ -100,7 +100,7 @@ streamlit run app.py \
 
 2. **Verify database schema:**
    ```bash
-   sqlite3 voc_pipeline.db ".schema core_responses"
+   sqlite3 voc_pipeline.db ".schema stage1_data_responses"
    ```
 
 3. **Check for multiple database files:**

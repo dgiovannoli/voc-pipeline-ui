@@ -62,19 +62,19 @@ def test_scorecard_theme_generation(criteria_prioritization):
     
     analyzer = Stage4BScorecardAnalyzer()
     
-    # Generate scorecard themes
-    scorecard_themes = analyzer.generate_scorecard_themes(criteria_prioritization, 'Rev')
+    # Generate scorecard stage4_themes
+    scorecard_stage4_themes = analyzer.generate_scorecard_stage4_themes(criteria_prioritization, 'Rev')
     
-    if not scorecard_themes:
-        print("❌ No scorecard themes generated")
+    if not scorecard_stage4_themes:
+        print("❌ No scorecard stage4_themes generated")
         return None
     
-    print(f"✅ Generated {len(scorecard_themes)} scorecard themes")
+    print(f"✅ Generated {len(scorecard_stage4_themes)} scorecard stage4_themes")
     
-    # Show sample themes
+    # Show sample stage4_themes
     print("\n📋 Sample Scorecard Themes:")
     print("-" * 60)
-    for i, theme in enumerate(scorecard_themes[:3], 1):
+    for i, theme in enumerate(scorecard_stage4_themes[:3], 1):
         print(f"{i}. {theme['theme_title']}")
         print(f"   Criterion: {theme['scorecard_criterion']}")
         print(f"   Sentiment: {theme['sentiment_direction']}")
@@ -84,7 +84,7 @@ def test_scorecard_theme_generation(criteria_prioritization):
         print(f"   Companies: {theme['companies_represented']}")
         print()
     
-    return scorecard_themes
+    return scorecard_stage4_themes
 
 def test_enhanced_synthesis():
     """Test enhanced theme synthesis"""
@@ -101,8 +101,8 @@ def test_enhanced_synthesis():
         return None
     
     print(f"✅ Enhanced synthesis completed")
-    print(f"   Scorecard themes: {len(result['scorecard_themes'])}")
-    print(f"   Similarity themes: {len(result['similarity_themes'])}")
+    print(f"   Scorecard stage4_themes: {len(result['scorecard_stage4_themes'])}")
+    print(f"   Similarity stage4_themes: {len(result['similarity_stage4_themes'])}")
     print(f"   Convergence opportunities: {len(result['convergence_opportunities'])}")
     print(f"   Hybrid syntheses: {len(result['hybrid_syntheses'])}")
     print(f"   Total syntheses: {len(result['all_syntheses'])}")
@@ -126,13 +126,13 @@ def test_database_integration():
     
     db = SupabaseDatabase()
     
-    # Test scorecard themes table
+    # Test scorecard stage4_themes table
     try:
-        response = db.supabase.table('scorecard_themes').select('*').eq('client_id', 'Rev').limit(5).execute()
+        response = db.supabase.table('scorecard_stage4_themes').select('*').eq('client_id', 'Rev').limit(5).execute()
         scorecard_count = len(response.data)
-        print(f"✅ Scorecard themes in database: {scorecard_count}")
+        print(f"✅ Scorecard stage4_themes in database: {scorecard_count}")
     except Exception as e:
-        print(f"❌ Error accessing scorecard_themes: {e}")
+        print(f"❌ Error accessing scorecard_stage4_themes: {e}")
         scorecard_count = 0
     
     # Test criteria prioritization table
@@ -154,7 +154,7 @@ def test_database_integration():
         synthesis_count = 0
     
     return {
-        'scorecard_themes': scorecard_count,
+        'scorecard_stage4_themes': scorecard_count,
         'criteria_prioritization': criteria_count,
         'enhanced_syntheses': synthesis_count
     }
@@ -211,7 +211,7 @@ def test_convergence_detection():
     print("🎯 Testing Convergence Detection")
     print("=" * 60)
     
-    # Sample themes for testing
+    # Sample stage4_themes for testing
     scorecard_theme = {
         'theme_title': 'Support is Responsive but Not Proactive',
         'scorecard_criterion': 'support_service_quality',
@@ -263,7 +263,7 @@ def run_comprehensive_test():
     # Test 2: Scorecard Theme Generation
     print("\n" + "="*80)
     if results['criteria_prioritization']:
-        results['scorecard_themes'] = test_scorecard_theme_generation(results['criteria_prioritization'])
+        results['scorecard_stage4_themes'] = test_scorecard_theme_generation(results['criteria_prioritization'])
     
     # Test 3: Enhanced Synthesis
     print("\n" + "="*80)
@@ -288,7 +288,7 @@ def run_comprehensive_test():
     
     summary = {
         'criteria_prioritization': '✅' if results['criteria_prioritization'] else '❌',
-        'scorecard_themes': '✅' if results.get('scorecard_themes') else '❌',
+        'scorecard_stage4_themes': '✅' if results.get('scorecard_stage4_themes') else '❌',
         'enhanced_synthesis': '✅' if results.get('enhanced_synthesis') else '❌',
         'database_integration': '✅' if results.get('database_integration') else '❌',
         'quality_metrics': '✅' if results.get('quality_metrics') else '❌',

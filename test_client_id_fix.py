@@ -20,13 +20,13 @@ def test_client_id_fix():
         print("\n📊 Current data status:")
         
         # Check Rev client data
-        rev_core = db.get_core_responses(client_id='Rev')
-        rev_analysis = db.get_quote_analysis(client_id='Rev')
+        rev_core = db.get_stage1_data_responses(client_id='Rev')
+        rev_analysis = db.get_stage2_response_labeling(client_id='Rev')
         print(f"Rev client - Core responses: {len(rev_core)}, Quote analysis: {len(rev_analysis)}")
         
         # Check default client data
-        default_core = db.get_core_responses(client_id='default')
-        default_analysis = db.get_quote_analysis(client_id='default')
+        default_core = db.get_stage1_data_responses(client_id='default')
+        default_analysis = db.get_stage2_response_labeling(client_id='default')
         print(f"Default client - Core responses: {len(default_core)}, Quote analysis: {len(default_analysis)}")
         
         # Test the analyzer with Rev client_id
@@ -43,8 +43,8 @@ def test_client_id_fix():
         # Check if new analysis data was saved with correct client_id
         print("\n📊 Checking updated data status:")
         
-        rev_analysis_after = db.get_quote_analysis(client_id='Rev')
-        default_analysis_after = db.get_quote_analysis(client_id='default')
+        rev_analysis_after = db.get_stage2_response_labeling(client_id='Rev')
+        default_analysis_after = db.get_stage2_response_labeling(client_id='default')
         
         print(f"Rev client - Quote analysis: {len(rev_analysis_after)} (was {len(rev_analysis)})")
         print(f"Default client - Quote analysis: {len(default_analysis_after)} (was {len(default_analysis)})")

@@ -59,8 +59,8 @@ check_*.py
 
 ### Tables to Analyze:
 - `themes` - Check for unused columns
-- `enhanced_findings` - Check for unused columns  
-- `core_responses` - Check for unused columns
+- `stage3_findings` - Check for unused columns  
+- `stage1_data_responses` - Check for unused columns
 - `quote_analyses` - Check if table is used
 - `scorecard_themes` - Check if table is used
 
@@ -130,8 +130,8 @@ WHERE table_name = 'themes';
 
 -- Check table usage
 SELECT COUNT(*) FROM themes;
-SELECT COUNT(*) FROM enhanced_findings;
-SELECT COUNT(*) FROM core_responses;
+SELECT COUNT(*) FROM stage3_findings;
+SELECT COUNT(*) FROM stage1_data_responses;
 ```
 
 ## 🚨 Safety Measures

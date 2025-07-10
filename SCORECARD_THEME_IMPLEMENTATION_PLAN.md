@@ -69,8 +69,8 @@ ADD COLUMN scorecard_theme_id INTEGER REFERENCES scorecard_themes(id),
 ADD COLUMN synthesis_theme_id INTEGER REFERENCES enhanced_theme_synthesis(id),
 ADD COLUMN complementary_evidence JSONB;
 
--- Add scorecard context to enhanced_findings
-ALTER TABLE enhanced_findings 
+-- Add scorecard context to stage3_findings
+ALTER TABLE stage3_findings 
 ADD COLUMN scorecard_criterion_priority INTEGER,
 ADD COLUMN sentiment_alignment_score DECIMAL(3,2);
 ```
@@ -227,8 +227,8 @@ enhanced_synthesis:
 4. **Stage 5 Integration**: Enhanced syntheses feed into executive synthesis
 
 #### Database Integration
-1. **Quote Analysis**: Uses existing `quote_analysis` table with relevance scores
-2. **Core Responses**: Uses existing `core_responses` table for company/deal context
+1. **Quote Analysis**: Uses existing `stage2_response_labeling` table with relevance scores
+2. **Core Responses**: Uses existing `stage1_data_responses` table for company/deal context
 3. **Enhanced Findings**: References existing findings for additional context
 4. **Themes**: Links to existing themes table for convergence analysis
 

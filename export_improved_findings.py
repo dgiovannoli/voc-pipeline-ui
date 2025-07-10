@@ -15,7 +15,7 @@ def export_improved_findings():
     
     # Get findings from database
     db = SupabaseDatabase()
-    findings_df = db.get_enhanced_findings(client_id='Rev')
+    findings_df = db.get_stage3_findings(client_id='Rev')
     
     if findings_df.empty:
         print("❌ No findings found")

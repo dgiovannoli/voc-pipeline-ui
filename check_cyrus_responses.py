@@ -5,7 +5,7 @@ from supabase_database import SupabaseDatabase
 
 def check_cyrus_responses():
     db = SupabaseDatabase()
-    df = db.get_core_responses(client_id='Rev')
+    df = db.get_stage1_data_responses(client_id='Rev')
     
     print(f"Total responses in database: {len(df)}")
     

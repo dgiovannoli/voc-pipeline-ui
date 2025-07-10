@@ -58,11 +58,11 @@ The Streamlit UI now includes full integration with the new Stage 2 database ana
 
 The integration uses three main tables:
 
-### `core_responses` (Stage 1 Output)
+### `stage1_data_responses` (Stage 1 Output)
 - Stores extracted quotes and metadata
 - Source of truth for all analysis
 
-### `quote_analysis` (Stage 2 Output)
+### `stage2_response_labeling` (Stage 2 Output)
 - Stores scores for each quote against 10 criteria
 - Includes deal weighting and context assessment
 - Links back to original quotes via foreign key

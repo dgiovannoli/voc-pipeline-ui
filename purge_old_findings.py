@@ -19,7 +19,7 @@ def purge_old_findings():
     db = SupabaseDatabase()
     
     # Get all findings
-    findings_df = db.get_enhanced_findings('Rev')
+    findings_df = db.get_stage3_findings('Rev')
     
     if findings_df.empty:
         print("✅ No findings to purge")
@@ -52,13 +52,13 @@ def purge_old_findings():
     # Purge old findings
     try:
         for finding_id in old_findings:
-            response = db.supabase.table('enhanced_findings').delete().eq('id', finding_id).execute()
+            response = db.supabase.table('stage3_findings').delete().eq('id', finding_id).execute()
             print(f"🗑️  Purged finding ID: {finding_id}")
         
         print(f"✅ Successfully purged {len(old_findings)} old findings")
         
         # Verify the purge
-        remaining_findings = db.get_enhanced_findings('Rev')
+        remaining_findings = db.get_stage3_findings('Rev')
         print(f"📊 Remaining findings: {len(remaining_findings)}")
         
     except Exception as e:

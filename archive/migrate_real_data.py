@@ -25,19 +25,19 @@ def migrate_real_data():
     # Migrate to database
     with sqlite3.connect(analyzer.db_path) as conn:
         # Clear any existing data
-        conn.execute("DELETE FROM core_responses")
-        conn.execute("DELETE FROM quote_analysis")
+        conn.execute("DELETE FROM stage1_data_responses")
+        conn.execute("DELETE FROM stage2_response_labeling")
         conn.execute("DELETE FROM trend_analysis")
         
         # Insert the real data
-        df.to_sql('core_responses', conn, if_exists='append', index=False)
+        df.to_sql('stage1_data_responses', conn, if_exists='append', index=False)
         
         # Verify the migration
-        count = conn.execute("SELECT COUNT(*) FROM core_responses").fetchone()[0]
+        count = conn.execute("SELECT COUNT(*) FROM stage1_data_responses").fetchone()[0]
         print(f"✅ Successfully migrated {count} responses to database")
         
         # Show sample data
-        sample = conn.execute("SELECT response_id, verbatim_response FROM core_responses LIMIT 3").fetchall()
+        sample = conn.execute("SELECT response_id, verbatim_response FROM stage1_data_responses LIMIT 3").fetchall()
         print("\n📋 Sample responses:")
         for response_id, verbatim in sample:
             print(f"  {response_id}: {verbatim[:100]}...")

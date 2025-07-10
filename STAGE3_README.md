@@ -149,10 +149,10 @@ Each finding contains:
 ### Prerequisites
 - Stage 1: Core response extraction completed
 - Stage 2: Quote scoring and analysis completed
-- Supabase database with `core_responses` and `quote_analysis` tables
+- Supabase database with `stage1_data_responses` and `stage2_response_labeling` tables
 
 ### Data Flow
-1. **Input**: Scored quotes from Stage 2 (`quote_analysis` table)
+1. **Input**: Scored quotes from Stage 2 (`stage2_response_labeling` table)
 2. **Processing**: Pattern recognition and confidence scoring
 3. **Output**: Executive findings stored in `findings` table
 4. **Display**: Interactive UI for viewing and filtering findings

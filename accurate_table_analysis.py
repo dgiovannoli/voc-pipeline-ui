@@ -15,13 +15,13 @@ def analyze_core_pipeline_tables():
     
     # Core pipeline stages and their table usage
     core_pipeline_tables = {
-        'core_responses': {
+        'stage1_data_responses': {
             'stage': 'Stage 1',
             'usage': 'Data ingestion and storage',
             'used_by': ['stage3_findings_analyzer.py', 'stage4_theme_analyzer.py'],
             'essential': True
         },
-        'enhanced_findings': {
+        'stage3_findings': {
             'stage': 'Stage 3', 
             'usage': 'Findings generation and storage',
             'used_by': ['stage4_theme_analyzer.py'],
@@ -33,7 +33,7 @@ def analyze_core_pipeline_tables():
             'used_by': ['app.py', 'stage5_executive_analyzer.py'],
             'essential': True
         },
-        'quote_analysis': {
+        'stage2_response_labeling': {
             'stage': 'Stage 2',
             'usage': 'Quote scoring and analysis',
             'used_by': ['stage4b_scorecard_analyzer.py'],
@@ -92,7 +92,7 @@ def check_table_data():
     db = SupabaseDatabase()
     
     # Check core pipeline tables
-    core_tables = ['core_responses', 'enhanced_findings', 'themes']
+    core_tables = ['stage1_data_responses', 'stage3_findings', 'themes']
     
     for table in core_tables:
         try:
@@ -103,7 +103,7 @@ def check_table_data():
             print(f"❌ {table}: {e}")
     
     # Check experimental tables
-    experimental_tables = ['scorecard_themes', 'executive_themes', 'criteria_scorecard', 'quote_analysis']
+    experimental_tables = ['scorecard_themes', 'executive_themes', 'criteria_scorecard', 'stage2_response_labeling']
     
     print("\n🔬 Experimental Tables:")
     for table in experimental_tables:
@@ -120,15 +120,15 @@ def generate_cleanup_recommendations():
     print("-" * 40)
     
     print("\n✅ KEEP (Core Pipeline):")
-    print("  - core_responses (Stage 1)")
-    print("  - enhanced_findings (Stage 3)") 
+    print("  - stage1_data_responses (Stage 1)")
+    print("  - stage3_findings (Stage 3)") 
     print("  - themes (Stage 4)")
     
     print("\n⚠️ CONSIDER REMOVING (Experimental/Legacy):")
     print("  - scorecard_themes (Stage 4B experimental)")
     print("  - executive_themes (Stage 5)")
     print("  - criteria_scorecard (Stage 5)")
-    print("  - quote_analysis (Stage 2, not used in core)")
+    print("  - stage2_response_labeling (Stage 2, not used in core)")
     
     print("\n🔍 VERIFY BEFORE REMOVAL:")
     print("  - Check if any UI components reference experimental tables")
@@ -140,7 +140,7 @@ def generate_cleanup_recommendations():
     print("DROP TABLE IF EXISTS scorecard_themes;")
     print("DROP TABLE IF EXISTS executive_themes;") 
     print("DROP TABLE IF EXISTS criteria_scorecard;")
-    print("DROP TABLE IF EXISTS quote_analysis;")
+    print("DROP TABLE IF EXISTS stage2_response_labeling;")
 
 def main():
     print("🔍 Accurate Table Usage Analysis")
@@ -156,7 +156,7 @@ def main():
     generate_cleanup_recommendations()
     
     print("\n✅ Analysis Complete!")
-    print("💡 Core pipeline only uses 3 tables: core_responses, enhanced_findings, themes")
+    print("💡 Core pipeline only uses 3 tables: stage1_data_responses, stage3_findings, themes")
 
 if __name__ == "__main__":
     main() 

@@ -37,15 +37,15 @@ def test_improved_pipeline():
     
     print(f"\n📈 Stage 4 Results:")
     print(f"Status: {stage4_result.get('status', 'unknown')}")
-    print(f"Themes Generated: {stage4_result.get('themes_generated', 0)}")
-    print(f"Themes Saved: {stage4_result.get('themes_saved', 0)}")
+    print(f"Themes Generated: {stage4_result.get('stage4_themes_generated', 0)}")
+    print(f"Themes Saved: {stage4_result.get('stage4_themes_saved', 0)}")
     print(f"Patterns Analyzed: {stage4_result.get('patterns_analyzed', 0)}")
     
     # Summary
     print(f"\n🎯 Pipeline Summary:")
     print(f"Total Findings: {stage3_result.get('findings_generated', 0)}")
-    print(f"Total Themes: {stage4_result.get('themes_generated', 0)}")
-    print(f"Success Rate: {stage4_result.get('themes_saved', 0)}/{stage4_result.get('themes_generated', 0)} themes saved")
+    print(f"Total Themes: {stage4_result.get('stage4_themes_generated', 0)}")
+    print(f"Success Rate: {stage4_result.get('stage4_themes_saved', 0)}/{stage4_result.get('stage4_themes_generated', 0)} stage4_themes saved")
     
     return {
         'stage3': stage3_result,

@@ -213,7 +213,7 @@ class Stage4ThemeAnalyzer:
     
     def get_findings_for_analysis(self, client_id: str = 'default') -> pd.DataFrame:
         """Get findings from database for theme analysis"""
-        df = self.db.get_enhanced_findings(client_id=client_id)
+        df = self.db.get_stage3_findings(client_id=client_id)
         logger.info(f"📊 Loaded {len(df)} findings from Supabase for client {client_id}")
         return df
     
@@ -221,8 +221,8 @@ class Stage4ThemeAnalyzer:
         """Analyze patterns across findings to identify potential themes using fuzzy matching and semantic grouping"""
         logger.info("🔍 Analyzing finding patterns with fuzzy matching...")
         
-        # Load core_responses for interviewee_name lookup
-        core_df = self.db.get_core_responses(client_id=client_id)
+        # Load stage1_data_responses for interviewee_name lookup
+        core_df = self.db.get_stage1_data_responses(client_id=client_id)
         
         patterns = {}
         
@@ -429,7 +429,7 @@ class Stage4ThemeAnalyzer:
                         competitive_score += 1
             
             # Check finding descriptions
-            findings_df = self.db.get_enhanced_findings(client_id=client_id)  # Use client_id
+            findings_df = self.db.get_stage3_findings(client_id=client_id)  # Use client_id
             criterion_findings = findings_df[findings_df['criterion'] == criterion]
             
             for _, finding in criterion_findings.iterrows():
@@ -593,7 +593,7 @@ class Stage4ThemeAnalyzer:
             if not primary_quote_text.strip():
                 logger.warning(f"⚠️ No primary quote found in pattern quotes, attempting to extract from findings...")
                 # Try to get a quote from the findings data
-                findings_df = self.db.get_enhanced_findings(client_id=client_id)
+                findings_df = self.db.get_stage3_findings(client_id=client_id)
                 if not findings_df.empty:
                     # Get the first finding for this pattern
                     pattern_findings = findings_df[findings_df['id'].isin(pattern['finding_ids'])]

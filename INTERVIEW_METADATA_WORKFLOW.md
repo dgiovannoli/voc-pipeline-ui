@@ -78,7 +78,7 @@ F2,Implementation speed matters...,Company B,Company B Interviewee 2
 To fully implement this workflow, you'll need to add an `interview_id` field to your quotes table:
 
 ```sql
-ALTER TABLE quote_analysis ADD COLUMN interview_id INTEGER;
+ALTER TABLE stage2_response_labeling ADD COLUMN interview_id INTEGER;
 ```
 
 ## Testing the Workflow

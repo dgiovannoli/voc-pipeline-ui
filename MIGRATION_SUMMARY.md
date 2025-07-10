@@ -96,8 +96,8 @@ from supabase_database import SupabaseDatabase
 
 db = SupabaseDatabase()
 db.save_core_response(data)
-db.get_core_responses()
-db.get_quote_analysis()
+db.get_stage1_data_responses()
+db.get_stage2_response_labeling()
 db.get_summary_statistics()
 ```
 

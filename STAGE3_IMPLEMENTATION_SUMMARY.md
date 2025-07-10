@@ -36,7 +36,7 @@ Stage 3: Findings Identification has been successfully implemented and integrate
 ### Pattern Recognition
 - **Cross-company analysis**: Identifies patterns across multiple companies
 - **Criterion-based grouping**: Groups feedback by evaluation criteria
-- **Theme extraction**: Identifies common themes in feedback
+- **Theme extraction**: Identifies common stage4_themes in feedback
 - **Confidence scoring**: Calculates reliability of patterns
 
 ### Finding Types
@@ -50,7 +50,7 @@ Stage 3: Findings Identification has been successfully implemented and integrate
 - **Confidence levels**: 0-1 scale indicating reliability
 - **Sample quotes**: Supporting evidence from interviews
 - **Company coverage**: Number of companies affected
-- **Key themes**: Identified patterns in feedback
+- **Key stage4_themes**: Identified patterns in feedback
 
 ## 📊 Configuration
 
@@ -98,8 +98,8 @@ result = analyzer.process_findings()
 ## 📈 Integration with Pipeline
 
 ### Data Flow
-1. **Stage 1**: Core response extraction → `core_responses` table
-2. **Stage 2**: Quote scoring → `quote_analysis` table
+1. **Stage 1**: Core response extraction → `stage1_data_responses` table
+2. **Stage 2**: Quote scoring → `stage2_response_labeling` table
 3. **Stage 3**: Pattern recognition → `findings` table
 
 ### Prerequisites
@@ -121,7 +121,7 @@ result = analyzer.process_findings()
   "companies_affected": 3,
   "quote_count": 8,
   "sample_quotes": ["The product is incredibly easy to use", "Accuracy is excellent"],
-  "themes": ["ease_of_use", "accuracy"]
+  "stage4_themes": ["ease_of_use", "accuracy"]
 }
 ```
 
@@ -177,7 +177,7 @@ result = analyzer.process_findings()
 
 ### Customization Options
 - **Custom finding types**: User-defined finding categories
-- **Industry-specific themes**: Tailored theme extraction
+- **Industry-specific stage4_themes**: Tailored theme extraction
 - **Custom confidence models**: Advanced confidence calculation
 - **Integration APIs**: Export to business intelligence tools
 

@@ -46,7 +46,7 @@ The system now evaluates findings against 8 specific criteria from Buried Wins v
 #### Database Schema
 ```sql
 -- Enhanced findings table with Buried Wins v4.0 support
-CREATE TABLE enhanced_findings (
+CREATE TABLE stage3_findings (
     id SERIAL PRIMARY KEY,
     criterion VARCHAR(100) NOT NULL,
     finding_type VARCHAR(50) NOT NULL,
@@ -72,7 +72,7 @@ CREATE TABLE enhanced_findings (
 2. **`calculate_enhanced_confidence_score()`**: Implements automated confidence scoring
 3. **`select_optimal_quotes()`**: Automated quote selection with priority scoring
 4. **`identify_enhanced_patterns()`**: Enhanced pattern recognition with criteria evaluation
-5. **`generate_enhanced_findings()`**: Findings generation with confidence classification
+5. **`generate_stage3_findings()`**: Findings generation with confidence classification
 
 #### Enhanced LLM Prompt
 The finding generation prompt now includes:
@@ -166,7 +166,7 @@ db = SupabaseDatabase()
 priority_findings = db.get_priority_findings(min_confidence=4.0)
 
 # Get enhanced summary
-summary = db.get_enhanced_findings_summary()
+summary = db.get_stage3_findings_summary()
 print(f"Average confidence: {summary['average_confidence']:.2f}/10.0")
 ```
 

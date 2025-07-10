@@ -3,11 +3,11 @@
     with tab5:
         st.subheader("🏆 Stage 5: Executive Synthesis")
         st.markdown("""
-        **Purpose**: Transform themes into C-suite ready narratives with criteria scorecard integration
+        **Purpose**: Transform stage4_themes into C-suite ready narratives with criteria scorecard integration
         
         **Executive Framework**:
         - **Punch Then Explain**: Bold headline + concise business narrative
-        - **Data-Anchored**: Include specific metrics from themes and criteria scorecard
+        - **Data-Anchored**: Include specific metrics from stage4_themes and criteria scorecard
         - **Business Tension**: Highlight strategic implications and performance gaps
         - **Executive Relevance**: Focus on decision-making impact and priority actions
         - **Criteria Integration**: Reference specific criteria performance where relevant

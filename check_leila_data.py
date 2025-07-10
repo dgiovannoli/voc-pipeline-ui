@@ -16,7 +16,7 @@ def check_leila_data():
         db = SupabaseDatabase()
         
         # Get all responses for client 'Rev'
-        responses = db.get_core_responses(client_id='Rev')
+        responses = db.get_stage1_data_responses(client_id='Rev')
         print(f"📊 Total responses for client 'Rev': {len(responses)}")
         
         # Filter for Leila specifically
@@ -32,11 +32,11 @@ def check_leila_data():
                 print(f"   Verbatim preview: {row.get('verbatim_response', 'N/A')[:100]}...")
         
         # Check quote analysis
-        quote_analysis = db.get_quote_analysis(client_id='Rev')
-        print(f"\n📈 Quote analysis records: {len(quote_analysis)}")
+        stage2_response_labeling = db.get_stage2_response_labeling(client_id='Rev')
+        print(f"\n📈 Quote analysis records: {len(stage2_response_labeling)}")
         
         # Check enhanced findings
-        findings = db.get_enhanced_findings(client_id='Rev')
+        findings = db.get_stage3_findings(client_id='Rev')
         print(f"🔍 Enhanced findings: {len(findings)}")
         
         # Check themes
@@ -46,7 +46,7 @@ def check_leila_data():
         # Summary
         print(f"\n📊 Summary for client 'Rev':")
         print(f"  Core responses: {len(responses)}")
-        print(f"  Quote analyses: {len(quote_analysis)}")
+        print(f"  Quote analyses: {len(stage2_response_labeling)}")
         print(f"  Enhanced findings: {len(findings)}")
         print(f"  Themes: {len(themes)}")
         

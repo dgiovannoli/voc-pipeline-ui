@@ -23,7 +23,7 @@ def run_cleanup():
         
         # Tables to drop (unused in current codebase)
         tables_to_drop = [
-            'findings',           # Replaced by enhanced_findings
+            'findings',           # Replaced by stage3_findings
             'trend_analysis',     # Functionality in criteria_scorecard
             'processing_metadata' # Replaced by processing_logs
         ]
@@ -45,9 +45,9 @@ def run_cleanup():
         
         # Core tables that should remain
         core_tables = [
-            'core_responses',
-            'quote_analysis', 
-            'enhanced_findings',
+            'stage1_data_responses',
+            'stage2_response_labeling', 
+            'stage3_findings',
             'themes',
             'executive_themes',
             'criteria_scorecard'

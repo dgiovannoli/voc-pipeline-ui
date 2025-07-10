@@ -27,7 +27,7 @@ def test_quote_validation():
         
         # Check if findings have quotes
         db = SupabaseDatabase()
-        findings = db.get_enhanced_findings('Rev')
+        findings = db.get_stage3_findings('Rev')
         
         findings_with_quotes = 0
         findings_without_quotes = 0
@@ -55,28 +55,28 @@ def test_quote_validation():
     
     if stage4_result['status'] == 'success':
         print(f"✅ Stage 4 completed successfully")
-        print(f"   - Themes generated: {stage4_result.get('themes_generated', 0)}")
+        print(f"   - Themes generated: {stage4_result.get('stage4_themes_generated', 0)}")
         
-        # Check if themes have quotes
-        themes = db.get_themes('Rev')
+        # Check if stage4_themes have quotes
+        stage4_themes = db.get_stage4_themes('Rev')
         
-        themes_with_quotes = 0
-        themes_without_quotes = 0
+        stage4_themes_with_quotes = 0
+        stage4_themes_without_quotes = 0
         
-        for _, theme in themes.iterrows():
+        for _, theme in stage4_themes.iterrows():
             primary_quote = theme.get('primary_theme_quote', '')
             if primary_quote and len(primary_quote.strip()) > 0:
-                themes_with_quotes += 1
+                stage4_themes_with_quotes += 1
             else:
-                themes_without_quotes += 1
+                stage4_themes_without_quotes += 1
         
-        print(f"   - Themes with quotes: {themes_with_quotes}")
-        print(f"   - Themes without quotes: {themes_without_quotes}")
+        print(f"   - Themes with quotes: {stage4_themes_with_quotes}")
+        print(f"   - Themes without quotes: {stage4_themes_without_quotes}")
         
-        if themes_without_quotes == 0:
-            print("✅ Stage 4 validation working correctly - all themes have quotes!")
+        if stage4_themes_without_quotes == 0:
+            print("✅ Stage 4 validation working correctly - all stage4_themes have quotes!")
         else:
-            print("⚠️ Stage 4 validation issue - some themes missing quotes")
+            print("⚠️ Stage 4 validation issue - some stage4_themes missing quotes")
     else:
         print(f"❌ Stage 4 failed: {stage4_result}")
     

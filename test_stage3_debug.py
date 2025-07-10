@@ -24,7 +24,7 @@ def test_stage3_debug():
     print(f"\n📊 Test 1: Check existing findings for client {client_id}")
     print("-" * 40)
     
-    existing_findings = db.get_enhanced_findings(client_id=client_id)
+    existing_findings = db.get_stage3_findings(client_id=client_id)
     print(f"Existing findings count: {len(existing_findings)}")
     
     if not existing_findings.empty:
@@ -51,7 +51,7 @@ def test_stage3_debug():
     
     # Clear existing findings
     try:
-        result = db.supabase.table('enhanced_findings').delete().eq('client_id', client_id).execute()
+        result = db.supabase.table('stage3_findings').delete().eq('client_id', client_id).execute()
         print(f"✅ Cleared {len(result.data)} existing findings")
     except Exception as e:
         print(f"❌ Error clearing findings: {e}")
@@ -59,7 +59,7 @@ def test_stage3_debug():
     # Run Stage 3
     print("\n🚀 Running Stage 3 analysis...")
     analyzer = Stage3FindingsAnalyzer()
-    result = analyzer.process_enhanced_findings(client_id=client_id)
+    result = analyzer.process_stage3_findings(client_id=client_id)
     
     print(f"\n✅ Stage 3 result: {result}")
     
@@ -67,7 +67,7 @@ def test_stage3_debug():
     print(f"\n📊 Test 4: Check new findings")
     print("-" * 40)
     
-    new_findings = db.get_enhanced_findings(client_id=client_id)
+    new_findings = db.get_stage3_findings(client_id=client_id)
     print(f"New findings count: {len(new_findings)}")
     
     if not new_findings.empty:

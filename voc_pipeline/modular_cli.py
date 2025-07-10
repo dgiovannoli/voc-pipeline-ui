@@ -71,20 +71,20 @@ def extract_core(transcript_path: str, company: str, interviewee: str, deal_stat
         raise
 
 @cli.command()
-@click.argument('core_responses_file')
+@click.argument('stage1_data_responses_file')
 @click.option('--output', '-o', help='Output JSON file for enriched responses')
 @click.option('--model', '-m', default='gpt-3.5-turbo-16k', help='LLM model to use')
-def enrich_analysis(core_responses_file: str, output: Optional[str], model: str):
+def enrich_analysis(stage1_data_responses_file: str, output: Optional[str], model: str):
     """Stage 2: Add AI-generated analysis to core responses."""
     try:
         processor = ModularProcessor(model_name=model)
         
         # Load core responses
-        with open(core_responses_file, 'r') as f:
-            core_responses = json.load(f)
+        with open(stage1_data_responses_file, 'r') as f:
+            stage1_data_responses = json.load(f)
         
-        logger.info(f"Starting analysis enrichment for {len(core_responses)} responses")
-        enriched_responses = processor.stage2_analysis_enrichment(core_responses)
+        logger.info(f"Starting analysis enrichment for {len(stage1_data_responses)} responses")
+        enriched_responses = processor.stage2_analysis_enrichment(stage1_data_responses)
         
         logger.info(f"Enriched {len(enriched_responses)} responses")
         
@@ -96,7 +96,7 @@ def enrich_analysis(core_responses_file: str, output: Optional[str], model: str)
         
         # Print summary
         print(f"\n=== Analysis Enrichment Results ===")
-        print(f"Input file: {core_responses_file}")
+        print(f"Input file: {stage1_data_responses_file}")
         print(f"Responses enriched: {len(enriched_responses)}")
         
         if enriched_responses:

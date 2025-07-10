@@ -13,7 +13,7 @@ def save_theme_decision(theme_id, decision, notes=""):
     """Save theme decision to database"""
     db = SupabaseDatabase()
     # Update theme with decision
-    db.supabase.table('themes').update({
+    db.supabase.table('stage4_themes').update({
         'quality_decision': decision,
         'quality_notes': notes,
         'reviewed_at': pd.Timestamp.now().isoformat()

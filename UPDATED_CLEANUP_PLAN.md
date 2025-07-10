@@ -3,36 +3,36 @@
 ## 📊 Revised Table Analysis
 
 ### ✅ KEEP (Core Pipeline + Useful):
-- **core_responses** - Stage 1 data ingestion
-- **enhanced_findings** - Stage 3 findings generation  
-- **themes** - Stage 4 theme generation
-- **quote_analysis** - Stage 2 quote scoring (useful for analysis)
+- **stage1_data_responses** - Stage 1 data ingestion
+- **stage3_findings** - Stage 3 findings generation  
+- **stage4_themes** - Stage 4 theme generation
+- **stage2_response_labeling** - Stage 2 quote scoring (useful for analysis)
 
 ### 🗑️ REMOVE (Experimental/Legacy):
-- **scorecard_themes** - Stage 4B experimental feature
-- **executive_themes** - Stage 5 (not in core pipeline)
+- **scorecard_stage4_themes** - Stage 4B experimental feature
+- **executive_stage4_themes** - Stage 5 (not in core pipeline)
 - **criteria_scorecard** - Stage 5 (not in core pipeline)
 
 ## 🎯 Phase 3: Database Cleanup (Updated)
 
 ### Step 1: Remove Unused Columns (Safe)
 ```sql
--- Remove unused columns from themes table
-ALTER TABLE themes DROP COLUMN IF EXISTS fuzzy_match_score;
-ALTER TABLE themes DROP COLUMN IF EXISTS semantic_group_id;
-ALTER TABLE themes DROP COLUMN IF EXISTS scorecard_theme_id;
-ALTER TABLE themes DROP COLUMN IF EXISTS synthesis_theme_id;
+-- Remove unused columns from stage4_themes table
+ALTER TABLE stage4_themes DROP COLUMN IF EXISTS fuzzy_match_score;
+ALTER TABLE stage4_themes DROP COLUMN IF EXISTS semantic_group_id;
+ALTER TABLE stage4_themes DROP COLUMN IF EXISTS scorecard_theme_id;
+ALTER TABLE stage4_themes DROP COLUMN IF EXISTS synthesis_theme_id;
 
--- Remove unused columns from enhanced_findings table
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
+-- Remove unused columns from stage3_findings table
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
 ```
 
 ### Step 2: Remove Experimental Tables
 ```sql
 -- Remove experimental tables (after verification)
-DROP TABLE IF EXISTS scorecard_themes;
-DROP TABLE IF EXISTS executive_themes;
+DROP TABLE IF EXISTS scorecard_stage4_themes;
+DROP TABLE IF EXISTS executive_stage4_themes;
 DROP TABLE IF EXISTS criteria_scorecard;
 ```
 
@@ -50,8 +50,8 @@ SELECT schemaname, viewname FROM pg_views WHERE schemaname = 'public';
 ### Check UI References
 ```bash
 # Search for references to experimental tables in UI
-grep -r "scorecard_themes" app.py
-grep -r "executive_themes" app.py
+grep -r "scorecard_stage4_themes" app.py
+grep -r "executive_stage4_themes" app.py
 grep -r "criteria_scorecard" app.py
 ```
 
@@ -89,7 +89,7 @@ python -c "from stage4_theme_analyzer import Stage4ThemeAnalyzer; print('Stage 4
 ### Database Optimization:
 - **Remove 3 experimental tables**
 - **Remove 6 unused columns**
-- **Keep quote_analysis** (useful for analysis)
+- **Keep stage2_response_labeling** (useful for analysis)
 - **Simplify schema** to core pipeline + useful tables
 
 ### Code Cleanup:
@@ -123,7 +123,7 @@ python -c "import app; print('App imports work')"
 rm stage4b_scorecard_analyzer.py
 rm stage5_executive_analyzer.py
 rm scorecard_theme_ui.py
-rm import_scorecard_themes.py
+rm import_scorecard_stage4_themes.py
 ```
 
 ### Step 5: Check for Views
@@ -139,7 +139,7 @@ rm import_scorecard_themes.py
 - **Faster queries** (fewer tables)
 - **Simpler maintenance**
 - **Reduced complexity**
-- **Keep useful quote_analysis data**
+- **Keep useful stage2_response_labeling data**
 
 ### Long-term:
 - **Focus on core pipeline**

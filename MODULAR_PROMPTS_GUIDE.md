@@ -61,10 +61,10 @@ The modular prompt system separates the VOC pipeline into three independent stag
 
 ```bash
 # Stage 1: Extract core responses only
-python -m voc_pipeline.modular_cli extract-core transcript.txt "TechCorp" "John Doe" "closed_won" "2024-01-01" -o core_responses.json
+python -m voc_pipeline.modular_cli extract-core transcript.txt "TechCorp" "John Doe" "closed_won" "2024-01-01" -o stage1_data_responses.json
 
 # Stage 2: Add analysis to core responses
-python -m voc_pipeline.modular_cli enrich-analysis core_responses.json -o enriched_responses.json
+python -m voc_pipeline.modular_cli enrich-analysis stage1_data_responses.json -o enriched_responses.json
 
 # Stage 3: Add labels to responses
 python -m voc_pipeline.modular_cli add-labels enriched_responses.json -o labeled_responses.json
@@ -93,12 +93,12 @@ from voc_pipeline.modular_processor import ModularProcessor
 processor = ModularProcessor(model_name="gpt-3.5-turbo-16k")
 
 # Stage 1: Core extraction
-core_responses = processor.stage1_core_extraction(
+stage1_data_responses = processor.stage1_core_extraction(
     "transcript.txt", "TechCorp", "John Doe", "closed_won", "2024-01-01"
 )
 
 # Stage 2: Analysis enrichment
-enriched_responses = processor.stage2_analysis_enrichment(core_responses)
+enriched_responses = processor.stage2_analysis_enrichment(stage1_data_responses)
 
 # Stage 3: Labeling
 labeled_responses = processor.stage3_labeling(enriched_responses)

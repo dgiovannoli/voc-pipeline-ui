@@ -45,7 +45,7 @@ def test_database_connection():
     
     try:
         # Test quote analysis data
-        quote_df = db.get_quote_analysis(client_id='Rev')
+        quote_df = db.get_stage2_response_labeling(client_id='Rev')
         print(f"✅ Quote analysis data: {len(quote_df)} records")
         
         if not quote_df.empty:
@@ -54,7 +54,7 @@ def test_database_connection():
             print(f"   Relevance scores: {quote_df['relevance_score'].describe()}")
         
         # Test core responses data
-        core_df = db.get_core_responses(client_id='Rev')
+        core_df = db.get_stage1_data_responses(client_id='Rev')
         print(f"✅ Core responses data: {len(core_df)} records")
         
         if not core_df.empty:
@@ -76,8 +76,8 @@ def test_criteria_prioritization_simple():
     
     try:
         # Get data
-        quote_df = db.get_quote_analysis(client_id='Rev')
-        core_df = db.get_core_responses(client_id='Rev')
+        quote_df = db.get_stage2_response_labeling(client_id='Rev')
+        core_df = db.get_stage1_data_responses(client_id='Rev')
         
         if quote_df.empty or core_df.empty:
             print("❌ No data available")

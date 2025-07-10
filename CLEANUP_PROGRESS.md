@@ -16,7 +16,7 @@ Backup Files (6):
 
 Debug Files (8):
 - debug_primary_quote.py, debug_stage3.py, debug_upload.py
-- debug_scorecard_config.py, debug_clustering.py, debug_enhanced_findings.py
+- debug_scorecard_config.py, debug_clustering.py, debug_stage3_findings.py
 - debug_stage4_quotes.py, debug_save_process.py
 
 Experimental Files (1):
@@ -48,7 +48,7 @@ themes table:
 - scorecard_theme_id
 - synthesis_theme_id
 
-enhanced_findings table:
+stage3_findings table:
 - scorecard_criterion_priority
 - sentiment_alignment_score
 ```
@@ -61,9 +61,9 @@ ALTER TABLE themes DROP COLUMN IF EXISTS semantic_group_id;
 ALTER TABLE themes DROP COLUMN IF EXISTS scorecard_theme_id;
 ALTER TABLE themes DROP COLUMN IF EXISTS synthesis_theme_id;
 
--- Remove unused columns from enhanced_findings table
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
+-- Remove unused columns from stage3_findings table
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
 ```
 
 ## 🎯 Next Steps

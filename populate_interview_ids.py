@@ -1,5 +1,5 @@
 """
-Populate interview_id column in quote_analysis table based on response_id patterns
+Populate interview_id column in stage2_response_labeling table based on response_id patterns
 """
 
 import pandas as pd
@@ -47,8 +47,8 @@ def populate_interview_ids(client_id: str = 'Rev'):
             analysis_id = quote['analysis_id']
             interview_id = int(quote['extracted_interview_id'])
             
-            # Update the quote_analysis record
-            result = db.supabase.table('quote_analysis').update({
+            # Update the stage2_response_labeling record
+            result = db.supabase.table('stage2_response_labeling').update({
                 'interview_id': interview_id
             }).eq('analysis_id', analysis_id).execute()
             
