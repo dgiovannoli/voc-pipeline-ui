@@ -1,0 +1,1660 @@
+{
+  "timestamp": "2025-07-08T08:33:30.734430",
+  "client_id": "Rev",
+  "criteria_prioritization": {
+    "commercial_terms": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 42,
+      "total_quotes": 62,
+      "relevance_ratio": 0.6774193548387096,
+      "companies_affected": 12,
+      "sentiment_distribution": {
+        "neutral": 32,
+        "positive": 20,
+        "negative": 9,
+        "mixed": 1
+      },
+      "deal_impact_distribution": {
+        "closed_won": 42,
+        "unknown": 20
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_4_2",
+          "JJL Law_Trish Herrera_4_3",
+          "JJL Law_Trish Herrera_3_2",
+          "JJL Law_Trish Herrera_2_2",
+          "Reilly Law Firm_Tracie Reilly_9_2",
+          "Reilly Law Firm_Tracie Reilly_10_1",
+          "JJL Law_Trish Herrera_1_3",
+          "Reilly Law Firm_Tracie Reilly_4_2",
+          "Reilly Law Firm_Tracie Reilly_5_1",
+          "Reilly Law Firm_Tracie Reilly_3_1",
+          "Altair Law_Cyrus Nazarian_6_2",
+          "Altair Law_Cyrus Nazarian_6_3",
+          "Reilly Law Firm_Tracie Reilly_5_2",
+          "Reilly Law Firm_Tracie Reilly_3_2",
+          "Altair Law_Cyrus Nazarian_5_6",
+          "Altair Law_Cyrus Nazarian_3_1",
+          "Altair Law_Cyrus Nazarian_1_1",
+          "NACE Law Group_Betty Behrens_2_4",
+          "Evenstad Law_Ben Evenstad_3_2",
+          "Evenstad Law_Ben Evenstad_3_1",
+          "Evenstad Law_Ben Evenstad_2_2",
+          "Evenstad Law_Ben Evenstad_7_1",
+          "Evenstad Law_Ben Evenstad_2_1",
+          "Unknown_Unknown_1_1",
+          "Unknown_Leila Vaez-Iravani_7_3",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_5_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_4",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_1",
+          "Unknown_Jenny Ohsberg_5_2",
+          "Unknown_Jenny Ohsberg_3_1",
+          "Unknown_Daniella Buenrostro_1_3",
+          "Unknown_Daniella Buenrostro_1_1",
+          "Unknown_Daniella Buenrostro_1_5",
+          "Unknown_Angela Law_5_2",
+          "Unknown_Angela Law_4_4",
+          "Unknown_Angela Law_5_1",
+          "Unknown_Angela Law_4_3",
+          "Unknown_Angela Law_2_2",
+          "Unknown_Angela Law_1_1",
+          "Unknown_Alex Vandenberg_4_4",
+          "Unknown_Alex Vandenberg_5_1",
+          "Unknown_Alex Vandenberg_1_2"
+        ],
+        "company_list": [
+          "JJL Law",
+          "Reilly Law Firm",
+          "Altair Law",
+          "unknown",
+          "Luminos Law",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Unknown",
+          "Anderson Law",
+          "Ez arvani law",
+          "Anden Law Firm",
+          "Vandenberg Law Firm"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "implementation_onboarding": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 67,
+      "total_quotes": 189,
+      "relevance_ratio": 0.3544973544973545,
+      "companies_affected": 14,
+      "sentiment_distribution": {
+        "neutral": 114,
+        "positive": 65,
+        "negative": 9,
+        "mixed": 1
+      },
+      "deal_impact_distribution": {
+        "closed_won": 128,
+        "unknown": 61
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_4_5",
+          "JJL Law_Trish Herrera_3_2",
+          "JJL Law_Trish Herrera_3_1",
+          "JJL Law_Trish Herrera_2_5",
+          "JJL Law_Trish Herrera_1_1",
+          "Reilly Law Firm_Tracie Reilly_7_2",
+          "Reilly Law Firm_Tracie Reilly_3_2",
+          "Altair Law_Cyrus Nazarian_5_6",
+          "Reilly Law Firm_Tracie Reilly_4_1",
+          "Altair Law_Cyrus Nazarian_7_1",
+          "Reilly Law Firm_Tracie Reilly_2_1",
+          "Reilly Law Firm_Tracie Reilly_2_2",
+          "Altair Law_Cyrus Nazarian_1_2",
+          "Luminos Law_Christina Fouche_6_2",
+          "Altair Law_Cyrus Nazarian_1_1",
+          "Luminos Law_Christina Fouche_3_1",
+          "Luminos Law_Christina Fouche_2_4",
+          "Luminos Law_Christina Fouche_2_2",
+          "NACE Law Group_Betty Behrens_3_2",
+          "NACE Law Group_Betty Behrens_2_2",
+          "Evenstad Law_Ben Evenstad_8_1",
+          "Luminos Law_Christina Fouche_2_3",
+          "Evenstad Law_Ben Evenstad_6_2",
+          "Evenstad Law_Ben Evenstad_4_3",
+          "Evenstad Law_Ben Evenstad_2_2",
+          "Evenstad Law_Ben Evenstad_1_1",
+          "Evenstad Law_Ben Evenstad_2_1",
+          "Unknown_Unknown_5_2",
+          "Unknown_Unknown_4_2",
+          "Unknown_Unknown_4_3",
+          "Unknown_Unknown_3_4",
+          "Unknown_Unknown_1_1",
+          "Unknown_Unknown_2_2",
+          "Unknown_Victoria Hardy_6_2",
+          "Unknown_Victoria Hardy_6_3",
+          "Unknown_Unknown_5_3",
+          "Unknown_Unknown_2_4",
+          "Unknown_Victoria Hardy_6_5",
+          "Unknown_Victoria Hardy_5_1",
+          "Unknown_Victoria Hardy_3_3",
+          "Unknown_Victoria Hardy_3_1",
+          "Unknown_Victoria Hardy_1_1",
+          "Unknown_Leila Vaez-Iravani_7_3",
+          "Unknown_Victoria Hardy_2_3",
+          "Unknown_Victoria Hardy_1_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_3",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_1",
+          "Unknown_Leila Vaez-Iravani_2_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_3",
+          "Unknown_Jenny Ohsberg_4_1",
+          "Unknown_Jenny Ohsberg_3_1",
+          "Unknown_Jenny Ohsberg_2_2",
+          "Unknown_Daniella Buenrostro_1_2",
+          "Unknown_Angela Law_4_2",
+          "Unknown_Angela Law_3_3",
+          "Unknown_Daniella Buenrostro_1_3",
+          "Unknown_Daniella Buenrostro_1_1",
+          "Unknown_Angela Law_3_1",
+          "Unknown_Alex Vandenberg_8_2",
+          "Unknown_Alex Vandenberg_7_1",
+          "Unknown_Alex Vandenberg_3_3",
+          "Unknown_Angela Law_1_1",
+          "Unknown_Alex Vandenberg_5_1",
+          "Unknown_Alex Vandenberg_4_4",
+          "Unknown_Alex Vandenberg_2_2",
+          "Unknown_Alex Vandenberg_1_2"
+        ],
+        "company_list": [
+          "JJL Law",
+          "Reilly Law Firm",
+          "Rev",
+          "unknown",
+          "Altair Law",
+          "Unknown",
+          "Insurance Company",
+          "Luminos Law",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Anderson Law",
+          "Ez arvani law",
+          "Anden Law Firm",
+          "Vandenberg Law Firm"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "product_capability": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 210,
+      "total_quotes": 226,
+      "relevance_ratio": 0.9292035398230089,
+      "companies_affected": 14,
+      "sentiment_distribution": {
+        "positive": 131,
+        "neutral": 54,
+        "negative": 29,
+        "mixed": 12
+      },
+      "deal_impact_distribution": {
+        "closed_won": 145,
+        "unknown": 81
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_4_4",
+          "JJL Law_Trish Herrera_4_5",
+          "JJL Law_Trish Herrera_3_4",
+          "JJL Law_Trish Herrera_3_3",
+          "JJL Law_Trish Herrera_3_2",
+          "JJL Law_Trish Herrera_3_1",
+          "JJL Law_Trish Herrera_2_5",
+          "JJL Law_Trish Herrera_2_1",
+          "Reilly Law Firm_Tracie Reilly_10_1",
+          "JJL Law_Trish Herrera_1_2",
+          "JJL Law_Trish Herrera_2_4",
+          "Reilly Law Firm_Tracie Reilly_9_2",
+          "Reilly Law Firm_Tracie Reilly_10_2",
+          "JJL Law_Trish Herrera_1_1",
+          "Reilly Law Firm_Tracie Reilly_9_1",
+          "Reilly Law Firm_Tracie Reilly_8_1",
+          "Reilly Law Firm_Tracie Reilly_7_1",
+          "Reilly Law Firm_Tracie Reilly_7_2",
+          "Reilly Law Firm_Tracie Reilly_4_1",
+          "Altair Law_Cyrus Nazarian_7_1",
+          "Reilly Law Firm_Tracie Reilly_2_1",
+          "Reilly Law Firm_Tracie Reilly_2_2",
+          "Altair Law_Cyrus Nazarian_6_1",
+          "Altair Law_Cyrus Nazarian_5_5",
+          "Altair Law_Cyrus Nazarian_5_1",
+          "Reilly Law Firm_Tracie Reilly_6_3",
+          "Reilly Law Firm_Tracie Reilly_4_2",
+          "Reilly Law Firm_Tracie Reilly_3_2",
+          "Reilly Law Firm_Tracie Reilly_3_1",
+          "Altair Law_Cyrus Nazarian_5_6",
+          "Altair Law_Cyrus Nazarian_5_4",
+          "Altair Law_Cyrus Nazarian_4_6",
+          "Altair Law_Cyrus Nazarian_4_4",
+          "Altair Law_Cyrus Nazarian_4_2",
+          "Altair Law_Cyrus Nazarian_3_2",
+          "Altair Law_Cyrus Nazarian_2_6",
+          "Altair Law_Cyrus Nazarian_2_2",
+          "Altair Law_Cyrus Nazarian_2_1",
+          "Luminos Law_Christina Fouche_7_1",
+          "Altair Law_Cyrus Nazarian_5_3",
+          "Altair Law_Cyrus Nazarian_4_3",
+          "Altair Law_Cyrus Nazarian_4_1",
+          "Altair Law_Cyrus Nazarian_3_1",
+          "Altair Law_Cyrus Nazarian_2_5",
+          "Altair Law_Cyrus Nazarian_2_3",
+          "Altair Law_Cyrus Nazarian_1_2",
+          "Altair Law_Cyrus Nazarian_1_1",
+          "Luminos Law_Christina Fouche_5_2",
+          "Luminos Law_Christina Fouche_4_3",
+          "Luminos Law_Christina Fouche_4_4",
+          "Luminos Law_Christina Fouche_4_2",
+          "Luminos Law_Christina Fouche_6_1",
+          "Luminos Law_Christina Fouche_5_1",
+          "Luminos Law_Christina Fouche_3_1",
+          "Luminos Law_Christina Fouche_4_1",
+          "Luminos Law_Christina Fouche_2_5",
+          "Luminos Law_Christina Fouche_2_4",
+          "Luminos Law_Christina Fouche_2_1",
+          "Luminos Law_Christina Fouche_1_1",
+          "NACE Law Group_Betty Behrens_5_1",
+          "NACE Law Group_Betty Behrens_2_4",
+          "NACE Law Group_Betty Behrens_2_3",
+          "Luminos Law_Christina Fouche_2_2",
+          "Luminos Law_Christina Fouche_2_3",
+          "NACE Law Group_Betty Behrens_5_2",
+          "NACE Law Group_Betty Behrens_3_4",
+          "NACE Law Group_Betty Behrens_3_2",
+          "NACE Law Group_Betty Behrens_2_1",
+          "NACE Law Group_Betty Behrens_2_2",
+          "Evenstad Law_Ben Evenstad_9_1",
+          "Evenstad Law_Ben Evenstad_8_1",
+          "Evenstad Law_Ben Evenstad_6_2",
+          "Evenstad Law_Ben Evenstad_4_2",
+          "Evenstad Law_Ben Evenstad_3_1",
+          "Evenstad Law_Ben Evenstad_7_2",
+          "Evenstad Law_Ben Evenstad_8_2",
+          "Evenstad Law_Ben Evenstad_6_1",
+          "Evenstad Law_Ben Evenstad_5_2",
+          "Evenstad Law_Ben Evenstad_5_1",
+          "Evenstad Law_Ben Evenstad_4_3",
+          "Evenstad Law_Ben Evenstad_3_2",
+          "Evenstad Law_Ben Evenstad_2_1",
+          "Evenstad Law_Ben Evenstad_2_2",
+          "Evenstad Law_Ben Evenstad_1_1",
+          "Unknown_Unknown_5_1",
+          "Unknown_Unknown_5_2",
+          "Unknown_Unknown_4_6",
+          "Unknown_Unknown_4_2",
+          "Unknown_Unknown_4_4",
+          "Unknown_Unknown_3_5",
+          "Unknown_Unknown_4_3",
+          "Unknown_Unknown_3_4",
+          "Unknown_Unknown_3_2",
+          "Unknown_Unknown_2_3",
+          "Unknown_Unknown_3_3",
+          "Unknown_Angela Law_2_1",
+          "Unknown_Unknown_1_2",
+          "Unknown_Unknown_4_5",
+          "Unknown_Unknown_2_4",
+          "Unknown_Victoria Hardy_6_4",
+          "Unknown_Victoria Hardy_6_5",
+          "Unknown_Unknown_1_1",
+          "Unknown_Unknown_2_2",
+          "Unknown_Unknown_3_6",
+          "Unknown_Victoria Hardy_8_2",
+          "Unknown_Unknown_2_1",
+          "Unknown_Victoria Hardy_7_3",
+          "Unknown_Victoria Hardy_8_1",
+          "Unknown_Victoria Hardy_7_2",
+          "Unknown_Victoria Hardy_6_1",
+          "Unknown_Victoria Hardy_6_2",
+          "Unknown_Victoria Hardy_5_3",
+          "Unknown_Victoria Hardy_6_3",
+          "Unknown_Victoria Hardy_4_2",
+          "Unknown_Victoria Hardy_3_1",
+          "Unknown_Victoria Hardy_2_2",
+          "Unknown_Victoria Hardy_1_2",
+          "Unknown_Leila Vaez-Iravani_6_3",
+          "Unknown_Victoria Hardy_5_2",
+          "Unknown_Victoria Hardy_5_1",
+          "Unknown_Victoria Hardy_3_3",
+          "Unknown_Victoria Hardy_4_1",
+          "Unknown_Victoria Hardy_3_2",
+          "Unknown_Victoria Hardy_2_3",
+          "Unknown_Victoria Hardy_1_1",
+          "Unknown_Victoria Hardy_2_1",
+          "Unknown_Leila Vaez-Iravani_8_1",
+          "Unknown_Leila Vaez-Iravani_8_2",
+          "Unknown_Leila Vaez-Iravani_7_2",
+          "Unknown_Leila Vaez-Iravani_6_2",
+          "Unknown_Leila Vaez-Iravani_5_2",
+          "Unknown_Leila Vaez-Iravani_5_3",
+          "Unknown_Leila Vaez-Iravani_4_3",
+          "Unknown_Leila Vaez-Iravani_4_1",
+          "Unknown_Leila Vaez-Iravani_4_2",
+          "Unknown_Leila Vaez-Iravani_3_2",
+          "Unknown_Leila Vaez-Iravani_3_1",
+          "Unknown_Leila Vaez-Iravani_2_1",
+          "Unknown_Leila Vaez-Iravani_1_1",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_6_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_6_4",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_6",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_3",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_4",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_1",
+          "Unknown_Leila Vaez-Iravani_2_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_5",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_5_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_3",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_1",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_2_4",
+          "Unknown_Jenny Ohsberg_6_2",
+          "Unknown_Jenny Ohsberg_4_2",
+          "Unknown_Jenny Ohsberg_2_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_2_3",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_2_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_1_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_1_1",
+          "Unknown_Jenny Ohsberg_7_2",
+          "Unknown_Jenny Ohsberg_7_1",
+          "Unknown_Jenny Ohsberg_6_1",
+          "Unknown_Jenny Ohsberg_4_1",
+          "Unknown_Jenny Ohsberg_1_1",
+          "Unknown_Daniella Buenrostro_4_3",
+          "Unknown_Jenny Ohsberg_2_1",
+          "Unknown_Daniella Buenrostro_4_2",
+          "Unknown_Daniella Buenrostro_3_5",
+          "Unknown_Jenny Ohsberg_2_3",
+          "Unknown_Daniella Buenrostro_3_4",
+          "Unknown_Daniella Buenrostro_4_1",
+          "Unknown_Daniella Buenrostro_3_3",
+          "Unknown_Daniella Buenrostro_3_2",
+          "Unknown_Daniella Buenrostro_2_4",
+          "Unknown_Daniella Buenrostro_2_2",
+          "Unknown_Daniella Buenrostro_2_3",
+          "Unknown_Daniella Buenrostro_1_4",
+          "Unknown_Angela Law_6_1",
+          "Unknown_Angela Law_4_4",
+          "Unknown_Angela Law_3_4",
+          "Unknown_Angela Law_4_1",
+          "Unknown_Angela Law_2_3",
+          "Unknown_Angela Law_3_1",
+          "Unknown_Angela Law_3_3",
+          "Unknown_Daniella Buenrostro_1_5",
+          "Unknown_Daniella Buenrostro_1_3",
+          "Unknown_Daniella Buenrostro_1_1",
+          "Unknown_Angela Law_5_3",
+          "Unknown_Angela Law_5_1",
+          "Unknown_Angela Law_4_2",
+          "Unknown_Angela Law_3_2",
+          "Unknown_Angela Law_2_2",
+          "Unknown_Angela Law_1_1",
+          "Unknown_Alex Vandenberg_7_2",
+          "Unknown_Alex Vandenberg_7_1",
+          "Unknown_Alex Vandenberg_6_1",
+          "Unknown_Alex Vandenberg_6_2",
+          "Unknown_Alex Vandenberg_5_1",
+          "Unknown_Alex Vandenberg_4_2",
+          "Unknown_Alex Vandenberg_3_1",
+          "Unknown_Alex Vandenberg_8_2",
+          "Unknown_Alex Vandenberg_8_1",
+          "Unknown_Alex Vandenberg_5_2",
+          "Unknown_Alex Vandenberg_4_4",
+          "Unknown_Alex Vandenberg_3_3",
+          "Unknown_Alex Vandenberg_2_2",
+          "Unknown_Alex Vandenberg_1_1",
+          "Unknown_Alex Vandenberg_1_2",
+          "Unknown_Alex Vandenberg_2_1"
+        ],
+        "company_list": [
+          "JJL Law",
+          "Reilly Law Firm",
+          "Rev",
+          "Altair Law",
+          "Unknown",
+          "unknown",
+          "Insurance Company",
+          "Luminos Law",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Anderson Law",
+          "Ez arvani law",
+          "Anden Law Firm",
+          "Vandenberg Law Firm"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "sales_experience_partnership": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 15,
+      "total_quotes": 37,
+      "relevance_ratio": 0.40540540540540543,
+      "companies_affected": 10,
+      "sentiment_distribution": {
+        "positive": 20,
+        "neutral": 16,
+        "negative": 1
+      },
+      "deal_impact_distribution": {
+        "closed_won": 32,
+        "unknown": 5
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_4_5",
+          "JJL Law_Trish Herrera_1_1",
+          "Reilly Law Firm_Tracie Reilly_9_1",
+          "Reilly Law Firm_Tracie Reilly_4_1",
+          "Reilly Law Firm_Tracie Reilly_3_1",
+          "Luminos Law_Christina Fouche_2_4",
+          "NACE Law Group_Betty Behrens_5_4",
+          "Evenstad Law_Ben Evenstad_9_1",
+          "Evenstad Law_Ben Evenstad_8_2",
+          "Evenstad Law_Ben Evenstad_6_1",
+          "Evenstad Law_Ben Evenstad_1_1",
+          "Unknown_Jenny Ohsberg_1_1",
+          "Unknown_Jenny Ohsberg_2_1",
+          "Unknown_Jenny Ohsberg_2_3",
+          "Unknown_Alex Vandenberg_1_2"
+        ],
+        "company_list": [
+          "JJL Law",
+          "Reilly Law Firm",
+          "Altair Law",
+          "Insurance Company",
+          "Luminos Law",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Unknown",
+          "Anden Law Firm",
+          "Vandenberg Law Firm"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "support_service_quality": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 19,
+      "total_quotes": 110,
+      "relevance_ratio": 0.17272727272727273,
+      "companies_affected": 13,
+      "sentiment_distribution": {
+        "neutral": 71,
+        "positive": 27,
+        "negative": 8,
+        "mixed": 4
+      },
+      "deal_impact_distribution": {
+        "closed_won": 72,
+        "unknown": 38
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_4_1",
+          "Altair Law_Cyrus Nazarian_4_1",
+          "Luminos Law_Christina Fouche_2_4",
+          "Luminos Law_Christina Fouche_2_2",
+          "NACE Law Group_Betty Behrens_3_2",
+          "Evenstad Law_Ben Evenstad_8_1",
+          "Evenstad Law_Ben Evenstad_6_1",
+          "Evenstad Law_Ben Evenstad_2_2",
+          "Unknown_Unknown_5_2",
+          "Unknown_Victoria Hardy_7_2",
+          "Unknown_Unknown_1_1",
+          "Unknown_Victoria Hardy_3_1",
+          "Unknown_Leila Vaez-Iravani_8_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_6",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_6_6",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_3",
+          "Unknown_Daniella Buenrostro_3_3",
+          "Unknown_Angela Law_3_1",
+          "Unknown_Alex Vandenberg_2_1"
+        ],
+        "company_list": [
+          "JJL Law",
+          "Reilly Law Firm",
+          "Rev",
+          "Unknown",
+          "Altair Law",
+          "Insurance Company",
+          "Luminos Law",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Anderson Law",
+          "Ez arvani law",
+          "Anden Law Firm",
+          "Vandenberg Law Firm"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "speed_responsiveness": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 46,
+      "total_quotes": 55,
+      "relevance_ratio": 0.8363636363636363,
+      "companies_affected": 9,
+      "sentiment_distribution": {
+        "positive": 34,
+        "neutral": 14,
+        "negative": 7
+      },
+      "deal_impact_distribution": {
+        "closed_won": 34,
+        "unknown": 21
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_3_2",
+          "JJL Law_Trish Herrera_1_3",
+          "JJL Law_Trish Herrera_2_2",
+          "Reilly Law Firm_Tracie Reilly_9_2",
+          "Reilly Law Firm_Tracie Reilly_7_2",
+          "Reilly Law Firm_Tracie Reilly_3_2",
+          "Altair Law_Cyrus Nazarian_7_1",
+          "Altair Law_Cyrus Nazarian_5_6",
+          "Reilly Law Firm_Tracie Reilly_2_1",
+          "Reilly Law Firm_Tracie Reilly_2_2",
+          "Altair Law_Cyrus Nazarian_1_2",
+          "Altair Law_Cyrus Nazarian_3_1",
+          "Altair Law_Cyrus Nazarian_2_2",
+          "Altair Law_Cyrus Nazarian_1_1",
+          "Evenstad Law_Ben Evenstad_8_1",
+          "Evenstad Law_Ben Evenstad_3_1",
+          "Evenstad Law_Ben Evenstad_1_1",
+          "Evenstad Law_Ben Evenstad_8_2",
+          "Evenstad Law_Ben Evenstad_4_3",
+          "Evenstad Law_Ben Evenstad_2_1",
+          "Unknown_Unknown_4_2",
+          "Unknown_Unknown_5_2",
+          "Unknown_Unknown_5_3",
+          "Unknown_Unknown_2_2",
+          "Unknown_Unknown_2_1",
+          "Unknown_Unknown_2_4",
+          "Unknown_Victoria Hardy_6_5",
+          "Unknown_Unknown_1_1",
+          "Unknown_Leila Vaez-Iravani_7_2",
+          "Unknown_Leila Vaez-Iravani_4_2",
+          "Unknown_Leila Vaez-Iravani_3_2",
+          "Unknown_Leila Vaez-Iravani_2_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_6",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_5",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_6_4",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_5_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_2_2",
+          "Unknown_Jenny Ohsberg_3_1",
+          "Unknown_Daniella Buenrostro_3_4",
+          "Unknown_Daniella Buenrostro_4_1",
+          "Unknown_Daniella Buenrostro_3_3",
+          "Unknown_Daniella Buenrostro_1_5",
+          "Unknown_Angela Law_4_2",
+          "Unknown_Alex Vandenberg_8_2"
+        ],
+        "company_list": [
+          "JJL Law",
+          "Reilly Law Firm",
+          "Altair Law",
+          "Unknown",
+          "Insurance Company",
+          "Luminos Law",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Anderson Law"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "security_compliance": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 16,
+      "total_quotes": 19,
+      "relevance_ratio": 0.8421052631578947,
+      "companies_affected": 8,
+      "sentiment_distribution": {
+        "neutral": 12,
+        "positive": 6,
+        "negative": 1
+      },
+      "deal_impact_distribution": {
+        "closed_won": 14,
+        "unknown": 5
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_2_3",
+          "JJL Law_Trish Herrera_2_4",
+          "Altair Law_Cyrus Nazarian_2_3",
+          "Altair Law_Cyrus Nazarian_4_2",
+          "Altair Law_Cyrus Nazarian_4_1",
+          "Altair Law_Cyrus Nazarian_3_1",
+          "Altair Law_Cyrus Nazarian_2_5",
+          "Luminos Law_Christina Fouche_6_1",
+          "Luminos Law_Christina Fouche_4_4",
+          "Luminos Law_Christina Fouche_4_3",
+          "Luminos Law_Christina Fouche_4_2",
+          "NACE Law Group_Betty Behrens_2_4",
+          "Evenstad Law_Ben Evenstad_3_1",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_5",
+          "Unknown_Jenny Ohsberg_3_1",
+          "Unknown_Daniella Buenrostro_1_5"
+        ],
+        "company_list": [
+          "JJL Law",
+          "Reilly Law Firm",
+          "Insurance Company",
+          "Altair Law",
+          "Luminos Law",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Unknown"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "market_position_reputation": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 19,
+      "total_quotes": 40,
+      "relevance_ratio": 0.475,
+      "companies_affected": 9,
+      "sentiment_distribution": {
+        "neutral": 20,
+        "positive": 18,
+        "negative": 2
+      },
+      "deal_impact_distribution": {
+        "closed_won": 25,
+        "unknown": 15
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "JJL Law_Trish Herrera_1_1",
+          "Reilly Law Firm_Tracie Reilly_3_1",
+          "Altair Law_Cyrus Nazarian_1_3",
+          "Altair Law_Cyrus Nazarian_2_1",
+          "Luminos Law_Christina Fouche_4_1",
+          "Luminos Law_Christina Fouche_2_5",
+          "Luminos Law_Christina Fouche_2_4",
+          "NACE Law Group_Betty Behrens_3_2",
+          "Evenstad Law_Ben Evenstad_9_1",
+          "NACE Law Group_Betty Behrens_5_4",
+          "Evenstad Law_Ben Evenstad_6_1",
+          "Evenstad Law_Ben Evenstad_5_2",
+          "Evenstad Law_Ben Evenstad_1_1",
+          "Unknown_Unknown_4_5",
+          "Unknown_Leila Vaez-Iravani_8_2",
+          "Unknown_Victoria Hardy_3_2",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_1",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_3_4",
+          "Unknown_Alex Vandenberg_1_2"
+        ],
+        "company_list": [
+          "Reilly Law Firm",
+          "JJL Law",
+          "Altair Law",
+          "Luminos Law",
+          "Insurance Company",
+          "NACE Law Group",
+          "Evenstad Law",
+          "Unknown",
+          "Vandenberg Law Firm"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "integration_technical_fit": {
+      "priority_score": 2.25,
+      "high_relevance_quotes": 18,
+      "total_quotes": 36,
+      "relevance_ratio": 0.5,
+      "companies_affected": 4,
+      "sentiment_distribution": {
+        "neutral": 26,
+        "positive": 10
+      },
+      "deal_impact_distribution": {
+        "closed_won": 20,
+        "unknown": 16
+      },
+      "meets_prioritization_thresholds": true,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [
+          "NACE Law Group_Betty Behrens_2_3",
+          "Evenstad Law_Ben Evenstad_7_1",
+          "Unknown_Unknown_3_5",
+          "Unknown_Unknown_4_3",
+          "Unknown_Unknown_3_3",
+          "Unknown_Victoria Hardy_6_2",
+          "Unknown_Victoria Hardy_4_3",
+          "Unknown_Leila Vaez-Iravani_2_1",
+          "Unknown_Jenny Ohsberg_7_2",
+          "Unknown_Jenny Ohsberg_7_1",
+          "Unknown_Jenny Ohsberg_6_2",
+          "Unknown_Jenny Ohsberg_3_2",
+          "Unknown_Angela Law_6_2",
+          "Unknown_Angela Law_2_3",
+          "Unknown_Alex Vandenberg_3_1",
+          "Unknown_Alex Vandenberg_6_3",
+          "Unknown_Alex Vandenberg_7_1",
+          "Unknown_Alex Vandenberg_3_3"
+        ],
+        "company_list": [
+          "Reilly Law Firm",
+          "NACE Law Group",
+          "Unknown",
+          "Evenstad Law"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    },
+    "vendor_stability": {
+      "priority_score": 0.0,
+      "high_relevance_quotes": 0,
+      "total_quotes": 4,
+      "relevance_ratio": 0.0,
+      "companies_affected": 3,
+      "sentiment_distribution": {
+        "neutral": 3,
+        "negative": 1
+      },
+      "deal_impact_distribution": {
+        "closed_won": 3,
+        "unknown": 1
+      },
+      "meets_prioritization_thresholds": false,
+      "prioritization_evidence": {
+        "high_relevance_quote_ids": [],
+        "company_list": [
+          "Luminos Law",
+          "NACE Law Group",
+          "Unknown"
+        ],
+        "deal_status_list": [
+          "closed_won",
+          "unknown"
+        ]
+      }
+    }
+  },
+  "scorecard_themes": [
+    {
+      "theme_title": "Streamlined Onboarding Process Enhances Client Satisfaction and Efficiency",
+      "scorecard_criterion": "implementation_onboarding",
+      "sentiment_direction": "positive",
+      "client_performance_summary": "Clients report a smooth onboarding experience, with mentions of being 'pleasantly surprised' and experiencing 'time-saving and ease of use'.",
+      "supporting_quotes": [
+        {
+          "text": "The mention of being 'pleasantly surprised' suggests that the onboarding process was smoother than anticipated.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "JJL Law",
+          "interviewee": "Trish Herrera",
+          "deal_status": "closed_won",
+          "quote_id": "JJL Law_Trish Herrera_4_5",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 111,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of time-saving and ease of use suggests a positive experience with implementation.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "JJL Law",
+          "interviewee": "Trish Herrera",
+          "deal_status": "closed_won",
+          "quote_id": "JJL Law_Trish Herrera_3_2",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 94,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of being surprised at how well it worked suggests that the onboarding process was smooth and effective.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "JJL Law",
+          "interviewee": "Trish Herrera",
+          "deal_status": "closed_won",
+          "quote_id": "JJL Law_Trish Herrera_3_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 115,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The user describes a smooth onboarding experience, indicating that setting up the service was straightforward and quick.",
+          "relevance_score": 4.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "high",
+          "company": "Reilly Law Firm",
+          "interviewee": "Tracie Reilly",
+          "deal_status": "closed_won",
+          "quote_id": "Reilly Law Firm_Tracie Reilly_3_2",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 120,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of ease of use suggests a positive experience with onboarding and implementation.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "Altair Law",
+          "interviewee": "Cyrus Nazarian",
+          "deal_status": "closed_won",
+          "quote_id": "Altair Law_Cyrus Nazarian_7_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 93,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of ease in finding information suggests that the service is user-friendly and contributes to a smoother trial preparation process.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "Unknown",
+          "interviewee": "Tracie Reilly",
+          "deal_status": "unknown",
+          "quote_id": "Reilly Law Firm_Tracie Reilly_2_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 142,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of needing to gather more information from the law firm suggests considerations for deployment and onboarding processes.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "Luminos Law",
+          "interviewee": "Christina Fouche",
+          "deal_status": "closed_won",
+          "quote_id": "Luminos Law_Christina Fouche_3_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 132,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of needing transcripts for drafting reports suggests a need for ease of use and quick access to information, relevant to onboarding.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "NACE Law Group",
+          "interviewee": "Betty Behrens",
+          "deal_status": "closed_won",
+          "quote_id": "NACE Law Group_Betty Behrens_2_2",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 144,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of ease of use with AI tools suggests a positive onboarding experience.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "Unknown",
+          "interviewee": "Victoria Hardy",
+          "deal_status": "closed_won",
+          "quote_id": "Unknown_Victoria Hardy_6_2",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Executive",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 83,
+            "has_metrics": false
+          }
+        }
+      ],
+      "quote_count": 9,
+      "companies_represented": 9,
+      "relevance_threshold_met": true,
+      "strategic_note": "A positive onboarding experience is crucial for client retention and satisfaction, leading to stronger long-term relationships and potential upsell opportunities.",
+      "competitive_positioning": "The ease of use and smooth onboarding process positions our service favorably against competitors who may have more complex setups, enhancing our appeal to new clients.",
+      "buyer_decision_impact": "The positive feedback on onboarding can influence buyer decisions, as clients are likely to choose services that promise a hassle-free implementation, potentially leading to increased deal closures.",
+      "evidence_strength": 3.111111111111111,
+      "stakeholder_weight": 0.5,
+      "overall_quality_score": 1.4666666666666668,
+      "competitive_intelligence": {
+        "competitive_advantage": "Strong competitive advantage",
+        "differentiation_opportunities": [
+          "Address for needs"
+        ],
+        "market_gaps": [],
+        "competitor_mentions": 0,
+        "industry_benchmarks": 0,
+        "market_positioning": 0
+      },
+      "business_impact": {
+        "revenue_correlation": {
+          "deal_win_rate": 0,
+          "deal_wins": 0,
+          "deal_losses": 0,
+          "revenue_mentions": 0,
+          "correlation_strength": "Weak"
+        },
+        "retention_impact": {
+          "retention_score": 0.5,
+          "retention_mentions": 0,
+          "churn_mentions": 0,
+          "renewal_mentions": 0,
+          "impact_level": "Low"
+        },
+        "growth_opportunities": [
+          "Expansion opportunity: The mention of needing to gather more information from the law firm suggests considerations for depl..."
+        ],
+        "risks": [],
+        "overall_impact_score": 0.2
+      },
+      "concrete_examples": [
+        "Onboarding process described as 'smooth' and 'quick'",
+        "Ease of use highlighted as a key factor in positive experiences"
+      ],
+      "customer_quotes": [
+        "The mention of being 'pleasantly surprised' suggests that the onboarding process was smoother than anticipated.",
+        "The mention of time-saving and ease of use suggests a positive experience with implementation."
+      ],
+      "business_metrics": {
+        "No explicit metrics reported": ""
+      },
+      "criteria_prioritization_evidence": {
+        "criterion": "implementation_onboarding",
+        "sentiment": "positive",
+        "quote_count": 9,
+        "companies_represented": 9
+      },
+      "sentiment_alignment_evidence": {
+        "sentiment_consistency": 1.0,
+        "sentiment_distribution": {
+          "positive": 57
+        }
+      },
+      "quote_selection_rationale": {
+        "selection_criteria": "High relevance, diverse companies, sentiment alignment, stakeholder diversity",
+        "selected_quote_ids": [
+          "JJL Law_Trish Herrera_4_5",
+          "JJL Law_Trish Herrera_3_2",
+          "JJL Law_Trish Herrera_3_1",
+          "Reilly Law Firm_Tracie Reilly_3_2",
+          "Altair Law_Cyrus Nazarian_7_1",
+          "Reilly Law Firm_Tracie Reilly_2_1",
+          "Luminos Law_Christina Fouche_3_1",
+          "NACE Law Group_Betty Behrens_2_2",
+          "Unknown_Victoria Hardy_6_2"
+        ],
+        "quote_context": [
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 111,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 94,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 115,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 120,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 93,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 142,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 132,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 144,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Executive",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 83,
+            "has_metrics": false
+          }
+        ]
+      }
+    },
+    {
+      "theme_title": "Challenges in Implementation and Onboarding Impacting Efficiency",
+      "scorecard_criterion": "implementation_onboarding",
+      "sentiment_direction": "negative",
+      "client_performance_summary": "Clients report time-consuming processes and difficulties in deployment, indicating significant onboarding challenges.",
+      "supporting_quotes": [
+        {
+          "text": "The mention of time-consuming processes in reviewing evidence suggests challenges in the implementation and onboarding of the system, impacting overall efficiency.",
+          "relevance_score": 3.0,
+          "sentiment": "negative",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "Reilly Law Firm",
+          "interviewee": "Tracie Reilly",
+          "deal_status": "closed_won",
+          "quote_id": "Reilly Law Firm_Tracie Reilly_7_2",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 163,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The mention of EvenUp taking a long time and flaking out indicates challenges with deployment and time-to-value.",
+          "relevance_score": 4.0,
+          "sentiment": "negative",
+          "criterion": "implementation_onboarding",
+          "confidence": "high",
+          "company": "NACE Law Group",
+          "interviewee": "Betty Behrens",
+          "deal_status": "closed_won",
+          "quote_id": "NACE Law Group_Betty Behrens_3_2",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 112,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The response indicates that the previous process was time-consuming, highlighting the importance of ease of implementation and onboarding.",
+          "relevance_score": 3.0,
+          "sentiment": "negative",
+          "criterion": "implementation_onboarding",
+          "confidence": "high",
+          "company": "Unknown",
+          "interviewee": "Daniella Buenrostro",
+          "deal_status": "closed_won",
+          "quote_id": "Unknown_Daniella Buenrostro_1_2",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 138,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The user's difficulty in reverting changes suggests challenges in the ease of use and onboarding process.",
+          "relevance_score": 3.0,
+          "sentiment": "negative",
+          "criterion": "implementation_onboarding",
+          "confidence": "medium",
+          "company": "Unknown",
+          "interviewee": "Speaker 1",
+          "deal_status": "closed_won",
+          "quote_id": "Unknown_Angela Law_3_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 105,
+            "has_metrics": false
+          }
+        }
+      ],
+      "quote_count": 4,
+      "companies_represented": 3,
+      "relevance_threshold_met": true,
+      "strategic_note": "Addressing these onboarding inefficiencies is crucial for improving customer satisfaction and retention, ultimately impacting revenue growth.",
+      "competitive_positioning": "The lengthy onboarding process may hinder competitive positioning against faster, more efficient solutions in the market.",
+      "buyer_decision_impact": "Potential buyers may be deterred by reports of slow implementation, affecting deal closures and overall market share.",
+      "evidence_strength": 3.25,
+      "stakeholder_weight": 0.5,
+      "overall_quality_score": 1.525,
+      "competitive_intelligence": {
+        "competitive_advantage": "Competitive disadvantage",
+        "differentiation_opportunities": [],
+        "market_gaps": [],
+        "competitor_mentions": 0,
+        "industry_benchmarks": 0,
+        "market_positioning": 1
+      },
+      "business_impact": {
+        "revenue_correlation": {
+          "deal_win_rate": 0,
+          "deal_wins": 0,
+          "deal_losses": 0,
+          "revenue_mentions": 0,
+          "correlation_strength": "Weak"
+        },
+        "retention_impact": {
+          "retention_score": 0.5,
+          "retention_mentions": 0,
+          "churn_mentions": 0,
+          "renewal_mentions": 0,
+          "impact_level": "Low"
+        },
+        "growth_opportunities": [],
+        "risks": [
+          "Risk: The mention of time-consuming processes in reviewing evidence suggests challenges in the implementat...",
+          "Risk: The mention of EvenUp taking a long time and flaking out indicates challenges with deployment and ti...",
+          "Risk: The user's difficulty in reverting changes suggests challenges in the ease of use and onboarding pro..."
+        ],
+        "overall_impact_score": 0.0
+      },
+      "concrete_examples": [
+        "Time-consuming processes in reviewing evidence",
+        "Long deployment times and flaking out"
+      ],
+      "customer_quotes": [
+        "The mention of time-consuming processes in reviewing evidence suggests challenges in the implementation and onboarding of the system, impacting overall efficiency.",
+        "The mention of EvenUp taking a long time and flaking out indicates challenges with deployment and time-to-value."
+      ],
+      "business_metrics": {
+        "No explicit metrics reported": "No explicit metrics reported."
+      },
+      "criteria_prioritization_evidence": {
+        "criterion": "implementation_onboarding",
+        "sentiment": "negative",
+        "quote_count": 4,
+        "companies_represented": 3
+      },
+      "sentiment_alignment_evidence": {
+        "sentiment_consistency": 1.0,
+        "sentiment_distribution": {
+          "negative": 4
+        }
+      },
+      "quote_selection_rationale": {
+        "selection_criteria": "High relevance, diverse companies, sentiment alignment, stakeholder diversity",
+        "selected_quote_ids": [
+          "Reilly Law Firm_Tracie Reilly_7_2",
+          "NACE Law Group_Betty Behrens_3_2",
+          "Unknown_Daniella Buenrostro_1_2",
+          "Unknown_Angela Law_3_1"
+        ],
+        "quote_context": [
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 163,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 112,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 138,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 105,
+            "has_metrics": false
+          }
+        ]
+      }
+    },
+    {
+      "theme_title": "Strong Security Compliance Enhances Client Trust in Legal Services",
+      "scorecard_criterion": "security_compliance",
+      "sentiment_direction": "positive",
+      "client_performance_summary": "Clients express confidence in data security and compliance, with specific mentions of meeting expectations and the importance of data integrity.",
+      "supporting_quotes": [
+        {
+          "text": "The quote directly addresses the security of the product, indicating a positive assessment of its thoroughness.",
+          "relevance_score": 4.0,
+          "sentiment": "positive",
+          "criterion": "security_compliance",
+          "confidence": "high",
+          "company": "JJL Law",
+          "interviewee": "Trish Herrera",
+          "deal_status": "closed_won",
+          "quote_id": "JJL Law_Trish Herrera_2_4",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 111,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The response states that data security and compliance met expectations, indicating relevance to this criterion.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "security_compliance",
+          "confidence": "medium",
+          "company": "Altair Law",
+          "interviewee": "Cyrus Nazarian",
+          "deal_status": "closed_won",
+          "quote_id": "Altair Law_Cyrus Nazarian_3_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 111,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The respondent emphasizes the importance of data and privacy features, highlighting a critical concern for compliance and security.",
+          "relevance_score": 4.0,
+          "sentiment": "positive",
+          "criterion": "security_compliance",
+          "confidence": "high",
+          "company": "Insurance Company",
+          "interviewee": "Cyrus Nazarian",
+          "deal_status": "unknown",
+          "quote_id": "Altair Law_Cyrus Nazarian_2_5",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 131,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The response raises concerns about data integrity and storage protocols, highlighting the importance of security and compliance in the context of law firms.",
+          "relevance_score": 4.0,
+          "sentiment": "positive",
+          "criterion": "security_compliance",
+          "confidence": "high",
+          "company": "Luminos Law",
+          "interviewee": "Christina Fouche",
+          "deal_status": "closed_won",
+          "quote_id": "Luminos Law_Christina Fouche_6_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 156,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The respondent acknowledges the importance of data security in their practice, especially regarding sensitive information.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "security_compliance",
+          "confidence": "high",
+          "company": "Evenstad Law",
+          "interviewee": "Ben Evenstad",
+          "deal_status": "closed_won",
+          "quote_id": "Evenstad Law_Ben Evenstad_3_1",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 122,
+            "has_metrics": false
+          }
+        },
+        {
+          "text": "The question about privacy and security compliance directly relates to the need for better data protection in legal contexts.",
+          "relevance_score": 3.0,
+          "sentiment": "positive",
+          "criterion": "security_compliance",
+          "confidence": "high",
+          "company": "Unknown",
+          "interviewee": "Speaker 3",
+          "deal_status": "unknown",
+          "quote_id": "Unknown_Kelsey Whisler - Scheveck  Salminen_4_5",
+          "context": {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 125,
+            "has_metrics": false
+          }
+        }
+      ],
+      "quote_count": 6,
+      "companies_represented": 6,
+      "relevance_threshold_met": true,
+      "strategic_note": "This positive sentiment around security compliance is crucial for building trust with clients, which can lead to increased client retention and acquisition in a competitive legal market.",
+      "competitive_positioning": "Our security and compliance measures are perceived as robust compared to competitors, particularly in addressing critical concerns about data integrity and privacy.",
+      "buyer_decision_impact": "The emphasis on security compliance influences buyer decisions, as firms prioritize solutions that ensure data protection, potentially leading to increased deal closures.",
+      "evidence_strength": 3.5,
+      "stakeholder_weight": 0.5,
+      "overall_quality_score": 1.6500000000000001,
+      "competitive_intelligence": {
+        "competitive_advantage": "Strong competitive advantage",
+        "differentiation_opportunities": [
+          "Address for needs"
+        ],
+        "market_gaps": [],
+        "competitor_mentions": 0,
+        "industry_benchmarks": 0,
+        "market_positioning": 0
+      },
+      "business_impact": {
+        "revenue_correlation": {
+          "deal_win_rate": 0,
+          "deal_wins": 0,
+          "deal_losses": 0,
+          "revenue_mentions": 0,
+          "correlation_strength": "Weak"
+        },
+        "retention_impact": {
+          "retention_score": 0.5,
+          "retention_mentions": 0,
+          "churn_mentions": 0,
+          "renewal_mentions": 0,
+          "impact_level": "Low"
+        },
+        "growth_opportunities": [],
+        "risks": [],
+        "overall_impact_score": 0.2
+      },
+      "concrete_examples": [
+        "Data security and compliance met expectations",
+        "Importance of data and privacy features highlighted"
+      ],
+      "customer_quotes": [
+        "The quote directly addresses the security of the product, indicating a positive assessment of its thoroughness.",
+        "The response states that data security and compliance met expectations, indicating relevance to this criterion."
+      ],
+      "business_metrics": {
+        "No explicit metrics reported": "No explicit metrics reported."
+      },
+      "criteria_prioritization_evidence": {
+        "criterion": "security_compliance",
+        "sentiment": "positive",
+        "quote_count": 6,
+        "companies_represented": 6
+      },
+      "sentiment_alignment_evidence": {
+        "sentiment_consistency": 1.0,
+        "sentiment_distribution": {
+          "positive": 6
+        }
+      },
+      "quote_selection_rationale": {
+        "selection_criteria": "High relevance, diverse companies, sentiment alignment, stakeholder diversity",
+        "selected_quote_ids": [
+          "JJL Law_Trish Herrera_2_4",
+          "Altair Law_Cyrus Nazarian_3_1",
+          "Altair Law_Cyrus Nazarian_2_5",
+          "Luminos Law_Christina Fouche_6_1",
+          "Evenstad Law_Ben Evenstad_3_1",
+          "Unknown_Kelsey Whisler - Scheveck  Salminen_4_5"
+        ],
+        "quote_context": [
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 111,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "medium",
+            "quote_length": 111,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 131,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 156,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Legal",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 122,
+            "has_metrics": false
+          },
+          {
+            "company_size": "Unknown",
+            "industry": "Other",
+            "stakeholder_role": "Other",
+            "deal_size": "Unknown",
+            "confidence": "high",
+            "quote_length": 125,
+            "has_metrics": false
+          }
+        ]
+      }
+    }
+  ],
+  "synthesis_results": {
+    "error": "'str' object has no attribute 'get'"
+  },
+  "summary_statistics": {
+    "criteria_prioritization": {
+      "total_criteria_analyzed": 10,
+      "prioritized_criteria": 9,
+      "prioritization_ratio": 0.9
+    },
+    "theme_generation": {
+      "total_themes_generated": 3,
+      "high_quality_themes": 3,
+      "quality_ratio": 1.0
+    },
+    "sentiment_distribution": {
+      "positive": 2,
+      "negative": 1
+    },
+    "criteria_coverage": {
+      "implementation_onboarding": 2,
+      "security_compliance": 1
+    },
+    "processing_metrics": {
+      "total_criteria_analyzed": 0,
+      "prioritized_criteria_found": 0,
+      "scorecard_themes_generated": 3,
+      "high_quality_themes": 0,
+      "sentiment_aligned_themes": 0,
+      "processing_errors": 0
+    }
+  }
+}

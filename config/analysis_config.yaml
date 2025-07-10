@@ -100,9 +100,9 @@ criteria:
 # Buried Wins v4.0 framework for executive-ready insights
 stage3:
   confidence_thresholds:
-    priority_finding: 2.5      # REDUCED from 3.0 for more findings
-    standard_finding: 1.5      # REDUCED from 2.0 for more findings
-    minimum_confidence: 0.8    # REDUCED from 1.0 for more inclusive analysis
+    priority_finding: 1.5      # REDUCED from 2.5 for more findings
+    standard_finding: 0.8      # REDUCED from 1.5 for more findings
+    minimum_confidence: 0.5    # REDUCED from 0.8 for more inclusive analysis
   
   pattern_thresholds:
     minimum_quotes: 1          # REDUCED from 2 to 1 for more patterns
@@ -150,16 +150,23 @@ stage4:
   # RELAXED EVIDENCE THRESHOLDS FOR HUMAN CURATION
   min_confidence_threshold: 2.0      # REDUCED from 3.0 for human curation
   min_companies_per_theme: 2         # REDUCED from 3 to 2 for human curation
-  min_findings_per_theme: 1          # REDUCED from 2 to 1 for human curation
+  min_findings_per_theme: 3          # INCREASED from 1 to 3 for better themes
   min_quotes_per_theme: 2            # REDUCED from 4 to 2 for human curation
   max_themes_per_category: 8         # INCREASED from 5 to 8 for more options
   
-  # HIGHLY RELAXED QUALITY SCORING SYSTEM FOR HUMAN CURATION
+  # RELAXED QUALITY SCORING SYSTEM FOR HUMAN CURATION
   quality_scoring:
-    specificity_threshold: 2.0       # REDUCED from 4.0 for human curation
-    actionability_threshold: 1.5     # REDUCED from 3.0 for human curation
-    evidence_strength_threshold: 1.5 # REDUCED from 3.0 for human curation
-    min_overall_score: 2.0          # REDUCED from 3.5 for human curation
+    specificity_threshold: 1.0       # REDUCED from 2.0 for human curation
+    actionability_threshold: 1.0     # REDUCED from 1.5 for human curation
+    evidence_strength_threshold: 1.0 # REDUCED from 1.5 for human curation
+    min_overall_score: 1.5          # REDUCED from 2.0 for human curation
+  
+  # THEME CONSOLIDATION
+  theme_consolidation:
+    enabled: true
+    similarity_threshold: 0.75       # Consolidate themes with >75% similarity
+    merge_similar_themes: true       # Merge similar themes
+    max_themes_per_category: 5       # Reduce from 8 to 5 for better focus
   
   # QUOTE DEDUPLICATION
   quote_deduplication:
@@ -169,10 +176,10 @@ stage4:
   
   # FUZZY MATCHING IMPROVEMENTS
   fuzzy_matching:
-    similarity_threshold: 0.7        # REDUCED from 0.75 for more inclusive grouping
+    similarity_threshold: 0.75       # INCREASED from 0.5 for more focused grouping
     semantic_grouping: true
     cross_criteria_grouping: true
-    min_group_size: 2                # REDUCED from 3 to 2 for human curation
+    min_group_size: 3                # INCREASED from 2 to 3 for better themes
   
   # THEME CATEGORIES
   theme_categories:
