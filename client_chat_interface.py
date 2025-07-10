@@ -27,6 +27,20 @@ def get_client_data(client_id: str) -> Dict[str, Any]:
         # Get responses
         responses = supabase.table('stage1_data_responses').select('*').eq('client_id', client_id).execute()
         
+        # Add debugging information
+        if themes.data:
+            st.sidebar.success(f"✅ Found {len(themes.data)} themes")
+            if themes.data:
+                st.sidebar.info(f"Theme columns: {list(themes.data[0].keys())}")
+        
+        if findings.data:
+            st.sidebar.success(f"✅ Found {len(findings.data)} findings")
+            if findings.data:
+                st.sidebar.info(f"Finding columns: {list(findings.data[0].keys())}")
+        
+        if responses.data:
+            st.sidebar.success(f"✅ Found {len(responses.data)} responses")
+        
         return {
             'themes': themes.data,
             'findings': findings.data,
@@ -39,7 +53,7 @@ def get_client_data(client_id: str) -> Dict[str, Any]:
 def create_system_prompt(client_data: Dict[str, Any]) -> str:
     """Create a system prompt with the client's data context."""
     themes_summary = "\n".join([
-        f"- {theme.get('theme_statement', 'N/A')} (Strength: {theme.get('strength', 'N/A')})"
+        f"- {theme.get('theme_statement', 'N/A')} (Strength: {theme.get('theme_strength', 'N/A')})"
         for theme in client_data.get('themes', [])
     ])
     
@@ -106,10 +120,34 @@ def show_themes_table(client_data: Dict[str, Any]):
     if client_data.get('themes'):
         themes_df = pd.DataFrame(client_data['themes'])
         st.subheader("Key Themes")
-        st.dataframe(
-            themes_df[['theme_statement', 'strength', 'competitive_flag']].head(10),
-            use_container_width=True
-        )
+        
+        # Check which columns are available and use them
+        available_columns = []
+        column_mapping = {
+            'theme_statement': 'Theme Statement',
+            'theme_strength': 'Strength', 
+            'competitive_flag': 'Competitive'
+        }
+        
+        for col in column_mapping.keys():
+            if col in themes_df.columns:
+                available_columns.append(col)
+        
+        if available_columns:
+            display_df = themes_df[available_columns].head(10)
+            # Rename columns for display
+            display_df = display_df.rename(columns=column_mapping)
+            
+            # Format boolean values
+            if 'Competitive' in display_df.columns:
+                display_df['Competitive'] = display_df['Competitive'].map({True: 'Yes', False: 'No'})
+            
+            st.dataframe(
+                display_df,
+                use_container_width=True
+            )
+        else:
+            st.warning("No displayable columns found in themes data.")
 
 def main():
     st.set_page_config(
@@ -127,18 +165,20 @@ def main():
     if st.sidebar.button("Load Data"):
         with st.spinner("Loading your data..."):
             client_data = get_client_data(client_id)
-            if client_data:
+            if client_data and (client_data.get('themes') or client_data.get('findings') or client_data.get('responses')):
                 st.session_state.client_data = client_data
                 st.success("Data loaded successfully!")
             else:
-                st.error("Failed to load data. Please check your Client ID.")
+                st.error(f"No data found for Client ID: {client_id}")
+                st.info("💡 Try using 'demo_client' or check your Client ID.")
+                st.session_state.client_data = None
     
     # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
     
     # Show data summary if available
-    if "client_data" in st.session_state:
+    if "client_data" in st.session_state and st.session_state.client_data:
         show_data_summary(st.session_state.client_data)
         
         # Tabs for different views
@@ -175,10 +215,30 @@ def main():
             if st.session_state.client_data.get('findings'):
                 st.subheader("Sample Findings")
                 findings_df = pd.DataFrame(st.session_state.client_data['findings'])
-                st.dataframe(
-                    findings_df[['finding_statement', 'confidence_score']].head(10),
-                    use_container_width=True
-                )
+                
+                # Check which columns are available for findings
+                findings_columns = []
+                findings_mapping = {
+                    'finding_statement': 'Finding Statement',
+                    'confidence_score': 'Confidence Score',
+                    'enhanced_confidence': 'Enhanced Confidence'
+                }
+                
+                for col in findings_mapping.keys():
+                    if col in findings_df.columns:
+                        findings_columns.append(col)
+                
+                if findings_columns:
+                    display_findings_df = findings_df[findings_columns].head(10)
+                    # Rename columns for display
+                    display_findings_df = display_findings_df.rename(columns=findings_mapping)
+                    
+                    st.dataframe(
+                        display_findings_df,
+                        use_container_width=True
+                    )
+                else:
+                    st.warning("No displayable columns found in findings data.")
     
     else:
         st.info("👈 Enter your Client ID in the sidebar and click 'Load Data' to get started.")
