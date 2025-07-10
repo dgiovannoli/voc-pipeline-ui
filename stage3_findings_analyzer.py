@@ -1181,8 +1181,13 @@ class Stage3FindingsAnalyzer:
             self.db.save_enhanced_finding(db_finding, client_id=client_id)
         logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase for client {client_id}")
     
-    def process_stage3_findings(self, client_id: str = 'default') -> Dict:
-        """Main processing function for enhanced Stage 3 (LLM-powered findings extraction)"""
+    def batch_dataframe(self, df: pd.DataFrame, batch_size: int = 25):
+        """Yield successive batches from a DataFrame."""
+        for i in range(0, len(df), batch_size):
+            yield df.iloc[i:i + batch_size]
+
+    def process_stage3_findings(self, client_id: str = 'default', batch_size: int = 25) -> Dict:
+        """Main processing function for enhanced Stage 3 (LLM-powered findings extraction, batched)"""
         logger.info("🚀 STAGE 3: LLM-POWERED FINDINGS EXTRACTION (Buried Wins v4.0)")
         logger.info("=" * 70)
 
@@ -1197,56 +1202,59 @@ class Stage3FindingsAnalyzer:
         # Load LLM prompt
         llm_prompt = self.load_llm_prompt()
 
-        # Prepare data for LLM (as CSV string)
-        input_csv = stage1_data_responses_df.to_csv(index=False)
-
-        # Compose full prompt for LLM
-        full_prompt = f"""{llm_prompt}\n\n<csv_input>\n{input_csv}\n</csv_input>\n"""
-
-        # Call LLM (OpenAI GPT-4o-mini)
-        logger.info("Calling LLM for findings extraction...")
-        try:
-            response = self.llm.invoke(full_prompt)
-            llm_output = response.content if hasattr(response, 'content') else str(response)
-        except Exception as e:
-            logger.error(f"LLM call failed: {e}")
-            return {"status": "error", "message": f"LLM call failed: {e}"}
-
-        # Parse LLM output (expecting JSON with findings_csv, response_table_csv, summary)
-        try:
-            # Try to extract JSON from LLM output
-            json_start = llm_output.find('{')
-            json_end = llm_output.rfind('}') + 1
-            llm_json = llm_output[json_start:json_end]
-            findings_data = json.loads(llm_json)
-        except Exception as e:
-            logger.error(f"Failed to parse LLM output as JSON: {e}")
-            return {"status": "error", "message": f"Failed to parse LLM output as JSON: {e}", "llm_output": llm_output}
-
-        # Parse findings CSV
-        try:
-            findings_csv = findings_data.get('findings_csv', '')
-            findings_df = pd.read_csv(pd.compat.StringIO(findings_csv))
-            findings = findings_df.to_dict(orient='records')
-        except Exception as e:
-            logger.error(f"Failed to parse findings CSV: {e}")
-            findings = []
+        all_findings = []
+        all_summaries = []
+        all_llm_outputs = []
+        batch_num = 1
+        for batch_df in self.batch_dataframe(stage1_data_responses_df, batch_size):
+            logger.info(f"Processing batch {batch_num} ({len(batch_df)} responses)...")
+            input_csv = batch_df.to_csv(index=False)
+            full_prompt = f"""{llm_prompt}\n\n<csv_input>\n{input_csv}\n</csv_input>\n"""
+            try:
+                response = self.llm.invoke(full_prompt)
+                llm_output = response.content if hasattr(response, 'content') else str(response)
+            except Exception as e:
+                logger.error(f"LLM call failed for batch {batch_num}: {e}")
+                continue
+            all_llm_outputs.append(llm_output)
+            try:
+                json_start = llm_output.find('{')
+                json_end = llm_output.rfind('}') + 1
+                llm_json = llm_output[json_start:json_end]
+                findings_data = json.loads(llm_json)
+            except Exception as e:
+                logger.error(f"Failed to parse LLM output as JSON for batch {batch_num}: {e}")
+                continue
+            try:
+                findings_csv = findings_data.get('findings_csv', '')
+                findings_df = pd.read_csv(pd.compat.StringIO(findings_csv))
+                findings = findings_df.to_dict(orient='records')
+                all_findings.extend(findings)
+            except Exception as e:
+                logger.error(f"Failed to parse findings CSV for batch {batch_num}: {e}")
+            all_summaries.append(findings_data.get('summary', {}))
+            batch_num += 1
 
         # Save to Supabase
-        self.save_stage3_findings_to_supabase(findings, client_id=client_id)
+        self.save_stage3_findings_to_supabase(all_findings, client_id=client_id)
 
-        # Generate summary
-        summary = findings_data.get('summary', {})
-        logger.info(f"\n✅ LLM-powered Stage 3 complete! Generated {len(findings)} findings")
+        # Merge summaries (simple aggregation)
+        total_findings = sum(s.get('total_findings', 0) for s in all_summaries)
+        summary = {
+            'total_findings': total_findings,
+            'batches': len(all_summaries),
+            'batch_summaries': all_summaries
+        }
+        logger.info(f"\n✅ LLM-powered Stage 3 complete! Generated {len(all_findings)} findings across {len(all_summaries)} batches")
         self.print_enhanced_summary_report(summary)
 
         return {
             "status": "success",
             "quotes_processed": len(stage1_data_responses_df),
-            "findings_generated": len(findings),
+            "findings_generated": len(all_findings),
             "summary": summary,
             "processing_metrics": self.processing_metrics,
-            "llm_output": llm_output
+            "llm_outputs": all_llm_outputs
         }
     
     def generate_enhanced_summary_statistics(self, findings: List[Dict], patterns: Dict) -> Dict:
