@@ -204,7 +204,7 @@ class Stage3FindingsAnalyzer:
             
             # Metric/quantification check
             if re.search(r'\d+%|\d+ percent|\$\d+|\d+ dollars|\d+ hours|\d+ days', text_lower):
-                criteria_scores['metric_quantification'] += 1
+                criteria_scores['metric_quantification'] = 1
         
         # Normalize scores
         for criterion in criteria_scores:
@@ -1182,125 +1182,71 @@ class Stage3FindingsAnalyzer:
         logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase for client {client_id}")
     
     def process_stage3_findings(self, client_id: str = 'default') -> Dict:
-        """Main processing function for enhanced Stage 3 (per-quote findings)"""
-        logger.info("🚀 STAGE 3: ENHANCED FINDINGS IDENTIFICATION (Buried Wins v4.0) [PER-QUOTE MODE]")
+        """Main processing function for enhanced Stage 3 (LLM-powered findings extraction)"""
+        logger.info("🚀 STAGE 3: LLM-POWERED FINDINGS EXTRACTION (Buried Wins v4.0)")
         logger.info("=" * 70)
 
         # Get core responses directly (not stage2_response_labeling)
         stage1_data_responses_df = self.db.get_stage1_data_responses(client_id=client_id)
-        
         if len(stage1_data_responses_df) == 0:
             logger.info("✅ No core responses found for analysis")
             return {"status": "no_data", "message": "No core responses available"}
 
         self.processing_metrics["total_quotes_processed"] = len(stage1_data_responses_df)
 
-        # Track findings per quote to ensure diversity
-        findings_per_quote = {}
-        max_findings_per_quote = 1  # Limit to 1 finding per quote maximum (matching Gold Standard)
-        
-        findings = []  # Initialize findings list
-        debug_count = 0
-        for idx, row in stage1_data_responses_df.iterrows():
-            response = row.to_dict()
-            # Convert response to quote format for processing
-            quote = {
-                'response_id': response.get('response_id', ''),
-                'verbatim_response': response.get('verbatim_response', ''),
-                'question': response.get('question', ''),
-                'key_insight': response.get('key_insight', ''),
-                'deal_status': response.get('deal_status', ''),
-                'company': response.get('company_name', ''),
-                'interviewee_name': response.get('interviewee_name', ''),
-                'date': response.get('date_of_interview', ''),
-                'client_id': response.get('client_id', ''),
-                'avg_score': 3.0,  # Default score for core responses
-                'relevance_level': 'moderate',
-                'company_count': 1
-            }
-            
-            # Check if quote already has maximum findings
-            quote_id = quote.get('response_id', f'quote_{idx}')
-            if quote_id in findings_per_quote and findings_per_quote[quote_id] >= max_findings_per_quote:
-                continue  # Skip if quote already has maximum findings
-            
-            criteria_scores = self._evaluate_quote_against_criteria(quote)
-            criteria_met = sum(1 for score in criteria_scores.values() if score > 0)
-            
-            # Debug: Print first 3 responses' criteria scores
-            if debug_count < 3:
-                print(f"[DEBUG] Response {debug_count + 1}: criteria_scores = {criteria_scores}, criteria_met = {criteria_met}")
-                print(f"[DEBUG] Response text: {quote['verbatim_response'][:100]}...")
-                debug_count += 1
-            
-            # VOLUME FIX 1: More selective criteria - require higher quality for findings
-            # Require at least 3 criteria OR high actionability with substantial content
-            text_length = len(quote.get('verbatim_response', '').split())
-            high_actionability = criteria_scores.get('actionability', 0) > 0
-            high_materiality = criteria_scores.get('materiality', 0) > 0
-            high_specificity = criteria_scores.get('specificity', 0) > 0
-            
-            # Only generate findings for high-quality quotes
-            if criteria_met < 3 and not (text_length >= 30 and (high_actionability or high_materiality)):
-                continue  # Skip low-quality quotes
-                
-            # Additional quality filters
-            if text_length < 15:  # Skip very short quotes
-                continue
-                
-            # Skip generic feedback without specific details
-            generic_terms = ['good', 'bad', 'okay', 'fine', 'nice', 'great', 'terrible']
-            if all(term not in quote.get('verbatim_response', '').lower() for term in generic_terms):
-                # Check if quote has specific details
-                specific_indicators = ['because', 'when', 'if', 'since', 'while', 'although', 'however']
-                if not any(indicator in quote.get('verbatim_response', '').lower() for indicator in specific_indicators):
-                    continue  # Skip generic feedback
-            
-            confidence_score = self.calculate_enhanced_confidence_score([quote], criteria_scores)
-            
-            # Only generate findings with confidence ≥3.0 (Gold Standard threshold)
-            if confidence_score < 3.0:
-                continue  # Skip findings below Gold Standard threshold
-            
-            # Use the better finding generation method that creates unique, rich findings
-            finding = self._create_finding_from_quote(quote)
-            
-            # Debug: Print finding generation details
-            if debug_count < 3:
-                print(f"[DEBUG] Response {debug_count + 1}: confidence_score = {confidence_score}")
-                print(f"[DEBUG] finding = {finding.get('description', 'No description')[:100] if finding else 'No finding generated'}")
-                debug_count += 1
-            
-            if not finding:
-                continue
-            findings.append(finding)
-            
-            # Track findings per quote
-            findings_per_quote[quote_id] = findings_per_quote.get(quote_id, 0) + 1
+        # Load LLM prompt
+        llm_prompt = self.load_llm_prompt()
 
-        logger.info(f"BEFORE DEDUPLICATION: {len(findings)} findings generated.")
-        logger.info(f"🔄 Applying semantic deduplication to {len(findings)} findings...")
-        # DISABLE DEDUPLICATION - identical findings across interviews is valuable for theme generation
-        # findings = self._deduplicate_and_merge_findings(findings, similarity_threshold=0.85)  # Allow some variation while removing duplicates
-        logger.info(f"✅ Generated {len(findings)} findings using per-quote approach (NO DEDUPLICATION - PRESERVE INTERVIEW SIGNALS)")
+        # Prepare data for LLM (as CSV string)
+        input_csv = stage1_data_responses_df.to_csv(index=False)
+
+        # Compose full prompt for LLM
+        full_prompt = f"""{llm_prompt}\n\n<csv_input>\n{input_csv}\n</csv_input>\n"""
+
+        # Call LLM (OpenAI GPT-4o-mini)
+        logger.info("Calling LLM for findings extraction...")
+        try:
+            response = self.llm.invoke(full_prompt)
+            llm_output = response.content if hasattr(response, 'content') else str(response)
+        except Exception as e:
+            logger.error(f"LLM call failed: {e}")
+            return {"status": "error", "message": f"LLM call failed: {e}"}
+
+        # Parse LLM output (expecting JSON with findings_csv, response_table_csv, summary)
+        try:
+            # Try to extract JSON from LLM output
+            json_start = llm_output.find('{')
+            json_end = llm_output.rfind('}') + 1
+            llm_json = llm_output[json_start:json_end]
+            findings_data = json.loads(llm_json)
+        except Exception as e:
+            logger.error(f"Failed to parse LLM output as JSON: {e}")
+            return {"status": "error", "message": f"Failed to parse LLM output as JSON: {e}", "llm_output": llm_output}
+
+        # Parse findings CSV
+        try:
+            findings_csv = findings_data.get('findings_csv', '')
+            findings_df = pd.read_csv(pd.compat.StringIO(findings_csv))
+            findings = findings_df.to_dict(orient='records')
+        except Exception as e:
+            logger.error(f"Failed to parse findings CSV: {e}")
+            findings = []
 
         # Save to Supabase
         self.save_stage3_findings_to_supabase(findings, client_id=client_id)
 
         # Generate summary
-        summary = self.generate_enhanced_summary_statistics(findings, {})
-
-        logger.info(f"\n✅ Enhanced Stage 3 complete! Generated {len(findings)} findings")
+        summary = findings_data.get('summary', {})
+        logger.info(f"\n✅ LLM-powered Stage 3 complete! Generated {len(findings)} findings")
         self.print_enhanced_summary_report(summary)
 
         return {
             "status": "success",
             "quotes_processed": len(stage1_data_responses_df),
             "findings_generated": len(findings),
-            "priority_findings": self.processing_metrics.get("priority_findings", 0),
-            "standard_findings": self.processing_metrics.get("standard_findings", 0),
             "summary": summary,
-            "processing_metrics": self.processing_metrics
+            "processing_metrics": self.processing_metrics,
+            "llm_output": llm_output
         }
     
     def generate_enhanced_summary_statistics(self, findings: List[Dict], patterns: Dict) -> Dict:
@@ -2456,6 +2402,24 @@ class Stage3FindingsAnalyzer:
             processed_statements.add(statement)
         
         return merged
+    
+    def load_llm_prompt(self) -> str:
+        """Load the LLM prompt from Context/Findings Prompt.txt and append criteria from Context/Findings Criteria.txt."""
+        prompt = ""
+        try:
+            with open('Context/Findings Prompt.txt', 'r') as f:
+                prompt = f.read()
+        except Exception as e:
+            logger.error(f"Could not load LLM prompt: {e}")
+            prompt = ""
+        # Optionally append criteria
+        try:
+            with open('Context/Findings Criteria.txt', 'r') as f:
+                criteria = f.read()
+            prompt += "\n\n# Buried Wins Findings Criteria (Reference)\n" + criteria
+        except Exception as e:
+            logger.warning(f"Could not load criteria doc: {e}")
+        return prompt
 
 def run_stage3_analysis(client_id: str = 'default'):
     """Run enhanced Stage 3 findings analysis"""
