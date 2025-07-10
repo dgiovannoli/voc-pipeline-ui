@@ -13,6 +13,7 @@ import yaml
 from collections import defaultdict, Counter
 import re
 import pprint
+from io import StringIO
 
 # Import Supabase database manager
 from supabase_database import SupabaseDatabase
@@ -1186,7 +1187,7 @@ class Stage3FindingsAnalyzer:
         for i in range(0, len(df), batch_size):
             yield df.iloc[i:i + batch_size]
 
-    def process_stage3_findings(self, client_id: str = 'default', batch_size: int = 25) -> Dict:
+    def process_stage3_findings(self, client_id: str = 'default', batch_size: int = 5) -> Dict:
         """Main processing function for enhanced Stage 3 (LLM-powered findings extraction, batched)"""
         logger.info("🚀 STAGE 3: LLM-POWERED FINDINGS EXTRACTION (Buried Wins v4.0)")
         logger.info("=" * 70)
@@ -1199,20 +1200,30 @@ class Stage3FindingsAnalyzer:
 
         self.processing_metrics["total_quotes_processed"] = len(stage1_data_responses_df)
 
+        # Only keep essential columns
+        essential_cols = [
+            'response_id', 'verbatim_response', 'question', 'company_name',
+            'interviewee_name', 'date_of_interview', 'client_id'
+        ]
+        df = stage1_data_responses_df[essential_cols].copy()
+
         # Load LLM prompt
         llm_prompt = self.load_llm_prompt()
+        logger.info(f"Prompt length: {len(llm_prompt)} chars")
 
         all_findings = []
         all_summaries = []
         all_llm_outputs = []
         batch_num = 1
-        for batch_df in self.batch_dataframe(stage1_data_responses_df, batch_size):
-            logger.info(f"Processing batch {batch_num} ({len(batch_df)} responses)...")
+        for batch_df in self.batch_dataframe(df, batch_size):
             input_csv = batch_df.to_csv(index=False)
+            logger.info(f"Batch {batch_num}: CSV length {len(input_csv)} chars")
             full_prompt = f"""{llm_prompt}\n\n<csv_input>\n{input_csv}\n</csv_input>\n"""
+            logger.info(f"Batch {batch_num}: Full prompt+csv length {len(full_prompt)} chars")
             try:
                 response = self.llm.invoke(full_prompt)
                 llm_output = response.content if hasattr(response, 'content') else str(response)
+                logger.info(f"Batch {batch_num}: LLM output (first 1000 chars):\n{llm_output[:1000]}")
             except Exception as e:
                 logger.error(f"LLM call failed for batch {batch_num}: {e}")
                 continue
@@ -1227,7 +1238,7 @@ class Stage3FindingsAnalyzer:
                 continue
             try:
                 findings_csv = findings_data.get('findings_csv', '')
-                findings_df = pd.read_csv(pd.compat.StringIO(findings_csv))
+                findings_df = pd.read_csv(StringIO(findings_csv))
                 findings = findings_df.to_dict(orient='records')
                 all_findings.extend(findings)
             except Exception as e:
@@ -1250,7 +1261,7 @@ class Stage3FindingsAnalyzer:
 
         return {
             "status": "success",
-            "quotes_processed": len(stage1_data_responses_df),
+            "quotes_processed": len(df),
             "findings_generated": len(all_findings),
             "summary": summary,
             "processing_metrics": self.processing_metrics,
