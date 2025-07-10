@@ -16,7 +16,7 @@ def verify_client_id_consistency():
         db = SupabaseDatabase()
         
         # Check all tables for client_id distribution
-        tables = ['core_responses', 'quote_analysis', 'enhanced_findings', 'themes']
+        tables = ['stage1_data_responses', 'stage2_response_labeling', 'stage3_findings', 'stage4_themes']
         
         for table in tables:
             print(f"\n📊 {table.upper()} TABLE:")
@@ -59,15 +59,15 @@ def verify_client_id_consistency():
         print("Testing 'Rev' client_id filtering:")
         
         # Core responses
-        core_df = db.get_core_responses(client_id='Rev')
+        core_df = db.get_stage1_data_responses(client_id='Rev')
         print(f"  Core responses: {len(core_df)} records")
         
         # Quote analysis
-        quote_df = db.get_quote_analysis(client_id='Rev')
+        quote_df = db.get_stage2_response_labeling(client_id='Rev')
         print(f"  Quote analysis: {len(quote_df)} records")
         
         # Enhanced findings
-        findings_df = db.get_enhanced_findings(client_id='Rev')
+        findings_df = db.get_stage3_findings(client_id='Rev')
         print(f"  Enhanced findings: {len(findings_df)} records")
         
         # Themes
@@ -77,13 +77,13 @@ def verify_client_id_consistency():
         # Test with 'default' client_id (should be empty now)
         print("\nTesting 'default' client_id filtering (should be empty):")
         
-        core_df_default = db.get_core_responses(client_id='default')
+        core_df_default = db.get_stage1_data_responses(client_id='default')
         print(f"  Core responses: {len(core_df_default)} records")
         
-        quote_df_default = db.get_quote_analysis(client_id='default')
+        quote_df_default = db.get_stage2_response_labeling(client_id='default')
         print(f"  Quote analysis: {len(quote_df_default)} records")
         
-        findings_df_default = db.get_enhanced_findings(client_id='default')
+        findings_df_default = db.get_stage3_findings(client_id='default')
         print(f"  Enhanced findings: {len(findings_df_default)} records")
         
         themes_df_default = db.get_themes(client_id='default')

@@ -107,12 +107,12 @@ class EmbeddingManager:
     
     def update_core_response_embeddings(self, client_id: str = 'default', 
                                        batch_size: int = 50) -> Dict:
-        """Update embeddings for all core_responses for a client"""
+        """Update embeddings for all stage1_data_responses for a client"""
         logger.info(f"🔄 Updating core response embeddings for client {client_id}")
         
         try:
             # Get all core responses without embeddings
-            response = self.db.supabase.table('core_responses').select(
+            response = self.db.supabase.table('stage1_data_responses').select(
                 'response_id,verbatim_response,embedding'
             ).eq('client_id', client_id).execute()
             
@@ -147,7 +147,7 @@ class EmbeddingManager:
                 for j, (row, embedding) in enumerate(zip(batch, embeddings)):
                     if embedding is not None:
                         try:
-                            self.db.supabase.table('core_responses').update({
+                            self.db.supabase.table('stage1_data_responses').update({
                                 'embedding': embedding
                             }).eq('response_id', row['response_id']).execute()
                             updated_count += 1
@@ -171,14 +171,14 @@ class EmbeddingManager:
             logger.error(f"Failed to update core response embeddings: {e}")
             return {"status": "error", "message": str(e), "updated": 0, "errors": 0}
     
-    def update_quote_analysis_embeddings(self, client_id: str = 'default', 
+    def update_stage2_response_labeling_embeddings(self, client_id: str = 'default', 
                                         batch_size: int = 50) -> Dict:
-        """Update embeddings for quote_analysis relevance_explanation field"""
+        """Update embeddings for stage2_response_labeling relevance_explanation field"""
         logger.info(f"🔄 Updating quote analysis embeddings for client {client_id}")
         
         try:
             # Get all quote analysis without embeddings
-            response = self.db.supabase.table('quote_analysis').select(
+            response = self.db.supabase.table('stage2_response_labeling').select(
                 'analysis_id,relevance_explanation,embedding'
             ).eq('client_id', client_id).execute()
             
@@ -213,7 +213,7 @@ class EmbeddingManager:
                 for j, (row, embedding) in enumerate(zip(batch, embeddings)):
                     if embedding is not None:
                         try:
-                            self.db.supabase.table('quote_analysis').update({
+                            self.db.supabase.table('stage2_response_labeling').update({
                                 'embedding': embedding
                             }).eq('analysis_id', row['analysis_id']).execute()
                             updated_count += 1
@@ -311,8 +311,8 @@ class EmbeddingManager:
         logger.info(f"🚀 Starting complete embedding backfill for client {client_id}")
         
         results = {
-            "core_responses": self.update_core_response_embeddings(client_id),
-            "quote_analysis": self.update_quote_analysis_embeddings(client_id),
+            "stage1_data_responses": self.update_core_response_embeddings(client_id),
+            "stage2_response_labeling": self.update_stage2_response_labeling_embeddings(client_id),
             "scorecard_themes": self.update_scorecard_theme_embeddings(client_id)
         }
         

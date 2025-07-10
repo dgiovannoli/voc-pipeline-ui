@@ -3,7 +3,7 @@
 """
 Run Schema Fix for Scorecard Themes
 
-This script runs the SQL to fix the scorecard_themes table schema.
+This script runs the SQL to fix the scorecard_stage4_themes table schema.
 """
 
 import logging
@@ -15,13 +15,13 @@ logger = logging.getLogger(__name__)
 
 def run_schema_fix():
     """Run the schema fix SQL"""
-    logger.info("🔧 Running schema fix for scorecard_themes table...")
+    logger.info("🔧 Running schema fix for scorecard_stage4_themes table...")
     
     try:
         db = SupabaseDatabase()
         
         # Read the SQL file
-        with open('fix_scorecard_themes_schema.sql', 'r') as f:
+        with open('fix_scorecard_stage4_themes_schema.sql', 'r') as f:
             sql_commands = f.read()
         
         # Split into individual commands
@@ -41,7 +41,7 @@ def run_schema_fix():
         
         # Verify the table structure
         logger.info("🔍 Verifying table structure...")
-        response = db.supabase.table('scorecard_themes').select('*').limit(1).execute()
+        response = db.supabase.table('scorecard_stage4_themes').select('*').limit(1).execute()
         
         if response.data:
             columns = list(response.data[0].keys())

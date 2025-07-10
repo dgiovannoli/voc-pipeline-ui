@@ -53,8 +53,8 @@ class SupabaseDatabase:
     def verify_connection(self):
         """Verify Supabase connection and table structure"""
         try:
-            # Test connection by querying core_responses table
-            result = self.supabase.table('core_responses').select('count').limit(1).execute()
+            # Test connection by querying stage1_data_responses table
+            result = self.supabase.table('stage1_data_responses').select('count').limit(1).execute()
             logger.info("✅ Supabase connection verified")
         except Exception as e:
             logger.error(f"❌ Supabase table verification failed: {e}")
@@ -63,8 +63,8 @@ class SupabaseDatabase:
     def test_connection(self) -> bool:
         """Test Supabase connection and return boolean result"""
         try:
-            # Test connection by querying core_responses table
-            result = self.supabase.table('core_responses').select('count').limit(1).execute()
+            # Test connection by querying stage1_data_responses table
+            result = self.supabase.table('stage1_data_responses').select('count').limit(1).execute()
             return True
         except Exception as e:
             logger.error(f"❌ Supabase connection test failed: {e}")
@@ -92,7 +92,7 @@ class SupabaseDatabase:
             data = {k: v for k, v in data.items() if v is not None}
             
             # Upsert to Supabase
-            result = self.supabase.table('core_responses').upsert(data).execute()
+            result = self.supabase.table('stage1_data_responses').upsert(data).execute()
             
             logger.info(f"✅ Saved core response: {response_data.get('response_id')}")
             return True
@@ -101,7 +101,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save core response: {e}")
             return False
     
-    def save_quote_analysis(self, analysis_data: Dict[str, Any]) -> bool:
+    def save_stage2_response_labeling(self, analysis_data: Dict[str, Any]) -> bool:
         """Save quote analysis to Supabase"""
         try:
             # Prepare data for Supabase
@@ -124,7 +124,7 @@ class SupabaseDatabase:
             data = {k: v for k, v in data.items() if v is not None}
             
             # Upsert to Supabase
-            result = self.supabase.table('quote_analysis').upsert(data).execute()
+            result = self.supabase.table('stage2_response_labeling').upsert(data).execute()
             
             logger.info(f"✅ Saved quote analysis: {analysis_data.get('quote_id')} - {analysis_data.get('criterion')}")
             return True
@@ -133,10 +133,10 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save quote analysis: {e}")
             return False
     
-    def get_core_responses(self, filters: Optional[Dict] = None, client_id: str = 'default') -> pd.DataFrame:
+    def get_stage1_data_responses(self, filters: Optional[Dict] = None, client_id: str = 'default') -> pd.DataFrame:
         """Get core responses from Supabase, filtered by client_id for data siloing"""
         try:
-            query = self.supabase.table('core_responses').select('*')
+            query = self.supabase.table('stage1_data_responses').select('*')
             
             # Always filter by client_id for data siloing
             query = query.eq('client_id', client_id)
@@ -164,10 +164,10 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get core responses: {e}")
             return pd.DataFrame()
     
-    def get_quote_analysis(self, quote_id: Optional[str] = None, client_id: str = 'default') -> pd.DataFrame:
+    def get_stage2_response_labeling(self, quote_id: Optional[str] = None, client_id: str = 'default') -> pd.DataFrame:
         """Get quote analysis from Supabase, filtered by client_id for data siloing"""
         try:
-            query = self.supabase.table('quote_analysis').select('*')
+            query = self.supabase.table('stage2_response_labeling').select('*')
             
             # Always filter by client_id for data siloing
             query = query.eq('client_id', client_id)
@@ -189,13 +189,13 @@ class SupabaseDatabase:
         """Get quotes that haven't been analyzed yet, filtered by client_id"""
         try:
             # Get all core responses for this client
-            core_df = self.get_core_responses(client_id=client_id)
+            core_df = self.get_stage1_data_responses(client_id=client_id)
             
             if core_df.empty:
                 return pd.DataFrame()
             
             # Get all analyzed quote IDs for this client
-            analysis_df = self.get_quote_analysis(client_id=client_id)
+            analysis_df = self.get_stage2_response_labeling(client_id=client_id)
             analyzed_ids = set(analysis_df['quote_id'].unique()) if not analysis_df.empty else set()
             
             # Filter out already analyzed quotes
@@ -212,7 +212,7 @@ class SupabaseDatabase:
         """Get summary statistics from Supabase, filtered by client_id for data siloing"""
         try:
             # Get core responses
-            core_df = self.get_core_responses(client_id=client_id)
+            core_df = self.get_stage1_data_responses(client_id=client_id)
             
             if core_df.empty:
                 return {
@@ -225,7 +225,7 @@ class SupabaseDatabase:
                 }
             
             # Get quote analysis
-            analysis_df = self.get_quote_analysis(client_id=client_id)
+            analysis_df = self.get_stage2_response_labeling(client_id=client_id)
             
             # Calculate statistics
             total_quotes = len(core_df)
@@ -293,10 +293,10 @@ class SupabaseDatabase:
         """Delete a core response and its associated analyses"""
         try:
             # Delete associated quote analyses first
-            self.supabase.table('quote_analysis').delete().eq('quote_id', response_id).execute()
+            self.supabase.table('stage2_response_labeling').delete().eq('quote_id', response_id).execute()
             
             # Delete core response
-            self.supabase.table('core_responses').delete().eq('response_id', response_id).execute()
+            self.supabase.table('stage1_data_responses').delete().eq('response_id', response_id).execute()
             
             logger.info(f"✅ Deleted core response: {response_id}")
             return True
@@ -309,14 +309,14 @@ class SupabaseDatabase:
         """Export data from Supabase, filtered by client_id"""
         try:
             # Get all data
-            core_df = self.get_core_responses(client_id=client_id)
-            analysis_df = self.get_quote_analysis(client_id=client_id)
+            core_df = self.get_stage1_data_responses(client_id=client_id)
+            analysis_df = self.get_stage2_response_labeling(client_id=client_id)
             
             if format.lower() == 'csv':
                 # Create export filename
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                core_filename = f"core_responses_{client_id}_{timestamp}.csv"
-                analysis_filename = f"quote_analysis_{client_id}_{timestamp}.csv"
+                core_filename = f"stage1_data_responses_{client_id}_{timestamp}.csv"
+                analysis_filename = f"stage2_response_labeling_{client_id}_{timestamp}.csv"
                 
                 # Save to CSV
                 core_df.to_csv(core_filename, index=False)
@@ -336,10 +336,10 @@ class SupabaseDatabase:
         """Get all quotes with scores from Supabase for Stage 3 analysis, filtered by client_id"""
         try:
             # Get core responses
-            core_df = self.get_core_responses(client_id=client_id)
+            core_df = self.get_stage1_data_responses(client_id=client_id)
             
             # Get quote analysis
-            analysis_df = self.get_quote_analysis(client_id=client_id)
+            analysis_df = self.get_stage2_response_labeling(client_id=client_id)
             
             if core_df.empty or analysis_df.empty:
                 return pd.DataFrame()
@@ -426,7 +426,7 @@ class SupabaseDatabase:
             data = {k: v for k, v in data.items() if v is not None}
             
             # Upsert to Supabase
-            result = self.supabase.table('enhanced_findings').upsert(data).execute()
+            result = self.supabase.table('stage3_findings').upsert(data).execute()
             
             logger.info(f"✅ Saved enhanced finding: {finding_data.get('title')} (Confidence: {finding_data.get('enhanced_confidence', 0):.1f})")
             return True
@@ -466,10 +466,10 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get findings: {e}")
             return pd.DataFrame()
     
-    def get_enhanced_findings(self, client_id: str = 'default', criterion: Optional[str] = None, finding_type: Optional[str] = None, priority_level: Optional[str] = None) -> pd.DataFrame:
+    def get_stage3_findings(self, client_id: str = 'default', criterion: Optional[str] = None, finding_type: Optional[str] = None, priority_level: Optional[str] = None) -> pd.DataFrame:
         """Get enhanced findings from Supabase, filtered by client_id"""
         try:
-            query = self.supabase.table('enhanced_findings').select('*')
+            query = self.supabase.table('stage3_findings').select('*')
             query = query.eq('client_id', client_id)
             if criterion:
                 query = query.eq('criterion', criterion)
@@ -495,10 +495,10 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get enhanced findings: {e}")
             return pd.DataFrame()
 
-    def get_enhanced_findings_summary(self, client_id: str = 'default') -> Dict:
+    def get_stage3_findings_summary(self, client_id: str = 'default') -> Dict:
         """Get enhanced findings summary statistics, filtered by client_id"""
         try:
-            df = self.get_enhanced_findings(client_id=client_id)
+            df = self.get_stage3_findings(client_id=client_id)
             if df.empty:
                 return {
                     'total_findings': 0,
@@ -554,7 +554,7 @@ class SupabaseDatabase:
     def get_priority_findings(self, min_confidence: float = 4.0) -> pd.DataFrame:
         """Get priority findings with high confidence scores"""
         try:
-            df = self.get_enhanced_findings()
+            df = self.get_stage3_findings()
             
             if df.empty:
                 return pd.DataFrame()
@@ -586,20 +586,20 @@ class SupabaseDatabase:
             return pd.DataFrame()
 
     def save_theme(self, theme_data: Dict, client_id: str = 'default') -> bool:
-        """Save a theme to the themes table with client_id for data siloing"""
+        """Save a theme to the stage4_themes table with client_id for data siloing"""
         try:
             # Add client_id to theme data
             theme_data['client_id'] = client_id
-            response = self.supabase.table('themes').insert(theme_data).execute()
+            response = self.supabase.table('stage4_themes').insert(theme_data).execute()
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Error saving theme: {e}")
             return False
 
     def get_themes(self, client_id: str = 'default') -> pd.DataFrame:
-        """Get all themes from the themes table, filtered by client_id"""
+        """Get all themes from the stage4_themes table, filtered by client_id"""
         try:
-            response = self.supabase.table('themes').select('*').eq('client_id', client_id).order('created_at', desc=True).execute()
+            response = self.supabase.table('stage4_themes').select('*').eq('client_id', client_id).order('created_at', desc=True).execute()
             df = pd.DataFrame(response.data)
             
             # Parse JSON columns
@@ -619,19 +619,19 @@ class SupabaseDatabase:
             return pd.DataFrame()
 
     def delete_theme(self, theme_id: str, client_id: str = 'default') -> bool:
-        """Delete a theme from the themes table"""
+        """Delete a theme from the stage4_themes table"""
         try:
-            response = self.supabase.table('themes').delete().eq('id', theme_id).eq('client_id', client_id).execute()
+            response = self.supabase.table('stage4_themes').delete().eq('id', theme_id).eq('client_id', client_id).execute()
             return len(response.data) > 0
         except Exception as e:
             logger.error(f"Error deleting theme: {e}")
             return False
 
     def get_themes_summary(self, client_id: str = 'default') -> Dict:
-        """Get summary statistics for themes, filtered by client_id"""
+        """Get summary statistics for stage4_themes, filtered by client_id"""
         try:
             # Get total themes count filtered by client_id
-            total_themes = self.supabase.table('themes').select('id', count='exact').eq('client_id', client_id).execute()
+            total_themes = self.supabase.table('stage4_themes').select('id', count='exact').eq('client_id', client_id).execute()
             total_count = total_themes.count if total_themes.count is not None else 0
             
             if total_count == 0:
@@ -644,7 +644,7 @@ class SupabaseDatabase:
                 }
             
             # Get themes data filtered by client_id
-            themes_data = self.supabase.table('themes').select('*').eq('client_id', client_id).execute()
+            themes_data = self.supabase.table('stage4_themes').select('*').eq('client_id', client_id).execute()
             df = pd.DataFrame(themes_data.data)
             
             # Calculate statistics
@@ -688,12 +688,12 @@ class SupabaseDatabase:
                 return pd.DataFrame()
             
             # Get related quote analysis data for context
-            quote_analysis_response = self.supabase.table('quote_analysis').select('*').execute()
-            quote_df = pd.DataFrame(quote_analysis_response.data)
+            stage2_response_labeling_response = self.supabase.table('stage2_response_labeling').select('*').execute()
+            quote_df = pd.DataFrame(stage2_response_labeling_response.data)
             
             # Get core responses for additional context
-            core_responses_response = self.supabase.table('core_responses').select('*').execute()
-            core_df = pd.DataFrame(core_responses_response.data)
+            stage1_data_responses_response = self.supabase.table('stage1_data_responses').select('*').execute()
+            core_df = pd.DataFrame(stage1_data_responses_response.data)
             
             return findings_df
             
@@ -703,10 +703,10 @@ class SupabaseDatabase:
 
     # Stage 5: Executive Synthesis Methods
     def get_themes_for_executive_synthesis(self) -> pd.DataFrame:
-        """Get themes ready for executive synthesis"""
+        """Get themes ready for executive synthesis from stage4_themes"""
         try:
             # Get themes with high/medium strength
-            response = self.supabase.table('themes').select('*').in_('theme_strength', ['High', 'Medium']).execute()
+            response = self.supabase.table('stage4_themes').select('*').in_('theme_strength', ['High', 'Medium']).execute()
             df = pd.DataFrame(response.data)
             
             if df.empty:
@@ -717,10 +717,10 @@ class SupabaseDatabase:
             findings_df = pd.DataFrame(findings_response.data)
             
             # Get quote analysis data for additional context
-            quote_analysis_response = self.supabase.table('quote_analysis').select('*').execute()
-            quote_df = pd.DataFrame(quote_analysis_response.data)
+            stage2_response_labeling_response = self.supabase.table('stage2_response_labeling').select('*').execute()
+            quote_df = pd.DataFrame(stage2_response_labeling_response.data)
             
-            logger.info(f"📊 Loaded {len(df)} themes for executive synthesis")
+            logger.info(f"📊 Loaded {len(df)} stage4_themes for executive synthesis")
             return df
             
         except Exception as e:
@@ -731,15 +731,15 @@ class SupabaseDatabase:
         """Generate executive criteria scorecard from Stage 2 data, filtered by client_id"""
         try:
             # Get quote analysis data filtered by client_id
-            quote_analysis_response = self.supabase.table('quote_analysis').select('*').eq('client_id', client_id).execute()
-            quote_df = pd.DataFrame(quote_analysis_response.data)
+            stage2_response_labeling_response = self.supabase.table('stage2_response_labeling').select('*').eq('client_id', client_id).execute()
+            quote_df = pd.DataFrame(stage2_response_labeling_response.data)
             
             if quote_df.empty:
                 return {}
             
             # Get core responses for company information filtered by client_id
-            core_responses_response = self.supabase.table('core_responses').select('*').eq('client_id', client_id).execute()
-            core_df = pd.DataFrame(core_responses_response.data)
+            stage1_data_responses_response = self.supabase.table('stage1_data_responses').select('*').eq('client_id', client_id).execute()
+            core_df = pd.DataFrame(stage1_data_responses_response.data)
             
             # Merge data for analysis
             merged_df = quote_df.merge(core_df, left_on='quote_id', right_on='response_id', how='left')
@@ -1002,10 +1002,10 @@ class SupabaseDatabase:
                 'criteria_analyzed': 0
             }
 
-    def get_all_core_responses(self) -> pd.DataFrame:
+    def get_all_stage1_data_responses(self) -> pd.DataFrame:
         """Get ALL core responses from Supabase without client_id filtering (for debugging)"""
         try:
-            query = self.supabase.table('core_responses').select('*')
+            query = self.supabase.table('stage1_data_responses').select('*')
             query = query.order('created_at', desc=True)
             
             result = query.execute()
@@ -1021,7 +1021,7 @@ class SupabaseDatabase:
     def get_client_summary(self) -> Dict[str, int]:
         """Get summary of data by client_id"""
         try:
-            df = self.get_all_core_responses()
+            df = self.get_all_stage1_data_responses()
             if df.empty:
                 return {}
             
@@ -1036,13 +1036,13 @@ class SupabaseDatabase:
     def merge_client_data(self, from_client_id: str, to_client_id: str) -> bool:
         """Merge data from one client_id to another"""
         try:
-            # Update core_responses
-            result = self.supabase.table('core_responses').update(
+            # Update stage1_data_responses
+            result = self.supabase.table('stage1_data_responses').update(
                 {'client_id': to_client_id}
             ).eq('client_id', from_client_id).execute()
             
-            # Update quote_analysis
-            result2 = self.supabase.table('quote_analysis').update(
+            # Update stage2_response_labeling
+            result2 = self.supabase.table('stage2_response_labeling').update(
                 {'client_id': to_client_id}
             ).eq('client_id', from_client_id).execute()
             
@@ -1054,10 +1054,10 @@ class SupabaseDatabase:
             return False
 
     def get_theme_quotes(self, theme_id: str, client_id: str = 'default') -> pd.DataFrame:
-        """Get all quotes that contributed to a specific theme"""
+        """Get all quotes that contributed to a specific theme from stage4_themes"""
         try:
             # First get the theme to find supporting finding IDs
-            theme_response = self.supabase.table('themes').select('*').eq('id', theme_id).eq('client_id', client_id).execute()
+            theme_response = self.supabase.table('stage4_themes').select('*').eq('id', theme_id).eq('client_id', client_id).execute()
             if not theme_response.data:
                 return pd.DataFrame()
             
@@ -1068,7 +1068,7 @@ class SupabaseDatabase:
                 return pd.DataFrame()
             
             # Get the findings
-            findings_response = self.supabase.table('enhanced_findings').select('*').in_('id', supporting_finding_ids).eq('client_id', client_id).execute()
+            findings_response = self.supabase.table('stage3_findings').select('*').in_('id', supporting_finding_ids).eq('client_id', client_id).execute()
             findings_df = pd.DataFrame(findings_response.data)
             
             if findings_df.empty:
@@ -1100,7 +1100,7 @@ class SupabaseDatabase:
                             })
             
             # Get interviewee names for quotes
-            core_df = self.get_core_responses(client_id=client_id)
+            core_df = self.get_stage1_data_responses(client_id=client_id)
             quotes_with_attribution = []
             
             for quote_data in all_quotes:
@@ -1124,6 +1124,71 @@ class SupabaseDatabase:
             
         except Exception as e:
             logger.error(f"Error getting theme quotes: {e}")
+            return pd.DataFrame()
+
+    def get_themes_for_curation(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get themes that need human curation."""
+        try:
+            response = self.supabase.table('stage4_themes').select('*').eq('client_id', client_id).execute()
+            return pd.DataFrame(response.data)
+        except Exception as e:
+            logger.error(f"Error getting themes for curation: {e}")
+            return pd.DataFrame()
+
+    def save_theme_curation(self, theme_id: str, curation_status: str, curated_by: str, notes: str = "") -> bool:
+        """Save curation decision for a theme."""
+        try:
+            update_data = {
+                'curation_status': curation_status,
+                'curated_by': curated_by,
+                'curated_at': datetime.now().isoformat(),
+                'curator_notes': notes
+            }
+            response = self.supabase.table('stage4_themes').update(update_data).eq('id', theme_id).execute()
+            return len(response.data) > 0
+        except Exception as e:
+            logger.error(f"Error saving theme curation: {e}")
+            return False
+
+    def get_curation_summary(self, client_id: str = 'default') -> dict:
+        """Get summary of curation progress."""
+        try:
+            themes = self.get_themes_for_curation(client_id)
+            if themes.empty:
+                return {}
+            
+            total_themes = len(themes)
+            pending_themes = len(themes[themes.get('curation_status', 'pending') == 'pending'])
+            approved_themes = len(themes[themes.get('curation_status', 'pending') == 'approved'])
+            denied_themes = len(themes[themes.get('curation_status', 'pending') == 'denied'])
+            
+            return {
+                'total_themes': total_themes,
+                'pending_themes': pending_themes,
+                'approved_themes': approved_themes,
+                'denied_themes': denied_themes,
+                'progress_percent': int(((approved_themes + denied_themes) / total_themes) * 100) if total_themes > 0 else 0
+            }
+        except Exception as e:
+            logger.error(f"Error getting curation summary: {e}")
+            return {}
+
+    def get_approved_themes_for_export(self, client_id: str = 'default') -> pd.DataFrame:
+        """Get approved themes for export."""
+        try:
+            response = self.supabase.table('stage4_themes').select('*').eq('client_id', client_id).eq('curation_status', 'approved').execute()
+            return pd.DataFrame(response.data)
+        except Exception as e:
+            logger.error(f"Error getting approved themes: {e}")
+            return pd.DataFrame()
+
+    def get_approved_quotes_for_export(self, theme_ids: list) -> pd.DataFrame:
+        """Get approved quotes for specific themes."""
+        try:
+            response = self.supabase.table('quote_analysis').select('*').in_('theme_id', theme_ids).eq('curation_label', 'approve').execute()
+            return pd.DataFrame(response.data)
+        except Exception as e:
+            logger.error(f"Error getting approved quotes: {e}")
             return pd.DataFrame()
 
 def create_supabase_database() -> SupabaseDatabase:

@@ -27,7 +27,7 @@ def fix_client_id():
     # Test database access
     try:
         db = SupabaseDatabase()
-        responses = db.get_core_responses(client_id='Rev')
+        responses = db.get_stage1_data_responses(client_id='Rev')
         print(f"📊 Database responses for client 'Rev': {len(responses)}")
         
         if len(responses) > 0:

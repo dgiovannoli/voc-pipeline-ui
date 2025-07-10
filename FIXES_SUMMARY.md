@@ -51,8 +51,8 @@
 ### Database Schema Updates
 ```sql
 -- Added to all tables:
-ALTER TABLE core_responses ADD COLUMN client_id TEXT DEFAULT 'default';
-ALTER TABLE quote_analysis ADD COLUMN client_id TEXT DEFAULT 'default';
+ALTER TABLE stage1_data_responses ADD COLUMN client_id TEXT DEFAULT 'default';
+ALTER TABLE stage2_response_labeling ADD COLUMN client_id TEXT DEFAULT 'default';
 ALTER TABLE findings ADD COLUMN client_id TEXT DEFAULT 'default';
 -- ... (all other tables)
 ```
@@ -77,9 +77,9 @@ def normalize_response_id(company: str, interviewee: str, chunk_index: int, clie
 
 #### 2. **Database Methods** (`supabase_database.py`)
 ```python
-def get_core_responses(self, filters: Optional[Dict] = None, client_id: str = 'default') -> pd.DataFrame:
+def get_stage1_data_responses(self, filters: Optional[Dict] = None, client_id: str = 'default') -> pd.DataFrame:
     """Get core responses from Supabase, filtered by client_id for data siloing"""
-    query = self.supabase.table('core_responses').select('*')
+    query = self.supabase.table('stage1_data_responses').select('*')
     
     # Always filter by client_id for data siloing
     query = query.eq('client_id', client_id)
@@ -135,16 +135,16 @@ python run_stage2.py
 ### Check Database:
 ```sql
 -- Should show all quotes, not just 1
-SELECT COUNT(*) FROM core_responses WHERE client_id = 'your_client_id';
+SELECT COUNT(*) FROM stage1_data_responses WHERE client_id = 'your_client_id';
 
 -- Should show proper client separation
-SELECT client_id, COUNT(*) FROM core_responses GROUP BY client_id;
+SELECT client_id, COUNT(*) FROM stage1_data_responses GROUP BY client_id;
 ```
 
 ### Check Response IDs:
 ```sql
 -- Should show unique IDs
-SELECT response_id, COUNT(*) FROM core_responses GROUP BY response_id HAVING COUNT(*) > 1;
+SELECT response_id, COUNT(*) FROM stage1_data_responses GROUP BY response_id HAVING COUNT(*) > 1;
 ```
 
 ## 📝 **Files Modified**

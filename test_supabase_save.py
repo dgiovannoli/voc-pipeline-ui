@@ -70,7 +70,7 @@ def test_supabase_save():
     # Verify the data is in the database
     print(f"\n🔍 Verifying data in database...")
     try:
-        all_responses = db.get_core_responses(client_id=client_id)
+        all_responses = db.get_stage1_data_responses(client_id=client_id)
         print(f"📊 Total responses in database for client '{client_id}': {len(all_responses)}")
         
         if len(all_responses) > 0:

@@ -56,8 +56,8 @@ def test_supabase_connection():
             print("✅ Supabase connection successful")
             
             # Test client_id filtering
-            core_responses = db.get_core_responses(client_id='test_client')
-            print(f"✅ Retrieved {len(core_responses)} responses for test_client")
+            stage1_data_responses = db.get_stage1_data_responses(client_id='test_client')
+            print(f"✅ Retrieved {len(stage1_data_responses)} responses for test_client")
             
             return True
         else:

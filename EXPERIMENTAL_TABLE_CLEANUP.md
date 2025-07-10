@@ -3,15 +3,15 @@
 ## 📊 Analysis Results
 
 ### Core Pipeline (Stages 1-4) - KEEP
-- ✅ **core_responses** - Essential for data ingestion
-- ✅ **enhanced_findings** - Essential for findings generation
+- ✅ **stage1_data_responses** - Essential for data ingestion
+- ✅ **stage3_findings** - Essential for findings generation
 - ✅ **themes** - Essential for theme generation
 
 ### Experimental/Legacy Tables - REMOVE
 - ⚠️ **scorecard_themes** - Stage 4B experimental feature
 - ⚠️ **executive_themes** - Stage 5 (not in core pipeline)
 - ⚠️ **criteria_scorecard** - Stage 5 (not in core pipeline)
-- ⚠️ **quote_analysis** - Stage 2 (not used in current core pipeline)
+- ⚠️ **stage2_response_labeling** - Stage 2 (not used in current core pipeline)
 
 ## 🎯 Phase 3: Database Cleanup (Updated)
 
@@ -23,9 +23,9 @@ ALTER TABLE themes DROP COLUMN IF EXISTS semantic_group_id;
 ALTER TABLE themes DROP COLUMN IF EXISTS scorecard_theme_id;
 ALTER TABLE themes DROP COLUMN IF EXISTS synthesis_theme_id;
 
--- Remove unused columns from enhanced_findings table
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
-ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
+-- Remove unused columns from stage3_findings table
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS scorecard_criterion_priority;
+ALTER TABLE stage3_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
 ```
 
 ### Step 2: Remove Experimental Tables
@@ -34,7 +34,7 @@ ALTER TABLE enhanced_findings DROP COLUMN IF EXISTS sentiment_alignment_score;
 DROP TABLE IF EXISTS scorecard_themes;
 DROP TABLE IF EXISTS executive_themes;
 DROP TABLE IF EXISTS criteria_scorecard;
-DROP TABLE IF EXISTS quote_analysis;
+DROP TABLE IF EXISTS stage2_response_labeling;
 ```
 
 ## 🔍 Verification Before Removal
@@ -45,7 +45,7 @@ DROP TABLE IF EXISTS quote_analysis;
 grep -r "scorecard_themes" app.py
 grep -r "executive_themes" app.py
 grep -r "criteria_scorecard" app.py
-grep -r "quote_analysis" app.py
+grep -r "stage2_response_labeling" app.py
 ```
 
 ### Check Code Dependencies

@@ -345,7 +345,7 @@ def run_stage3_analysis():
     try:
         client_id = get_client_id()  # Use helper function
         analyzer = Stage3FindingsAnalyzer()
-        result = analyzer.process_enhanced_findings(client_id=client_id)
+        result = analyzer.process_stage3_findings(client_id=client_id)
         return result
     except Exception as e:
         st.error(f"❌ Stage 3 analysis failed: {e}")
@@ -358,7 +358,7 @@ def get_stage3_summary():
     
     try:
         client_id = get_client_id()  # Use helper function
-        summary = db.get_enhanced_findings_summary(client_id=client_id)
+        summary = db.get_stage3_findings_summary(client_id=client_id)
         return summary
     except Exception as e:
         st.error(f"❌ Failed to get enhanced findings summary: {e}")
@@ -450,24 +450,24 @@ def run_stage4_analysis():
         from stage4_theme_analyzer import Stage4ThemeAnalyzer
         client_id = get_client_id()  # Use helper function
         analyzer = Stage4ThemeAnalyzer()
-        result = analyzer.process_themes(client_id=client_id)
+        result = analyzer.process_stage4_themes(client_id=client_id)
         return result
     except Exception as e:
         st.error(f"Stage 4 analysis failed: {e}")
         return {"status": "error", "message": str(e)}
 
 def get_stage4_summary():
-    """Get Stage 4 themes summary"""
+    """Get Stage 4 stage4_themes summary"""
     try:
         client_id = get_client_id()  # Use helper function
         db = SupabaseDatabase()
-        return db.get_themes_summary(client_id=client_id)
+        return db.get_stage4_themes_summary(client_id=client_id)
     except Exception as e:
         st.error(f"Failed to get Stage 4 summary: {e}")
         return {}
 
-def show_stage4_themes():
-    """Display Stage 4 themes analysis"""
+def show_stage4_stage4_themes():
+    """Display Stage 4 stage4_themes analysis"""
     st.subheader("🎯 Stage 4: Theme Generation")
     
     # Get summary
@@ -477,34 +477,34 @@ def show_stage4_themes():
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Total Themes", summary.get('total_themes', 0))
+        st.metric("Total Themes", summary.get('total_stage4_themes', 0))
     
     with col2:
         st.metric("High Strength", summary.get('high_strength', 0))
     
     with col3:
-        st.metric("Competitive", summary.get('competitive_themes', 0))
+        st.metric("Competitive", summary.get('competitive_stage4_themes', 0))
     
     with col4:
         st.metric("Companies", summary.get('companies_covered', 0))
     
     # Run analysis button
     if st.button("🚀 Generate Themes", type="primary"):
-        with st.spinner("Generating themes from findings..."):
+        with st.spinner("Generating stage4_themes from findings..."):
             result = run_stage4_analysis()
             
             if result.get("status") == "success":
-                st.success(f"✅ Generated {result.get('themes_generated', 0)} themes!")
+                st.success(f"✅ Generated {result.get('stage4_themes_generated', 0)} stage4_themes!")
                 st.rerun()
             else:
                 st.error(f"❌ Theme generation failed: {result.get('message', 'Unknown error')}")
     
-    # Display themes
+    # Display stage4_themes
     client_id = get_client_id()  # Use helper function
     db = SupabaseDatabase()
-    themes_df = db.get_themes(client_id=client_id)
+    stage4_themes_df = db.get_stage4_themes(client_id=client_id)
     
-    if not themes_df.empty:
+    if not stage4_themes_df.empty:
         st.subheader("📊 Generated Themes")
         
         # Filter options
@@ -513,13 +513,13 @@ def show_stage4_themes():
         with col1:
             strength_filter = st.selectbox(
                 "Filter by Strength",
-                ["All"] + list(themes_df['theme_strength'].unique())
+                ["All"] + list(stage4_themes_df['theme_strength'].unique())
             )
         
         with col2:
             category_filter = st.selectbox(
                 "Filter by Category",
-                ["All"] + list(themes_df['theme_category'].unique())
+                ["All"] + list(stage4_themes_df['theme_category'].unique())
             )
         
         with col3:
@@ -529,7 +529,7 @@ def show_stage4_themes():
             )
         
         # Apply filters
-        filtered_df = themes_df.copy()
+        filtered_df = stage4_themes_df.copy()
         
         if strength_filter != "All":
             filtered_df = filtered_df[filtered_df['theme_strength'] == strength_filter]
@@ -541,7 +541,7 @@ def show_stage4_themes():
             competitive_flag = competitive_filter == "Yes"
             filtered_df = filtered_df[filtered_df['competitive_flag'] == competitive_flag]
         
-        # Display themes
+        # Display stage4_themes
         for _, theme in filtered_df.iterrows():
             with st.expander(f"🎯 {theme['theme_statement'][:100]}..."):
                 col1, col2 = st.columns([2, 1])
@@ -586,19 +586,19 @@ def show_stage4_themes():
                                 st.caption(attribution)
                     else:
                         st.warning("No detailed quote information available for this theme.")
-        # Export themes
+        # Export stage4_themes
         if st.button("📥 Export Themes"):
             csv = filtered_df.to_csv(index=False)
             st.download_button(
                 label="📥 Download Themes CSV",
                 data=csv,
-                file_name=f"themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                file_name=f"stage4_themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
-                key="download_themes"
+                key="download_stage4_themes"
             )
     
     else:
-        st.info("No themes generated yet. Run Stage 4 analysis to generate themes from findings.")
+        st.info("No stage4_themes generated yet. Run Stage 4 analysis to generate stage4_themes from findings.")
 
 def get_stage5_summary():
     """Get Stage 5 executive synthesis summary"""
@@ -621,16 +621,16 @@ def show_stage5_synthesis():
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Executive Themes", summary.get('total_executive_themes', 0))
+        st.metric("Executive Themes", summary.get('total_executive_stage4_themes', 0))
     
     with col2:
-        st.metric("High Impact", summary.get('high_impact_themes', 0))
+        st.metric("High Impact", summary.get('high_impact_stage4_themes', 0))
     
     with col3:
         st.metric("Presentation Ready", summary.get('presentation_ready', 0))
     
     with col4:
-        st.metric("Competitive", summary.get('competitive_themes', 0))
+        st.metric("Competitive", summary.get('competitive_stage4_themes', 0))
     
     # Generate synthesis button
     if st.button("🚀 Generate Executive Synthesis", type="primary"):
@@ -639,17 +639,17 @@ def show_stage5_synthesis():
             result = run_stage5_analysis(client_id=client_id)
             
             if result.get("status") == "success":
-                st.success(f"✅ Generated {result.get('executive_themes_generated', 0)} executive themes!")
+                st.success(f"✅ Generated {result.get('executive_stage4_themes_generated', 0)} executive stage4_themes!")
                 st.rerun()
             else:
                 st.error(f"❌ Synthesis failed: {result.get('message', 'Unknown error')}")
     
-    # Display executive themes
+    # Display executive stage4_themes
     client_id = get_client_id()  # Use helper function
     db = SupabaseDatabase()
-    themes_df = db.get_executive_themes(client_id=client_id)
+    stage4_themes_df = db.get_executive_stage4_themes(client_id=client_id)
     
-    if not themes_df.empty:
+    if not stage4_themes_df.empty:
         st.subheader("📊 Executive Themes")
         
         # Filter options
@@ -658,23 +658,23 @@ def show_stage5_synthesis():
         with col1:
             impact_filter = st.selectbox(
                 "Filter by Impact",
-                ["All"] + list(themes_df['business_impact_level'].unique())
+                ["All"] + list(stage4_themes_df['business_impact_level'].unique())
             )
         
         with col2:
             readiness_filter = st.selectbox(
                 "Filter by Readiness",
-                ["All"] + list(themes_df['executive_readiness'].unique())
+                ["All"] + list(stage4_themes_df['executive_readiness'].unique())
             )
         
         with col3:
             category_filter = st.selectbox(
                 "Filter by Category",
-                ["All"] + list(themes_df['theme_category'].unique())
+                ["All"] + list(stage4_themes_df['theme_category'].unique())
             )
         
         # Apply filters
-        filtered_df = themes_df.copy()
+        filtered_df = stage4_themes_df.copy()
         
         if impact_filter != "All":
             filtered_df = filtered_df[filtered_df['business_impact_level'] == impact_filter]
@@ -685,7 +685,7 @@ def show_stage5_synthesis():
         if category_filter != "All":
             filtered_df = filtered_df[filtered_df['theme_category'] == category_filter]
         
-        # Display themes
+        # Display stage4_themes
         for _, theme in filtered_df.iterrows():
             with st.expander(f"🎯 {theme['theme_headline'][:100]}..."):
                 col1, col2 = st.columns([2, 1])
@@ -717,19 +717,19 @@ def show_stage5_synthesis():
                     if theme['executive_readiness'] == 'Presentation':
                         st.info("📋 Presentation Ready")
         
-        # Export themes
+        # Export stage4_themes
         if st.button("📥 Export Executive Themes"):
             csv = filtered_df.to_csv(index=False)
             st.download_button(
                 label="📥 Download Executive Themes CSV",
                 data=csv,
-                file_name=f"executive_themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                file_name=f"executive_stage4_themes_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
                 mime="text/csv",
-                key="download_executive_themes"
+                key="download_executive_stage4_themes"
             )
     
     else:
-        st.info("No executive themes generated yet. Run Stage 5 analysis to generate executive synthesis.")
+        st.info("No executive stage4_themes generated yet. Run Stage 5 analysis to generate executive synthesis.")
 
 def show_stage5_criteria_scorecard():
     """Display Stage 5 criteria scorecard"""
@@ -1089,7 +1089,7 @@ OUTPUT: Just the finding text, no additional formatting.
     with tab4:
         st.subheader("🎨 Stage 4: Theme Generation")
         st.markdown("""
-        **Purpose**: Identify recurring patterns across companies and generate executive-ready themes
+        **Purpose**: Identify recurring patterns across companies and generate executive-ready stage4_themes
         
         **Theme Categories**:
         - **Barrier**: Obstacles preventing success or adoption
@@ -1103,15 +1103,15 @@ OUTPUT: Just the finding text, no additional formatting.
         stage4_prompt = '''
 You are a senior research consultant for Buried Wins, specializing in executive communication for C-suite B2B SaaS clients.
 
-TASK: Analyze findings data to identify recurring patterns and generate executive-ready themes.
+TASK: Analyze findings data to identify recurring patterns and generate executive-ready stage4_themes.
 
 FINDINGS DATA:
 {findings_summary}
 
 REQUIREMENTS:
-1. **Pattern Recognition**: Identify recurring themes across multiple companies
+1. **Pattern Recognition**: Identify recurring stage4_themes across multiple companies
 2. **Executive Focus**: Focus on business impact and strategic implications
-3. **Evidence-Based**: Support themes with specific quotes and data
+3. **Evidence-Based**: Support stage4_themes with specific quotes and data
 4. **Actionable Insights**: Provide clear business implications
 
 THEME STRUCTURE:
@@ -1123,7 +1123,7 @@ THEME STRUCTURE:
 
 OUTPUT FORMAT (JSON only):
 {
-    "themes": [
+    "stage4_themes": [
         {
             "theme_statement": "Executive-ready insight",
             "theme_category": "Barrier|Opportunity|Strategic|Functional|Competitive",
@@ -1167,11 +1167,11 @@ OUTPUT FORMAT (JSON only):
     with tab5:
         st.subheader("🏆 Stage 5: Executive Synthesis")
         st.markdown("""
-        **Purpose**: Transform themes into C-suite ready narratives with criteria scorecard integration
+        **Purpose**: Transform stage4_themes into C-suite ready narratives with criteria scorecard integration
         
         **Executive Framework**:
         - **Punch Then Explain**: Bold headline + concise business narrative
-        - **Data-Anchored**: Include specific metrics from themes and criteria scorecard
+        - **Data-Anchored**: Include specific metrics from stage4_themes and criteria scorecard
         - **Business Tension**: Highlight strategic implications and performance gaps
         - **Executive Relevance**: Focus on decision-making impact and priority actions
         - **Criteria Integration**: Reference specific criteria performance where relevant
@@ -1207,7 +1207,7 @@ TASK: Create an executive-ready synthesis that incorporates both theme insights 
 
 REQUIREMENTS:
 1. **Punch Then Explain**: Bold headline + concise business narrative
-2. **Data-Anchored**: Include specific metrics from both themes and criteria scorecard
+2. **Data-Anchored**: Include specific metrics from both stage4_themes and criteria scorecard
 3. **Business Tension**: Highlight strategic implications and performance gaps
 4. **Executive Relevance**: Focus on decision-making impact and priority actions
 5. **Criteria Integration**: Reference specific criteria performance where relevant
@@ -1226,7 +1226,7 @@ OUTPUT FORMAT (JSON only):
 IMPORTANT: 
 - Use exact quotes with response_id prefixes
 - Reference specific criteria performance ratings (EXCEPTIONAL, STRONG, GOOD, NEEDS ATTENTION, CRITICAL ISSUE)
-- Connect themes to criteria scorecard insights
+- Connect stage4_themes to criteria scorecard insights
 - Focus on business impact, not technical details
 - Use Buried Wins editorial style: conversational authority, clarity over cleverness, punch then explain
         '''
@@ -1315,7 +1315,7 @@ def show_welcome_screen():
     2. **📊 Extract** customer quotes and responses
     3. **🎯 Label** quotes against 10 evaluation criteria
     4. **🔍 Identify** key findings and insights
-    5. **🎨 Generate** themes and patterns
+    5. **🎨 Generate** stage4_themes and patterns
     6. **📈 Create** executive synthesis and recommendations
     
     **Key Features:**
@@ -1343,7 +1343,7 @@ def show_welcome_screen():
         st.markdown("""
         **2. Analyze & Insights**
         - Run "Label Quotes" to evaluate criteria
-        - Identify findings and generate themes
+        - Identify findings and generate stage4_themes
         - Create executive summary
         """)
     
@@ -1489,7 +1489,7 @@ def show_database_management():
             st.subheader(f"📊 Current Client Data: {st.session_state.client_id}")
             
             # Get current client data
-            current_df = db.get_core_responses(client_id=st.session_state.client_id)
+            current_df = db.get_stage1_data_responses(client_id=st.session_state.client_id)
             
             if not current_df.empty:
                 col1, col2, col3 = st.columns(3)
@@ -1522,7 +1522,7 @@ def show_database_management():
 def show_labeled_quotes():
     st.subheader("📋 Labeled Quotes (Stage 2 Results)")
     client_id = get_client_id()  # Use helper function
-    df = db.get_quote_analysis(client_id=client_id)
+    df = db.get_stage2_response_labeling(client_id=client_id)
     if df.empty:
         st.info("No labeled quotes found. Run Stage 2 analysis.")
         return
@@ -1589,13 +1589,13 @@ def show_labeled_quotes():
 def show_findings():
     st.subheader("🔍 Findings (Stage 3 Results)")
     client_id = get_client_id()  # Use helper function
-    df = db.get_enhanced_findings(client_id=client_id)
+    df = db.get_stage3_findings(client_id=client_id)
     if df.empty:
         st.info("No findings found. Run Stage 3 analysis.")
         return
     display_cols = [
         'criterion', 'finding_type', 'priority_level', 'enhanced_confidence',
-        'criteria_met', 'summary', 'selected_quotes', 'themes', 'deal_impacts'
+        'criteria_met', 'summary', 'selected_quotes', 'stage4_themes', 'deal_impacts'
     ]
     display_cols = [col for col in display_cols if col in df.columns]
     st.dataframe(df[display_cols], use_container_width=True)
@@ -1935,7 +1935,7 @@ def main():
                                 # Clear existing findings
                                 try:
                                     client_id = get_client_id()
-                                    db.supabase.table('enhanced_findings').delete().eq('client_id', client_id).execute()
+                                    db.supabase.table('stage3_findings').delete().eq('client_id', client_id).execute()
                                     st.success("✅ Cleared existing findings")
                                     
                                     # Run fresh analysis
@@ -1970,18 +1970,18 @@ def main():
             if not findings_summary or findings_summary.get('total_findings', 0) == 0:
                 st.info("📊 Please run Stage 3 findings analysis first")
             else:
-                # Show current themes status
-                themes_summary = get_stage4_summary()
-                if themes_summary:
-                    st.success(f"✅ Generated {themes_summary.get('total_themes', 0)} interview themes")
-                    # Display interview-based themes
-                    show_stage4_themes()
+                # Show current stage4_themes status
+                stage4_themes_summary = get_stage4_summary()
+                if stage4_themes_summary:
+                    st.success(f"✅ Generated {stage4_themes_summary.get('total_stage4_themes', 0)} interview stage4_themes")
+                    # Display interview-based stage4_themes
+                    show_stage4_stage4_themes()
                     # CTA button to go to Stage 5
                     if st.button("📈 Continue to Stage 5: Executive Summary", type="primary", help="Move to the final stage to create executive synthesis"):
                         st.session_state.current_step = 5
                         st.rerun()
                 else:
-                    st.info("📊 No interview themes available yet. Run the analysis to generate themes.")
+                    st.info("📊 No interview stage4_themes available yet. Run the analysis to generate stage4_themes.")
 
     elif page == "stage4b":
         st.title("🗂️ Stage 4B: Generate Scorecard Themes")
@@ -1994,26 +1994,26 @@ def main():
             if not stage2_summary or stage2_summary.get('quotes_with_scores', 0) == 0:
                 st.info("📊 Please run Stage 2 quote scoring first")
             else:
-                from scorecard_theme_ui import display_scorecard_themes
+                from scorecard_theme_ui import display_scorecard_stage4_themes
                 client_id = get_client_id()
                 db = SupabaseDatabase()
                 try:
-                    response = db.supabase.table('scorecard_themes').select('*').eq('client_id', client_id).execute()
-                    existing_themes = response.data
+                    response = db.supabase.table('scorecard_stage4_themes').select('*').eq('client_id', client_id).execute()
+                    existing_stage4_themes = response.data
                 except Exception as e:
-                    existing_themes = []
-                if existing_themes:
-                    st.success(f"✅ Found {len(existing_themes)} existing scorecard themes")
-                    display_scorecard_themes(client_id)
+                    existing_stage4_themes = []
+                if existing_stage4_themes:
+                    st.success(f"✅ Found {len(existing_stage4_themes)} existing scorecard stage4_themes")
+                    display_scorecard_stage4_themes(client_id)
                 else:
-                    st.info("📊 No scorecard themes found. Generate them using the button below.")
-                    if st.button("🚀 Generate Scorecard Themes", type="primary", help="Generate scorecard-driven themes with semantic merging"):
+                    st.info("📊 No scorecard stage4_themes found. Generate them using the button below.")
+                    if st.button("🚀 Generate Scorecard Themes", type="primary", help="Generate scorecard-driven stage4_themes with semantic merging"):
                         from stage4b_scorecard_analyzer import Stage4BScorecardAnalyzer
-                        with st.spinner("Generating scorecard themes with semantic merging..."):
+                        with st.spinner("Generating scorecard stage4_themes with semantic merging..."):
                             analyzer = Stage4BScorecardAnalyzer()
-                            result = analyzer.process_scorecard_themes(client_id=client_id)
+                            result = analyzer.process_scorecard_stage4_themes(client_id=client_id)
                             if result and result.get('status') == 'success':
-                                st.success(f"✅ Scorecard theme generation complete! Generated {result.get('scorecard_themes_generated', 0)} themes")
+                                st.success(f"✅ Scorecard theme generation complete! Generated {result.get('scorecard_stage4_themes_generated', 0)} stage4_themes")
                                 st.rerun()
                             else:
                                 st.error(f"❌ Scorecard theme generation failed: {result.get('message', 'Unknown error')}")
@@ -2029,18 +2029,18 @@ def main():
             if not findings_summary or findings_summary.get('total_findings', 0) == 0:
                 st.info("📊 Please run Stage 3 findings analysis first")
             else:
-                # Show current themes status
-                themes_summary = get_stage4_summary()
-                if themes_summary:
-                    st.success(f"✅ Generated {themes_summary.get('total_themes', 0)} themes")
+                # Show current stage4_themes status
+                stage4_themes_summary = get_stage4_summary()
+                if stage4_themes_summary:
+                    st.success(f"✅ Generated {stage4_themes_summary.get('total_stage4_themes', 0)} stage4_themes")
                     # Only keep the main theme display section
-                    show_stage4_themes()
+                    show_stage4_stage4_themes()
                     # CTA button to go to Stage 5
                     if st.button("📈 Continue to Stage 5: Executive Summary", type="primary", help="Move to the final stage to create executive synthesis"):
                         st.session_state.current_step = 5
                         st.rerun()
                 else:
-                    st.info("📊 No themes available yet. Run the analysis to generate themes.")
+                    st.info("📊 No stage4_themes available yet. Run the analysis to generate stage4_themes.")
     
     elif page == "stage5":
         st.title("📈 Stage 5: Executive Synthesis")
@@ -2049,8 +2049,8 @@ def main():
             st.error("❌ Database not available")
         else:
             # Check if we have Stage 4 data
-            themes_summary = get_stage4_summary()
-            if not themes_summary or themes_summary.get('total_themes', 0) == 0:
+            stage4_themes_summary = get_stage4_summary()
+            if not stage4_themes_summary or stage4_themes_summary.get('total_stage4_themes', 0) == 0:
                 st.info("📊 Please run Stage 4 theme generation first")
             else:
                 # Show current synthesis status
@@ -2060,7 +2060,7 @@ def main():
                     
                     col1, col2, col3 = st.columns(3)
                     with col1:
-                        st.metric("Executive Themes", synthesis_summary.get('executive_themes', 0))
+                        st.metric("Executive Themes", synthesis_summary.get('executive_stage4_themes', 0))
                     with col2:
                         st.metric("Priority Areas", synthesis_summary.get('priority_areas', 0))
                     with col3:
@@ -2077,7 +2077,7 @@ def main():
                                 st.error("❌ Executive synthesis failed")
                     
                     # Show synthesis if available
-                    if synthesis_summary.get('executive_themes', 0) > 0:
+                    if synthesis_summary.get('executive_stage4_themes', 0) > 0:
                         st.subheader("📈 Executive Summary")
                         show_stage5_synthesis()
                         

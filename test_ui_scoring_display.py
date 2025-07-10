@@ -22,10 +22,10 @@ def test_ui_scoring_display():
     print("\n📊 Test 1: Quote Analysis Data Structure")
     print("-" * 40)
     
-    quote_analysis = db.supabase.table('quote_analysis').select('*').eq('client_id', 'Rev').limit(5).execute()
+    stage2_response_labeling = db.supabase.table('stage2_response_labeling').select('*').eq('client_id', 'Rev').limit(5).execute()
     
-    if quote_analysis.data:
-        sample = quote_analysis.data[0]
+    if stage2_response_labeling.data:
+        sample = stage2_response_labeling.data[0]
         print("✅ Sample quote analysis data:")
         print(f"  - quote_id: {sample.get('quote_id', 'N/A')}")
         print(f"  - criterion: {sample.get('criterion', 'N/A')}")
@@ -49,7 +49,7 @@ def test_ui_scoring_display():
     print("\n📊 Test 2: Sentiment Distribution")
     print("-" * 40)
     
-    sentiment_counts = db.supabase.table('quote_analysis').select('sentiment').eq('client_id', 'Rev').execute()
+    sentiment_counts = db.supabase.table('stage2_response_labeling').select('sentiment').eq('client_id', 'Rev').execute()
     
     if sentiment_counts.data:
         sentiment_df = pd.DataFrame(sentiment_counts.data)
@@ -77,7 +77,7 @@ def test_ui_scoring_display():
     print("\n📊 Test 3: Relevance Score Distribution")
     print("-" * 40)
     
-    relevance_scores = db.supabase.table('quote_analysis').select('relevance_score').eq('client_id', 'Rev').execute()
+    relevance_scores = db.supabase.table('stage2_response_labeling').select('relevance_score').eq('client_id', 'Rev').execute()
     
     if relevance_scores.data:
         score_df = pd.DataFrame(relevance_scores.data)
@@ -107,7 +107,7 @@ def test_ui_scoring_display():
     print("-" * 40)
     
     # Get quote analysis data for UI display
-    quote_df = db.get_quote_analysis(client_id='Rev')
+    quote_df = db.get_stage2_response_labeling(client_id='Rev')
     
     if not quote_df.empty:
         print("✅ Quote analysis data available for UI display")

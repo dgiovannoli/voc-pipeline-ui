@@ -6,8 +6,8 @@ from supabase_database import SupabaseDatabase
 
 load_dotenv()
 
-def fix_enhanced_findings_client_id():
-    """Fix client_id issues in enhanced_findings table"""
+def fix_stage3_findings_client_id():
+    """Fix client_id issues in stage3_findings table"""
     
     print("🔧 FIXING ENHANCED FINDINGS CLIENT ID")
     print("=" * 50)
@@ -17,7 +17,7 @@ def fix_enhanced_findings_client_id():
         
         # Get all findings with 'default' client_id
         print("📊 Finding all 'default' client_id findings...")
-        result = db.supabase.table('enhanced_findings').select('*').eq('client_id', 'default').execute()
+        result = db.supabase.table('stage3_findings').select('*').eq('client_id', 'default').execute()
         default_findings = result.data
         
         if not default_findings:
@@ -34,7 +34,7 @@ def fix_enhanced_findings_client_id():
             update_data = {'client_id': 'Rev'}
             
             try:
-                db.supabase.table('enhanced_findings').update(update_data).eq('id', finding_id).execute()
+                db.supabase.table('stage3_findings').update(update_data).eq('id', finding_id).execute()
                 print(f"✅ Updated finding {finding_id}: {finding.get('title', 'N/A')}")
             except Exception as e:
                 print(f"❌ Failed to update finding {finding_id}: {e}")
@@ -43,7 +43,7 @@ def fix_enhanced_findings_client_id():
         
         # Verify the fix
         print("\n🔍 Verifying the fix...")
-        result = db.supabase.table('enhanced_findings').select('*').eq('client_id', 'default').execute()
+        result = db.supabase.table('stage3_findings').select('*').eq('client_id', 'default').execute()
         remaining_default = len(result.data)
         
         if remaining_default == 0:
@@ -53,7 +53,7 @@ def fix_enhanced_findings_client_id():
         
         # Show final distribution
         print("\n📊 Final client_id distribution:")
-        result = db.supabase.table('enhanced_findings').select('client_id').execute()
+        result = db.supabase.table('stage3_findings').select('client_id').execute()
         all_findings = result.data
         
         client_counts = {}
@@ -68,4 +68,4 @@ def fix_enhanced_findings_client_id():
         print(f"❌ Error fixing client ID issues: {e}")
 
 if __name__ == "__main__":
-    fix_enhanced_findings_client_id() 
+    fix_stage3_findings_client_id() 

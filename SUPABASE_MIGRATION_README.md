@@ -65,10 +65,10 @@ db = SupabaseDatabase()
 db.save_core_response(response_data)
 
 # Get core responses
-responses = db.get_core_responses()
+responses = db.get_stage1_data_responses()
 
 # Get quote analysis
-analysis = db.get_quote_analysis()
+analysis = db.get_stage2_response_labeling()
 
 # Get summary statistics
 summary = db.get_summary_statistics()
@@ -145,8 +145,8 @@ If you encounter issues:
 2. Verify your environment variables
 3. Check the application logs for detailed error messages
 4. Ensure your Supabase project has the required tables:
-   - `core_responses`
-   - `quote_analysis`
+   - `stage1_data_responses`
+   - `stage2_response_labeling`
    - `processing_metadata`
 
 ## Next Steps

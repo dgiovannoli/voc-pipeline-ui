@@ -3,7 +3,7 @@
 """
 Import Scorecard Themes from CSV
 
-This script imports scorecard themes from CSV format into the database
+This script imports scorecard stage4_themes from CSV format into the database
 with proper formatting and quality scoring.
 """
 
@@ -17,14 +17,14 @@ from supabase_database import SupabaseDatabase
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def import_scorecard_themes_from_csv(csv_path: str, client_id: str = 'default') -> Dict:
-    """Import scorecard themes from CSV file"""
-    logger.info(f"📥 Importing scorecard themes from {csv_path}")
+def import_scorecard_stage4_themes_from_csv(csv_path: str, client_id: str = 'default') -> Dict:
+    """Import scorecard stage4_themes from CSV file"""
+    logger.info(f"📥 Importing scorecard stage4_themes from {csv_path}")
     
     try:
         # Read CSV file
         df = pd.read_csv(csv_path)
-        logger.info(f"✅ Loaded {len(df)} themes from CSV")
+        logger.info(f"✅ Loaded {len(df)} stage4_themes from CSV")
         
         # Validate required columns
         required_columns = ['Theme Title', 'Criterion', 'Sentiment', 'Companies', 'Quotes', 'Quality Score', 'Impact Score']
@@ -34,35 +34,35 @@ def import_scorecard_themes_from_csv(csv_path: str, client_id: str = 'default') 
             logger.error(f"❌ Missing required columns: {missing_columns}")
             return {"status": "error", "message": f"Missing columns: {missing_columns}"}
         
-        # Process themes
-        themes = []
+        # Process stage4_themes
+        stage4_themes = []
         for idx, row in df.iterrows():
             theme = process_csv_theme(row, client_id)
             if theme:
-                themes.append(theme)
+                stage4_themes.append(theme)
         
-        logger.info(f"✅ Processed {len(themes)} themes")
+        logger.info(f"✅ Processed {len(stage4_themes)} stage4_themes")
         
         # Save to database
-        if themes:
-            save_success = save_themes_to_database(themes)
+        if stage4_themes:
+            save_success = save_stage4_themes_to_database(stage4_themes)
             if save_success:
                 logger.info("✅ Themes saved to database successfully")
                 return {
                     "status": "success",
-                    "themes_imported": len(themes),
-                    "total_themes": len(df),
-                    "processing_errors": len(df) - len(themes)
+                    "stage4_themes_imported": len(stage4_themes),
+                    "total_stage4_themes": len(df),
+                    "processing_errors": len(df) - len(stage4_themes)
                 }
             else:
-                logger.error("❌ Failed to save themes to database")
-                return {"status": "save_error", "message": "Failed to save themes"}
+                logger.error("❌ Failed to save stage4_themes to database")
+                return {"status": "save_error", "message": "Failed to save stage4_themes"}
         else:
-            logger.warning("⚠️ No valid themes to import")
-            return {"status": "no_valid_themes", "message": "No valid themes found"}
+            logger.warning("⚠️ No valid stage4_themes to import")
+            return {"status": "no_valid_stage4_themes", "message": "No valid stage4_themes found"}
             
     except Exception as e:
-        logger.error(f"❌ Error importing themes: {e}")
+        logger.error(f"❌ Error importing stage4_themes: {e}")
         return {"status": "error", "message": str(e)}
 
 def process_csv_theme(row: pd.Series, client_id: str) -> Dict:
@@ -232,24 +232,24 @@ def generate_competitive_positioning_from_csv(sentiment: str) -> str:
     else:
         return "Competitive gap requiring strategic investment"
 
-def save_themes_to_database(themes: List[Dict]) -> bool:
-    """Save themes to database"""
-    logger.info(f"💾 Saving {len(themes)} themes to database...")
+def save_stage4_themes_to_database(stage4_themes: List[Dict]) -> bool:
+    """Save stage4_themes to database"""
+    logger.info(f"💾 Saving {len(stage4_themes)} stage4_themes to database...")
     
     try:
         db = SupabaseDatabase()
         
-        # Insert themes in batches
+        # Insert stage4_themes in batches
         batch_size = 10
-        for i in range(0, len(themes), batch_size):
-            batch = themes[i:i + batch_size]
+        for i in range(0, len(stage4_themes), batch_size):
+            batch = stage4_themes[i:i + batch_size]
             
             # Convert supporting_quotes to JSON string
             for theme in batch:
                 if isinstance(theme['supporting_quotes'], list):
                     theme['supporting_quotes'] = json.dumps(theme['supporting_quotes'])
             
-            response = db.supabase.table('scorecard_themes').insert(batch).execute()
+            response = db.supabase.table('scorecard_stage4_themes').insert(batch).execute()
             
             if not response.data:
                 logger.error(f"Failed to save batch {i//batch_size + 1}")
@@ -259,24 +259,24 @@ def save_themes_to_database(themes: List[Dict]) -> bool:
         return True
         
     except Exception as e:
-        logger.error(f"Error saving themes: {e}")
+        logger.error(f"Error saving stage4_themes: {e}")
         return False
 
 def main():
     """Main function"""
-    # Import themes from the CSV file
-    csv_path = "Context/scorecard_themes (1).csv"
+    # Import stage4_themes from the CSV file
+    csv_path = "Context/scorecard_stage4_themes (1).csv"
     client_id = "Rev"
     
-    result = import_scorecard_themes_from_csv(csv_path, client_id)
+    result = import_scorecard_stage4_themes_from_csv(csv_path, client_id)
     
     print("\n📊 IMPORT RESULTS")
     print("=" * 40)
     print(f"Status: {result['status']}")
     
     if result['status'] == 'success':
-        print(f"Themes Imported: {result['themes_imported']}")
-        print(f"Total Themes: {result['total_themes']}")
+        print(f"Themes Imported: {result['stage4_themes_imported']}")
+        print(f"Total Themes: {result['total_stage4_themes']}")
         print(f"Processing Errors: {result['processing_errors']}")
     else:
         print(f"Error: {result['message']}")

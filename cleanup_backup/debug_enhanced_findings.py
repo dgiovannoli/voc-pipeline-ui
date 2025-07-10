@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Debug script to check enhanced_findings data
+Debug script to check stage3_findings data
 """
 
 import sys
@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from supabase_database import SupabaseDatabase
 
-def debug_enhanced_findings():
+def debug_stage3_findings():
     """Debug enhanced findings data"""
     
     print("🔍 Debugging Enhanced Findings")
@@ -19,7 +19,7 @@ def debug_enhanced_findings():
     db = SupabaseDatabase()
     
     # Get enhanced findings
-    findings_df = db.get_enhanced_findings(client_id='Rev')
+    findings_df = db.get_stage3_findings(client_id='Rev')
     
     if findings_df.empty:
         print("❌ No enhanced findings found")
@@ -60,4 +60,4 @@ def debug_enhanced_findings():
             print(f"   📋 Available fields: {list(finding.keys())}")
 
 if __name__ == "__main__":
-    debug_enhanced_findings() 
+    debug_stage3_findings() 

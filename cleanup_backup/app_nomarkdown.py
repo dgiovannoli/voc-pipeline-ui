@@ -162,7 +162,7 @@ def run_stage3_analysis():
     
     try:
         client_id = get_client_id()  # Use helper function
-        summary = db.get_enhanced_findings_summary(client_id=client_id)
+        summary = db.get_stage3_findings_summary(client_id=client_id)
         return summary
     except Exception as e:
         st.error(f"  Failed to get enhanced findings summary: {e}")

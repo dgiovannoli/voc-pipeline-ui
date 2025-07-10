@@ -28,7 +28,7 @@ def test_database_creation():
                 cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
                 tables = [row[0] for row in cursor.fetchall()]
                 
-                expected_tables = ['core_responses', 'quote_analysis', 'trend_analysis']
+                expected_tables = ['stage1_data_responses', 'stage2_response_labeling', 'trend_analysis']
                 for table in expected_tables:
                     if table in tables:
                         print(f"✅ Table '{table}' exists")
@@ -104,7 +104,7 @@ def test_csv_migration():
             # Verify data in database
             with sqlite3.connect("voc_pipeline.db") as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT COUNT(*) FROM core_responses")
+                cursor.execute("SELECT COUNT(*) FROM stage1_data_responses")
                 count = cursor.fetchone()[0]
                 print(f"✅ {count} records in database")
             

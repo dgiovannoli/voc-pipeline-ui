@@ -345,7 +345,7 @@ def run_stage3_analysis():
     try:
         client_id = get_client_id()  # Use helper function
         analyzer = Stage3FindingsAnalyzer()
-        result = analyzer.process_enhanced_findings(client_id=client_id)
+        result = analyzer.process_stage3_findings(client_id=client_id)
         return result
     except Exception as e:
         st.error(f"❌ Stage 3 analysis failed: {e}")
@@ -358,7 +358,7 @@ def get_stage3_summary():
     
     try:
         client_id = get_client_id()  # Use helper function
-        summary = db.get_enhanced_findings_summary(client_id=client_id)
+        summary = db.get_stage3_findings_summary(client_id=client_id)
         return summary
     except Exception as e:
         st.error(f"❌ Failed to get enhanced findings summary: {e}")
@@ -1360,7 +1360,7 @@ def show_database_management():
             st.subheader(f"📊 Current Client Data: {st.session_state.client_id}")
             
             # Get current client data
-            current_df = db.get_core_responses(client_id=st.session_state.client_id)
+            current_df = db.get_stage1_data_responses(client_id=st.session_state.client_id)
             
             if not current_df.empty:
                 col1, col2, col3 = st.columns(3)
@@ -1393,7 +1393,7 @@ def show_database_management():
 def show_labeled_quotes():
     st.subheader("📋 Labeled Quotes (Stage 2 Results)")
     client_id = get_client_id()  # Use helper function
-    df = db.get_quote_analysis(client_id=client_id)
+    df = db.get_stage2_response_labeling(client_id=client_id)
     if df.empty:
         st.info("No labeled quotes found. Run Stage 2 analysis.")
         return
@@ -1418,7 +1418,7 @@ def show_labeled_quotes():
 def show_findings():
     st.subheader("🔍 Findings (Stage 3 Results)")
     client_id = get_client_id()  # Use helper function
-    df = db.get_enhanced_findings(client_id=client_id)
+    df = db.get_stage3_findings(client_id=client_id)
     if df.empty:
         st.info("No findings found. Run Stage 3 analysis.")
         return

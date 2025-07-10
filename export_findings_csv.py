@@ -10,7 +10,7 @@ key = os.environ.get('SUPABASE_SERVICE_KEY')
 supabase: Client = create_client(url, key)
 
 # Get all findings for client Rev
-response = supabase.table('enhanced_findings').select('*').eq('client_id', 'Rev').order('created_at', desc=True).execute()
+response = supabase.table('stage3_findings').select('*').eq('client_id', 'Rev').order('created_at', desc=True).execute()
 findings = response.data
 
 # Convert to DataFrame
@@ -46,7 +46,7 @@ print(f"\nPriority level distribution:")
 print(export_df['priority_level'].value_counts())
 
 # Export to CSV
-filename = f"enhanced_findings_export_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv"
+filename = f"stage3_findings_export_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}.csv"
 export_df.to_csv(filename, index=False)
 print(f"\nExported findings to: {filename}")
 

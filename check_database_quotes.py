@@ -20,7 +20,7 @@ def check_database_quotes():
     
     # Get themes directly from database
     try:
-        response = db.supabase.table('themes').select('*').eq('client_id', 'Rev').order('created_at', desc=True).execute()
+        response = db.supabase.table('stage4_themes').select('*').eq('client_id', 'Rev').order('created_at', desc=True).execute()
         themes_data = response.data
         
         if not themes_data:

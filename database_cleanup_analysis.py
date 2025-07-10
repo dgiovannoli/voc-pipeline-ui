@@ -22,7 +22,7 @@ class DatabaseCleanupAnalyzer:
         # Get all tables
         try:
             # Check core tables
-            core_tables = ['core_responses', 'enhanced_findings', 'themes']
+            core_tables = ['stage1_data_responses', 'stage3_findings', 'themes']
             
             for table in core_tables:
                 try:
@@ -68,7 +68,7 @@ class DatabaseCleanupAnalyzer:
         if self.tables.get('themes', {}).get('exists'):
             try:
                 # Get sample data to see which columns have values
-                result = self.db.supabase.table('themes').select('*').limit(5).execute()
+                result = self.db.supabase.table('stage4_themes').select('*').limit(5).execute()
                 if result.data:
                     sample = result.data[0]
                     used_columns = [col for col, val in sample.items() if val is not None]
@@ -83,23 +83,23 @@ class DatabaseCleanupAnalyzer:
             except Exception as e:
                 print(f"  ❌ Error analyzing themes columns: {e}")
         
-        # Check enhanced_findings table columns
-        if self.tables.get('enhanced_findings', {}).get('exists'):
+        # Check stage3_findings table columns
+        if self.tables.get('stage3_findings', {}).get('exists'):
             try:
-                result = self.db.supabase.table('enhanced_findings').select('*').limit(5).execute()
+                result = self.db.supabase.table('stage3_findings').select('*').limit(5).execute()
                 if result.data:
                     sample = result.data[0]
                     used_columns = [col for col, val in sample.items() if val is not None]
                     all_columns = list(sample.keys())
                     unused_columns = [col for col in all_columns if col not in used_columns]
                     
-                    print(f"  📊 enhanced_findings table columns:")
+                    print(f"  📊 stage3_findings table columns:")
                     print(f"    Used: {used_columns}")
                     print(f"    Potentially unused: {unused_columns}")
                     
-                    self.unused_columns['enhanced_findings'] = unused_columns
+                    self.unused_columns['stage3_findings'] = unused_columns
             except Exception as e:
-                print(f"  ❌ Error analyzing enhanced_findings columns: {e}")
+                print(f"  ❌ Error analyzing stage3_findings columns: {e}")
     
     def check_table_usage(self):
         """Check if tables are actually being used in the code"""

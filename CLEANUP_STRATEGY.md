@@ -69,7 +69,7 @@ python database_cleanup_analysis.py
 
 **Potential Actions:**
 - Drop unused tables (quote_analyses, scorecard_themes)
-- Remove unused columns from themes/enhanced_findings
+- Remove unused columns from themes/stage3_findings
 - Optimize indexes
 
 ### Phase 4: Configuration Cleanup (Low Risk)

@@ -17,7 +17,7 @@ def get_altair_law_responses():
         db = SupabaseDatabase()
         
         # Get all responses for client 'Rev'
-        responses = db.get_core_responses(client_id='Rev')
+        responses = db.get_stage1_data_responses(client_id='Rev')
         print(f"📊 Total responses for client 'Rev': {len(responses)}")
         
         # Filter for Altair Law specifically

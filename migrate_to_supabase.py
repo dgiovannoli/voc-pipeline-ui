@@ -29,12 +29,12 @@ def check_sqlite_data():
         with sqlite3.connect("voc_pipeline.db") as conn:
             cursor = conn.cursor()
             
-            # Check core_responses
-            cursor.execute("SELECT COUNT(*) FROM core_responses")
+            # Check stage1_data_responses
+            cursor.execute("SELECT COUNT(*) FROM stage1_data_responses")
             core_count = cursor.fetchone()[0]
             
-            # Check quote_analysis
-            cursor.execute("SELECT COUNT(*) FROM quote_analysis")
+            # Check stage2_response_labeling
+            cursor.execute("SELECT COUNT(*) FROM stage2_response_labeling")
             analysis_count = cursor.fetchone()[0]
             
             logger.info(f"SQLite database contains:")
@@ -42,8 +42,8 @@ def check_sqlite_data():
             logger.info(f"  - {analysis_count} quote analyses")
             
             return {
-                'core_responses': core_count,
-                'quote_analysis': analysis_count
+                'stage1_data_responses': core_count,
+                'stage2_response_labeling': analysis_count
             }
     except Exception as e:
         logger.error(f"Error checking SQLite data: {e}")
@@ -60,9 +60,9 @@ def migrate_sqlite_to_supabase():
         db = SupabaseDatabase()
         logger.info("✅ Supabase connection established")
         
-        # Migrate core_responses
+        # Migrate stage1_data_responses
         with sqlite3.connect("voc_pipeline.db") as conn:
-            core_df = pd.read_sql_query("SELECT * FROM core_responses", conn)
+            core_df = pd.read_sql_query("SELECT * FROM stage1_data_responses", conn)
             
             if not core_df.empty:
                 logger.info(f"Migrating {len(core_df)} core responses...")
@@ -88,8 +88,8 @@ def migrate_sqlite_to_supabase():
             else:
                 logger.info("No core responses to migrate")
             
-            # Migrate quote_analysis
-            analysis_df = pd.read_sql_query("SELECT * FROM quote_analysis", conn)
+            # Migrate stage2_response_labeling
+            analysis_df = pd.read_sql_query("SELECT * FROM stage2_response_labeling", conn)
             
             if not analysis_df.empty:
                 logger.info(f"Migrating {len(analysis_df)} quote analyses...")
@@ -108,7 +108,7 @@ def migrate_sqlite_to_supabase():
                         'question_relevance': row.get('question_relevance', 'unrelated')
                     }
                     
-                    if db.save_quote_analysis(analysis_data):
+                    if db.save_stage2_response_labeling(analysis_data):
                         migrated_count += 1
                 
                 logger.info(f"✅ Migrated {migrated_count} quote analyses")

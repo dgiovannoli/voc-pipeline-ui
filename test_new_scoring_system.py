@@ -22,10 +22,10 @@ def test_new_scoring_system():
     print("\n📊 Test 1: Quote Analysis Data Structure")
     print("-" * 40)
     
-    quote_analysis = db.supabase.table('quote_analysis').select('*').limit(3).execute()
+    stage2_response_labeling = db.supabase.table('stage2_response_labeling').select('*').limit(3).execute()
     
-    if quote_analysis.data:
-        sample = quote_analysis.data[0]
+    if stage2_response_labeling.data:
+        sample = stage2_response_labeling.data[0]
         print(f"✅ Sample quote analysis found")
         print(f"   - relevance_score: {sample.get('relevance_score', 'MISSING')}")
         print(f"   - sentiment: {sample.get('sentiment', 'MISSING')}")
@@ -51,7 +51,7 @@ def test_new_scoring_system():
     print("\n📊 Test 2: Enhanced Findings Data")
     print("-" * 40)
     
-    findings = db.supabase.table('enhanced_findings').select('*').limit(3).execute()
+    findings = db.supabase.table('stage3_findings').select('*').limit(3).execute()
     
     if findings.data:
         sample = findings.data[0]
@@ -81,7 +81,7 @@ def test_new_scoring_system():
     print("\n📊 Test 3: Enhanced Themes Data")
     print("-" * 40)
     
-    themes = db.supabase.table('themes').select('*').limit(3).execute()
+    themes = db.supabase.table('stage4_themes').select('*').limit(3).execute()
     
     if themes.data:
         sample = themes.data[0]
@@ -115,15 +115,15 @@ def test_new_scoring_system():
     print("-" * 40)
     
     # Count quote analyses
-    quote_count = db.supabase.table('quote_analysis').select('*', count='exact').execute()
+    quote_count = db.supabase.table('stage2_response_labeling').select('*', count='exact').execute()
     print(f"   - Quote analyses: {quote_count.count if hasattr(quote_count, 'count') else 'Unknown'}")
     
     # Count findings
-    findings_count = db.supabase.table('enhanced_findings').select('*', count='exact').execute()
+    findings_count = db.supabase.table('stage3_findings').select('*', count='exact').execute()
     print(f"   - Enhanced findings: {findings_count.count if hasattr(findings_count, 'count') else 'Unknown'}")
     
     # Count themes
-    themes_count = db.supabase.table('themes').select('*', count='exact').execute()
+    themes_count = db.supabase.table('stage4_themes').select('*', count='exact').execute()
     print(f"   - Themes: {themes_count.count if hasattr(themes_count, 'count') else 'Unknown'}")
     
     # Test 5: Check client data isolation
@@ -131,18 +131,18 @@ def test_new_scoring_system():
     print("-" * 40)
     
     # Check Rev client data
-    rev_quotes = db.supabase.table('quote_analysis').select('*').eq('client_id', 'Rev').execute()
-    rev_findings = db.supabase.table('enhanced_findings').select('*').eq('client_id', 'Rev').execute()
-    rev_themes = db.supabase.table('themes').select('*').eq('client_id', 'Rev').execute()
+    rev_quotes = db.supabase.table('stage2_response_labeling').select('*').eq('client_id', 'Rev').execute()
+    rev_findings = db.supabase.table('stage3_findings').select('*').eq('client_id', 'Rev').execute()
+    rev_themes = db.supabase.table('stage4_themes').select('*').eq('client_id', 'Rev').execute()
     
     print(f"   - Rev quote analyses: {len(rev_quotes.data)}")
     print(f"   - Rev enhanced findings: {len(rev_findings.data)}")
     print(f"   - Rev themes: {len(rev_themes.data)}")
     
     # Check default client data
-    default_quotes = db.supabase.table('quote_analysis').select('*').eq('client_id', 'default').execute()
-    default_findings = db.supabase.table('enhanced_findings').select('*').eq('client_id', 'default').execute()
-    default_themes = db.supabase.table('themes').select('*').eq('client_id', 'default').execute()
+    default_quotes = db.supabase.table('stage2_response_labeling').select('*').eq('client_id', 'default').execute()
+    default_findings = db.supabase.table('stage3_findings').select('*').eq('client_id', 'default').execute()
+    default_themes = db.supabase.table('stage4_themes').select('*').eq('client_id', 'default').execute()
     
     print(f"   - Default quote analyses: {len(default_quotes.data)}")
     print(f"   - Default enhanced findings: {len(default_findings.data)}")

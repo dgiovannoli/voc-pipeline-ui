@@ -33,7 +33,7 @@ def main():
         
         # Run enhanced analysis with specified client ID
         print("🔍 Processing scored quotes and generating enhanced findings...")
-        result = analyzer.process_enhanced_findings(client_id='Rev')  # Changed from 'default' to 'Rev'
+        result = analyzer.process_stage3_findings(client_id='Rev')  # Changed from 'default' to 'Rev'
         
         if result and result.get('status') == 'success':
             print(f"✅ Enhanced Stage 3 complete!")

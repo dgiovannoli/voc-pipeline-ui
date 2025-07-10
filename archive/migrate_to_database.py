@@ -26,7 +26,7 @@ def migrate_csv_to_database(csv_path: str, db_path: str = "voc_pipeline.db"):
         
         # Ensure table exists
         cursor.execute("""
-            CREATE TABLE IF NOT EXISTS core_responses (
+            CREATE TABLE IF NOT EXISTS stage1_data_responses (
                 response_id VARCHAR PRIMARY KEY,
                 verbatim_response TEXT,
                 subject VARCHAR,
@@ -58,7 +58,7 @@ def migrate_csv_to_database(csv_path: str, db_path: str = "voc_pipeline.db"):
                         interview_date = None
                 
                 cursor.execute("""
-                    INSERT OR REPLACE INTO core_responses 
+                    INSERT OR REPLACE INTO stage1_data_responses 
                     (response_id, verbatim_response, subject, question, deal_status, 
                      company, interviewee_name, interview_date, file_source)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -83,12 +83,12 @@ def migrate_csv_to_database(csv_path: str, db_path: str = "voc_pipeline.db"):
         print(f"✅ Successfully migrated {migrated_count} quotes to database")
         
         # Show summary
-        cursor.execute("SELECT COUNT(*) FROM core_responses")
+        cursor.execute("SELECT COUNT(*) FROM stage1_data_responses")
         total_in_db = cursor.fetchone()[0]
         print(f"📊 Total quotes in database: {total_in_db}")
         
         # Show companies
-        cursor.execute("SELECT company, COUNT(*) FROM core_responses GROUP BY company")
+        cursor.execute("SELECT company, COUNT(*) FROM stage1_data_responses GROUP BY company")
         companies = cursor.fetchall()
         print(f"🏢 Companies in database:")
         for company, count in companies:

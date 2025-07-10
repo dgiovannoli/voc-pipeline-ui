@@ -142,7 +142,7 @@ Based on your VOC pipeline architecture, I recommend the **Hybrid Approach** bec
 db = HybridDatabaseManager()
 
 # Local processing (fast)
-db.save_to_sqlite('core_responses', data)
+db.save_to_sqlite('stage1_data_responses', data)
 
 # Cloud sharing (when needed)
 db.sync_all_to_supabase()

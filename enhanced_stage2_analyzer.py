@@ -151,7 +151,7 @@ class SupabaseStage2Analyzer:
     
     def load_stage1_data_from_supabase(self, client_id: str = 'default') -> pd.DataFrame:
         """Load Stage 1 extracted quotes from Supabase, filtered by client_id"""
-        df = self.db.get_core_responses(client_id=client_id)
+        df = self.db.get_stage1_data_responses(client_id=client_id)
         logger.info(f"📊 Loaded {len(df)} quotes from Supabase for client {client_id}")
         return df
     
@@ -414,7 +414,7 @@ class SupabaseStage2Analyzer:
                 'client_id': client_id  # Add client_id for data siloing
             }
             
-            self.db.save_quote_analysis(analysis_data)
+            self.db.save_stage2_response_labeling(analysis_data)
     
     def process_incremental(self, force_reprocess: bool = False, client_id: str = 'default') -> Dict:
         """Process quotes incrementally - only new ones unless forced, filtered by client_id"""

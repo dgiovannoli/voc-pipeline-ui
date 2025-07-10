@@ -3,8 +3,8 @@
 """
 UI Component for Scorecard-Driven Theme Display
 
-This module provides Streamlit components to display scorecard-driven themes
-alongside existing similarity-based themes for comprehensive analysis.
+This module provides Streamlit components to display scorecard-driven stage4_themes
+alongside existing similarity-based stage4_themes for comprehensive analysis.
 """
 
 import streamlit as st
@@ -91,45 +91,45 @@ def deduplicate_quotes(quotes):
     
     return deduped
 
-def display_scorecard_themes(client_id: str = 'default'):
-    """Display scorecard-driven themes in the UI"""
+def display_scorecard_stage4_themes(client_id: str = 'default'):
+    """Display scorecard-driven stage4_themes in the UI"""
     
     st.subheader("🎯 Scorecard-Driven Themes")
     st.markdown("""
-    **Strategic Context**: These themes are anchored to the buyer's prioritized scorecard criteria, 
+    **Strategic Context**: These stage4_themes are anchored to the buyer's prioritized scorecard criteria, 
     using high-relevance quotes as illustrative evidence—regardless of whether those quotes are similar to one another.
     """)
     
-    # Get scorecard themes from database
+    # Get scorecard stage4_themes from database
     db = SupabaseDatabase()
     
     try:
-        response = db.supabase.table('scorecard_themes').select('*').eq('client_id', client_id).order('overall_quality_score', desc=True).execute()
-        themes_data = response.data
+        response = db.supabase.table('scorecard_stage4_themes').select('*').eq('client_id', client_id).order('overall_quality_score', desc=True).execute()
+        stage4_themes_data = response.data
         
-        if not themes_data:
-            st.info("No scorecard themes found. Run Stage 4B analysis to generate themes.")
+        if not stage4_themes_data:
+            st.info("No scorecard stage4_themes found. Run Stage 4B analysis to generate stage4_themes.")
             return
         
         # Convert to DataFrame for easier manipulation
-        themes_df = pd.DataFrame(themes_data)
+        stage4_themes_df = pd.DataFrame(stage4_themes_data)
         
         # Display summary statistics
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric("Total Themes", len(themes_df))
+            st.metric("Total Themes", len(stage4_themes_df))
         
         with col2:
-            high_quality = len(themes_df[themes_df['overall_quality_score'] >= 0.7])
+            high_quality = len(stage4_themes_df[stage4_themes_df['overall_quality_score'] >= 0.7])
             st.metric("High Quality", high_quality)
         
         with col3:
-            avg_quality = themes_df['overall_quality_score'].mean()
+            avg_quality = stage4_themes_df['overall_quality_score'].mean()
             st.metric("Avg Quality", f"{avg_quality:.2f}" if avg_quality is not None else "N/A")
         
         with col4:
-            criteria_covered = themes_df['scorecard_criterion'].nunique()
+            criteria_covered = stage4_themes_df['scorecard_criterion'].nunique()
             st.metric("Criteria Covered", criteria_covered)
         
         # Filter options
@@ -140,16 +140,16 @@ def display_scorecard_themes(client_id: str = 'default'):
         with col1:
             selected_criteria = st.multiselect(
                 "Filter by Criteria",
-                options=sorted(themes_df['scorecard_criterion'].unique()),
-                default=sorted(themes_df['scorecard_criterion'].unique()),
+                options=sorted(stage4_themes_df['scorecard_criterion'].unique()),
+                default=sorted(stage4_themes_df['scorecard_criterion'].unique()),
                 key=f"scorecard_theme_criteria_multiselect_{client_id}"
             )
         
         with col2:
             selected_sentiment = st.multiselect(
                 "Filter by Sentiment",
-                options=sorted(themes_df['sentiment_direction'].unique()),
-                default=sorted(themes_df['sentiment_direction'].unique()),
+                options=sorted(stage4_themes_df['sentiment_direction'].unique()),
+                default=sorted(stage4_themes_df['sentiment_direction'].unique()),
                 key=f"scorecard_theme_sentiment_multiselect_{client_id}"
             )
         
@@ -164,15 +164,15 @@ def display_scorecard_themes(client_id: str = 'default'):
             )
         
         # Apply filters
-        filtered_df = themes_df[
-            (themes_df['scorecard_criterion'].isin(selected_criteria)) &
-            (themes_df['sentiment_direction'].isin(selected_sentiment)) &
-            (themes_df['overall_quality_score'] >= min_quality)
+        filtered_df = stage4_themes_df[
+            (stage4_themes_df['scorecard_criterion'].isin(selected_criteria)) &
+            (stage4_themes_df['sentiment_direction'].isin(selected_sentiment)) &
+            (stage4_themes_df['overall_quality_score'] >= min_quality)
         ]
         
         st.subheader(f"📋 Scorecard Themes ({len(filtered_df)} found)")
         
-        # Display themes
+        # Display stage4_themes
         for idx, theme in filtered_df.iterrows():
             with st.expander(f"🎯 {make_executive_title(theme['theme_title'], theme['scorecard_criterion'], theme['sentiment_direction'])} (Quality: {theme['overall_quality_score']:.2f}" if theme['overall_quality_score'] is not None else "N/A"):
                 
@@ -248,12 +248,12 @@ def display_scorecard_themes(client_id: str = 'default'):
             st.download_button(
                 label="Download CSV",
                 data=csv_data,
-                file_name=f"scorecard_themes_{client_id}_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
+                file_name=f"scorecard_stage4_themes_{client_id}_{pd.Timestamp.now().strftime('%Y%m%d')}.csv",
                 mime="text/csv"
             )
     
     except Exception as e:
-        st.error(f"Error loading scorecard themes: {e}")
+        st.error(f"Error loading scorecard stage4_themes: {e}")
 
 def display_criteria_prioritization(client_id: str = 'default'):
     """Display criteria prioritization analysis"""
@@ -449,7 +449,7 @@ def display_enhanced_synthesis(client_id: str = 'default'):
                         hybrid_confidence = synthesis['hybrid_confidence']
                         st.metric("Hybrid Confidence", f"{hybrid_confidence:.2f}" if hybrid_confidence is not None else "N/A")
                 
-                # Source themes
+                # Source stage4_themes
                 st.subheader("🔗 Source Themes")
                 
                 col1, col2 = st.columns(2)
@@ -480,7 +480,7 @@ def display_enhanced_synthesis(client_id: str = 'default'):
         st.error(f"Error loading enhanced synthesis: {e}")
 
 def display_comparison_view(client_id: str = 'default'):
-    """Display comparison view between scorecard and similarity themes"""
+    """Display comparison view between scorecard and similarity stage4_themes"""
     
     st.subheader("📊 Theme Comparison View")
     st.markdown("""
@@ -490,29 +490,29 @@ def display_comparison_view(client_id: str = 'default'):
     db = SupabaseDatabase()
     
     try:
-        # Get both types of themes
-        scorecard_response = db.supabase.table('scorecard_themes').select('*').eq('client_id', client_id).execute()
-        scorecard_themes = scorecard_response.data
+        # Get both types of stage4_themes
+        scorecard_response = db.supabase.table('scorecard_stage4_themes').select('*').eq('client_id', client_id).execute()
+        scorecard_stage4_themes = scorecard_response.data
         
-        similarity_response = db.supabase.table('themes').select('*').eq('client_id', client_id).execute()
-        similarity_themes = similarity_response.data
+        similarity_response = db.supabase.table('stage4_themes').select('*').eq('client_id', client_id).execute()
+        similarity_stage4_themes = similarity_response.data
         
-        if not scorecard_themes and not similarity_themes:
-            st.info("No themes found for comparison.")
+        if not scorecard_stage4_themes and not similarity_stage4_themes:
+            st.info("No stage4_themes found for comparison.")
             return
         
         # Create comparison metrics
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Scorecard Themes", len(scorecard_themes))
+            st.metric("Scorecard Themes", len(scorecard_stage4_themes))
         
         with col2:
-            st.metric("Similarity Themes", len(similarity_themes))
+            st.metric("Similarity Themes", len(similarity_stage4_themes))
         
         with col3:
-            total_themes = len(scorecard_themes) + len(similarity_themes)
-            st.metric("Total Themes", total_themes)
+            total_stage4_themes = len(scorecard_stage4_themes) + len(similarity_stage4_themes)
+            st.metric("Total Themes", total_stage4_themes)
         
         # Quality comparison
         st.subheader("📈 Quality Comparison")
@@ -520,8 +520,8 @@ def display_comparison_view(client_id: str = 'default'):
         col1, col2 = st.columns(2)
         
         with col1:
-            if scorecard_themes:
-                scorecard_df = pd.DataFrame(scorecard_themes)
+            if scorecard_stage4_themes:
+                scorecard_df = pd.DataFrame(scorecard_stage4_themes)
                 avg_quality = scorecard_df['overall_quality_score'].mean()
                 high_quality = len(scorecard_df[scorecard_df['overall_quality_score'] >= 0.7])
                 
@@ -531,8 +531,8 @@ def display_comparison_view(client_id: str = 'default'):
                 st.metric("High Quality %", f"{high_quality/len(scorecard_df)*100:.1f}%" if len(scorecard_df) > 0 else "N/A")
         
         with col2:
-            if similarity_themes:
-                similarity_df = pd.DataFrame(similarity_themes)
+            if similarity_stage4_themes:
+                similarity_df = pd.DataFrame(similarity_stage4_themes)
                 avg_confidence = similarity_df['avg_confidence_score'].mean()
                 high_confidence = len(similarity_df[similarity_df['avg_confidence_score'] >= 0.7])
                 
@@ -547,22 +547,22 @@ def display_comparison_view(client_id: str = 'default'):
         col1, col2 = st.columns(2)
         
         with col1:
-            if scorecard_themes:
-                scorecard_df = pd.DataFrame(scorecard_themes)
+            if scorecard_stage4_themes:
+                scorecard_df = pd.DataFrame(scorecard_stage4_themes)
                 criteria_counts = scorecard_df['scorecard_criterion'].value_counts()
                 
                 st.markdown("**Scorecard Themes by Criteria:**")
                 for criterion, count in criteria_counts.items():
-                    st.markdown(f"- {criterion}: {count} themes")
+                    st.markdown(f"- {criterion}: {count} stage4_themes")
         
         with col2:
-            if similarity_themes:
-                similarity_df = pd.DataFrame(similarity_themes)
+            if similarity_stage4_themes:
+                similarity_df = pd.DataFrame(similarity_stage4_themes)
                 category_counts = similarity_df['theme_category'].value_counts()
                 
                 st.markdown("**Similarity Themes by Category:**")
                 for category, count in category_counts.items():
-                    st.markdown(f"- {category}: {count} themes")
+                    st.markdown(f"- {category}: {count} stage4_themes")
         
         # Sentiment distribution comparison
         st.subheader("😊 Sentiment Distribution Comparison")
@@ -570,22 +570,22 @@ def display_comparison_view(client_id: str = 'default'):
         col1, col2 = st.columns(2)
         
         with col1:
-            if scorecard_themes:
-                scorecard_df = pd.DataFrame(scorecard_themes)
+            if scorecard_stage4_themes:
+                scorecard_df = pd.DataFrame(scorecard_stage4_themes)
                 sentiment_counts = scorecard_df['sentiment_direction'].value_counts()
                 
                 st.markdown("**Scorecard Themes Sentiment:**")
                 for sentiment, count in sentiment_counts.items():
-                    st.markdown(f"- {sentiment.title()}: {count} themes")
+                    st.markdown(f"- {sentiment.title()}: {count} stage4_themes")
         
         with col2:
-            if similarity_themes:
-                similarity_df = pd.DataFrame(similarity_themes)
+            if similarity_stage4_themes:
+                similarity_df = pd.DataFrame(similarity_stage4_themes)
                 strength_counts = similarity_df['theme_strength'].value_counts()
                 
                 st.markdown("**Similarity Themes Strength:**")
                 for strength, count in strength_counts.items():
-                    st.markdown(f"- {strength}: {count} themes")
+                    st.markdown(f"- {strength}: {count} stage4_themes")
     
     except Exception as e:
         st.error(f"Error loading comparison data: {e}")
@@ -595,7 +595,7 @@ def main_scorecard_theme_ui(client_id: str = 'default'):
     
     st.title("🎯 Scorecard-Driven Theme Analysis")
     st.markdown("""
-    This interface provides comprehensive analysis of scorecard-driven themes that complement 
+    This interface provides comprehensive analysis of scorecard-driven stage4_themes that complement 
     the existing similarity-based theme generation approach.
     """)
     
@@ -608,7 +608,7 @@ def main_scorecard_theme_ui(client_id: str = 'default'):
     ])
     
     with tab1:
-        display_scorecard_themes(client_id)
+        display_scorecard_stage4_themes(client_id)
     
     with tab2:
         display_criteria_prioritization(client_id)

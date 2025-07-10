@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Semantic Theme Merger with Enrichment
-Merges semantically similar themes and creates richer, more comprehensive themes
+Merges semantically similar stage4_themes and creates richer, more comprehensive stage4_themes
 """
 
 import pandas as pd
@@ -14,25 +14,25 @@ import re
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
-def analyze_current_themes():
-    """Analyze current themes in the database"""
+def analyze_current_stage4_themes():
+    """Analyze current stage4_themes in the database"""
     try:
         supabase_db = create_supabase_database()
         
-        # Get all scorecard themes
-        response = supabase_db.supabase.table('scorecard_themes').select('*').execute()
+        # Get all scorecard stage4_themes
+        response = supabase_db.supabase.table('scorecard_stage4_themes').select('*').execute()
         
         if not response.data:
-            logger.warning("No themes found in database")
+            logger.warning("No stage4_themes found in database")
             return None
         
         df = pd.DataFrame(response.data)
-        logger.info(f"Found {len(df)} themes in database")
+        logger.info(f"Found {len(df)} stage4_themes in database")
         
         return df
         
     except Exception as e:
-        logger.error(f"Error analyzing themes: {e}")
+        logger.error(f"Error analyzing stage4_themes: {e}")
         return None
 
 def normalize_text(text: str) -> str:
@@ -65,7 +65,7 @@ def calculate_similarity(text1: str, text2: str) -> float:
     return len(intersection) / len(union)
 
 def find_similar_theme_groups(df: pd.DataFrame, similarity_threshold: float = 0.3) -> List[List[int]]:
-    """Find groups of similar themes based on title similarity"""
+    """Find groups of similar stage4_themes based on title similarity"""
     similar_groups = []
     processed = set()
     
@@ -86,13 +86,13 @@ def find_similar_theme_groups(df: pd.DataFrame, similarity_threshold: float = 0.
                 group.append(j)
                 processed.add(j)
         
-        if len(group) > 1:  # Only add groups with multiple themes
+        if len(group) > 1:  # Only add groups with multiple stage4_themes
             similar_groups.append(group)
     
     return similar_groups
 
 def merge_theme_group(df: pd.DataFrame, group_indices: List[int]) -> Dict:
-    """Merge a group of similar themes into one enriched theme"""
+    """Merge a group of similar stage4_themes into one enriched theme"""
     group_df = df.loc[group_indices]
     
     # Get the theme with highest quality score as the base
@@ -153,14 +153,14 @@ def merge_theme_group(df: pd.DataFrame, group_indices: List[int]) -> Dict:
         'overall_quality_score': avg_quality,
         'impact_score': avg_impact,
         'description': description,
-        'merged_from': titles,  # Track original themes
+        'merged_from': titles,  # Track original stage4_themes
         'original_theme_ids': group_indices  # Track original IDs
     }
     
     return merged_theme
 
 def create_enriched_title(titles: List[str], criterion: str) -> str:
-    """Create an enriched title from multiple similar themes"""
+    """Create an enriched title from multiple similar stage4_themes"""
     # Extract key concepts from titles
     concepts = set()
     for title in titles:
@@ -182,46 +182,46 @@ def create_enriched_title(titles: List[str], criterion: str) -> str:
     return enriched_title
 
 def create_enriched_description(titles: List[str], sentiments: set, criterion: str) -> str:
-    """Create an enriched description from multiple similar themes"""
+    """Create an enriched description from multiple similar stage4_themes"""
     if len(sentiments) > 1:
-        sentiment_desc = f"Mixed sentiment across {criterion} themes"
+        sentiment_desc = f"Mixed sentiment across {criterion} stage4_themes"
     else:
         sentiment_desc = f"Consistent {list(sentiments)[0]} sentiment"
     
-    description = f"Combined insights from {len(titles)} related themes. {sentiment_desc}. "
+    description = f"Combined insights from {len(titles)} related stage4_themes. {sentiment_desc}. "
     description += f"Key areas include: {', '.join(titles[:3])}"
     
     if len(titles) > 3:
-        description += f" and {len(titles) - 3} additional related themes."
+        description += f" and {len(titles) - 3} additional related stage4_themes."
     
     return description
 
-def save_merged_themes(merged_themes: List[Dict]):
-    """Save merged themes to database"""
+def save_merged_stage4_themes(merged_stage4_themes: List[Dict]):
+    """Save merged stage4_themes to database"""
     try:
         supabase_db = create_supabase_database()
         
-        # Clear existing themes
-        supabase_db.supabase.table('scorecard_themes').delete().neq('id', 0).execute()
+        # Clear existing stage4_themes
+        supabase_db.supabase.table('scorecard_stage4_themes').delete().neq('id', 0).execute()
         
         # Prepare data for insertion (remove tracking fields)
-        themes_data = []
-        for theme in merged_themes:
+        stage4_themes_data = []
+        for theme in merged_stage4_themes:
             theme_data = {k: v for k, v in theme.items() if k not in ['merged_from', 'original_theme_ids']}
-            themes_data.append(theme_data)
+            stage4_themes_data.append(theme_data)
         
-        # Insert merged themes
-        response = supabase_db.supabase.table('scorecard_themes').insert(themes_data).execute()
+        # Insert merged stage4_themes
+        response = supabase_db.supabase.table('scorecard_stage4_themes').insert(stage4_themes_data).execute()
         
         if response.data:
-            logger.info(f"Successfully saved {len(response.data)} merged themes to database")
+            logger.info(f"Successfully saved {len(response.data)} merged stage4_themes to database")
             return True
         else:
-            logger.error("No themes were saved")
+            logger.error("No stage4_themes were saved")
             return False
             
     except Exception as e:
-        logger.error(f"Error saving themes: {e}")
+        logger.error(f"Error saving stage4_themes: {e}")
         return False
 
 def main():
@@ -229,29 +229,29 @@ def main():
     logger.info("🚀 Starting Semantic Theme Merging and Enrichment Process")
     logger.info("=" * 60)
     
-    # Analyze current themes
-    df_original = analyze_current_themes()
+    # Analyze current stage4_themes
+    df_original = analyze_current_stage4_themes()
     if df_original is None:
         return
     
-    logger.info(f"Original themes: {len(df_original)}")
+    logger.info(f"Original stage4_themes: {len(df_original)}")
     
     # Find similar theme groups
     similar_groups = find_similar_theme_groups(df_original, similarity_threshold=0.3)
     
-    logger.info(f"Found {len(similar_groups)} groups of similar themes")
+    logger.info(f"Found {len(similar_groups)} groups of similar stage4_themes")
     
     # Merge each group
-    merged_themes = []
+    merged_stage4_themes = []
     processed_indices = set()
     
     for group in similar_groups:
         merged_theme = merge_theme_group(df_original, group)
-        merged_themes.append(merged_theme)
+        merged_stage4_themes.append(merged_theme)
         processed_indices.update(group)
         logger.info(f"Merged group: {merged_theme['theme_title']}")
     
-    # Add themes that weren't in any group (unique themes)
+    # Add stage4_themes that weren't in any group (unique stage4_themes)
     for i, row in df_original.iterrows():
         if i not in processed_indices:
             # Convert to dict and add description
@@ -259,23 +259,23 @@ def main():
             theme_dict['description'] = f"Standalone theme: {row['theme_title']}"
             theme_dict['merged_from'] = [row['theme_title']]
             theme_dict['original_theme_ids'] = [i]
-            merged_themes.append(theme_dict)
+            merged_stage4_themes.append(theme_dict)
             logger.info(f"Kept unique theme: {row['theme_title']}")
     
     # Show results
     logger.info(f"\n📊 MERGING RESULTS:")
-    logger.info(f"Original themes: {len(df_original)}")
-    logger.info(f"Merged themes: {len(merged_themes)}")
-    logger.info(f"Reduction: {((len(df_original) - len(merged_themes)) / len(df_original) * 100):.1f}%")
+    logger.info(f"Original stage4_themes: {len(df_original)}")
+    logger.info(f"Merged stage4_themes: {len(merged_stage4_themes)}")
+    logger.info(f"Reduction: {((len(df_original) - len(merged_stage4_themes)) / len(df_original) * 100):.1f}%")
     
-    # Show final themes
-    print(f"\n🎯 FINAL ENRICHED THEMES ({len(merged_themes)}):")
+    # Show final stage4_themes
+    print(f"\n🎯 FINAL ENRICHED THEMES ({len(merged_stage4_themes)}):")
     print("=" * 60)
     
     try:
         from tabulate import tabulate
         display_data = []
-        for theme in merged_themes:
+        for theme in merged_stage4_themes:
             display_data.append([
                 theme['theme_title'][:50] + "..." if len(theme['theme_title']) > 50 else theme['theme_title'],
                 theme['scorecard_criterion'],
@@ -286,7 +286,7 @@ def main():
         
         print(tabulate(display_data, headers=['Theme', 'Criterion', 'Sentiment', 'Companies', 'Quality'], tablefmt='github'))
     except ImportError:
-        for theme in merged_themes:
+        for theme in merged_stage4_themes:
             print(f"• {theme['theme_title']}")
             print(f"  Criterion: {theme['scorecard_criterion']}")
             print(f"  Sentiment: {theme['sentiment_direction']}")
@@ -295,15 +295,15 @@ def main():
             print("")
     
     # Ask user if they want to save
-    save_choice = input("\nDo you want to save these merged themes to the database? (y/n): ")
+    save_choice = input("\nDo you want to save these merged stage4_themes to the database? (y/n): ")
     if save_choice.lower() == 'y':
-        success = save_merged_themes(merged_themes)
+        success = save_merged_stage4_themes(merged_stage4_themes)
         if success:
-            print("✅ Merged themes saved successfully!")
+            print("✅ Merged stage4_themes saved successfully!")
         else:
-            print("❌ Failed to save merged themes")
+            print("❌ Failed to save merged stage4_themes")
     else:
-        print("Merged themes not saved. Original themes remain in database.")
+        print("Merged stage4_themes not saved. Original stage4_themes remain in database.")
 
 if __name__ == "__main__":
     main() 

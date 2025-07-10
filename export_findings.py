@@ -8,7 +8,7 @@ import pandas as pd
 
 def export_findings():
     db = SupabaseDatabase()
-    findings_df = db.get_enhanced_findings(client_id='Rev')
+    findings_df = db.get_stage3_findings(client_id='Rev')
     
     print("=== CURRENT FINDINGS (Rev Client) ===")
     print(f"Total findings: {len(findings_df)}")

@@ -32,19 +32,19 @@ ADD COLUMN IF NOT EXISTS processing_metadata JSONB DEFAULT '{}';
 -- ============================================================================
 
 -- Add credibility tier column for Stage 3 enhanced findings
-ALTER TABLE enhanced_findings 
+ALTER TABLE stage3_findings 
 ADD COLUMN IF NOT EXISTS credibility_tier VARCHAR(50) DEFAULT 'Unclassified';
 
 -- Add evidence threshold tracking
-ALTER TABLE enhanced_findings 
+ALTER TABLE stage3_findings 
 ADD COLUMN IF NOT EXISTS evidence_threshold_met BOOLEAN DEFAULT FALSE;
 
 -- Add quote recycling prevention tracking
-ALTER TABLE enhanced_findings 
+ALTER TABLE stage3_findings 
 ADD COLUMN IF NOT EXISTS quote_ids_used TEXT[] DEFAULT ARRAY[]::TEXT[];
 
 -- Add processing metadata
-ALTER TABLE enhanced_findings 
+ALTER TABLE stage3_findings 
 ADD COLUMN IF NOT EXISTS processing_metadata JSONB DEFAULT '{}'::jsonb;
 
 -- ============================================================================
@@ -52,19 +52,19 @@ ADD COLUMN IF NOT EXISTS processing_metadata JSONB DEFAULT '{}'::jsonb;
 -- ============================================================================
 
 -- Add processing status tracking
-ALTER TABLE core_responses 
+ALTER TABLE stage1_data_responses 
 ADD COLUMN IF NOT EXISTS processing_status VARCHAR(50) DEFAULT 'pending';
 
 -- Add processing timestamp
-ALTER TABLE core_responses 
+ALTER TABLE stage1_data_responses 
 ADD COLUMN IF NOT EXISTS processed_at TIMESTAMP WITH TIME ZONE;
 
 -- Add file source tracking
-ALTER TABLE core_responses 
+ALTER TABLE stage1_data_responses 
 ADD COLUMN IF NOT EXISTS source_file VARCHAR(255);
 
 -- Add chunk information for debugging
-ALTER TABLE core_responses 
+ALTER TABLE stage1_data_responses 
 ADD COLUMN IF NOT EXISTS chunk_info JSONB DEFAULT '{}';
 
 -- ============================================================================
@@ -72,11 +72,11 @@ ADD COLUMN IF NOT EXISTS chunk_info JSONB DEFAULT '{}';
 -- ============================================================================
 
 -- Add processing metadata
-ALTER TABLE quote_analysis 
+ALTER TABLE stage2_response_labeling 
 ADD COLUMN IF NOT EXISTS processing_metadata JSONB DEFAULT '{}';
 
 -- Add analysis version tracking
-ALTER TABLE quote_analysis 
+ALTER TABLE stage2_response_labeling 
 ADD COLUMN IF NOT EXISTS analysis_version VARCHAR(20) DEFAULT '1.0';
 
 -- ============================================================================
@@ -128,18 +128,18 @@ CREATE INDEX IF NOT EXISTS idx_themes_fuzzy_score ON themes(fuzzy_match_score DE
 CREATE INDEX IF NOT EXISTS idx_themes_semantic_group ON themes(semantic_group_id);
 CREATE INDEX IF NOT EXISTS idx_themes_quotes ON themes USING GIN(quotes);
 
--- Indexes for enhanced_findings table
-CREATE INDEX IF NOT EXISTS idx_enhanced_findings_credibility ON enhanced_findings(credibility_tier);
-CREATE INDEX IF NOT EXISTS idx_enhanced_findings_evidence ON enhanced_findings(evidence_threshold_met);
-CREATE INDEX IF NOT EXISTS idx_enhanced_findings_quote_ids ON enhanced_findings USING GIN(quote_ids_used);
+-- Indexes for stage3_findings table
+CREATE INDEX IF NOT EXISTS idx_stage3_findings_credibility ON stage3_findings(credibility_tier);
+CREATE INDEX IF NOT EXISTS idx_stage3_findings_evidence ON stage3_findings(evidence_threshold_met);
+CREATE INDEX IF NOT EXISTS idx_stage3_findings_quote_ids ON stage3_findings USING GIN(quote_ids_used);
 
--- Indexes for core_responses table
-CREATE INDEX IF NOT EXISTS idx_core_responses_status ON core_responses(processing_status);
-CREATE INDEX IF NOT EXISTS idx_core_responses_processed ON core_responses(processed_at);
-CREATE INDEX IF NOT EXISTS idx_core_responses_source ON core_responses(source_file);
+-- Indexes for stage1_data_responses table
+CREATE INDEX IF NOT EXISTS idx_stage1_data_responses_status ON stage1_data_responses(processing_status);
+CREATE INDEX IF NOT EXISTS idx_stage1_data_responses_processed ON stage1_data_responses(processed_at);
+CREATE INDEX IF NOT EXISTS idx_stage1_data_responses_source ON stage1_data_responses(source_file);
 
--- Indexes for quote_analysis table
-CREATE INDEX IF NOT EXISTS idx_quote_analysis_version ON quote_analysis(analysis_version);
+-- Indexes for stage2_response_labeling table
+CREATE INDEX IF NOT EXISTS idx_stage2_response_labeling_version ON stage2_response_labeling(analysis_version);
 
 -- Indexes for new tables
 CREATE INDEX IF NOT EXISTS idx_processing_logs_stage_client ON processing_logs(stage, client_id);
@@ -161,12 +161,12 @@ ADD CONSTRAINT check_pattern_type
 CHECK (pattern_type IN ('criterion_based', 'semantic_group', 'cross_criteria'));
 
 -- Add credibility_tier constraint  
-ALTER TABLE enhanced_findings 
+ALTER TABLE stage3_findings 
 ADD CONSTRAINT check_credibility_tier 
 CHECK (credibility_tier IN ('Credible', 'Unclassified', 'Low Evidence'));
 
 -- Add processing_status constraint
-ALTER TABLE core_responses 
+ALTER TABLE stage1_data_responses 
 ADD CONSTRAINT check_processing_status 
 CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed'));
 
@@ -181,15 +181,15 @@ COMMENT ON COLUMN themes.fuzzy_match_score IS 'Similarity score from fuzzy match
 COMMENT ON COLUMN themes.semantic_group_id IS 'ID of semantic group this theme belongs to';
 COMMENT ON COLUMN themes.processing_metadata IS 'Additional metadata from theme generation process';
 
-COMMENT ON COLUMN enhanced_findings.credibility_tier IS 'Credibility classification: Credible, Unclassified, Low Evidence';
-COMMENT ON COLUMN enhanced_findings.evidence_threshold_met IS 'Whether this finding meets minimum evidence requirements';
-COMMENT ON COLUMN enhanced_findings.quote_ids_used IS 'Array of quote IDs used to prevent recycling';
-COMMENT ON COLUMN enhanced_findings.processing_metadata IS 'Additional metadata from finding generation process';
+COMMENT ON COLUMN stage3_findings.credibility_tier IS 'Credibility classification: Credible, Unclassified, Low Evidence';
+COMMENT ON COLUMN stage3_findings.evidence_threshold_met IS 'Whether this finding meets minimum evidence requirements';
+COMMENT ON COLUMN stage3_findings.quote_ids_used IS 'Array of quote IDs used to prevent recycling';
+COMMENT ON COLUMN stage3_findings.processing_metadata IS 'Additional metadata from finding generation process';
 
-COMMENT ON COLUMN core_responses.processing_status IS 'Current processing status of this response';
-COMMENT ON COLUMN core_responses.processed_at IS 'Timestamp when processing completed';
-COMMENT ON COLUMN core_responses.source_file IS 'Original file this response came from';
-COMMENT ON COLUMN core_responses.chunk_info IS 'Information about chunking process';
+COMMENT ON COLUMN stage1_data_responses.processing_status IS 'Current processing status of this response';
+COMMENT ON COLUMN stage1_data_responses.processed_at IS 'Timestamp when processing completed';
+COMMENT ON COLUMN stage1_data_responses.source_file IS 'Original file this response came from';
+COMMENT ON COLUMN stage1_data_responses.chunk_info IS 'Information about chunking process';
 
 COMMENT ON TABLE processing_logs IS 'Logs of all processing operations for debugging and monitoring';
 COMMENT ON TABLE data_quality_metrics IS 'Quality metrics tracked across all processing stages';
@@ -219,7 +219,7 @@ FROM themes t
 ORDER BY t.created_at DESC;
 
 -- View for enhanced findings with credibility info
-CREATE OR REPLACE VIEW enhanced_findings_view AS
+CREATE OR REPLACE VIEW stage3_findings_view AS
 SELECT 
     ef.id,
     ef.criterion,
@@ -234,7 +234,7 @@ SELECT
     ef.quote_count,
     ef.client_id,
     ef.created_at
-FROM enhanced_findings ef
+FROM stage3_findings ef
 ORDER BY ef.enhanced_confidence DESC;
 
 -- View for processing status across all stages
@@ -246,7 +246,7 @@ SELECT
     COUNT(CASE WHEN processing_status = 'completed' THEN 1 END) as completed,
     COUNT(CASE WHEN processing_status = 'failed' THEN 1 END) as failed,
     COUNT(CASE WHEN processing_status = 'pending' THEN 1 END) as pending
-FROM core_responses
+FROM stage1_data_responses
 GROUP BY client_id, stage;
 
 -- ============================================================================
@@ -260,7 +260,7 @@ CREATE OR REPLACE FUNCTION update_processing_status(
     p_status TEXT
 ) RETURNS VOID AS $$
 BEGIN
-    UPDATE core_responses 
+    UPDATE stage1_data_responses 
     SET processing_status = p_status,
         processed_at = CASE WHEN p_status = 'completed' THEN NOW() ELSE processed_at END
     WHERE client_id = p_client_id;
@@ -333,16 +333,16 @@ SET criteria_covered = '{}'::TEXT[],
     processing_metadata = '{}'::JSONB
 WHERE criteria_covered IS NULL;
 
--- Update existing enhanced_findings to have default values
-UPDATE enhanced_findings 
+-- Update existing stage3_findings to have default values
+UPDATE stage3_findings 
 SET credibility_tier = 'Unclassified',
     evidence_threshold_met = FALSE,
     quote_ids_used = '{}'::TEXT[],
     processing_metadata = '{}'::JSONB
 WHERE credibility_tier IS NULL;
 
--- Update existing core_responses to have default values
-UPDATE core_responses 
+-- Update existing stage1_data_responses to have default values
+UPDATE stage1_data_responses 
 SET processing_status = 'completed',
     chunk_info = '{}'::JSONB
 WHERE processing_status IS NULL;
@@ -358,7 +358,7 @@ SELECT
     data_type,
     is_nullable
 FROM information_schema.columns 
-WHERE table_name IN ('themes', 'enhanced_findings', 'core_responses', 'quote_analysis')
+WHERE table_name IN ('themes', 'stage3_findings', 'stage1_data_responses', 'stage2_response_labeling')
 AND column_name IN ('criteria_covered', 'pattern_type', 'quotes', 'credibility_tier', 'processing_status')
 ORDER BY table_name, column_name;
 
@@ -368,7 +368,7 @@ SELECT
     indexname,
     indexdef
 FROM pg_indexes 
-WHERE tablename IN ('themes', 'enhanced_findings', 'core_responses', 'quote_analysis')
+WHERE tablename IN ('themes', 'stage3_findings', 'stage1_data_responses', 'stage2_response_labeling')
 AND indexname LIKE 'idx_%'
 ORDER BY tablename, indexname;
 

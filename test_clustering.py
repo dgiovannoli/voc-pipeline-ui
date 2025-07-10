@@ -17,7 +17,7 @@ def test_clustering():
     
     # Get findings
     db = create_supabase_database()
-    findings_df = db.get_enhanced_findings('Rev')
+    findings_df = db.get_stage3_findings('Rev')
     
     if findings_df.empty:
         print("No findings found!")

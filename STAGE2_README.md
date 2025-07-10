@@ -43,8 +43,8 @@ python run_stage2.py --trends --company "Luminos Law"
 ## Key Improvements
 
 ### 🗄️ Database-First Architecture
-- **Source of Truth**: `core_responses` table stores Stage 1 output
-- **Analysis Layer**: `quote_analysis` table stores Stage 2 scores
+- **Source of Truth**: `stage1_data_responses` table stores Stage 1 output
+- **Analysis Layer**: `stage2_response_labeling` table stores Stage 2 scores
 - **Trend Tracking**: `trend_analysis` table tracks performance over time
 - **Metadata**: `processing_metadata` table tracks processing history
 
@@ -78,7 +78,7 @@ All settings in `config/analysis_config.yaml`:
 
 ### Core Responses (Stage 1 Output)
 ```sql
-CREATE TABLE core_responses (
+CREATE TABLE stage1_data_responses (
     response_id VARCHAR PRIMARY KEY,
     verbatim_response TEXT,
     subject VARCHAR,
@@ -94,7 +94,7 @@ CREATE TABLE core_responses (
 
 ### Quote Analysis (Stage 2 Output)
 ```sql
-CREATE TABLE quote_analysis (
+CREATE TABLE stage2_response_labeling (
     analysis_id INTEGER PRIMARY KEY AUTOINCREMENT,
     quote_id VARCHAR,
     criterion VARCHAR NOT NULL,
@@ -105,7 +105,7 @@ CREATE TABLE quote_analysis (
     deal_weighted_score DECIMAL(3,2),
     context_keywords TEXT,
     analysis_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (quote_id) REFERENCES core_responses(response_id),
+    FOREIGN KEY (quote_id) REFERENCES stage1_data_responses(response_id),
     UNIQUE(quote_id, criterion)
 );
 ```

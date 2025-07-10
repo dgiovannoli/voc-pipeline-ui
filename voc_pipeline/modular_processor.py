@@ -213,21 +213,21 @@ class ModularProcessor:
         logger.info(f"Stage 1 complete: extracted {len(quality_responses)} responses")
         return quality_responses
     
-    def stage2_analysis_enrichment(self, core_responses: List[Dict]) -> List[Dict]:
+    def stage2_analysis_enrichment(self, stage1_data_responses: List[Dict]) -> List[Dict]:
         """
         Stage 2: Analysis enrichment - add AI-generated insights to core responses.
         
         Args:
-            core_responses: List of dictionaries with core fields
+            stage1_data_responses: List of dictionaries with core fields
             
         Returns:
             List of dictionaries with core fields + analysis fields
         """
-        logger.info(f"Starting Stage 2: Analysis enrichment for {len(core_responses)} responses")
+        logger.info(f"Starting Stage 2: Analysis enrichment for {len(stage1_data_responses)} responses")
         
         enriched_responses = []
         
-        for response in core_responses:
+        for response in stage1_data_responses:
             try:
                 # Create analysis prompt
                 prompt_text = get_analysis_enrichment_prompt(
@@ -559,12 +559,12 @@ class ModularProcessor:
         logger.info("Starting full pipeline")
         
         # Stage 1: Core extraction
-        core_responses = self.stage1_core_extraction(
+        stage1_data_responses = self.stage1_core_extraction(
             transcript_path, company, interviewee, deal_status, date_of_interview
         )
         
         # Stage 2: Analysis enrichment
-        enriched_responses = self.stage2_analysis_enrichment(core_responses)
+        enriched_responses = self.stage2_analysis_enrichment(stage1_data_responses)
         
         # Stage 3: Labeling
         labeled_responses = self.stage3_labeling(enriched_responses)
@@ -575,7 +575,7 @@ class ModularProcessor:
             saved_count = self.save_to_database(labeled_responses)
         
         return {
-            'stage1_core_count': len(core_responses),
+            'stage1_core_count': len(stage1_data_responses),
             'stage2_enriched_count': len(enriched_responses),
             'stage3_labeled_count': len(labeled_responses),
             'database_saved_count': saved_count,

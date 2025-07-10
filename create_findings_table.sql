@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS findings (
     companies_affected INTEGER NOT NULL DEFAULT 0,
     quote_count INTEGER NOT NULL DEFAULT 0,
     sample_quotes JSONB,
-    themes JSONB,
+    stage4_themes JSONB,
     generated_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -32,7 +32,7 @@ COMMENT ON COLUMN findings.confidence_score IS 'Confidence in the finding (0-1 s
 COMMENT ON COLUMN findings.companies_affected IS 'Number of companies this finding affects';
 COMMENT ON COLUMN findings.quote_count IS 'Number of quotes supporting this finding';
 COMMENT ON COLUMN findings.sample_quotes IS 'JSON array of sample quotes supporting the finding';
-COMMENT ON COLUMN findings.themes IS 'JSON array of key themes identified';
+COMMENT ON COLUMN findings.stage4_themes IS 'JSON array of key stage4_themes identified';
 COMMENT ON COLUMN findings.generated_at IS 'When the finding was generated';
 COMMENT ON COLUMN findings.created_at IS 'When the record was created';
 
@@ -43,8 +43,8 @@ ALTER TABLE findings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow all operations on findings" ON findings
     FOR ALL USING (true);
 
--- Create themes table for Stage 4
-CREATE TABLE IF NOT EXISTS themes (
+-- Create stage4_themes table for Stage 4
+CREATE TABLE IF NOT EXISTS stage4_themes (
     id SERIAL PRIMARY KEY,
     theme_statement TEXT NOT NULL,
     theme_category VARCHAR(50) NOT NULL,
@@ -65,34 +65,34 @@ CREATE TABLE IF NOT EXISTS themes (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create indexes for themes table
-CREATE INDEX IF NOT EXISTS idx_themes_category ON themes(theme_category);
-CREATE INDEX IF NOT EXISTS idx_themes_strength ON themes(theme_strength);
-CREATE INDEX IF NOT EXISTS idx_themes_competitive ON themes(competitive_flag);
-CREATE INDEX IF NOT EXISTS idx_themes_confidence ON themes(avg_confidence_score DESC);
+-- Create indexes for stage4_themes table
+CREATE INDEX IF NOT EXISTS idx_stage4_themes_category ON stage4_themes(theme_category);
+CREATE INDEX IF NOT EXISTS idx_stage4_themes_strength ON stage4_themes(theme_strength);
+CREATE INDEX IF NOT EXISTS idx_stage4_themes_competitive ON stage4_themes(competitive_flag);
+CREATE INDEX IF NOT EXISTS idx_stage4_themes_confidence ON stage4_themes(avg_confidence_score DESC);
 
--- Add comments for themes table
-COMMENT ON TABLE themes IS 'Stage 4 themes generated from findings analysis';
-COMMENT ON COLUMN themes.theme_statement IS 'Executive-ready insight revealing business pattern';
-COMMENT ON COLUMN themes.theme_category IS 'Category: Barrier, Opportunity, Strategic, Functional, Competitive';
-COMMENT ON COLUMN themes.theme_strength IS 'Strength: High, Medium, Emerging';
-COMMENT ON COLUMN themes.competitive_flag IS 'Whether this theme involves competitive analysis';
+-- Add comments for stage4_themes table
+COMMENT ON TABLE stage4_themes IS 'Stage 4 stage4_themes generated from findings analysis';
+COMMENT ON COLUMN stage4_themes.theme_statement IS 'Executive-ready insight revealing business pattern';
+COMMENT ON COLUMN stage4_themes.theme_category IS 'Category: Barrier, Opportunity, Strategic, Functional, Competitive';
+COMMENT ON COLUMN stage4_themes.theme_strength IS 'Strength: High, Medium, Emerging';
+COMMENT ON COLUMN stage4_themes.competitive_flag IS 'Whether this theme involves competitive analysis';
 
--- Enable RLS for themes table
-ALTER TABLE themes ENABLE ROW LEVEL SECURITY;
+-- Enable RLS for stage4_themes table
+ALTER TABLE stage4_themes ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies for themes
-CREATE POLICY "Enable read access for all users" ON themes
+-- Create RLS policies for stage4_themes
+CREATE POLICY "Enable read access for all users" ON stage4_themes
     FOR SELECT USING (true);
 
-CREATE POLICY "Enable insert access for authenticated users" ON themes
+CREATE POLICY "Enable insert access for authenticated users" ON stage4_themes
     FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Enable update access for authenticated users" ON themes
+CREATE POLICY "Enable update access for authenticated users" ON stage4_themes
     FOR UPDATE USING (true);
 
--- Create executive_themes table for Stage 5
-CREATE TABLE IF NOT EXISTS executive_themes (
+-- Create executive_stage4_themes table for Stage 5
+CREATE TABLE IF NOT EXISTS executive_stage4_themes (
     id SERIAL PRIMARY KEY,
     priority_rank INTEGER,
     theme_headline TEXT NOT NULL,
@@ -105,36 +105,36 @@ CREATE TABLE IF NOT EXISTS executive_themes (
     business_impact_level VARCHAR(20),
     competitive_context TEXT,
     strategic_recommendations TEXT,
-    original_theme_id INTEGER REFERENCES themes(id),
+    original_theme_id INTEGER REFERENCES stage4_themes(id),
     priority_score DECIMAL(4,2),
     executive_readiness VARCHAR(20),
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create indexes for executive_themes table
-CREATE INDEX IF NOT EXISTS idx_executive_themes_priority ON executive_themes(priority_score DESC);
-CREATE INDEX IF NOT EXISTS idx_executive_themes_category ON executive_themes(theme_category);
-CREATE INDEX IF NOT EXISTS idx_executive_themes_impact ON executive_themes(business_impact_level);
-CREATE INDEX IF NOT EXISTS idx_executive_themes_created ON executive_themes(created_at DESC);
+-- Create indexes for executive_stage4_themes table
+CREATE INDEX IF NOT EXISTS idx_executive_stage4_themes_priority ON executive_stage4_themes(priority_score DESC);
+CREATE INDEX IF NOT EXISTS idx_executive_stage4_themes_category ON executive_stage4_themes(theme_category);
+CREATE INDEX IF NOT EXISTS idx_executive_stage4_themes_impact ON executive_stage4_themes(business_impact_level);
+CREATE INDEX IF NOT EXISTS idx_executive_stage4_themes_created ON executive_stage4_themes(created_at DESC);
 
--- Add comments for executive_themes table
-COMMENT ON TABLE executive_themes IS 'Stage 5 executive synthesis themes ready for C-suite presentation';
-COMMENT ON COLUMN executive_themes.theme_headline IS 'Executive-ready headline following punch-then-explain principle';
-COMMENT ON COLUMN executive_themes.narrative_explanation IS '2-3 sentence business narrative connecting pattern to strategic value';
-COMMENT ON COLUMN executive_themes.business_impact_level IS 'Impact level: High, Medium, Emerging';
-COMMENT ON COLUMN executive_themes.executive_readiness IS 'Readiness: Presentation, Report, Follow-up';
+-- Add comments for executive_stage4_themes table
+COMMENT ON TABLE executive_stage4_themes IS 'Stage 5 executive synthesis stage4_themes ready for C-suite presentation';
+COMMENT ON COLUMN executive_stage4_themes.theme_headline IS 'Executive-ready headline following punch-then-explain principle';
+COMMENT ON COLUMN executive_stage4_themes.narrative_explanation IS '2-3 sentence business narrative connecting pattern to strategic value';
+COMMENT ON COLUMN executive_stage4_themes.business_impact_level IS 'Impact level: High, Medium, Emerging';
+COMMENT ON COLUMN executive_stage4_themes.executive_readiness IS 'Readiness: Presentation, Report, Follow-up';
 
--- Enable RLS for executive_themes table
-ALTER TABLE executive_themes ENABLE ROW LEVEL SECURITY;
+-- Enable RLS for executive_stage4_themes table
+ALTER TABLE executive_stage4_themes ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies for executive_themes
-CREATE POLICY "Enable read access for all users" ON executive_themes
+-- Create RLS policies for executive_stage4_themes
+CREATE POLICY "Enable read access for all users" ON executive_stage4_themes
     FOR SELECT USING (true);
 
-CREATE POLICY "Enable insert access for authenticated users" ON executive_themes
+CREATE POLICY "Enable insert access for authenticated users" ON executive_stage4_themes
     FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Enable update access for authenticated users" ON executive_themes
+CREATE POLICY "Enable update access for authenticated users" ON executive_stage4_themes
     FOR UPDATE USING (true);
 
 -- Create criteria_scorecard table for Stage 5
@@ -167,8 +167,8 @@ COMMENT ON COLUMN criteria_scorecard.performance_rating IS 'Rating: EXCEPTIONAL,
 COMMENT ON COLUMN criteria_scorecard.executive_priority IS 'Priority: IMMEDIATE ACTION, HIGH PRIORITY, MEDIUM PRIORITY, MONITOR';
 COMMENT ON COLUMN criteria_scorecard.action_urgency IS 'Urgency: HIGH, MEDIUM, LOW';
 
--- Create enhanced_findings table for Buried Wins v4.0 framework
-CREATE TABLE IF NOT EXISTS enhanced_findings (
+-- Create stage3_findings table for Buried Wins v4.0 framework
+CREATE TABLE IF NOT EXISTS stage3_findings (
     id SERIAL PRIMARY KEY,
     criterion VARCHAR(100) NOT NULL,
     finding_type VARCHAR(50) NOT NULL,
@@ -182,27 +182,27 @@ CREATE TABLE IF NOT EXISTS enhanced_findings (
     companies_affected INTEGER DEFAULT 0,
     quote_count INTEGER DEFAULT 0,
     selected_quotes JSONB,
-    themes JSONB,
+    stage4_themes JSONB,
     deal_impacts JSONB,
     generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_enhanced_findings_criterion ON enhanced_findings(criterion);
-CREATE INDEX IF NOT EXISTS idx_enhanced_findings_priority ON enhanced_findings(priority_level);
-CREATE INDEX IF NOT EXISTS idx_enhanced_findings_confidence ON enhanced_findings(enhanced_confidence DESC);
-CREATE INDEX IF NOT EXISTS idx_enhanced_findings_type ON enhanced_findings(finding_type);
+CREATE INDEX IF NOT EXISTS idx_stage3_findings_criterion ON stage3_findings(criterion);
+CREATE INDEX IF NOT EXISTS idx_stage3_findings_priority ON stage3_findings(priority_level);
+CREATE INDEX IF NOT EXISTS idx_stage3_findings_confidence ON stage3_findings(enhanced_confidence DESC);
+CREATE INDEX IF NOT EXISTS idx_stage3_findings_type ON stage3_findings(finding_type);
 
 -- Add comments for documentation
-COMMENT ON TABLE enhanced_findings IS 'Enhanced findings with Buried Wins v4.0 framework and automated confidence scoring';
-COMMENT ON COLUMN enhanced_findings.enhanced_confidence IS 'Confidence score (0-10) based on Buried Wins v4.0 criteria';
-COMMENT ON COLUMN enhanced_findings.criteria_scores IS 'JSON object with scores for each of the 8 evaluation criteria';
-COMMENT ON COLUMN enhanced_findings.criteria_met IS 'Number of evaluation criteria met (2-8)';
-COMMENT ON COLUMN enhanced_findings.priority_level IS 'Priority classification: priority (≥4.0), standard (≥3.0), low (<3.0)';
-COMMENT ON COLUMN enhanced_findings.selected_quotes IS 'JSON array of optimally selected quotes with attribution';
-COMMENT ON COLUMN enhanced_findings.themes IS 'JSON array of extracted themes from the finding';
-COMMENT ON COLUMN enhanced_findings.deal_impacts IS 'JSON object with deal impact analysis';
+COMMENT ON TABLE stage3_findings IS 'Enhanced findings with Buried Wins v4.0 framework and automated confidence scoring';
+COMMENT ON COLUMN stage3_findings.enhanced_confidence IS 'Confidence score (0-10) based on Buried Wins v4.0 criteria';
+COMMENT ON COLUMN stage3_findings.criteria_scores IS 'JSON object with scores for each of the 8 evaluation criteria';
+COMMENT ON COLUMN stage3_findings.criteria_met IS 'Number of evaluation criteria met (2-8)';
+COMMENT ON COLUMN stage3_findings.priority_level IS 'Priority classification: priority (≥4.0), standard (≥3.0), low (<3.0)';
+COMMENT ON COLUMN stage3_findings.selected_quotes IS 'JSON array of optimally selected quotes with attribution';
+COMMENT ON COLUMN stage3_findings.stage4_themes IS 'JSON array of extracted stage4_themes from the finding';
+COMMENT ON COLUMN stage3_findings.deal_impacts IS 'JSON object with deal impact analysis';
 
 -- Create legacy findings table for backward compatibility
 CREATE TABLE IF NOT EXISTS legacy_findings (
@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS legacy_findings (
     companies_affected INTEGER DEFAULT 0,
     quote_count INTEGER DEFAULT 0,
     sample_quotes JSONB,
-    themes JSONB,
+    stage4_themes JSONB,
     generated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -40,7 +40,7 @@ Once your project is ready, go to the **SQL Editor** in your Supabase dashboard 
 
 ```sql
 -- Core responses table (matches your SQLite schema)
-CREATE TABLE core_responses (
+CREATE TABLE stage1_data_responses (
     response_id VARCHAR PRIMARY KEY,
     verbatim_response TEXT,
     subject VARCHAR,
@@ -55,7 +55,7 @@ CREATE TABLE core_responses (
 );
 
 -- Quote analysis table
-CREATE TABLE quote_analysis (
+CREATE TABLE stage2_response_labeling (
     analysis_id SERIAL PRIMARY KEY,
     quote_id VARCHAR,
     criterion VARCHAR NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE quote_analysis (
     context_keywords TEXT,
     question_relevance VARCHAR CHECK (question_relevance IN ('direct', 'indirect', 'unrelated')),
     analysis_timestamp TIMESTAMP DEFAULT NOW(),
-    FOREIGN KEY (quote_id) REFERENCES core_responses(response_id) ON DELETE CASCADE,
+    FOREIGN KEY (quote_id) REFERENCES stage1_data_responses(response_id) ON DELETE CASCADE,
     UNIQUE(quote_id, criterion)
 );
 
@@ -83,11 +83,11 @@ CREATE TABLE processing_metadata (
 );
 
 -- Create indexes for performance
-CREATE INDEX idx_core_responses_company ON core_responses(company);
-CREATE INDEX idx_core_responses_deal_status ON core_responses(deal_status);
-CREATE INDEX idx_core_responses_date ON core_responses(interview_date);
-CREATE INDEX idx_quote_analysis_quote_id ON quote_analysis(quote_id);
-CREATE INDEX idx_quote_analysis_criterion ON quote_analysis(criterion);
+CREATE INDEX idx_stage1_data_responses_company ON stage1_data_responses(company);
+CREATE INDEX idx_stage1_data_responses_deal_status ON stage1_data_responses(deal_status);
+CREATE INDEX idx_stage1_data_responses_date ON stage1_data_responses(interview_date);
+CREATE INDEX idx_stage2_response_labeling_quote_id ON stage2_response_labeling(quote_id);
+CREATE INDEX idx_stage2_response_labeling_criterion ON stage2_response_labeling(criterion);
 ```
 
 ## 🔑 Step 3: Get API Keys
@@ -129,8 +129,8 @@ You should see output like:
 🔍 Hybrid Database Status:
 {
   "supabase_available": true,
-  "core_responses": {"local_only": 0},
-  "quote_analysis": {"local_only": 0},
+  "stage1_data_responses": {"local_only": 0},
+  "stage2_response_labeling": {"local_only": 0},
   "total_local_responses": 0,
   "total_local_analyses": 0
 }
@@ -178,7 +178,7 @@ def get_data_for_display(filters=None):
 # Sync after processing
 def sync_after_processing():
     stats = db_manager.sync_all_to_supabase()
-    st.success(f"Synced {stats['core_responses']} responses to cloud")
+    st.success(f"Synced {stats['stage1_data_responses']} responses to cloud")
 ```
 
 ## 💰 Cost Analysis

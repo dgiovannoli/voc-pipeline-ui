@@ -1,5 +1,5 @@
 """
-Check the current state of the interview_id column in quote_analysis table
+Check the current state of the interview_id column in stage2_response_labeling table
 """
 
 import pandas as pd
@@ -11,10 +11,10 @@ def check_interview_id_column():
     db = SupabaseDatabase()
     
     try:
-        # Get a sample of quote_analysis data to check columns
+        # Get a sample of stage2_response_labeling data to check columns
         quotes_df = db.get_scored_quotes('Rev')
         
-        print("📊 Current quote_analysis columns:")
+        print("📊 Current stage2_response_labeling columns:")
         print(f"Columns: {list(quotes_df.columns)}")
         
         # Check if interview_id exists

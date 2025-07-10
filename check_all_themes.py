@@ -15,7 +15,7 @@ def check_all_themes():
     print("=" * 50)
     db = SupabaseDatabase()
     try:
-        response = db.supabase.table('themes').select('*').execute()
+        response = db.supabase.table('stage4_themes').select('*').execute()
         themes_data = response.data
         if not themes_data:
             print("❌ No themes found in database")

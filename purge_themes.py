@@ -13,7 +13,7 @@ def purge_themes():
     print("⚠️  Purging all themes for client_id='Rev'...")
     db = SupabaseDatabase()
     try:
-        response = db.supabase.table('themes').delete().eq('client_id', 'Rev').execute()
+        response = db.supabase.table('stage4_themes').delete().eq('client_id', 'Rev').execute()
         print(f"✅ Deleted themes for client_id='Rev'. Response: {response}")
     except Exception as e:
         print(f"❌ Error deleting themes: {e}")
