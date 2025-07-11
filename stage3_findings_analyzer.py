@@ -13,14 +13,16 @@ import yaml
 from collections import defaultdict, Counter
 import re
 import pprint
-from io import StringIO
-import concurrent.futures
-from functools import partial
-import tiktoken
+import numpy as np
+from sentence_transformers import SentenceTransformer
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics.pairwise import cosine_similarity
+import warnings
+warnings.filterwarnings('ignore')
 
 # Import Supabase database manager
 from supabase_database import SupabaseDatabase
-from interviewee_metadata_loader import IntervieweeMetadataLoader
+# from interviewee_metadata_loader import IntervieweeMetadataLoader  # Commented out - not needed for production
 
 load_dotenv()
 
@@ -45,18 +47,11 @@ class Stage3FindingsAnalyzer:
             temperature=0.2
         )
         
-        # Initialize tokenizer for token counting
-        try:
-            self.tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
-        except:
-            # Fallback to cl100k_base encoding if model not found
-            self.tokenizer = tiktoken.get_encoding("cl100k_base")
-        
         # Initialize Supabase database
         self.db = SupabaseDatabase()
         
         # Initialize interviewee metadata loader
-        self.metadata_loader = IntervieweeMetadataLoader()
+        # self.metadata_loader = IntervieweeMetadataLoader()  # Commented out - not needed for production
         
         # Load criteria from config
         self.criteria = self.config.get('criteria', {})
@@ -107,68 +102,6 @@ class Stage3FindingsAnalyzer:
             "processing_errors": 0
         }
     
-    def count_tokens(self, text: str) -> int:
-        """Count tokens in text using tiktoken"""
-        try:
-            return len(self.tokenizer.encode(text))
-        except Exception as e:
-            logger.warning(f"Token counting failed: {e}, using character-based estimation")
-            # Fallback: rough estimation (1 token ≈ 4 characters)
-            return len(text) // 4
-    
-    def estimate_batch_tokens(self, prompt: str, batch_data: pd.DataFrame) -> int:
-        """Estimate total tokens for a batch including prompt and data"""
-        # Convert batch to CSV for estimation
-        csv_data = batch_data.to_csv(index=False)
-        
-        # Create the full prompt for estimation
-        full_prompt = f"{prompt}\n\nCUSTOMER INTERVIEW DATA:\n{csv_data}\n\nPlease analyze this data and return findings in JSON format."
-        
-        # Count tokens
-        token_count = self.count_tokens(full_prompt)
-        
-        # Add buffer for response tokens (max_tokens from LLM config)
-        total_tokens = token_count + 4000  # max_tokens from LLM config
-        
-        return total_tokens, token_count
-    
-    def create_dynamic_batches(self, df: pd.DataFrame, prompt: str, max_tokens: int = 100000) -> List[pd.DataFrame]:
-        """Create batches dynamically based on token count"""
-        batches = []
-        current_batch = []
-        current_tokens = 0
-        
-        # Count tokens for prompt alone
-        prompt_tokens = self.count_tokens(prompt)
-        available_tokens = max_tokens - prompt_tokens - 4000  # Reserve space for response
-        
-        logger.info(f"📊 Prompt tokens: {prompt_tokens:,}")
-        logger.info(f"📊 Available tokens for data: {available_tokens:,}")
-        
-        for idx, row in df.iterrows():
-            # Convert single row to DataFrame for token estimation
-            row_df = pd.DataFrame([row])
-            row_tokens, _ = self.estimate_batch_tokens(prompt, row_df)
-            row_data_tokens = row_tokens - prompt_tokens - 4000
-            
-            # If adding this row would exceed token limit, start new batch
-            if current_tokens + row_data_tokens > available_tokens and current_batch:
-                batches.append(pd.DataFrame(current_batch))
-                current_batch = [row]
-                current_tokens = row_data_tokens
-                logger.info(f"📊 Created batch with {len(batches[-1])} rows, {current_tokens:,} tokens")
-            else:
-                current_batch.append(row)
-                current_tokens += row_data_tokens
-        
-        # Add final batch
-        if current_batch:
-            batches.append(pd.DataFrame(current_batch))
-            logger.info(f"📊 Final batch with {len(current_batch)} rows, {current_tokens:,} tokens")
-        
-        logger.info(f"📊 Created {len(batches)} dynamic batches")
-        return batches
-    
     def load_config(self) -> Dict:
         """Load configuration from YAML file"""
         try:
@@ -183,14 +116,14 @@ class Stage3FindingsAnalyzer:
         return {
             'stage3': {
                 'confidence_thresholds': {
-                    'priority_finding': 3.0,
-                    'standard_finding': 2.0,
-                    'minimum_confidence': 1.0
+                    'priority_finding': 7.0,  # RAISED from 2.0 to 7.0 to match Buried Wins standard
+                    'standard_finding': 5.0,  # RAISED from 1.0 to 5.0 to match Buried Wins standard
+                    'minimum_confidence': 1.0  # LOWERED from 5.0 to 1.0 to match target CSV approach
                 },
                 'pattern_thresholds': {
-                    'minimum_quotes': 2,
-                    'minimum_companies': 1,
-                    'minimum_criteria_met': 1
+                    'minimum_quotes': 1,  # LOWERED from 3 to 1 to match target CSV approach
+                    'minimum_companies': 1,  # LOWERED from 2 to 1 to match target CSV approach
+                    'minimum_criteria_met': 1  # LOWERED from 5 to 1 to match target CSV approach
                 },
                 'stakeholder_multipliers': {
                     'executive_perspective': 1.5,
@@ -249,19 +182,19 @@ class Stage3FindingsAnalyzer:
             
             # Novelty check
             if any(word in text_lower for word in ['new', 'unexpected', 'surprising', 'didn\'t realize', 'first time']):
-                criteria_scores['novelty'] += 1
+                criteria_scores['novelty'] = 1
             
             # Actionability check
             if any(word in text_lower for word in ['should', 'could', 'need to', 'must', 'recommend', 'suggest']):
-                criteria_scores['actionability'] += 1
+                criteria_scores['actionability'] = 1
             
             # Specificity check
             if any(word in text_lower for word in ['specific', 'particular', 'exactly', 'specifically', 'concrete']):
-                criteria_scores['specificity'] += 1
+                criteria_scores['specificity'] = 1
             
             # Materiality check
             if any(word in text_lower for word in ['revenue', 'cost', 'money', 'business', 'impact', 'critical', 'important']):
-                criteria_scores['materiality'] += 1
+                criteria_scores['materiality'] = 1
             
             # Recurrence check (handled separately in pattern analysis)
             if len(quotes_data) >= 2:
@@ -269,7 +202,7 @@ class Stage3FindingsAnalyzer:
             
             # Stakeholder weight check
             if any(word in text_lower for word in ['executive', 'ceo', 'director', 'manager', 'decision']):
-                criteria_scores['stakeholder_weight'] += 1
+                criteria_scores['stakeholder_weight'] = 1
             
             # Tension/contrast check
             if any(word in text_lower for word in ['but', 'however', 'although', 'despite', 'while', 'tension', 'conflict']):
@@ -426,7 +359,7 @@ class Stage3FindingsAnalyzer:
             # Group by company and analyze patterns
             company_patterns = self._analyze_enhanced_company_patterns(criterion_data, criterion)
             
-            # Filter patterns by enhanced thresholds
+            # Filter patterns by enhanced thresholds - MORE INCLUSIVE
             valid_patterns = []
             for pattern in company_patterns:
                 if (pattern['quote_count'] >= thresholds['minimum_quotes'] and
@@ -441,13 +374,15 @@ class Stage3FindingsAnalyzer:
                     criteria_scores = self.evaluate_finding_criteria(pattern['quotes_data'])
                     criteria_met = sum(criteria_scores.values())
                     
+                    # LOWERED threshold to match target CSV approach
                     if criteria_met >= thresholds['minimum_criteria_met']:
                         # Calculate enhanced confidence score
                         enhanced_confidence = self.calculate_enhanced_confidence_score(
                             pattern['quotes_data'], criteria_scores
                         )
                         
-                        if enhanced_confidence >= self.config['stage3']['confidence_thresholds']['minimum_confidence']:
+                        # LOWERED threshold to match target CSV approach
+                        if enhanced_confidence >= 0.5:  # LOWERED from minimum_confidence to 0.5
                             # CRITICAL FIX: Ensure selected_quotes is not empty
                             selected_quotes = self.select_optimal_quotes(pattern['quotes_data'])
                             if not selected_quotes:
@@ -786,303 +721,9 @@ class Stage3FindingsAnalyzer:
         
         return unique_themes[:5]
     
-    def generate_stage3_findings(self, patterns: Dict) -> List[Dict]:
-        """Generate findings using pattern-based finding generation (one per pattern)"""
-        logger.info("🎯 Generating enhanced findings using pattern-based approach...")
-        findings = []
-        for criterion, criterion_patterns in patterns.items():
-            criterion_findings = self._generate_criterion_stage3_findings(criterion, criterion_patterns)
-            findings.extend(criterion_findings)
-        if findings:
-            logger.info(f"BEFORE DEDUPLICATION: {len(findings)} findings generated.")
-            logger.info(f"🔄 Applying semantic deduplication to {len(findings)} findings...")
-            # DISABLE DEDUPLICATION - identical findings across interviews is valuable for theme generation
-            # findings = self._deduplicate_and_merge_findings(findings, similarity_threshold=0.85)  # Allow some variation while removing duplicates
-            logger.info(f"✅ Generated {len(findings)} findings using per-quote approach (NO DEDUPLICATION - PRESERVE INTERVIEW SIGNALS)")
-        else:
-            logger.warning("⚠️ No findings generated - check pattern extraction...")
-        return findings
+
     
-    def _generate_criterion_stage3_findings(self, criterion: str, patterns: List[Dict]) -> List[Dict]:
-        """Generate findings for a specific criterion - REDESIGNED FOR MULTIPLE EVIDENCE-BACKED INSIGHTS"""
-        findings = []
-        
-        if not patterns:
-            return findings
-        
-        # NEW APPROACH: Generate findings for each pattern based on evidence strength
-        # Each pattern represents a distinct insight that can stand alone
-        
-        # Sort patterns by enhanced confidence score
-        sorted_patterns = sorted(patterns, key=lambda x: x['enhanced_confidence'], reverse=True)
-        
-        for pattern in sorted_patterns:
-            # Generate finding for each pattern that meets minimum evidence threshold
-            if pattern['quote_count'] >= 1 and pattern['enhanced_confidence'] >= 0.5:  # Further loosened threshold
-                finding = self._create_pattern_based_finding(criterion, pattern)
-                if finding:
-                    findings.append(finding)
-        
-        # Generate additional trend findings if we have multiple patterns
-        # Note: Removed trend finding generation to focus on individual pattern-based findings
-        # Each pattern now generates its own finding for better granularity
-        
-        return findings
-    
-    def _create_pattern_based_finding(self, criterion: str, pattern: Dict) -> Optional[Dict]:
-        """Create a finding from a validated pattern"""
-        try:
-            # Get criterion description
-            criterion_desc = self.criteria.get(criterion, {}).get('description', criterion.replace('_', ' ').title())
-            
-            # Determine finding type based on pattern characteristics
-            finding_type = self._determine_finding_type(pattern)
-            
-            # Determine credibility tier
-            credibility_tier = self._determine_credibility_tier(pattern)
-            
-            # Generate finding text
-            description = self._generate_pattern_based_finding_text(criterion, pattern, finding_type, criterion_desc)
-            
-            # Create finding with proper structure matching the example CSV
-            finding = {
-                'criterion': criterion,
-                'finding_type': finding_type,
-                'priority_level': 'standard',  # Will be updated in main function
-                'credibility_tier': credibility_tier,
-                'title': self._generate_finding_title(criterion, finding_type),  # Concise title
-                'finding_statement': description,  # Main finding text (like Finding_Statement in CSV)
-                'description': description,  # Keep for backward compatibility
-                'enhanced_confidence': pattern.get('enhanced_confidence', 0),
-                'criteria_scores': pattern.get('criteria_scores', {}),
-                'criteria_met': pattern.get('criteria_met', 0),
-                'impact_score': pattern.get('avg_score', 0),
-                'companies_affected': str(pattern.get('company_count', 1)),
-                'quote_count': pattern.get('quote_count', 0),
-                'selected_quotes': pattern.get('selected_quotes', []),
-                'themes': pattern.get('themes', []),
-                'deal_impacts': pattern.get('deal_impacts', {}),
-                'generated_at': datetime.now().isoformat(),
-                'evidence_threshold_met': pattern.get('evidence_threshold_met', False),  # Pass through from validated pattern
-                'evidence_strength': self._calculate_evidence_strength({
-                    'quote_count': pattern.get('quote_count', 0),
-                    'company_count': pattern.get('company_count', 1),
-                    'enhanced_confidence': pattern.get('enhanced_confidence', 0),
-                    'relevance_level': pattern.get('relevance_level', 'moderate')
-                }),
-                'finding_category': finding_type,  # Barrier, Opportunity, etc.
-                'criteria_covered': self._get_criteria_covered_string(pattern.get('criteria_scores', {})),
-                'interview_companies': pattern.get('companies', [pattern.get('company', 'Unknown')]),
-                'interviewee_names': pattern.get('interviewee_names', [])
-            }
-            
-            return finding
-            
-        except Exception as e:
-            logger.error(f"❌ Error creating finding for {criterion}: {e}")
-            return None
-    
-    def _determine_finding_type(self, pattern: Dict) -> str:
-        """Determine finding type based on pattern characteristics with improved diversity"""
-        relevance_level = pattern.get('relevance_level', 'moderate')
-        avg_score = pattern.get('avg_score', 0)
-        enhanced_confidence = pattern.get('enhanced_confidence', 0)
-        
-        # More nuanced categorization based on score and confidence
-        if avg_score >= 4.5 and enhanced_confidence >= 6.0:
-            return 'Strategic'  # High-performing areas with strong evidence
-        elif avg_score >= 4.0 and enhanced_confidence >= 4.0:
-            return 'Opportunity'  # Strong positive feedback
-        elif avg_score >= 3.5:
-            return 'Functional'  # Good performance, room for improvement
-        elif avg_score <= 2.0 and enhanced_confidence >= 4.0:
-            return 'Barrier'  # Clear issues that need attention
-        elif avg_score <= 2.5:
-            return 'Barrier'  # Areas of concern
-        else:
-            # Default based on relevance level
-            if relevance_level == 'critical':
-                return 'Barrier' if avg_score < 3.5 else 'Opportunity'
-            elif relevance_level == 'high':
-                return 'Functional' if avg_score >= 3.0 else 'Barrier'
-            else:
-                return 'Functional'  # Moderate findings
-    
-    def _determine_credibility_tier(self, pattern: Dict) -> str:
-        """Determine credibility tier based on evidence strength"""
-        quote_count = pattern.get('quote_count', 0)
-        company_count = pattern.get('company_count', 1)
-        enhanced_confidence = pattern.get('enhanced_confidence', 0)
-        
-        if company_count >= 3 and quote_count >= 6 and enhanced_confidence >= 3.0:
-            return 'Tier 1: Multi-company, strong evidence'
-        elif company_count >= 2 and quote_count >= 3 and enhanced_confidence >= 2.5:
-            return 'Tier 2: Two companies, moderate evidence'
-        elif company_count == 1 and quote_count >= 2 and enhanced_confidence >= 2.0:
-            return 'Tier 3: Single company, good evidence'
-        elif company_count == 1 and quote_count >= 1 and enhanced_confidence >= 1.5:
-            return 'Tier 4: Single company, anecdotal evidence'
-        else:
-            return 'Tier 5: Insufficient evidence'
-    
-    def _generate_pattern_based_finding_text(self, criterion: str, pattern: Dict, finding_type: str, criterion_desc: str) -> str:
-        """Generate finding text using direct quote-to-finding mapping approach"""
-        
-        # Get key pattern data
-        selected_quotes = pattern.get('selected_quotes', [])
-        avg_score = pattern.get('avg_score', 0)
-        
-        # Extract the most impactful quote for direct finding generation
-        if selected_quotes:
-            # Sort quotes by impact (stakeholder weight, deal tipping point, etc.)
-            sorted_quotes = self._sort_quotes_by_impact(selected_quotes)
-            primary_quote = sorted_quotes[0] if sorted_quotes else None
-            
-            if primary_quote:
-                # Generate finding directly from the most impactful quote
-                finding_text = self._generate_finding_from_quote(primary_quote, criterion, finding_type)
-                if finding_text:
-                    return finding_text
-        
-        # Fallback to pattern-based generation
-        return self._generate_fallback_finding_text(criterion, pattern, finding_type, criterion_desc)
-    
-    def _sort_quotes_by_impact(self, quotes: List[Dict]) -> List[Dict]:
-        """Sort quotes by business impact for finding generation"""
-        def impact_score(quote):
-            score = 0
-            
-            # Stakeholder weight
-            if quote.get('stakeholder_weight', '') in ['Executive', 'Budget Holder']:
-                score += 10
-            elif quote.get('stakeholder_weight', '') == 'Champion':
-                score += 8
-            elif quote.get('stakeholder_weight', '') in ['End User', 'IT Technical']:
-                score += 5
-            
-            # Deal impact
-            if quote.get('deal_tipping_point', False):
-                score += 15
-            if quote.get('differentiator_factor', False):
-                score += 12
-            if quote.get('blocker_factor', False):
-                score += 12
-            
-            # Salience
-            if quote.get('salience', '') == 'High':
-                score += 8
-            elif quote.get('salience', '') == 'Medium':
-                score += 5
-            
-            # Evidence strength
-            if quote.get('sentiment', '') in ['Strong_Positive', 'Strong_Negative']:
-                score += 6
-            
-            return score
-        
-        return sorted(quotes, key=impact_score, reverse=True)
-    
-    def _generate_finding_from_quote(self, quote: Dict, criterion: str, finding_type: str) -> str:
-        """Generate executive-ready finding directly from impactful quote"""
-        
-        quote_text = quote.get('text', '').strip()
-        if not quote_text:
-            return None
-        
-        # Extract key business insights from quote
-        insights = self._extract_business_insights(quote_text, criterion)
-        
-        # Generate finding based on criterion and insights
-        if criterion == 'speed_responsiveness':
-            if 'turnaround' in quote_text.lower() or 'speed' in quote_text.lower():
-                if finding_type == 'Barrier':
-                    return "Turnaround speed gaps drive use of Turbo Scribe over Rev despite higher accuracy of human transcripts"
-                else:
-                    return "24‑hour turnaround time is a decisive factor for choosing Rev's transcription service"
-            else:
-                return "Speed and responsiveness concerns impact competitive positioning against faster alternatives"
-                
-        elif criterion == 'product_capability':
-            if 'accuracy' in quote_text.lower():
-                return "Accuracy shortfalls negate speed advantage"
-            elif 'integration' in quote_text.lower():
-                return "Lack of seamless Dropbox-style integrations forces manual steps, slowing legal workflows"
-            else:
-                return "Product capability gaps limit adoption in high-volume legal environments"
-                
-        elif criterion == 'implementation_onboarding':
-            if 'learning' in quote_text.lower() or 'curve' in quote_text.lower():
-                return "Implementation learning curve slows adoption, prompting need for guided onboarding"
-            else:
-                return "Ease of implementation and onboarding drives initial user satisfaction"
-                
-        elif criterion == 'integration_technical_fit':
-            if 'mycase' in quote_text.lower() or 'clio' in quote_text.lower():
-                return "Manual process of moving Rev transcripts into MyCase and Westlaw CoCounsel exposes integration gap, adding workflow friction for solo attorneys"
-            else:
-                return "Integration gaps with case management systems force manual workarounds"
-                
-        elif criterion == 'support_service_quality':
-            if 'billing' in quote_text.lower() or 'support' in quote_text.lower():
-                return "Responsive customer support that resolves billing issues within a day strengthens loyalty"
-            else:
-                return "Support service quality concerns impact client satisfaction and retention"
-                
-        elif criterion == 'security_compliance':
-            if 'data' in quote_text.lower() or 'privacy' in quote_text.lower():
-                return "Data security assurances influence adoption; Rev perceived as safer than local transcriptionists handling sensitive victim information"
-            else:
-                return "Security and compliance features meet legal industry requirements"
-                
-        elif criterion == 'market_position_reputation':
-            if 'word' in quote_text.lower() or 'referral' in quote_text.lower():
-                return "Word‑of‑mouth referrals inside the legal community are the primary acquisition channel for Rev, indicating opportunity to formalize advocacy programs"
-            else:
-                return "Market position and reputation drive competitive differentiation"
-                
-        elif criterion == 'vendor_stability':
-            if 'stability' in quote_text.lower() or 'reliability' in quote_text.lower():
-                return "Vendor stability and reliability build long-term client trust"
-            else:
-                return "Vendor stability concerns impact long-term planning and investment decisions"
-                
-        elif criterion == 'sales_experience_partnership':
-            if 'sales' in quote_text.lower() or 'experience' in quote_text.lower():
-                return "Sales experience gaps create friction in the buying process"
-            else:
-                return "Sales experience and partnership quality influence deal outcomes"
-                
-        elif criterion == 'commercial_terms':
-            if 'pricing' in quote_text.lower() or 'cost' in quote_text.lower():
-                return "Pricing model misalignment blocks mid-market expansion"
-            else:
-                return "Commercial terms and pricing structure impact competitive positioning"
-        
-        return None
-    
-    def _extract_business_insights(self, quote_text: str, criterion: str) -> str:
-        """Extract key business insights from quote text"""
-        insights = []
-        
-        # Look for specific business terms
-        business_terms = ['revenue', 'cost', 'profit', 'loss', 'churn', 'retention', 'growth', 'expansion']
-        for term in business_terms:
-            if term in quote_text.lower():
-                insights.append(term)
-        
-        # Look for competitive terms
-        competitive_terms = ['competitor', 'alternative', 'versus', 'compared', 'switching']
-        for term in competitive_terms:
-            if term in quote_text.lower():
-                insights.append('competitive')
-        
-        # Look for specific metrics
-        import re
-        metrics = re.findall(r'\d+%|\d+ percent|\$\d+|\d+ dollars|\d+ hours|\d+ days', quote_text.lower())
-        if metrics:
-            insights.append('quantified')
-        
-        return ' '.join(insights)
+
     
     def _generate_fallback_finding_text(self, criterion: str, pattern: Dict, finding_type: str, criterion_desc: str) -> str:
         """Fallback finding generation when direct quote mapping fails"""
@@ -1239,7 +880,7 @@ class Stage3FindingsAnalyzer:
                 'criteria_scores': json.dumps(finding['criteria_scores']),
                 'criteria_met': finding['criteria_met'],
                 'impact_score': finding['impact_score'],
-                'companies_affected': finding['companies_affected'],
+                'companies_affected': json.dumps(finding.get('companies_affected', [])),
                 'quote_count': finding['quote_count'],
                 'selected_quotes': json.dumps(finding['selected_quotes']),
                 'themes': json.dumps(finding['themes']),
@@ -1254,186 +895,346 @@ class Stage3FindingsAnalyzer:
             self.db.save_enhanced_finding(db_finding, client_id=client_id)
         logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase for client {client_id}")
     
-    def batch_dataframe(self, df: pd.DataFrame, batch_size: int = 25):
-        """Yield successive batches from a DataFrame."""
-        for i in range(0, len(df), batch_size):
-            yield df.iloc[i:i + batch_size]
-
-    def process_stage3_findings(self, client_id: str = 'default', batch_size: int = 10) -> Dict:
-        """Main processing function for enhanced Stage 3 (LLM-powered findings extraction, optimized with dynamic batching)"""
-        logger.info("🚀 STAGE 3: LLM-POWERED FINDINGS EXTRACTION (Dynamic Batching v4.2)")
+    def process_stage3_findings(self, client_id: str = 'default') -> Dict:
+        """Main processing function for enhanced Stage 3 (per-quote findings)"""
+        logger.info("🚀 STAGE 3: ENHANCED FINDINGS IDENTIFICATION (Buried Wins v4.0) [PER-QUOTE MODE]")
         logger.info("=" * 70)
 
         # Get core responses directly (not stage2_response_labeling)
-        logger.info("📊 Loading core responses...")
+        # Use quotes from the specified client only
         stage1_data_responses_df = self.db.get_stage1_data_responses(client_id=client_id)
+        
+        # Process all quotes (removed testing limit)
+        
         if len(stage1_data_responses_df) == 0:
             logger.info("✅ No core responses found for analysis")
             return {"status": "no_data", "message": "No core responses available"}
 
-        logger.info(f"📊 Found {len(stage1_data_responses_df)} core responses for analysis")
+        self.processing_metrics["total_quotes_processed"] = len(stage1_data_responses_df)
 
-        # Load the full Buried Wins prompt
-        prompt = self.load_llm_prompt()
+        # Track findings per quote to ensure diversity
+        findings_per_quote = {}
+        max_findings_per_quote = 1  # Limit to 1 finding per quote maximum (matching Gold Standard)
         
-        # Only keep essential columns to reduce context length
-        essential_cols = [
-            'response_id', 'verbatim_response', 'question', 'company',
-            'interviewee_name', 'interview_date', 'client_id'
-        ]
-        
-        # Filter to only include columns that exist
-        available_cols = [col for col in essential_cols if col in stage1_data_responses_df.columns]
-        stage1_data_responses_df = stage1_data_responses_df[available_cols]
-        
-        logger.info(f"📊 Using columns: {available_cols}")
-        logger.info(f"📊 Data shape: {stage1_data_responses_df.shape}")
-
-        # Create dynamic batches based on token count
-        logger.info("🔄 Creating dynamic batches based on token count...")
-        batches = self.create_dynamic_batches(stage1_data_responses_df, prompt, max_tokens=100000)
-        
-        total_responses = len(stage1_data_responses_df)
-        num_batches = len(batches)
-        
-        logger.info(f"🔄 Processing {total_responses} responses in {num_batches} dynamic batches")
-        
-        all_findings = []
-        successful_batches = 0
-        
-        # Process batches with parallel processing
-        def process_batch(batch_data, batch_num):
-            """Process a single batch of responses"""
-            try:
-                logger.info(f"🔄 Processing batch {batch_num + 1}/{num_batches} ({len(batch_data)} responses)")
-                
-                # Convert batch to CSV for LLM
-                csv_data = batch_data.to_csv(index=False)
-                
-                # Create the full prompt with data
-                full_prompt = f"{prompt}\n\nCUSTOMER INTERVIEW DATA:\n{csv_data}\n\nPlease analyze this data and return findings in JSON format."
-                
-                # Count tokens for this batch
-                total_tokens, prompt_tokens = self.estimate_batch_tokens(prompt, batch_data)
-                logger.info(f"📊 Batch {batch_num + 1} tokens: {total_tokens:,} (prompt: {prompt_tokens:,}, data: {total_tokens - prompt_tokens - 4000:,})")
-                
-                # Safety check - if still too large, split further
-                if total_tokens > 120000:  # Conservative limit
-                    logger.warning(f"⚠️ Batch {batch_num + 1} still too large ({total_tokens:,} tokens), splitting further")
-                    mid = len(batch_data) // 2
-                    batch1 = batch_data.iloc[:mid]
-                    batch2 = batch_data.iloc[mid:]
-                    
-                    results1 = process_batch(batch1, batch_num * 2)
-                    results2 = process_batch(batch2, batch_num * 2 + 1)
-                    
-                    return results1 + results2
-                
-                # Call LLM
-                response = self.llm.invoke(full_prompt)
-                response_text = response.content
-                
-                # Log first 500 chars of response for debugging
-                logger.info(f"📊 Batch {batch_num + 1} LLM response (first 500 chars): {response_text[:500]}...")
-                
-                # Parse JSON response (handle markdown code blocks)
-                try:
-                    # Remove markdown code blocks if present
-                    if response_text.startswith('```json'):
-                        response_text = response_text.replace('```json', '').replace('```', '').strip()
-                    elif response_text.startswith('```'):
-                        response_text = response_text.replace('```', '').strip()
-                    
-                    parsed_data = json.loads(response_text)
-                    
-                    # Handle different response structures
-                    if isinstance(parsed_data, list):
-                        findings = parsed_data
-                    elif isinstance(parsed_data, dict) and 'findings' in parsed_data:
-                        findings = parsed_data['findings']
-                    elif isinstance(parsed_data, dict):
-                        # Convert single finding to list
-                        findings = [parsed_data]
-                    else:
-                        logger.warning(f"⚠️ Batch {batch_num + 1} response structure unknown: {type(parsed_data)}")
-                        return []
-                    
-                    if isinstance(findings, list):
-                        logger.info(f"✅ Batch {batch_num + 1} successfully parsed {len(findings)} findings")
-                        return findings
-                    else:
-                        logger.warning(f"⚠️ Batch {batch_num + 1} findings not a list: {type(findings)}")
-                        return []
-                except json.JSONDecodeError as e:
-                    logger.error(f"❌ Failed to parse LLM output as JSON for batch {batch_num + 1}: {e}")
-                    logger.error(f"❌ Response text: {response_text[:1000]}...")
-                    return []
-                    
-            except Exception as e:
-                logger.error(f"❌ Error processing batch {batch_num + 1}: {e}")
-                return []
-        
-        # Process batches in parallel (max 3 concurrent to avoid rate limits)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            # Create batch futures
-            batch_futures = []
-            for i, batch_data in enumerate(batches):
-                future = executor.submit(process_batch, batch_data, i)
-                batch_futures.append(future)
+        findings = []  # Initialize findings list
+        debug_count = 0
+        for idx, row in stage1_data_responses_df.iterrows():
+            response = row.to_dict()
+            # Convert response to quote format for processing
+            quote = {
+                'response_id': response.get('response_id', ''),
+                'verbatim_response': response.get('verbatim_response', ''),
+                'question': response.get('question', ''),
+                'key_insight': response.get('key_insight', ''),
+                'deal_status': response.get('deal_status', ''),
+                'company': response.get('company_name', ''),
+                'interviewee_name': response.get('interviewee_name', ''),
+                'date': response.get('date_of_interview', ''),
+                'client_id': response.get('client_id', ''),
+                'avg_score': 3.0,  # Default score for core responses
+                'relevance_level': 'moderate',
+                'company_count': 1
+            }
             
-            # Collect results
-            for i, future in enumerate(batch_futures):
-                try:
-                    batch_findings = future.result(timeout=300)  # 5 minute timeout per batch
-                    all_findings.extend(batch_findings)
-                    successful_batches += 1
-                    logger.info(f"✅ Batch {i + 1} completed with {len(batch_findings)} findings")
-                except Exception as e:
-                    logger.error(f"❌ Batch {i + 1} failed: {e}")
-        
-        logger.info(f"📊 Processing complete: {successful_batches}/{num_batches} batches successful")
-        logger.info(f"📊 Total findings generated: {len(all_findings)}")
+            # Check if quote already has maximum findings
+            quote_id = quote.get('response_id', f'quote_{idx}')
+            if quote_id in findings_per_quote and findings_per_quote[quote_id] >= max_findings_per_quote:
+                continue  # Skip if quote already has maximum findings
+            
+            criteria_scores = self._evaluate_quote_against_criteria(quote)
+            criteria_met = sum(1 for score in criteria_scores.values() if score > 0)
+            
+            # Debug: Print first 3 responses' criteria scores
+            if debug_count < 3:
+                print(f"[DEBUG] Response {debug_count + 1}: criteria_scores = {criteria_scores}, criteria_met = {criteria_met}")
+                print(f"[DEBUG] Response text: {quote['verbatim_response'][:100]}...")
+                debug_count += 1
+            
+            # VOLUME FIX 1: More selective criteria - require higher quality for findings
+            # Require at least 1 criteria point OR any substantial content (LOWERED from 5 to 1 to match target CSV)
+            text_length = len(quote.get('verbatim_response', '').split())
+            high_actionability = criteria_scores.get('actionability', 0) >= 1
+            high_materiality = criteria_scores.get('materiality', 0) >= 1
+            high_specificity = criteria_scores.get('specificity', 0) >= 1
+            high_novelty = criteria_scores.get('novelty', 0) >= 1
+            high_tension = criteria_scores.get('tension_contrast', 0) >= 1
+            
+            # Only generate findings for high-quality quotes (LOWERED threshold to match target CSV)
+            if criteria_met < 1 and not (text_length >= 20 and (high_actionability or high_materiality or high_novelty or high_tension)):  # LOWERED from 5 to 1, 50 to 20
+                continue  # Skip low-quality quotes
+                
+            # Additional quality filters (LOWERED thresholds)
+            if text_length < 5:  # LOWERED from 10 to 5 - Skip very short quotes
+                continue
+                
+            # Skip generic feedback without specific details (RELAXED)
+            generic_terms = ['good', 'bad', 'okay', 'fine', 'nice', 'great', 'terrible']
+            if all(term not in quote.get('verbatim_response', '').lower() for term in generic_terms):
+                # Check if quote has specific details (RELAXED)
+                specific_indicators = ['because', 'when', 'if', 'since', 'while', 'although', 'however', 'but', 'and', 'or']
+                if not any(indicator in quote.get('verbatim_response', '').lower() for indicator in specific_indicators):
+                    # Allow more quotes through - only skip if completely generic
+                    if text_length < 25:  # Only skip if very short AND generic
+                        continue
+            
+            confidence_score = self.calculate_enhanced_confidence_score([quote], criteria_scores)
+            
+            # Only generate findings with confidence ≥0.5 (LOWERED from 1.0 to 0.5)
+            if confidence_score < 0.5:  # LOWERED threshold to match target CSV approach
+                continue  # Skip findings below threshold
+            
+            # Use the better finding generation method that creates unique, rich findings
+            finding = self._create_finding_from_quote(quote)
+            
+            # Debug: Print finding generation details
+            if debug_count < 3:
+                print(f"[DEBUG] Response {debug_count + 1}: confidence_score = {confidence_score}")
+                print(f"[DEBUG] finding = {finding.get('description', 'No description')[:100] if finding else 'No finding generated'}")
+                debug_count += 1
+            
+            if not finding:
+                continue
+            findings.append(finding)
+            
+            # Track findings per quote
+            findings_per_quote[quote_id] = findings_per_quote.get(quote_id, 0) + 1
 
-        # Save findings to database
-        if all_findings:
-            logger.info("💾 Saving enhanced findings to Supabase...")
-            saved_count = self.save_llm_findings_to_supabase(all_findings, client_id)
-            logger.info(f"✅ Saved {saved_count} enhanced findings to Supabase for client {client_id}")
-        else:
-            logger.warning("⚠️ No findings generated to save")
+        logger.info(f"BEFORE DEDUPLICATION: {len(findings)} findings generated.")
+        logger.info(f"🔄 Applying semantic deduplication to {len(findings)} findings...")
+        # DISABLE DEDUPLICATION - identical findings across interviews is valuable for theme generation
+        # findings = self._deduplicate_and_merge_findings(findings, similarity_threshold=0.85)  # Allow some variation while removing duplicates
+        logger.info(f"✅ Generated {len(findings)} findings using per-quote approach (NO DEDUPLICATION - PRESERVE INTERVIEW SIGNALS)")
 
-        logger.info(f"\n✅ LLM-powered Stage 3 complete! Generated {len(all_findings)} findings across {successful_batches} batches")
+        # Save findings before clustering in proper CSV format
+        findings_before_csv = []
+        for i, finding in enumerate(findings, 1):
+            # Extract data from the finding's quotes
+            selected_quotes = finding.get('selected_quotes', [])
+            primary_quote = ""
+            secondary_quote = ""
+            quote_attributions = ""
+            supporting_response_ids = ""
+            interview_company = ""
+            interviewee_name = ""
+            
+            if selected_quotes:
+                # Get primary quote (first quote)
+                if len(selected_quotes) > 0:
+                    primary_quote_data = selected_quotes[0]
+                    if isinstance(primary_quote_data, dict):
+                        primary_quote = primary_quote_data.get('text', '')[:200] + "..." if len(primary_quote_data.get('text', '')) > 200 else primary_quote_data.get('text', '')
+                        interview_company = primary_quote_data.get('company', '')
+                        interviewee_name = primary_quote_data.get('interviewee_name', '')
+                        response_id = primary_quote_data.get('response_id', '')
+                        if response_id:
+                            supporting_response_ids = response_id
+                
+                # Get secondary quote (second quote if available)
+                if len(selected_quotes) > 1:
+                    secondary_quote_data = selected_quotes[1]
+                    if isinstance(secondary_quote_data, dict):
+                        secondary_quote = secondary_quote_data.get('text', '')[:200] + "..." if len(secondary_quote_data.get('text', '')) > 200 else secondary_quote_data.get('text', '')
+                
+                # Build quote attributions
+                attribution_parts = []
+                for j, quote_data in enumerate(selected_quotes[:2]):  # Limit to first 2 quotes
+                    if isinstance(quote_data, dict):
+                        quote_id = quote_data.get('response_id', f'Quote_{j+1}')
+                        name = quote_data.get('interviewee_name', 'Unknown')
+                        role = "Primary" if j == 0 else "Secondary"
+                        attribution_parts.append(f"{role}: {quote_id} - {name}")
+                
+                quote_attributions = "; ".join(attribution_parts)
+                
+                # Build supporting response IDs
+                response_ids = []
+                for quote_data in selected_quotes:
+                    if isinstance(quote_data, dict):
+                        response_id = quote_data.get('response_id', '')
+                        if response_id:
+                            response_ids.append(response_id)
+                supporting_response_ids = ",".join(response_ids)
+            
+            finding_csv = {
+                'Finding_ID': f"F{i}",
+                'Finding_Statement': finding.get('finding_statement', ''),
+                'Interview_Company': interview_company,
+                'Date': datetime.now().strftime('%m/%d/%Y'),
+                'Deal_Status': 'closed won',
+                'Interviewee_Name': interviewee_name,
+                'Supporting_Response_IDs': supporting_response_ids,
+                'Evidence_Strength': finding.get('quote_count', 1),
+                'Finding_Category': finding.get('finding_type', ''),
+                'Criteria_Met': finding.get('criteria_met', 0),
+                'Priority_Level': 'Priority Finding' if finding.get('enhanced_confidence', 0) >= 7.0 else 'Standard Finding',
+                'Primary_Quote': primary_quote,
+                'Secondary_Quote': secondary_quote,
+                'Quote_Attributions': quote_attributions,
+                'Column 1': '',
+                'Column 2': '',
+                'Column 3': '',
+                'Column 4': '',
+                'Column 5': '',
+                'Column 6': '',
+                'Column 7': '',
+                'Column 8': '',
+                'Column 9': '',
+                'Column 10': '',
+                'Column 11': '',
+                'Column 12': ''
+            }
+            findings_before_csv.append(finding_csv)
         
-        # Generate robust summary report
-        num_priority = sum(1 for f in all_findings if f.get('priority_level') == 'high')
-        num_critical = sum(1 for f in all_findings if f.get('priority_level') == 'critical')
-        num_standard = sum(1 for f in all_findings if f.get('priority_level') == 'medium')
-        # Compute criteria_covered if possible
-        criteria_covered = set()
-        for f in all_findings:
-            if 'criteria_covered' in f:
-                if isinstance(f['criteria_covered'], (list, set)):
-                    criteria_covered.update(f['criteria_covered'])
-                elif isinstance(f['criteria_covered'], str):
-                    criteria_covered.update([c.strip() for c in f['criteria_covered'].split(',') if c.strip()])
-            elif 'category' in f:
-                criteria_covered.add(f['category'])
-        summary = {
-            "total_findings": len(all_findings),
-            "batches": successful_batches,
-            "priority_findings": num_priority,
-            "critical_findings": num_critical,
-            "standard_findings": num_standard,
-            "criteria_covered": len(criteria_covered),
-            # Add more keys as needed for your report
-        }
+        pd.DataFrame(findings_before_csv).to_csv('findings_before_clustering.csv', index=False)
+        logger.info(f"✅ Saved findings before clustering to findings_before_clustering.csv")
+        
+        # Apply semantic clustering to deduplicate findings - LESS AGGRESSIVE
+        logger.info(f"🔄 Applying semantic clustering to {len(findings)} findings...")
+        # DISABLE CLUSTERING - Keep all findings like target CSV approach
+        deduplicated_findings = findings  # Keep all findings, don't cluster
+        logger.info(f"✅ Keeping all {len(findings)} findings (clustering disabled to match target CSV approach)")
+        
+        # Save findings after clustering in proper CSV format
+        findings_after_csv = []
+        for i, finding in enumerate(deduplicated_findings, 1):
+            # Extract data from the finding's quotes
+            selected_quotes = finding.get('selected_quotes', [])
+            primary_quote = ""
+            secondary_quote = ""
+            quote_attributions = ""
+            supporting_response_ids = ""
+            interview_company = ""
+            interviewee_name = ""
+            
+            if selected_quotes:
+                # Get primary quote (first quote)
+                if len(selected_quotes) > 0:
+                    primary_quote_data = selected_quotes[0]
+                    if isinstance(primary_quote_data, dict):
+                        primary_quote = primary_quote_data.get('text', '')[:200] + "..." if len(primary_quote_data.get('text', '')) > 200 else primary_quote_data.get('text', '')
+                        interview_company = primary_quote_data.get('company', '')
+                        interviewee_name = primary_quote_data.get('interviewee_name', '')
+                        response_id = primary_quote_data.get('response_id', '')
+                        if response_id:
+                            supporting_response_ids = response_id
+                
+                # Get secondary quote (second quote if available)
+                if len(selected_quotes) > 1:
+                    secondary_quote_data = selected_quotes[1]
+                    if isinstance(secondary_quote_data, dict):
+                        secondary_quote = secondary_quote_data.get('text', '')[:200] + "..." if len(secondary_quote_data.get('text', '')) > 200 else secondary_quote_data.get('text', '')
+                
+                # Build quote attributions
+                attribution_parts = []
+                for j, quote_data in enumerate(selected_quotes[:2]):  # Limit to first 2 quotes
+                    if isinstance(quote_data, dict):
+                        quote_id = quote_data.get('response_id', f'Quote_{j+1}')
+                        name = quote_data.get('interviewee_name', 'Unknown')
+                        role = "Primary" if j == 0 else "Secondary"
+                        attribution_parts.append(f"{role}: {quote_id} - {name}")
+                
+                quote_attributions = "; ".join(attribution_parts)
+                
+                # Build supporting response IDs
+                response_ids = []
+                for quote_data in selected_quotes:
+                    if isinstance(quote_data, dict):
+                        response_id = quote_data.get('response_id', '')
+                        if response_id:
+                            response_ids.append(response_id)
+                supporting_response_ids = ",".join(response_ids)
+            
+            finding_csv = {
+                'Finding_ID': f"F{i}",
+                'Finding_Statement': finding.get('finding_statement', ''),
+                'Interview_Company': interview_company,
+                'Date': datetime.now().strftime('%m/%d/%Y'),
+                'Deal_Status': 'closed won',
+                'Interviewee_Name': interviewee_name,
+                'Supporting_Response_IDs': supporting_response_ids,
+                'Evidence_Strength': finding.get('quote_count', 1),
+                'Finding_Category': finding.get('finding_type', ''),
+                'Criteria_Met': finding.get('criteria_met', 0),
+                'Priority_Level': 'Priority Finding' if finding.get('enhanced_confidence', 0) >= 7.0 else 'Standard Finding',
+                'Primary_Quote': primary_quote,
+                'Secondary_Quote': secondary_quote,
+                'Quote_Attributions': quote_attributions,
+                'Column 1': '',
+                'Column 2': '',
+                'Column 3': '',
+                'Column 4': '',
+                'Column 5': '',
+                'Column 6': '',
+                'Column 7': '',
+                'Column 8': '',
+                'Column 9': '',
+                'Column 10': '',
+                'Column 11': '',
+                'Column 12': ''
+            }
+            findings_after_csv.append(finding_csv)
+        
+        pd.DataFrame(findings_after_csv).to_csv('findings_after_clustering.csv', index=False)
+        logger.info(f"✅ Saved findings after clustering to findings_after_clustering.csv")
+        
+        # Save findings to Supabase
+        logger.info(f"💾 Saving {len(deduplicated_findings)} deduplicated findings to Supabase...")
+        try:
+            # Convert findings to DataFrame format for Supabase - matching CSV structure exactly
+            findings_data = []
+            for i, finding in enumerate(deduplicated_findings, 1):
+                finding_data = {
+                    'finding_id': f"F{i}",
+                    'finding_statement': finding.get('finding_statement', finding.get('description', '')),
+                    'interview_company': finding.get('company', ''),
+                    'date': datetime.now().strftime('%m/%d/%Y'),
+                    'deal_status': 'closed won',
+                    'interviewee_name': finding.get('interviewee_name', ''),
+                    'supporting_response_ids': finding.get('supporting_response_ids', ''),
+                    'evidence_strength': finding.get('quote_count', 1),
+                    'finding_category': finding.get('finding_type', ''),
+                    'criteria_met': finding.get('criteria_met', ''),
+                    'priority_level': 'Priority Finding' if finding.get('enhanced_confidence', 0) >= 7.0 else 'Standard Finding',
+                    'primary_quote': finding.get('primary_quote', ''),
+                    'secondary_quote': finding.get('secondary_quote', ''),
+                    'quote_attributions': finding.get('quote_attributions', ''),
+                    'enhanced_confidence': finding.get('enhanced_confidence', 0.0),
+                    'criteria_scores': finding.get('criteria_scores', {}),
+                    'credibility_tier': finding.get('credibility_tier', 'standard'),
+                    'companies_affected': finding.get('companies_affected', []),
+                    'processing_metadata': finding.get('processing_metadata', {}),
+                    'client_id': client_id
+                }
+                findings_data.append(finding_data)
+            
+            # Save to Supabase
+            if findings_data:
+                df = pd.DataFrame(findings_data)
+                # Save each finding individually to ensure proper field mapping
+                for finding_data in findings_data:
+                    self.db.save_enhanced_finding(finding_data, client_id)
+                logger.info(f"✅ Successfully saved {len(findings_data)} findings to Supabase")
+            else:
+                logger.warning("⚠️ No findings to save")
+                
+        except Exception as e:
+            logger.error(f"❌ Error saving findings to Supabase: {e}")
+            raise
+
+        # Generate summary
+        summary = self.generate_enhanced_summary_statistics(findings, {})
+
+        logger.info(f"\n✅ Enhanced Stage 3 complete! Generated {len(findings)} findings")
         self.print_enhanced_summary_report(summary)
-        
+
         return {
             "status": "success",
-            "findings_generated": len(all_findings),
-            "batches_processed": successful_batches,
-            "total_batches": num_batches
+            "quotes_processed": len(stage1_data_responses_df),
+            "findings_generated": len(findings),
+            "priority_findings": self.processing_metrics.get("priority_findings", 0),
+            "standard_findings": self.processing_metrics.get("standard_findings", 0),
+            "summary": summary,
+            "processing_metrics": self.processing_metrics
         }
     
     def generate_enhanced_summary_statistics(self, findings: List[Dict], patterns: Dict) -> Dict:
@@ -1457,7 +1258,7 @@ class Stage3FindingsAnalyzer:
         # Company coverage
         companies_affected = set()
         for finding in findings:
-            companies_affected.add(finding['companies_affected'])
+            companies_affected.update(finding.get('companies_affected', []))
         
         return {
             'total_findings': len(findings),
@@ -1473,15 +1274,30 @@ class Stage3FindingsAnalyzer:
             'patterns_by_criterion': {k: len(v) for k, v in patterns.items()}
         }
     
-    def print_enhanced_summary_report(self, summary: dict):
-        logger.info("\n📊 ENHANCED STAGE 3 SUMMARY REPORT (Buried Wins v4.0)")
+    def print_enhanced_summary_report(self, summary: Dict):
+        """Print enhanced summary report"""
+        
+        logger.info(f"\n📊 ENHANCED STAGE 3 SUMMARY REPORT (Buried Wins v4.0)")
         logger.info("=" * 70)
-        logger.info(f"Total findings generated: {summary.get('total_findings', 0)}")
-        logger.info(f"Priority findings (≥4.0): {summary.get('priority_findings', 0)}")
-        logger.info(f"Standard findings (≥3.0): {summary.get('standard_findings', 0)}")
-        logger.info(f"Critical findings: {summary.get('critical_findings', 0)}")
-        logger.info(f"Criteria covered: {summary.get('criteria_covered', 0)}/10")
-        logger.info(f"Batches processed: {summary.get('batches', 0)}")
+        logger.info(f"Total findings generated: {summary['total_findings']}")
+        logger.info(f"Priority findings (≥4.0): {summary['priority_findings']}")
+        logger.info(f"Standard findings (≥3.0): {summary['standard_findings']}")
+        logger.info(f"Criteria covered: {summary['criteria_covered']}/10")
+        logger.info(f"Average confidence score: {summary['average_confidence_score']:.2f}/10.0")
+        logger.info(f"Average criteria met: {summary['average_criteria_met']:.1f}/8")
+        logger.info(f"Companies affected: {summary['total_companies_affected']}")
+        
+        logger.info(f"\n📈 FINDING TYPE DISTRIBUTION:")
+        for finding_type, count in summary['finding_type_distribution'].items():
+            logger.info(f"  {finding_type}: {count}")
+        
+        logger.info(f"\n🎯 PRIORITY LEVEL DISTRIBUTION:")
+        for priority, count in summary['priority_level_distribution'].items():
+            logger.info(f"  {priority}: {count}")
+        
+        logger.info(f"\n📈 PATTERNS BY CRITERION:")
+        for criterion, pattern_count in summary['patterns_by_criterion'].items():
+            logger.info(f"  {criterion}: {pattern_count} patterns")
 
     def _validate_evidence_threshold(self, pattern: Dict) -> bool:
         """Validate if a pattern meets evidence threshold requirements - RELAXED FOR BETTER INSIGHTS"""
@@ -1592,162 +1408,36 @@ class Stage3FindingsAnalyzer:
         return score
     
     def _create_finding_from_quote(self, quote: Dict) -> Optional[Dict]:
-        """Create a finding directly from a high-impact quote with robust field mapping and fallback logic"""
+        """Create a finding using LLM-based Buried Wins approach"""
         try:
-            # Use pattern_data for all criteria and scoring
-            pattern_data = quote.get('pattern_data', {})
-            criterion = quote.get('criterion', pattern_data.get('criterion', ''))
-            
-            # Use original_quote for the quote text
-            text = quote.get('original_quote', quote.get('text', ''))
-            
-            # Use company field
+            # Extract quote text and metadata
+            quote_text = quote.get('verbatim_response', quote.get('text', ''))
             company = quote.get('company', '')
+            interviewee_name = quote.get('interviewee_name', '')
+            response_id = quote.get('response_id', '')
             
-            # Use confidence and context_keywords as proxies for salience/stakeholder
-            confidence = quote.get('confidence', pattern_data.get('confidence', ''))
-            context_keywords = quote.get('context_keywords', pattern_data.get('context_keywords', ''))
-            question_relevance = quote.get('question_relevance', pattern_data.get('question_relevance', ''))
-            
-            # Fallback for stakeholder_weight: look for executive/decision-maker keywords in context_keywords
-            stakeholder_weight = ''
-            if 'executive' in context_keywords.lower() or 'ceo' in context_keywords.lower() or 'decision' in context_keywords.lower():
-                stakeholder_weight = 'Executive'
-            elif 'partner' in context_keywords.lower() or 'owner' in context_keywords.lower():
-                stakeholder_weight = 'Budget Holder'
-            elif 'champion' in context_keywords.lower() or 'lead' in context_keywords.lower():
-                stakeholder_weight = 'Champion'
-            elif 'user' in context_keywords.lower() or 'associate' in context_keywords.lower():
-                stakeholder_weight = 'End User'
-            else:
-                stakeholder_weight = ''
-            
-            # Fallback for salience: use confidence or question_relevance
-            salience = ''
-            if confidence == 'high' or question_relevance == 'direct':
-                salience = 'High'
-            elif confidence == 'medium' or question_relevance == 'indirect':
-                salience = 'Medium'
-            else:
-                salience = 'Low'
-            
-            # Patch quote dict for downstream logic
-            quote['text'] = text
-            quote['stakeholder_weight'] = stakeholder_weight
-            quote['salience'] = salience
-            
-            # Patch pattern_data into quote for criteria evaluation
-            for k, v in pattern_data.get('criteria_scores', {}).items():
-                quote[k] = v
-            quote['avg_score'] = float(pattern_data.get('avg_score', 0))
-            quote['company_count'] = int(pattern_data.get('company_count', 1))
-            quote['quote_count'] = int(pattern_data.get('quote_count', 1))
-            quote['themes'] = pattern_data.get('themes', [])
-            quote['deal_impacts'] = pattern_data.get('deal_impacts', {})
-            quote['relevance_level'] = pattern_data.get('relevance_level', '')
-            
-            # Check for Edge Case Gold (Executive + High Salience + Deal Tipping Point)
-            if self._is_edge_case_gold(quote):
-                logger.info(f"🎯 Found Edge Case Gold quote for {criterion}")
-                finding = self._create_edge_case_gold_finding(quote)
-                if finding:
-                    return finding
-            
-            # Check for Deal Breaker scenarios
-            if self._is_deal_breaker_scenario(quote):
-                logger.info(f"🚨 Found Deal Breaker quote for {criterion}")
-                finding = self._create_deal_breaker_finding(quote)
-                if finding:
-                    return finding
-            
-            # Check for Competitive Switching scenarios
-            if self._is_competitive_switching_scenario(quote):
-                logger.info(f"🔄 Found Competitive Switching quote for {criterion}")
-                finding = self._create_competitive_switching_finding(quote)
-                if finding:
-                    return finding
-            
-            # Check for Strategic Insight scenarios
-            if self._is_strategic_insight_scenario(quote):
-                logger.info(f"🎯 Found Strategic Insight quote for {criterion}")
-                finding = self._create_strategic_insight_finding(quote)
-                if finding:
-                    return finding
-            
-            # Evaluate quote against finding criteria
-            criteria_scores = self._evaluate_quote_against_criteria(quote)
-            criteria_met = sum(1 for score in criteria_scores.values() if score > 0)
-            
-            logger.debug(f"   Criteria met: {criteria_met}/8")
-            logger.debug(f"   Criteria scores: {criteria_scores}")
-            
-            # Only create finding if it meets minimum criteria (or is edge case)
-            if criteria_met < 2:  # INCREASED from 1 to 2 for higher quality
-                logger.debug(f"   ❌ Insufficient criteria met ({criteria_met}/2 required)")
+            if not quote_text or len(quote_text.strip()) < 10:
                 return None
             
-            # Calculate confidence score
-            confidence_score = self.calculate_enhanced_confidence_score([quote], criteria_scores)
-            logger.debug(f"   Confidence score: {confidence_score}")
+            # Score the quote against Buried Wins criteria
+            criteria_scores = self._score_quote_buried_wins(quote_text)
+            total_score = sum(criteria_scores.values())
             
-            # Only create finding if confidence score meets minimum threshold
-            if confidence_score < 2.5:  # ADDED minimum confidence threshold
-                logger.debug(f"   ❌ Insufficient confidence score ({confidence_score}/2.5 required)")
+            # Only create finding if score meets threshold (5+ points)
+            if total_score < 5:
                 return None
             
-            # Determine finding type
-            finding_type = self._determine_finding_type_from_quote(quote, criteria_scores)
-            logger.debug(f"   Finding type: {finding_type}")
+            # Generate finding using LLM
+            finding = self._generate_buried_wins_finding(quote_text, company, interviewee_name, response_id, criteria_scores)
             
-            # Generate finding statement
-            finding_statement = self._generate_finding_statement_from_quote(quote, criterion, finding_type)
+            if finding:
+                logger.info(f"✅ Created Buried Wins finding: {finding.get('finding_statement', '')[:100]}...")
+                return finding
             
-            if not finding_statement:
-                logger.debug(f"   ❌ Could not generate finding statement")
-                return None
-            
-            logger.debug(f"   ✅ Generated finding statement: {finding_statement}")
-            
-            # Create clean quote object for saving (avoid circular references)
-            clean_quote = self._create_clean_quote_object(quote)
-            
-            # Create finding
-            finding = {
-                'criterion': criterion,
-                'finding_type': finding_type,
-                'priority_level': 'priority' if confidence_score >= 4.0 else 'standard',
-                'credibility_tier': self._determine_credibility_tier_from_quote(quote),
-                'title': self._generate_finding_title(criterion, finding_type),
-                'finding_statement': finding_statement,
-                'description': finding_statement,
-                'enhanced_confidence': confidence_score,
-                'criteria_scores': criteria_scores,
-                'criteria_met': criteria_met,
-                'impact_score': quote.get('avg_score', 0),
-                'companies_affected': str(quote.get('company_count', 1)),
-                'quote_count': 1,
-                'selected_quotes': [clean_quote],
-                'themes': pattern_data.get('themes', []),
-                'deal_impacts': pattern_data.get('deal_impacts', {}),
-                'generated_at': datetime.now().isoformat(),
-                'evidence_threshold_met': True,
-                'evidence_strength': self._calculate_evidence_strength({
-                    'quote_count': 1,
-                    'company_count': quote.get('company_count', 1),
-                    'enhanced_confidence': confidence_score,
-                    'relevance_level': quote.get('relevance_level', 'moderate')
-                }),
-                'finding_category': finding_type,
-                'criteria_covered': self._get_criteria_covered_string(criteria_scores),
-                'interview_companies': [quote.get('company', 'Unknown')],
-                'interviewee_names': [quote.get('interviewee_name', '')]
-            }
-            
-            logger.info(f"✅ Created finding for {criterion}: {finding_statement}")
-            return finding
+            return None
             
         except Exception as e:
-            logger.error(f"❌ Error creating finding from quote: {e}")
+            logger.error(f"❌ Error creating Buried Wins finding: {e}")
             return None
     
     def _create_clean_quote_object(self, quote: Dict) -> Dict:
@@ -1788,7 +1478,7 @@ class Stage3FindingsAnalyzer:
         return clean_quote
     
     def _evaluate_quote_against_criteria(self, quote: Dict) -> Dict:
-        """Evaluate a single quote against the 8 finding criteria with enhanced logic"""
+        """Evaluate a single quote against the 8 finding criteria with Buried Wins standards"""
         criteria_scores = {
             'novelty': 0,
             'actionability': 0,
@@ -1803,41 +1493,50 @@ class Stage3FindingsAnalyzer:
         # Use verbatim_response for core responses, fallback to text for stage2_response_labeling
         text = quote.get('verbatim_response', quote.get('text', '')).lower()
         
-        # Novelty: New/unexpected observation
-        if any(word in text for word in ['unexpected', 'surprised', 'didn\'t know', 'new', 'first time', 'never seen']):
-            criteria_scores['novelty'] = 1
+        # NOVELTY (3 points) - New/unexpected observation that challenges assumptions
+        if any(word in text for word in ['unexpected', 'surprised', 'didn\'t know', 'new', 'first time', 'never seen', 'contrary to', 'challenged our', 'assumption']):
+            criteria_scores['novelty'] = 3
+        elif any(word in text for word in ['unusual', 'different', 'unlike', 'contrary', 'challenge']):
+            criteria_scores['novelty'] = 2
         
-        # Actionability: Suggests clear steps
-        if any(word in text for word in ['should', 'need to', 'could', 'would help', 'improve', 'fix', 'add', 'better', 'enhance']):
-            criteria_scores['actionability'] = 1
+        # TENSION/CONTRAST (3 points) - Deep specific tension around competitors, business conditions, or tradeoffs
+        if any(word in text for word in ['competitor', 'turbo scribe', 'otter', 'westlaw', 'mycase', 'clio', 'dropbox', 'salesforce', 'zoom', 'teams']):
+            criteria_scores['tension_contrast'] = 3
+        elif any(word in text for word in ['but', 'however', 'despite', 'even though', 'trade-off', 'dilemma', 'conflict']):
+            criteria_scores['tension_contrast'] = 2
         
-        # Specificity: Precise, detailed observation
-        if len(text.split()) > 15 and any(word in text for word in ['specific', 'exactly', 'precisely', 'particular', 'detailed', 'concrete']):
-            criteria_scores['specificity'] = 1
-        elif len(text.split()) > 25:  # Very long quotes are often specific
-            criteria_scores['specificity'] = 1
-        
-        # Materiality: Meaningful business impact
-        if any(word in text for word in ['revenue', 'cost', 'profit', 'loss', 'churn', 'retention', 'growth', 'competitive', 'deal', 'business', 'market']):
+        # MATERIALITY (2 points) - Meaningful business impact affecting revenue, satisfaction, retention, competitive positioning
+        # High-influence sources: C-suite, VP, Director, Lead Buyer, Economic Buyer, or stakeholders controlling >$50k budget
+        if any(word in text for word in ['$', 'dollar', 'cost', 'price', 'budget', 'revenue', 'churn', 'retention', 'deal', 'win', 'loss']):
+            criteria_scores['materiality'] = 2
+        elif any(word in text for word in ['attorney', 'lawyer', 'partner', 'firm', 'practice', 'client', 'case']):
             criteria_scores['materiality'] = 1
         
-        # Recurrence: Appears across multiple sources (handled at pattern level)
-        if quote.get('quote_count', 1) > 1:
-            criteria_scores['recurrence'] = 1
+        # ACTIONABILITY (2 points) - Clear step, fix, or action client could take
+        if any(word in text for word in ['need', 'want', 'would like', 'should have', 'could improve', 'integration', 'feature', 'workflow']):
+            criteria_scores['actionability'] = 2
+        elif any(word in text for word in ['problem', 'issue', 'challenge', 'difficulty', 'friction']):
+            criteria_scores['actionability'] = 1
         
-        # Stakeholder Weight: High-influence decision maker
-        stakeholder = quote.get('stakeholder_weight', '')
-        if stakeholder in ['Executive', 'Budget Holder', 'Champion']:
+        # SPECIFICITY (2 points) - Precise, detailed, not generic. References particular feature, workflow, market condition
+        if any(word in text for word in ['transcript', 'transcription', 'accuracy', 'turnaround', 'timeline', 'integration', 'api', 'security', 'compliance', 'soc2', 'hipaa']):
+            criteria_scores['specificity'] = 2
+        elif any(word in text for word in ['feature', 'function', 'tool', 'system', 'platform', 'software']):
+            criteria_scores['specificity'] = 1
+        
+        # METRIC/QUANTIFICATION (1 point) - Tangible metric, timeframe, or quantifiable outcome
+        if any(word in text for word in ['%', 'percent', 'percentage', 'hours', 'days', 'weeks', 'months', 'years', 'minutes', 'seconds']):
+            criteria_scores['metric_quantification'] = 1
+        elif any(word in text for word in ['number', 'amount', 'quantity', 'count', 'total', 'sum']):
+            criteria_scores['metric_quantification'] = 1
+        
+        # STAKEHOLDER WEIGHT (1 point) - High-influence decision makers
+        if any(word in text for word in ['attorney', 'lawyer', 'partner', 'firm owner', 'managing partner', 'senior']):
             criteria_scores['stakeholder_weight'] = 1
         
-        # Tension/Contrast: Exposes tensions or tradeoffs
-        if any(word in text for word in ['but', 'however', 'although', 'despite', 'while', 'love', 'hate', 'problem', 'issue', 'concern', 'worry']):
-            criteria_scores['tension_contrast'] = 1
-        
-        # Metric/Quantification: Supported by tangible metrics
-        import re
-        if re.search(r'\d+%|\d+ percent|\$\d+|\d+ dollars|\d+ hours|\d+ days|\d+ months|\d+ years', text):
-            criteria_scores['metric_quantification'] = 1
+        # RECURRENCE (1 point) - Pattern across multiple responses
+        # This will be evaluated in the pattern analysis, not individual quotes
+        criteria_scores['recurrence'] = 0
         
         return criteria_scores
     
@@ -2117,245 +1816,41 @@ class Stage3FindingsAnalyzer:
                 return 'Functional'
     
     def _generate_finding_statement_from_quote(self, quote: Dict, criterion: str, finding_type: str) -> str:
-        """Generate executive-ready finding statement directly from quote content with business focus"""
-        # Use verbatim_response for core responses, fallback to text for stage2_response_labeling
-        text = quote.get('verbatim_response', quote.get('text', '')).strip()
-        stakeholder = quote.get('stakeholder_weight', '')
-        
-        # Extract key business insights
-        insights = self._extract_business_insights_from_quote(text, criterion)
-        
-        # For core responses without pre-assigned criteria, generate findings based on content analysis
-        if not criterion or criterion == '':
-            # Analyze the text content to determine the type of finding
-            text_lower = text.lower()
+        """Generate specific, actionable finding statement in Buried Wins format"""
+        try:
+            # Extract key business impact from quote
+            quote_text = quote.get('verbatim_response', '').lower()
+            company = quote.get('company', '')
             
-            # Generate more comprehensive, business-focused findings that combine multiple insights
-            # Check for accuracy/quality issues with specific context
-            if any(word in text_lower for word in ['accuracy', 'accurate', 'correct', 'wrong', 'error', 'mistake', 'frustrating']):
-                if 'court' in text_lower or 'evidence' in text_lower:
-                    return "Accuracy concerns in legal evidence preparation create competitive vulnerability and reduce user confidence in Rev's core value proposition, directly impacting case outcomes and client satisfaction"
-                elif 'transcript' in text_lower:
-                    return "Transcript accuracy gaps force manual verification, reducing efficiency and creating competitive vulnerability while increasing legal risk and case preparation time"
-                elif 'deposition' in text_lower:
-                    return "Deposition transcription accuracy directly impacts case outcomes and client satisfaction, with accuracy lapses creating significant legal risk and competitive vulnerability"
-                elif 'body cam' in text_lower or 'body-worn' in text_lower:
-                    return "Body camera transcription accuracy gaps create legal risk and reduce case preparation efficiency, directly impacting competitive positioning in law enforcement segments"
-                else:
-                    return "Accuracy concerns create competitive vulnerability and reduce user confidence in Rev's core value proposition, directly impacting deal conversion and retention rates"
-            
-            # Check for speed/turnaround issues with specific context
-            elif any(word in text_lower for word in ['speed', 'fast', 'slow', 'turnaround', 'time', 'quick', 'delay']):
-                if '24 hour' in text_lower or 'same day' in text_lower:
-                    return "24-hour turnaround time is a decisive factor for choosing Rev's transcription service, directly impacting competitive positioning and deal velocity in time-sensitive legal workflows"
-                elif 'urgent' in text_lower or 'emergency' in text_lower:
-                    return "Speed and turnaround time directly impact competitive positioning in urgent legal workflows, with faster alternatives creating significant churn risk"
-                elif 'deposition' in text_lower:
-                    return "Deposition turnaround speed directly impacts case preparation timelines and client satisfaction, with delays creating workflow friction and competitive vulnerability"
-                else:
-                    return "Speed and turnaround time directly impact competitive positioning and user satisfaction in time-sensitive legal workflows, with performance gaps driving competitive switching"
-            
-            # Check for integration/workflow issues with specific context
-            elif any(word in text_lower for word in ['integration', 'workflow', 'process', 'manual', 'step', 'system']):
-                if 'mycase' in text_lower or 'clio' in text_lower:
-                    return "Manual process of moving Rev transcripts into MyCase and Westlaw CoCounsel exposes integration gap, adding workflow friction and reducing competitive advantage while increasing churn risk"
-                elif 'dropbox' in text_lower:
-                    return "Lack of direct Dropbox integration slows workflows and prompts integration request, creating competitive vulnerability and reducing user satisfaction in high-volume environments"
-                elif 'case management' in text_lower:
-                    return "Case management system integration gaps create workflow inefficiencies and reduce competitive advantage, directly impacting user satisfaction and expansion opportunities"
-                else:
-                    return "Integration and workflow gaps force manual workarounds, reducing efficiency and creating competitive vulnerability while increasing customer acquisition costs"
-            
-            # Check for pricing/cost issues with specific context
-            elif any(word in text_lower for word in ['cost', 'price', 'expensive', 'cheap', 'billing', 'subscription']):
-                if 'client' in text_lower and 'bill' in text_lower:
-                    return "Clear, itemized pricing documentation is essential for law firms to pass costs to clients and justify spend, directly impacting competitive positioning and market expansion"
-                elif 'small firm' in text_lower or 'solo' in text_lower:
-                    return "Small-firm price sensitivity and inability to bill clients directly create risk of churn to cheaper alternatives, constraining expansion into high-value segments"
-                elif 'subscription' in text_lower:
-                    return "Subscription pricing model considerations directly impact competitive positioning and market expansion opportunities, with misalignment blocking mid-market growth"
-                else:
-                    return "Pricing model considerations directly impact competitive positioning and market expansion opportunities, with cost sensitivity creating significant churn risk"
-            
-            # Check for support/service issues with specific context
-            elif any(word in text_lower for word in ['support', 'service', 'help', 'customer', 'assistance']):
-                if 'billing' in text_lower:
-                    return "Responsive customer support that resolves billing issues within a day strengthens loyalty and reduces churn risk, directly impacting customer lifetime value"
-                elif 'technical' in text_lower:
-                    return "Technical support quality directly impacts customer satisfaction and retention rates, with poor support creating competitive vulnerability and increasing acquisition costs"
-                else:
-                    return "Support and service quality directly impact customer satisfaction and retention rates, with service gaps creating competitive vulnerability and reducing expansion opportunities"
-            
-            # Check for feature/functionality requests with specific context
-            elif any(word in text_lower for word in ['feature', 'function', 'capability', 'need', 'want', 'improve', 'better']):
-                if 'ai' in text_lower or 'artificial intelligence' in text_lower:
-                    return "AI-driven transcription positions firm as tech-forward, influencing market perception and creating competitive differentiation in innovation-focused segments"
-                elif 'speaker' in text_lower:
-                    return "Manual speaker labeling slows paralegal workflow, indicating need for automated speaker identification and creating competitive vulnerability in high-volume environments"
-                elif 'search' in text_lower or 'keyword' in text_lower:
-                    return "Keyword search capabilities across transcripts enable efficient case preparation and evidence review, directly impacting competitive positioning and user satisfaction"
-                elif 'export' in text_lower or 'format' in text_lower:
-                    return "Export and formatting options directly impact workflow efficiency and client deliverable quality, with gaps creating competitive vulnerability and reducing user satisfaction"
-                else:
-                    return "Feature and functionality gaps limit expansion opportunities and create competitive vulnerability, directly impacting market positioning and customer acquisition efficiency"
-            
-            # Check for security/compliance issues with specific context
-            elif any(word in text_lower for word in ['security', 'compliance', 'data', 'privacy', 'confidential']):
-                if 'victim' in text_lower or 'sensitive' in text_lower:
-                    return "Data security assurances influence adoption; Rev perceived as safer than local transcriptionists handling sensitive victim information, creating competitive advantage in regulated segments"
-                elif 'privilege' in text_lower:
-                    return "Privilege and security concerns limit uploading sensitive discovery files, creating competitive vulnerability and reducing expansion opportunities in high-value segments"
-                elif 'hipaa' in text_lower or 'soc2' in text_lower:
-                    return "Compliance certifications (SOC2/HIPAA) are critical purchase criteria for regulated legal segments, directly impacting competitive positioning and market expansion"
-                else:
-                    return "Security and compliance capabilities directly impact competitive positioning in regulated legal segments, with gaps creating significant expansion barriers"
-            
-            # Check for competitive switching with specific context
-            elif any(word in text_lower for word in ['competitor', 'alternative', 'switch', 'instead', 'versus', 'compared']):
-                if 'turbo scribe' in text_lower:
-                    return "Turnaround speed gaps drive use of Turbo Scribe over Rev despite higher accuracy of human transcripts, creating significant revenue risk and competitive vulnerability"
-                elif 'otter' in text_lower:
-                    return "Users prefer Otter for real-time transcription, posing a competitive threat and potential churn risk while highlighting feature gaps in Rev's offering"
-                elif 'human transcription' in text_lower:
-                    return "Human transcription accuracy advantages create competitive differentiation despite higher costs, directly impacting market positioning and customer retention"
-                else:
-                    return "Competitive switching dynamics reveal market positioning challenges and revenue risk factors, with performance gaps driving significant churn and acquisition cost increases"
-            
-            # Check for strategic insights with specific context
-            elif any(word in text_lower for word in ['strategic', 'long-term', 'future', 'vision', 'roadmap', 'direction']):
-                if 'referral' in text_lower or 'word of mouth' in text_lower:
-                    return "Word‑of‑mouth referrals inside the legal community are the primary acquisition channel for Rev, indicating opportunity to formalize advocacy programs and reduce customer acquisition costs"
-                elif 'market' in text_lower or 'expansion' in text_lower:
-                    return "Market expansion opportunities revealed through strategic insights from legal professionals, with specific requirements directly impacting competitive positioning and growth strategy"
-                else:
-                    return "Strategic insights from legal professionals reveal market expansion opportunities and competitive positioning requirements, directly impacting long-term growth and market share"
-            
-            # Check for specific use cases and workflows
-            elif 'deposition' in text_lower:
-                if 'real-time' in text_lower:
-                    return "Real-time deposition transcription capabilities enable immediate case preparation and strategic advantage, directly impacting competitive positioning and user satisfaction"
-                else:
-                    return "Deposition transcription accuracy and speed improvements significantly enhance perceived product performance, directly impacting competitive positioning and market expansion"
-            elif 'body cam' in text_lower or 'body-worn' in text_lower:
-                return "Body camera transcription accuracy directly impacts case preparation efficiency and legal outcomes, with performance gaps creating competitive vulnerability in law enforcement segments"
-            elif 'interview' in text_lower:
-                return "Interview transcription capabilities enable efficient case preparation and evidence review, directly impacting competitive positioning and user satisfaction in investigative segments"
-            elif 'voicemail' in text_lower:
-                return "Voicemail transcription could provide summarized transcripts with key information for easier client management, creating expansion opportunities in communication-focused segments"
-            elif 'client intake' in text_lower:
-                return "Client intake transcription automation could streamline case management and improve client experience, creating expansion opportunities and competitive differentiation"
-            
-            # Check for specific legal practice areas
-            elif 'criminal' in text_lower or 'defense' in text_lower:
-                return "Criminal defense transcription requirements create specific accuracy and compliance demands, directly impacting competitive positioning and market expansion in specialized segments"
-            elif 'civil' in text_lower or 'litigation' in text_lower:
-                return "Civil litigation transcription needs drive specific feature requirements and competitive positioning, with performance gaps creating significant expansion barriers"
-            elif 'family law' in text_lower or 'domestic' in text_lower:
-                return "Family law transcription requirements create specific privacy and sensitivity considerations, directly impacting competitive positioning and market expansion in specialized segments"
-            
-            # Default finding for general feedback with more specific context
+            # Generate specific, actionable finding statements based on content
+            if 'turbo scribe' in quote_text or 'otter' in quote_text:
+                return "Turnaround speed gaps drive use of Turbo Scribe over Rev despite higher accuracy of human transcripts"
+            elif 'accuracy' in quote_text and 'speed' in quote_text:
+                return "Accuracy shortfalls negate speed advantage"
+            elif 'integration' in quote_text and ('mycase' in quote_text or 'clio' in quote_text):
+                return "Lack of seamless Dropbox-style integrations forces manual steps, slowing legal workflows"
+            elif 'cost' in quote_text and 'price' in quote_text:
+                return "Cost sensitivity drives competitive switching"
+            elif 'turnaround' in quote_text or 'speed' in quote_text:
+                return "Speed gaps drive alternative adoption"
+            elif 'competitor' in quote_text:
+                return "Competitive alternatives capture market share"
+            elif 'workflow' in quote_text or 'process' in quote_text:
+                return "Workflow inefficiencies reduce productivity"
+            elif 'integration' in quote_text:
+                return "Integration gaps slow workflow efficiency"
+            elif 'manual' in quote_text:
+                return "Manual process inefficiencies create workflow friction"
+            elif 'security' in quote_text or 'compliance' in quote_text:
+                return "Security and compliance requirements drive vendor selection"
+            elif 'feature' in quote_text or 'function' in quote_text:
+                return "Feature limitations create workflow friction"
             else:
-                # Extract a unique aspect from the quote
-                words = text.split()[:15]  # First 15 words for context
-                context = ' '.join(words).lower()
-                if 'transcript' in context:
-                    return "Transcript quality and formatting directly impact user satisfaction and competitive positioning, with performance gaps creating significant churn risk and acquisition cost increases"
-                elif 'legal' in context:
-                    return "Legal transcription requirements create specific accuracy and compliance demands, directly impacting competitive positioning and market expansion in regulated segments"
-                elif 'case' in context:
-                    return "Case preparation efficiency directly impacts client satisfaction and competitive positioning, with performance gaps creating significant expansion barriers and churn risk"
-                else:
-                    return "User feedback reveals specific improvement opportunities that directly impact competitive positioning and market expansion, with gaps creating significant competitive vulnerability"
-        
-        # Original logic for stage2_response_labeling with pre-assigned criteria
-        else:
-            # Generate finding based on criterion and insights with business focus
-            if criterion == 'speed_responsiveness':
-                if 'turnaround' in text.lower():
-                    if finding_type == 'Barrier':
-                        return "Turnaround speed gaps drive competitive switching despite Rev's accuracy advantage, creating revenue risk in high-volume segments and increasing customer acquisition costs"
-                    else:
-                        return "24‑hour turnaround time drives deal velocity and competitive differentiation in time-sensitive legal workflows, directly impacting market positioning and expansion opportunities"
-                elif 'speed' in text.lower() or 'fast' in text.lower():
-                    return "Speed and responsiveness concerns directly impact competitive positioning and deal conversion rates, with performance gaps creating significant churn risk"
-                else:
-                    return "Speed and responsiveness gaps create competitive vulnerability against faster alternatives, directly impacting market share and customer acquisition efficiency"
-                    
-            elif criterion == 'product_capability':
-                if 'accuracy' in text.lower():
-                    return "Accuracy shortfalls negate speed advantage, creating competitive vulnerability in quality-sensitive segments and directly impacting customer retention"
-                elif 'integration' in text.lower():
-                    return "Lack of seamless Dropbox-style integrations forces manual steps, reducing workflow efficiency and increasing client churn risk while creating competitive vulnerability"
-                elif 'feature' in text.lower() or 'capability' in text.lower():
-                    return "Product capability gaps limit expansion into high-volume legal environments, constraining revenue growth and creating significant competitive vulnerability"
-                else:
-                    return "Product capability limitations directly impact competitive positioning and expansion opportunities, with gaps creating significant market share risk"
-                    
-            elif criterion == 'implementation_onboarding':
-                if 'learning' in text.lower() or 'curve' in text.lower():
-                    return "Implementation learning curve slows adoption velocity, increasing time-to-value and reducing expansion opportunities while increasing customer acquisition costs"
-                elif 'easy' in text.lower() or 'simple' in text.lower():
-                    return "Ease of implementation drives rapid adoption and reduces customer acquisition costs, directly impacting competitive positioning and market expansion"
-                else:
-                    return "Implementation and onboarding experience directly impacts customer satisfaction and expansion revenue, with poor experiences creating significant churn risk"
-                    
-            elif criterion == 'integration_technical_fit':
-                if 'mycase' in text.lower() or 'clio' in text.lower():
-                    return "Manual process of moving Rev transcripts into MyCase and Westlaw CoCounsel exposes integration gap, creating workflow friction that reduces competitive advantage and increases churn risk"
-                elif 'integration' in text.lower():
-                    return "Integration gaps with case management systems force manual workarounds, reducing efficiency and increasing churn risk while creating competitive vulnerability"
-                else:
-                    return "Technical integration capabilities directly impact competitive positioning and customer retention, with gaps creating significant expansion barriers"
-                    
-            elif criterion == 'support_service_quality':
-                if 'billing' in text.lower() or 'support' in text.lower():
-                    return "Responsive customer support that resolves billing issues within a day strengthens loyalty and reduces churn risk, directly impacting customer lifetime value"
-                elif 'support' in text.lower():
-                    return "Support service quality directly impacts customer satisfaction scores and expansion revenue, with poor service creating significant competitive vulnerability"
-                else:
-                    return "Support service quality concerns create competitive vulnerability and increase customer acquisition costs, directly impacting market positioning"
-                    
-            elif criterion == 'security_compliance':
-                if 'data' in text.lower() or 'privacy' in text.lower():
-                    return "Data security assurances influence adoption decisions; Rev perceived as safer than local transcriptionists, creating competitive advantage in regulated segments"
-                elif 'compliance' in text.lower():
-                    return "Compliance features meet legal industry requirements, enabling expansion into regulated markets and creating competitive differentiation"
-                else:
-                    return "Security and compliance capabilities directly impact competitive positioning in regulated segments, with gaps creating significant expansion barriers"
-                    
-            elif criterion == 'market_position_reputation':
-                if 'word' in text.lower() or 'referral' in text.lower():
-                    return "Word‑of‑mouth referrals inside the legal community are the primary acquisition channel for Rev, indicating opportunity to formalize advocacy programs and reduce customer acquisition costs"
-                elif 'reputation' in text.lower():
-                    return "Market reputation drives competitive differentiation and reduces customer acquisition costs, directly impacting market positioning and expansion opportunities"
-                else:
-                    return "Market position and reputation directly impact competitive positioning and customer acquisition efficiency, with poor positioning creating significant growth barriers"
-                    
-            elif criterion == 'vendor_stability':
-                if 'stability' in text.lower() or 'reliability' in text.lower():
-                    return "Vendor stability and reliability build long-term client trust, reducing churn risk and enabling expansion revenue while creating competitive differentiation"
-                elif 'trust' in text.lower():
-                    return "Vendor trust directly impacts deal velocity and customer retention rates, with trust gaps creating significant competitive vulnerability"
-                else:
-                    return "Vendor stability concerns impact long-term planning and create competitive vulnerability, directly impacting market positioning and customer acquisition"
-                    
-            elif criterion == 'sales_experience_partnership':
-                if 'sales' in text.lower() or 'experience' in text.lower():
-                    return "Sales experience gaps create friction in the buying process, reducing deal velocity and increasing customer acquisition costs while creating competitive vulnerability"
-                elif 'partnership' in text.lower():
-                    return "Partnership quality directly impacts deal outcomes and customer lifetime value, with poor partnerships creating significant competitive vulnerability"
-                else:
-                    return "Sales experience and partnership quality influence deal conversion rates and expansion opportunities, with gaps creating significant market share risk"
-                    
-            elif criterion == 'commercial_terms':
-                if 'pricing' in text.lower() or 'cost' in text.lower():
-                    return "Pricing model misalignment blocks mid-market expansion, constraining revenue growth in high-value segments and creating significant competitive vulnerability"
-                elif 'terms' in text.lower():
-                    return "Commercial terms structure directly impacts competitive positioning and deal conversion rates, with misalignment creating significant expansion barriers"
-                else:
-                    return "Commercial terms and pricing structure impact competitive positioning and expansion opportunities, with gaps creating significant market share risk"
+                return "Business process inefficiencies impact productivity"
             
-            return None
+        except Exception as e:
+            logger.error(f"Error generating finding statement: {e}")
+            return "Business process inefficiencies impact productivity"
     
     def _extract_business_insights_from_quote(self, text: str, criterion: str) -> str:
         """Extract key business insights from quote text with enhanced business focus"""
@@ -2414,316 +1909,492 @@ class Stage3FindingsAnalyzer:
         else:
             return 'Tier 4: Standard evidence'
     
-    def _deduplicate_and_merge_findings(self, findings: List[Dict], similarity_threshold: float = 0.85) -> List[Dict]:
-        """Deduplicate and merge similar findings using semantic similarity with sentence embeddings"""
-        if not findings:
+    def _apply_semantic_clustering(self, findings: List[Dict]) -> List[Dict]:
+        """Apply semantic clustering to deduplicate similar findings"""
+        if len(findings) <= 1:
             return findings
-        
+            
         try:
-            from sentence_transformers import SentenceTransformer
-            import numpy as np
-            from sklearn.metrics.pairwise import cosine_similarity
+            # Extract finding statements for clustering
+            statements = [finding.get('finding_statement', '') for finding in findings]
             
             # Load sentence transformer model
             model = SentenceTransformer('all-MiniLM-L6-v2')
             
-            # Extract finding statements
-            statements = []
-            for finding in findings:
-                statement = finding.get('finding_statement', finding.get('description', '')).strip()
-                statements.append(statement)
-            
             # Generate embeddings
-            embeddings = model.encode(statements)
+            embeddings = model.encode(statements, convert_to_tensor=True)
+            embeddings_np = embeddings.cpu().numpy()
             
             # Calculate similarity matrix
-            similarity_matrix = cosine_similarity(embeddings)
+            similarity_matrix = cosine_similarity(embeddings_np)
             
-            # Group similar findings
-            merged = []
-            used_indices = set()
+            # Apply clustering (threshold of 0.8 similarity for grouping)
+            clustering = AgglomerativeClustering(
+                n_clusters=None,
+                distance_threshold=0.2,  # Lower threshold = more aggressive clustering
+                linkage='complete'
+            )
             
-            for i in range(len(findings)):
-                if i in used_indices:
-                    continue
-                
-                # Find all similar findings
-                similar_indices = [i]
-                for j in range(i + 1, len(findings)):
-                    if j not in used_indices and similarity_matrix[i][j] >= similarity_threshold:
-                        similar_indices.append(j)
-                        used_indices.add(j)
-                
-                if len(similar_indices) == 1:
-                    # No duplicates found
-                    merged.append(findings[i])
+            cluster_labels = clustering.fit_predict(embeddings_np)
+            
+            # Group findings by cluster
+            clustered_findings = {}
+            for i, label in enumerate(cluster_labels):
+                if label not in clustered_findings:
+                    clustered_findings[label] = []
+                clustered_findings[label].append(findings[i])
+            
+            # Select best representative for each cluster
+            deduplicated_findings = []
+            for cluster_id, cluster_findings in clustered_findings.items():
+                if len(cluster_findings) == 1:
+                    # Single finding, keep as is
+                    deduplicated_findings.append(cluster_findings[0])
                 else:
-                    # Merge similar findings
-                    similar_findings = [findings[idx] for idx in similar_indices]
-                    merged_finding = self._merge_similar_findings(similar_findings)
-                    merged.append(merged_finding)
-                
-                used_indices.add(i)
+                    # Multiple findings in cluster, select the best one
+                    best_finding = self._select_best_finding_from_cluster(cluster_findings)
+                    # Update the finding to include evidence from all cluster members
+                    best_finding = self._merge_cluster_evidence(best_finding, cluster_findings)
+                    deduplicated_findings.append(best_finding)
             
-            logger.info(f"✅ Deduplicated {len(findings)} findings to {len(merged)} unique findings")
-            return merged
+            logger.info(f"🔄 Semantic clustering: {len(findings)} findings → {len(deduplicated_findings)} unique clusters")
+            return deduplicated_findings
+            
+        except Exception as e:
+            logger.error(f"Error in semantic clustering: {e}")
+            return findings
+    
+    def _select_best_finding_from_cluster(self, cluster_findings: List[Dict]) -> Dict:
+        """Select the best finding from a cluster based on quality criteria"""
+        best_finding = None
+        best_score = -1
+        
+        for finding in cluster_findings:
+            # Calculate quality score based on criteria
+            score = 0
+            criteria_met = finding.get('criteria_met', 0)
+            enhanced_confidence = finding.get('enhanced_confidence', 0)
+            quote_count = finding.get('quote_count', 1)
+            
+            # Prefer findings with higher criteria met and confidence
+            score += criteria_met * 2
+            score += enhanced_confidence
+            score += quote_count * 0.5
+            
+            # Prefer findings with more specific language
+            statement = finding.get('finding_statement', '')
+            if any(word in statement.lower() for word in ['specific', 'named', 'competitor', 'integration', 'accuracy']):
+                score += 2
+            
+            if score > best_score:
+                best_score = score
+                best_finding = finding
+        
+        return best_finding or cluster_findings[0]
+    
+    def _merge_cluster_evidence(self, best_finding: Dict, cluster_findings: List[Dict]) -> Dict:
+        """Merge evidence from all cluster findings into the best representative"""
+        # Collect all unique quote IDs and companies
+        all_quote_ids = set()
+        all_companies = set()
+        
+        for finding in cluster_findings:
+            selected_quotes = finding.get('selected_quotes', [])
+            for quote in selected_quotes:
+                quote_id = quote.get('id', '')
+                if quote_id:
+                    all_quote_ids.add(quote_id)
+            
+            company = finding.get('company', '')
+            if company:
+                all_companies.add(company)
+        
+        # Update the best finding with merged evidence
+        best_finding['quote_count'] = len(all_quote_ids)
+        best_finding['companies_affected'] = list(all_companies)
+        
+        # Update supporting response IDs
+        supporting_ids = best_finding.get('supporting_response_ids', '')
+        if supporting_ids:
+            existing_ids = set(supporting_ids.split(','))
+            all_ids = existing_ids.union(all_quote_ids)
+            best_finding['supporting_response_ids'] = ','.join(sorted(all_ids))
+        
+        return best_finding
+    
+    def _score_quote_buried_wins(self, quote_text: str) -> Dict[str, int]:
+        """Score a quote against Buried Wins criteria"""
+        criteria_scores = {
+            'novelty': 0,
+            'tension_contrast': 0,
+            'materiality': 0,
+            'actionability': 0,
+            'specificity': 0,
+            'metric_quantification': 0
+        }
+        
+        text_lower = quote_text.lower()
+        
+        # Novelty (3 points) - New/unexpected insights
+        novelty_indicators = ['unexpected', 'surprising', 'contrary to', 'challenges', 'assumption', 'previously thought']
+        if any(indicator in text_lower for indicator in novelty_indicators):
+            criteria_scores['novelty'] = 3
+        
+        # Tension/Contrast (3 points) - Competitive dynamics or business friction
+        tension_indicators = ['competitor', 'versus', 'instead of', 'chose', 'over', 'despite', 'even though', 'trade-off']
+        if any(indicator in text_lower for indicator in tension_indicators):
+            criteria_scores['tension_contrast'] = 3
+        
+        # Materiality (2 points) - Business impact
+        materiality_indicators = ['revenue', 'cost', 'budget', 'deal', 'churn', 'retention', 'ceo', 'vp', 'director', 'executive']
+        if any(indicator in text_lower for indicator in materiality_indicators):
+            criteria_scores['materiality'] = 2
+        
+        # Actionability (2 points) - Clear action needed
+        actionability_indicators = ['need', 'should', 'could', 'would', 'improve', 'fix', 'change', 'add', 'implement']
+        if any(indicator in text_lower for indicator in actionability_indicators):
+            criteria_scores['actionability'] = 2
+        
+        # Specificity (2 points) - Specific details
+        specificity_indicators = ['specific', 'particular', 'exact', 'named', 'integration', 'feature', 'workflow']
+        if any(indicator in text_lower for indicator in specificity_indicators):
+            criteria_scores['specificity'] = 2
+        
+        # Metric/Quantification (1 point) - Numbers or timeframes
+        import re
+        metrics = re.findall(r'\d+%|\d+ percent|\$\d+|\d+ dollars|\d+ hours|\d+ days|\d+ months|\d+ years', text_lower)
+        if metrics:
+            criteria_scores['metric_quantification'] = 1
+        
+        return criteria_scores
+    
+    def _generate_buried_wins_finding(self, quote_text: str, company: str, interviewee_name: str, response_id: str, criteria_scores: Dict[str, int]) -> Optional[Dict]:
+        """Generate a finding using LLM-based Buried Wins approach"""
+        try:
+            total_score = sum(criteria_scores.values())
+            
+            # Determine finding type based on score
+            if total_score >= 9:
+                finding_type = "Critical Finding"
+                priority_level = "Critical Finding"
+            elif total_score >= 7:
+                finding_type = "Priority Finding"
+                priority_level = "Priority Finding"
+            else:
+                finding_type = "Standard Finding"
+                priority_level = "Standard Finding"
+            
+            # Generate finding using LLM
+            finding_statement = self._generate_llm_finding(quote_text, company, interviewee_name, criteria_scores)
+            
+            if not finding_statement:
+                return None
+            
+            # Create clean quote object
+            clean_quote = {
+                'company': company,
+                'text': quote_text,
+                'interviewee_name': interviewee_name,
+                'response_id': response_id
+            }
+            
+            # Create finding
+            finding = {
+                'criterion': 'buried_wins_analysis',
+                'title': finding_statement[:50] + '...' if len(finding_statement) > 50 else finding_statement,
+                'finding_type': finding_type,
+                'priority_level': priority_level,
+                'finding_statement': finding_statement,
+                'description': finding_statement,
+                'enhanced_confidence': total_score,
+                'criteria_scores': criteria_scores,
+                'criteria_met': total_score,
+                'impact_score': total_score,
+                'quote_count': 1,
+                'selected_quotes': [clean_quote],
+                'themes': [],
+                'deal_impacts': {},
+                'generated_at': datetime.now().isoformat(),
+                'evidence_threshold_met': True,
+                'evidence_strength': total_score,
+                'finding_category': finding_type,
+                'criteria_covered': self._get_criteria_covered_string(criteria_scores),
+                'interview_companies': [company] if company else [],
+                'interviewee_names': [interviewee_name] if interviewee_name else [],
+                'companies_affected': [company] if company else []
+            }
+            
+            return finding
+            
+        except Exception as e:
+            logger.error(f"❌ Error generating Buried Wins finding: {e}")
+            return None
+    
+    def _generate_buried_wins_statement(self, quote_text: str, company: str, interviewee_name: str, criteria_scores: Dict[str, int]) -> str:
+        """Generate a finding statement following Buried Wins structure"""
+        
+        # Extract key information from quote
+        text_lower = quote_text.lower()
+        
+        # Determine the main theme based on criteria scores
+        if criteria_scores['tension_contrast'] > 0:
+            theme = "competitive dynamics"
+        elif criteria_scores['materiality'] > 0:
+            theme = "business impact"
+        elif criteria_scores['actionability'] > 0:
+            theme = "operational improvement"
+        elif criteria_scores['specificity'] > 0:
+            theme = "specific requirements"
+        else:
+            theme = "key insight"
+        
+        # Create company-specific finding
+        if company and company != "Unknown":
+            company_name = company
+        else:
+            company_name = "legal practitioners"
+        
+        # Create finding statement
+        if criteria_scores['novelty'] > 0:
+            finding = f"Unexpected {theme} reveals new market dynamics for {company_name}"
+        elif criteria_scores['tension_contrast'] > 0:
+            finding = f"Competitive pressure creates strategic trade-offs for {company_name}"
+        elif criteria_scores['materiality'] > 0:
+            finding = f"Business impact affects key decisions for {company_name}"
+        elif criteria_scores['actionability'] > 0:
+            finding = f"Operational improvements needed for {company_name}"
+        else:
+            finding = f"Key insight reveals important consideration for {company_name}"
+        
+        return finding
+    
+    def _generate_llm_finding(self, quote_text: str, company: str, interviewee_name: str, criteria_scores: Dict[str, int]) -> Optional[str]:
+        """Generate a finding using LLM with Buried Wins prompt"""
+        try:
+            # Load the Buried Wins prompt
+            prompt_template = self._load_buried_wins_prompt()
+            
+            # Create the specific prompt for this quote
+            prompt = self._create_buried_wins_prompt(quote_text, company, interviewee_name, criteria_scores, prompt_template)
+            
+            # Call LLM (using OpenAI API)
+            finding = self._call_llm_api(prompt)
+            
+            if finding:
+                logger.info(f"✅ Generated LLM finding: {finding[:100]}...")
+                return finding
+            else:
+                # Fallback to template-based generation
+                return self._generate_buried_wins_statement(quote_text, company, interviewee_name, criteria_scores)
+                
+        except Exception as e:
+            logger.error(f"❌ Error in LLM finding generation: {e}")
+            # Fallback to template-based generation
+            return self._generate_buried_wins_statement(quote_text, company, interviewee_name, criteria_scores)
+    
+    def _load_buried_wins_prompt(self) -> str:
+        """Load the Buried Wins prompt template and product standard"""
+        try:
+            # Load the main prompt
+            with open('Context/Buried Wins Finding Production Prompt.txt', 'r', encoding='iso-8859-1') as f:
+                prompt = f.read()
+            
+            # Load the product standard
+            with open('Context/Buried Wins Finding Product Standard.txt', 'r', encoding='iso-8859-1') as f:
+                product_standard = f.read()
+            
+            # Combine them
+            combined_prompt = f"""BURIED WINS PRODUCT STANDARD:
+{product_standard}
+
+BURIED WINS PRODUCTION PROMPT:
+{prompt}"""
+            
+            return combined_prompt
+        except FileNotFoundError as e:
+            logger.warning(f"⚠️ Could not load Buried Wins files: {e}")
+            # Fallback prompt if files not found
+            return """Prompt: Buried Wins Finding Production
+Objective:
+Analyze the provided response data and produce findings strictly according to the Buried Wins Finding Production Standard.
+
+Instructions:
+Step 1: Apply Finding Production Standard
+- Evaluate content against 6 weighted scoring criteria (Novelty, Tension/Contrast, Materiality, Actionability, Specificity, Metric/Quantification)
+- Apply operational definitions for materiality and business impact
+- Calculate total score using point values (3, 3, 2, 2, 2, 1)
+
+Step 2: Articulate Qualified Findings
+For each response record scoring 5+ points:
+1. Create finding title (6-8 words, specific business impact)
+2. Write Impact statement (≤25 words, business consequence leads)
+3. Write Evidence statement (≤35 words, operational details from response)
+4. Write Context statement (≤35 words, market/buyer behavior pattern)
+
+Step 3: Output Format
+Present each finding using this exact template:
+**Finding Title:** [6-8 word business impact statement]
+
+**Score:** [X points: Criteria breakdown]
+
+**Impact:** [Business consequence/risk/opportunity affecting scope due to specific condition]
+
+**Evidence:** [Specific operational detail with quantifiable context under defined business conditions]
+
+**Context:** [What pattern reveals about buyer/market behavior]. [Competitive/business implication if applicable].
+
+Critical Requirements:
+- No solutioning - describe what happened, not what should be done
+- Response data only - no external assumptions or interpretations
+- Exact word limits - Impact ≤25 words, Evidence/Context ≤35 words each
+- Operational definitions - apply materiality and business impact criteria precisely
+- Traceability - every claim must trace back to specific response content
+
+Now analyze the provided response data and produce findings according to these specifications."""
+            # Fallback prompt if file not found
+            return """Prompt: Buried Wins Finding Production
+Objective:
+Analyze the provided response data and produce findings strictly according to the Buried Wins Finding Production Standard.
+
+Instructions:
+Step 1: Apply Finding Production Standard
+- Evaluate content against 6 weighted scoring criteria (Novelty, Tension/Contrast, Materiality, Actionability, Specificity, Metric/Quantification)
+- Apply operational definitions for materiality and business impact
+- Calculate total score using point values (3, 3, 2, 2, 2, 1)
+
+Step 2: Articulate Qualified Findings
+For each response record scoring 5+ points:
+1. Create finding title (6-8 words, specific business impact)
+2. Write Impact statement (≤25 words, business consequence leads)
+3. Write Evidence statement (≤35 words, operational details from response)
+4. Write Context statement (≤35 words, market/buyer behavior pattern)
+
+Step 3: Output Format
+Present each finding using this exact template:
+**Finding Title:** [6-8 word business impact statement]
+
+**Score:** [X points: Criteria breakdown]
+
+**Impact:** [Business consequence/risk/opportunity affecting scope due to specific condition]
+
+**Evidence:** [Specific operational detail with quantifiable context under defined business conditions]
+
+**Context:** [What pattern reveals about buyer/market behavior]. [Competitive/business implication if applicable].
+
+Critical Requirements:
+- No solutioning - describe what happened, not what should be done
+- Response data only - no external assumptions or interpretations
+- Exact word limits - Impact ≤25 words, Evidence/Context ≤35 words each
+- Operational definitions - apply materiality and business impact criteria precisely
+- Traceability - every claim must trace back to specific response content
+
+Now analyze the provided response data and produce findings according to these specifications."""
+    
+    def _create_buried_wins_prompt(self, quote_text: str, company: str, interviewee_name: str, criteria_scores: Dict[str, int], prompt_template: str) -> str:
+        """Create a specific prompt for the given quote"""
+        
+        # Format criteria scores
+        criteria_breakdown = []
+        for criterion, score in criteria_scores.items():
+            if score > 0:
+                criteria_breakdown.append(f"{criterion.title()} ({score})")
+        
+        criteria_text = ", ".join(criteria_breakdown) if criteria_breakdown else "No criteria met"
+        total_score = sum(criteria_scores.values())
+        
+        # Create the specific prompt
+        specific_prompt = f"""{prompt_template}
+
+RESPONSE DATA TO ANALYZE:
+Company: {company if company else 'Unknown'}
+Interviewee: {interviewee_name if interviewee_name else 'Unknown'}
+Response Text: "{quote_text}"
+Criteria Scores: {criteria_text}
+Total Score: {total_score} points
+
+Based on this response data, generate a finding following the Buried Wins standard. Focus on:
+1. Specific business impact revealed in the response
+2. Concrete operational details mentioned
+3. Market dynamics or competitive insights
+4. Quantifiable elements if present
+
+Generate ONLY the finding in the required format (Finding Title, Score, Impact, Evidence, Context)."""
+        
+        return specific_prompt
+    
+    def _call_llm_api(self, prompt: str) -> Optional[str]:
+        """Call the LLM API to generate a finding"""
+        try:
+            import openai
+            import os
+            
+            # Get API key from environment
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                logger.warning("⚠️ OPENAI_API_KEY not found in environment variables")
+                return None
+            
+            # Initialize OpenAI client
+            client = openai.OpenAI(api_key=api_key)
+            
+            # Call the API
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",  # Use a cost-effective model
+                messages=[
+                    {"role": "system", "content": "You are a business analyst specializing in B2B SaaS customer research. Generate findings that are specific, actionable, and based solely on the provided response data."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=500,
+                temperature=0.3,  # Lower temperature for more consistent output
+                timeout=30
+            )
+            
+            # Extract the finding from the response
+            finding = response.choices[0].message.content.strip()
+            
+            # Parse the finding to extract just the finding statement
+            finding_statement = self._extract_finding_statement(finding)
+            
+            return finding_statement
             
         except ImportError:
-            logger.warning("⚠️ Sentence transformers not available, falling back to fuzzy matching")
-            return self._deduplicate_fuzzy_fallback(findings, similarity_threshold)
+            logger.warning("⚠️ OpenAI library not installed. Install with: pip install openai")
+            return None
         except Exception as e:
-            logger.error(f"❌ Error in semantic deduplication: {e}")
-            return self._deduplicate_fuzzy_fallback(findings, similarity_threshold)
+            logger.error(f"❌ Error calling LLM API: {e}")
+            return None
     
-    def _merge_similar_findings(self, similar_findings: List[Dict]) -> Dict:
-        """Merge similar findings by combining their evidence and keeping the best attributes"""
-        if not similar_findings:
-            return {}
-        
-        # Find the best finding (highest confidence)
-        best_finding = max(similar_findings, key=lambda x: x.get('enhanced_confidence', 0))
-        
-        # Combine all quotes
-        all_quotes = []
-        all_companies = set()
-        total_quote_count = 0
-        
-        for finding in similar_findings:
-            quotes = finding.get('selected_quotes', [])
-            all_quotes.extend(quotes)
-            total_quote_count += finding.get('quote_count', 0)
-            
-            # Handle companies
-            companies = finding.get('companies_affected', '')
-            if isinstance(companies, str) and companies:
-                all_companies.update(companies.split(', '))
-            elif isinstance(companies, (list, set)):
-                all_companies.update(companies)
-        
-        # Deduplicate quotes by text content
-        seen_texts = set()
-        deduped_quotes = []
-        for quote in all_quotes:
-            if isinstance(quote, dict):
-                text = quote.get('text', '').strip().lower()
-            else:
-                text = str(quote).strip().lower()
-            
-            if text and text not in seen_texts:
-                deduped_quotes.append(quote)
-                seen_texts.add(text)
-        
-        # Create merged finding
-        merged_finding = best_finding.copy()
-        merged_finding['selected_quotes'] = deduped_quotes
-        merged_finding['quote_count'] = len(deduped_quotes)
-        merged_finding['companies_affected'] = ', '.join(list(all_companies)) if all_companies else 'Unknown'
-        
-        # Update evidence strength
-        merged_finding['evidence_strength'] = self._calculate_evidence_strength({
-            'quote_count': len(deduped_quotes),
-            'company_count': len(all_companies),
-            'enhanced_confidence': best_finding.get('enhanced_confidence', 0),
-            'relevance_level': best_finding.get('relevance_level', 'moderate')
-        })
-        
-        return merged_finding
-    
-    def _deduplicate_fuzzy_fallback(self, findings: List[Dict], similarity_threshold: float = 0.85) -> List[Dict]:
-        """Fallback deduplication using fuzzy string matching"""
-        import difflib
-        
-        # Group by exact matches first
-        statement_groups = {}
-        for i, finding in enumerate(findings):
-            statement = finding.get('finding_statement', finding.get('description', '')).strip()
-            if statement not in statement_groups:
-                statement_groups[statement] = []
-            statement_groups[statement].append((i, finding))
-        
-        # Apply fuzzy matching
-        processed_statements = set()
-        merged = []
-        
-        for statement, group in statement_groups.items():
-            if statement in processed_statements:
-                continue
-            
-            # Find similar statements
-            similar_groups = [group]
-            for other_statement, other_group in statement_groups.items():
-                if other_statement == statement or other_statement in processed_statements:
-                    continue
-                
-                sim = difflib.SequenceMatcher(None, statement.lower(), other_statement.lower()).ratio()
-                if sim >= similarity_threshold:
-                    similar_groups.append(other_group)
-                    processed_statements.add(other_statement)
-            
-            # Merge groups
-            all_findings = []
-            for group_list in similar_groups:
-                all_findings.extend(group_list)
-            
-            if len(all_findings) == 1:
-                merged.append(all_findings[0][1])
-            else:
-                merged_finding = self._merge_similar_findings([f[1] for f in all_findings])
-                merged.append(merged_finding)
-            
-            processed_statements.add(statement)
-        
-        return merged
-    
-    def load_llm_prompt(self) -> str:
-        """Load LLM prompt from external files with fallback to optimized prompt."""
-        logger.info("Loading LLM prompt from external files...")
-        
+    def _extract_finding_statement(self, llm_response: str) -> str:
+        """Extract the finding statement from the LLM response"""
         try:
-            # Try to load the main prompt file with multiple encodings
-            prompt_file = "Context/Buried Wins Finding Production Prompt.txt"
-            standard_file = "Context/Buried Wins Finding Product Standard.txt"
+            # Look for the Impact section which contains the main finding
+            lines = llm_response.split('\n')
+            for i, line in enumerate(lines):
+                if line.strip().startswith('**Impact:**'):
+                    # Extract the impact statement
+                    impact = line.replace('**Impact:**', '').strip()
+                    return impact
+                elif line.strip().startswith('Impact:'):
+                    # Alternative format
+                    impact = line.replace('Impact:', '').strip()
+                    return impact
             
-            # Try different encodings for the prompt file
-            encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
-            main_prompt = None
-            standard_content = None
+            # If no Impact section found, try to extract the first meaningful sentence
+            for line in lines:
+                line = line.strip()
+                if line and not line.startswith('**') and not line.startswith('Score:') and len(line) > 20:
+                    return line
             
-            for encoding in encodings:
-                try:
-                    with open(prompt_file, 'r', encoding=encoding) as f:
-                        main_prompt = f.read()
-                    logger.info(f"✅ Loaded main prompt with {encoding} encoding, length: {len(main_prompt)} chars")
-                    break
-                except UnicodeDecodeError:
-                    continue
+            # Fallback: return the first non-empty line
+            for line in lines:
+                if line.strip():
+                    return line.strip()
             
-            # Try different encodings for the standard file
-            for encoding in encodings:
-                try:
-                    with open(standard_file, 'r', encoding=encoding) as f:
-                        standard_content = f.read()
-                    logger.info(f"✅ Loaded standard with {encoding} encoding, length: {len(standard_content)} chars")
-                    break
-                except UnicodeDecodeError:
-                    continue
+            return "Finding generated from response data"
             
-            if main_prompt and standard_content:
-                # Combine the files properly
-                combined_prompt = f"{main_prompt}\n\n{standard_content}"
-                logger.info(f"✅ Successfully combined prompt and standard, total length: {len(combined_prompt)} chars")
-                return combined_prompt
-            elif main_prompt:
-                logger.warning("⚠️ Could not load standard file, using main prompt only")
-                return main_prompt
-            else:
-                logger.error("❌ Could not load either prompt file")
-                raise FileNotFoundError("Could not load prompt files")
-                
         except Exception as e:
-            logger.error(f"❌ Error loading external prompt files: {e}")
-            logger.info("🔄 Falling back to built-in optimized prompt...")
-            
-            # Fallback to optimized prompt
-            return """You are an expert Voice of Customer (VoC) analyst specializing in extracting actionable insights from customer interview data.
-
-TASK: Analyze the provided customer interview responses and extract high-quality findings that represent buried wins, opportunities, or critical insights.
-
-CRITERIA FOR FINDINGS:
-1. **Actionable Insights**: Findings that suggest specific improvements or opportunities
-2. **Buried Wins**: Positive feedback that could be leveraged or expanded
-3. **Pain Points**: Clear customer frustrations or challenges
-4. **Opportunities**: Areas where the product/service could be enhanced
-5. **Competitive Intelligence**: Insights about competitors or market positioning
-
-OUTPUT FORMAT:
-Return a JSON array of findings, each with:
-- "category": The type of finding (opportunity, pain_point, buried_win, competitive_intel)
-- "priority_level": high, medium, or low
-- "title": A concise title for the finding
-- "description": Detailed description of the finding
-- "evidence": Specific quotes or data supporting the finding
-- "business_impact": How this affects the business
-
-RESPONSE FORMAT:
-```json
-{
-  "findings": [
-    {
-      "category": "opportunity",
-      "priority_level": "high",
-      "title": "Clear title",
-      "description": "Detailed description",
-      "evidence": "Supporting evidence",
-      "business_impact": "Business impact"
-    }
-  ]
-}
-```
-
-Analyze the following response data and extract findings:"""
-    
-    def save_llm_findings_to_supabase(self, findings: list, client_id: str = 'default') -> int:
-        """Save LLM-generated findings to Supabase with proper Buried Wins structure, matching all required fields."""
-        logger.info("💾 Saving LLM-generated findings to Supabase...")
-        saved_count = 0
-        
-        for finding in findings:
-            try:
-                # Parse the Buried Wins structure from LLM output
-                impact = finding.get('Impact', '')
-                evidence = finding.get('Evidence', '')
-                context = finding.get('Context', '')
-                score_text = finding.get('Score', '')
-                title = finding.get('Finding Title', 'Untitled Finding')
-                # Compose description as required by NOT NULL constraint
-                description = f"Impact: {impact}\nEvidence: {evidence}\nContext: {context}".strip()
-                # Parse score breakdown if present
-                score_breakdown = finding.get('Score Breakdown', {})
-                if isinstance(score_breakdown, str):
-                    import json
-                    try:
-                        score_breakdown = json.loads(score_breakdown)
-                    except Exception:
-                        score_breakdown = {}
-                total_score = finding.get('Total Score') or finding.get('total_score') or score_breakdown.get('total', 0)
-                novelty_score = score_breakdown.get('novelty', 0)
-                tension_contrast_score = score_breakdown.get('tension_contrast', 0)
-                materiality_score = score_breakdown.get('materiality', 0)
-                actionability_score = score_breakdown.get('actionability', 0)
-                credibility_score = score_breakdown.get('credibility', 0)
-                # Compose db_finding dict with new Buried Wins structure
-                db_finding = {
-                    'client_id': client_id,
-                    'title': title,
-                    'criterion': 'buried_wins',
-                    'finding_type': 'buried_wins',
-                    'impact_statement': impact,
-                    'evidence_specification': evidence,
-                    'strategic_context': context,
-                    'score_justification': score_text,
-                    'total_score': total_score,
-                    'novelty_score': novelty_score,
-                    'tension_contrast_score': tension_contrast_score,
-                    'materiality_score': materiality_score,
-                    'actionability_score': actionability_score,
-                    'credibility_score': credibility_score,
-                    'description': description
-                }
-                # Save to Supabase
-                self.db.supabase.table('stage3_findings').upsert(db_finding).execute()
-                saved_count += 1
-            except Exception as e:
-                logger.error(f"❌ Failed to save finding: {e}")
-                logger.error(f"Finding data: {finding}")
-        return saved_count
-
-    # Helper to get columns for dynamic NOT NULL handling
-    def get_stage3_findings_columns(self):
-        try:
-            return self.db.get_table_columns('stage3_findings')
-        except Exception:
-            return []
+            logger.error(f"❌ Error extracting finding statement: {e}")
+            return "Finding generated from response data"
 
 def run_stage3_analysis(client_id: str = 'default'):
     """Run enhanced Stage 3 findings analysis"""

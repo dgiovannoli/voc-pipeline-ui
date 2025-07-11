@@ -399,34 +399,95 @@ class SupabaseDatabase:
     def save_enhanced_finding(self, finding_data: Dict[str, Any], client_id: str = 'default') -> bool:
         """Save an enhanced finding to Supabase with Buried Wins v4.0 framework"""
         try:
-            # Prepare data for Supabase with new Buried Wins structure
+            # Generate unique finding ID if not provided
+            finding_id = finding_data.get('finding_id')
+            if not finding_id:
+                # Get the next available finding ID for this specific client
+                result = self.supabase.table('stage3_findings').select('finding_id').eq('client_id', client_id).order('finding_id', desc=True).limit(1).execute()
+                if result.data:
+                    last_id = result.data[0].get('finding_id', 'F0')
+                    last_num = int(last_id.replace('F', '')) if last_id.startswith('F') else 0
+                    finding_id = f"F{last_num + 1}"
+                else:
+                    finding_id = "F1"
+            
+            # Check if this finding_id already exists for this client
+            existing = self.supabase.table('stage3_findings').select('finding_id').eq('client_id', client_id).eq('finding_id', finding_id).execute()
+            if existing.data:
+                # If finding already exists, skip it to avoid duplicates
+                logger.info(f"⚠️ Finding {finding_id} already exists for client {client_id}, skipping...")
+                return True
+            
+            # Prepare data for Supabase matching CSV structure exactly
             data = {
                 'client_id': client_id,
-                'title': finding_data.get('title'),
-                'criterion': finding_data.get('criterion'),
-                'finding_type': finding_data.get('finding_type'),
-                'impact_statement': finding_data.get('impact_statement'),
-                'evidence_specification': finding_data.get('evidence_specification'),
-                'strategic_context': finding_data.get('strategic_context'),
-                'score_justification': finding_data.get('score_justification'),
-                'total_score': finding_data.get('total_score'),
-                'novelty_score': finding_data.get('novelty_score'),
-                'tension_contrast_score': finding_data.get('tension_contrast_score'),
-                'materiality_score': finding_data.get('materiality_score'),
-                'actionability_score': finding_data.get('actionability_score'),
-                'credibility_score': finding_data.get('credibility_score'),
-                'description': finding_data.get('description'),
-                'created_at': finding_data.get('created_at', datetime.now().isoformat())
+                'finding_id': finding_id,
+                'finding_statement': finding_data.get('finding_statement', finding_data.get('description', '')),
+                'interview_company': finding_data.get('interview_company', finding_data.get('company', '')),
+                'date': finding_data.get('date', datetime.now().strftime('%m/%d/%Y')),
+                'deal_status': finding_data.get('deal_status', 'closed won'),
+                'interviewee_name': finding_data.get('interviewee_name', ''),
+                'supporting_response_ids': finding_data.get('supporting_response_ids', ''),
+                'evidence_strength': finding_data.get('evidence_strength', finding_data.get('evidence_strength_score', 1)),
+                'finding_category': finding_data.get('finding_category', finding_data.get('finding_type', '')),
+                'criteria_met': finding_data.get('criteria_met', ''),
+                'priority_level': finding_data.get('priority_level', 'Standard Finding'),
+                'primary_quote': finding_data.get('primary_quote', ''),
+                'secondary_quote': finding_data.get('secondary_quote', ''),
+                'quote_attributions': finding_data.get('quote_attributions', ''),
+                'column_1': None,
+                'column_2': None,
+                'column_3': None,
+                'column_4': None,
+                'column_5': None,
+                'column_6': None,
+                'column_7': None,
+                'column_8': None,
+                'column_9': None,
+                'column_10': None,
+                'column_11': None,
+                'column_12': None,
+                
+                # Additional metadata fields for internal use
+                'enhanced_confidence': finding_data.get('enhanced_confidence', 0.0),
+                'criteria_scores': finding_data.get('criteria_scores', {}),
+                'credibility_tier': finding_data.get('credibility_tier', 'standard'),
+                'companies_affected': finding_data.get('companies_affected', []),
+                'processing_metadata': finding_data.get('processing_metadata', {})
             }
             
-            # Remove None values
-            data = {k: v for k, v in data.items() if v is not None}
+            # Remove None values and handle JSON serialization
+            clean_data = {}
+            for k, v in data.items():
+                if v is not None:
+                    if isinstance(v, (dict, list)):
+                        clean_data[k] = json.dumps(v) if v else '{}' if isinstance(v, dict) else '[]'
+                    elif hasattr(v, 'isoformat') and callable(getattr(v, 'isoformat')):
+                        # Convert date objects to ISO format string
+                        clean_data[k] = v.isoformat()
+                    else:
+                        clean_data[k] = v
             
-            # Upsert to Supabase
-            result = self.supabase.table('stage3_findings').upsert(data).execute()
-            
-            logger.info(f"✅ Saved enhanced finding: {finding_data.get('title')} (Total Score: {finding_data.get('total_score', 0):.1f})")
-            return True
+            # Insert to Supabase (not upsert to avoid conflicts)
+            try:
+                result = self.supabase.table('stage3_findings').insert(clean_data).execute()
+                logger.info(f"✅ Saved enhanced finding: {finding_id} - {finding_data.get('title', '')[:50]}... (Confidence: {finding_data.get('enhanced_confidence', 0):.1f})")
+                return True
+            except Exception as insert_error:
+                # If insert fails due to duplicate, try to update instead
+                if "duplicate key" in str(insert_error).lower():
+                    logger.warning(f"⚠️ Finding {finding_id} already exists, updating instead...")
+                    try:
+                        # Update existing finding
+                        result = self.supabase.table('stage3_findings').update(clean_data).eq('client_id', client_id).eq('finding_id', finding_id).execute()
+                        logger.info(f"✅ Updated enhanced finding: {finding_id}")
+                        return True
+                    except Exception as update_error:
+                        logger.error(f"❌ Failed to update finding {finding_id}: {update_error}")
+                        return False
+                else:
+                    logger.error(f"❌ Failed to insert finding {finding_id}: {insert_error}")
+                    return False
             
         except Exception as e:
             logger.error(f"❌ Failed to save enhanced finding: {e}")
@@ -474,7 +535,7 @@ class SupabaseDatabase:
                 query = query.eq('finding_type', finding_type)
             if priority_level:
                 query = query.eq('priority_level', priority_level)
-            query = query.order('total_score', desc=True)
+            query = query.order('enhanced_confidence', desc=True)
             result = query.execute()
             df = pd.DataFrame(result.data)
             if not df.empty:
@@ -506,23 +567,51 @@ class SupabaseDatabase:
                     'average_confidence': 0.0,
                     'average_criteria_met': 0.0
                 }
+            
+            # Handle data type conversions safely
             total_findings = len(df)
-            priority_findings = len(df[df['priority_level'] == 'priority'])
-            standard_findings = len(df[df['priority_level'] == 'standard'])
-            low_findings = len(df[df['priority_level'] == 'low'])
-            criteria_covered = df['criterion'].nunique()
-            average_confidence = df['total_score'].mean()
-            average_criteria_met = df['criteria_met'].mean()
-            finding_type_distribution = df['finding_type'].value_counts().to_dict()
-            priority_level_distribution = df['priority_level'].value_counts().to_dict()
+            
+            # Safely convert priority levels to numeric for counting
+            priority_findings = 0
+            standard_findings = 0
+            low_findings = 0
+            
+            for _, row in df.iterrows():
+                priority_level = str(row.get('priority_level', '')).lower()
+                if 'priority' in priority_level:
+                    priority_findings += 1
+                elif 'standard' in priority_level:
+                    standard_findings += 1
+                else:
+                    low_findings += 1
+            
+            criteria_covered = df['criterion'].nunique() if 'criterion' in df.columns else 0
+            
+            # Safely handle numeric conversions
+            try:
+                average_confidence = df['enhanced_confidence'].astype(float).mean()
+            except (ValueError, TypeError):
+                average_confidence = 0.0
+                
+            try:
+                average_criteria_met = df['criteria_met'].astype(float).mean()
+            except (ValueError, TypeError):
+                average_criteria_met = 0.0
+            
+            finding_type_distribution = df['finding_type'].value_counts().to_dict() if 'finding_type' in df.columns else {}
+            priority_level_distribution = df['priority_level'].value_counts().to_dict() if 'priority_level' in df.columns else {}
+            
             criteria_performance = {}
-            for criterion in df['criterion'].unique():
-                criterion_df = df[df['criterion'] == criterion]
-                criteria_performance[criterion] = {
-                    'findings_count': len(criterion_df),
-                    'average_confidence': criterion_df['total_score'].mean(),
-                    'priority_findings': len(criterion_df[criterion_df['priority_level'] == 'priority'])
-                }
+            if 'criterion' in df.columns:
+                for criterion in df['criterion'].unique():
+                    if pd.notna(criterion):
+                        criterion_df = df[df['criterion'] == criterion]
+                        criteria_performance[str(criterion)] = {
+                            'findings_count': len(criterion_df),
+                            'average_confidence': criterion_df['enhanced_confidence'].astype(float).mean() if 'enhanced_confidence' in criterion_df.columns else 0.0,
+                            'priority_findings': len(criterion_df[criterion_df['priority_level'].astype(str).str.contains('priority', case=False, na=False)])
+                        }
+            
             return {
                 'total_findings': total_findings,
                 'priority_findings': priority_findings,
@@ -556,14 +645,14 @@ class SupabaseDatabase:
             if df.empty:
                 return pd.DataFrame()
             
-            # Filter by total score threshold and priority level
+            # Filter by confidence threshold and priority level
             priority_df = df[
-                (df['total_score'] >= min_confidence) | 
+                (df['enhanced_confidence'] >= min_confidence) | 
                 (df['priority_level'] == 'priority')
             ].copy()
             
-            # Sort by total score
-            priority_df = priority_df.sort_values('total_score', ascending=False)
+            # Sort by confidence score
+            priority_df = priority_df.sort_values('enhanced_confidence', ascending=False)
             
             logger.info(f"📊 Retrieved {len(priority_df)} priority findings")
             return priority_df
