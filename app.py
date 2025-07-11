@@ -4,7 +4,7 @@ from stage1_ui import show_stage1_data_responses
 from stage2_ui import show_stage2_response_labeling
 from stage3_ui import show_stage3_findings
 from stage4_ui import show_stage4_themes
-from admin_ui import show_admin_utilities
+from admin_ui import show_admin_utilities, show_admin_panel
 from curation_ui import show_curation_ui
 
 def main():
@@ -72,7 +72,7 @@ def main():
     elif page == "Stage 5: Human Curation":
         show_curation_ui()
     elif page == "Admin / Utilities":
-        show_admin_utilities()
+        show_admin_panel()
 
 if __name__ == "__main__":
     main()
