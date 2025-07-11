@@ -14,6 +14,9 @@ from collections import defaultdict, Counter
 import re
 import pprint
 from io import StringIO
+import concurrent.futures
+from functools import partial
+import tiktoken
 
 # Import Supabase database manager
 from supabase_database import SupabaseDatabase
@@ -41,6 +44,13 @@ class Stage3FindingsAnalyzer:
             max_tokens=4000,
             temperature=0.2
         )
+        
+        # Initialize tokenizer for token counting
+        try:
+            self.tokenizer = tiktoken.encoding_for_model("gpt-4o-mini")
+        except:
+            # Fallback to cl100k_base encoding if model not found
+            self.tokenizer = tiktoken.get_encoding("cl100k_base")
         
         # Initialize Supabase database
         self.db = SupabaseDatabase()
@@ -96,6 +106,68 @@ class Stage3FindingsAnalyzer:
             "standard_findings": 0,
             "processing_errors": 0
         }
+    
+    def count_tokens(self, text: str) -> int:
+        """Count tokens in text using tiktoken"""
+        try:
+            return len(self.tokenizer.encode(text))
+        except Exception as e:
+            logger.warning(f"Token counting failed: {e}, using character-based estimation")
+            # Fallback: rough estimation (1 token ≈ 4 characters)
+            return len(text) // 4
+    
+    def estimate_batch_tokens(self, prompt: str, batch_data: pd.DataFrame) -> int:
+        """Estimate total tokens for a batch including prompt and data"""
+        # Convert batch to CSV for estimation
+        csv_data = batch_data.to_csv(index=False)
+        
+        # Create the full prompt for estimation
+        full_prompt = f"{prompt}\n\nCUSTOMER INTERVIEW DATA:\n{csv_data}\n\nPlease analyze this data and return findings in JSON format."
+        
+        # Count tokens
+        token_count = self.count_tokens(full_prompt)
+        
+        # Add buffer for response tokens (max_tokens from LLM config)
+        total_tokens = token_count + 4000  # max_tokens from LLM config
+        
+        return total_tokens, token_count
+    
+    def create_dynamic_batches(self, df: pd.DataFrame, prompt: str, max_tokens: int = 100000) -> List[pd.DataFrame]:
+        """Create batches dynamically based on token count"""
+        batches = []
+        current_batch = []
+        current_tokens = 0
+        
+        # Count tokens for prompt alone
+        prompt_tokens = self.count_tokens(prompt)
+        available_tokens = max_tokens - prompt_tokens - 4000  # Reserve space for response
+        
+        logger.info(f"📊 Prompt tokens: {prompt_tokens:,}")
+        logger.info(f"📊 Available tokens for data: {available_tokens:,}")
+        
+        for idx, row in df.iterrows():
+            # Convert single row to DataFrame for token estimation
+            row_df = pd.DataFrame([row])
+            row_tokens, _ = self.estimate_batch_tokens(prompt, row_df)
+            row_data_tokens = row_tokens - prompt_tokens - 4000
+            
+            # If adding this row would exceed token limit, start new batch
+            if current_tokens + row_data_tokens > available_tokens and current_batch:
+                batches.append(pd.DataFrame(current_batch))
+                current_batch = [row]
+                current_tokens = row_data_tokens
+                logger.info(f"📊 Created batch with {len(batches[-1])} rows, {current_tokens:,} tokens")
+            else:
+                current_batch.append(row)
+                current_tokens += row_data_tokens
+        
+        # Add final batch
+        if current_batch:
+            batches.append(pd.DataFrame(current_batch))
+            logger.info(f"📊 Final batch with {len(current_batch)} rows, {current_tokens:,} tokens")
+        
+        logger.info(f"📊 Created {len(batches)} dynamic batches")
+        return batches
     
     def load_config(self) -> Dict:
         """Load configuration from YAML file"""
@@ -201,7 +273,7 @@ class Stage3FindingsAnalyzer:
             
             # Tension/contrast check
             if any(word in text_lower for word in ['but', 'however', 'although', 'despite', 'while', 'tension', 'conflict']):
-                criteria_scores['tension_contrast'] += 1
+                criteria_scores['tension_contrast'] = 1
             
             # Metric/quantification check
             if re.search(r'\d+%|\d+ percent|\$\d+|\d+ dollars|\d+ hours|\d+ days', text_lower):
@@ -1187,85 +1259,181 @@ class Stage3FindingsAnalyzer:
         for i in range(0, len(df), batch_size):
             yield df.iloc[i:i + batch_size]
 
-    def process_stage3_findings(self, client_id: str = 'default', batch_size: int = 5) -> Dict:
-        """Main processing function for enhanced Stage 3 (LLM-powered findings extraction, batched)"""
-        logger.info("🚀 STAGE 3: LLM-POWERED FINDINGS EXTRACTION (Buried Wins v4.0)")
+    def process_stage3_findings(self, client_id: str = 'default', batch_size: int = 10) -> Dict:
+        """Main processing function for enhanced Stage 3 (LLM-powered findings extraction, optimized with dynamic batching)"""
+        logger.info("🚀 STAGE 3: LLM-POWERED FINDINGS EXTRACTION (Dynamic Batching v4.2)")
         logger.info("=" * 70)
 
         # Get core responses directly (not stage2_response_labeling)
+        logger.info("📊 Loading core responses...")
         stage1_data_responses_df = self.db.get_stage1_data_responses(client_id=client_id)
         if len(stage1_data_responses_df) == 0:
             logger.info("✅ No core responses found for analysis")
             return {"status": "no_data", "message": "No core responses available"}
 
-        self.processing_metrics["total_quotes_processed"] = len(stage1_data_responses_df)
+        logger.info(f"📊 Found {len(stage1_data_responses_df)} core responses for analysis")
 
-        # Only keep essential columns
+        # Load the full Buried Wins prompt
+        prompt = self.load_llm_prompt()
+        
+        # Only keep essential columns to reduce context length
         essential_cols = [
-            'response_id', 'verbatim_response', 'question', 'company_name',
-            'interviewee_name', 'date_of_interview', 'client_id'
+            'response_id', 'verbatim_response', 'question', 'company',
+            'interviewee_name', 'interview_date', 'client_id'
         ]
-        df = stage1_data_responses_df[essential_cols].copy()
+        
+        # Filter to only include columns that exist
+        available_cols = [col for col in essential_cols if col in stage1_data_responses_df.columns]
+        stage1_data_responses_df = stage1_data_responses_df[available_cols]
+        
+        logger.info(f"📊 Using columns: {available_cols}")
+        logger.info(f"📊 Data shape: {stage1_data_responses_df.shape}")
 
-        # Load LLM prompt
-        llm_prompt = self.load_llm_prompt()
-        logger.info(f"Prompt length: {len(llm_prompt)} chars")
-
+        # Create dynamic batches based on token count
+        logger.info("🔄 Creating dynamic batches based on token count...")
+        batches = self.create_dynamic_batches(stage1_data_responses_df, prompt, max_tokens=100000)
+        
+        total_responses = len(stage1_data_responses_df)
+        num_batches = len(batches)
+        
+        logger.info(f"🔄 Processing {total_responses} responses in {num_batches} dynamic batches")
+        
         all_findings = []
-        all_summaries = []
-        all_llm_outputs = []
-        batch_num = 1
-        for batch_df in self.batch_dataframe(df, batch_size):
-            input_csv = batch_df.to_csv(index=False)
-            logger.info(f"Batch {batch_num}: CSV length {len(input_csv)} chars")
-            full_prompt = f"""{llm_prompt}\n\n<csv_input>\n{input_csv}\n</csv_input>\n"""
-            logger.info(f"Batch {batch_num}: Full prompt+csv length {len(full_prompt)} chars")
+        successful_batches = 0
+        
+        # Process batches with parallel processing
+        def process_batch(batch_data, batch_num):
+            """Process a single batch of responses"""
             try:
+                logger.info(f"🔄 Processing batch {batch_num + 1}/{num_batches} ({len(batch_data)} responses)")
+                
+                # Convert batch to CSV for LLM
+                csv_data = batch_data.to_csv(index=False)
+                
+                # Create the full prompt with data
+                full_prompt = f"{prompt}\n\nCUSTOMER INTERVIEW DATA:\n{csv_data}\n\nPlease analyze this data and return findings in JSON format."
+                
+                # Count tokens for this batch
+                total_tokens, prompt_tokens = self.estimate_batch_tokens(prompt, batch_data)
+                logger.info(f"📊 Batch {batch_num + 1} tokens: {total_tokens:,} (prompt: {prompt_tokens:,}, data: {total_tokens - prompt_tokens - 4000:,})")
+                
+                # Safety check - if still too large, split further
+                if total_tokens > 120000:  # Conservative limit
+                    logger.warning(f"⚠️ Batch {batch_num + 1} still too large ({total_tokens:,} tokens), splitting further")
+                    mid = len(batch_data) // 2
+                    batch1 = batch_data.iloc[:mid]
+                    batch2 = batch_data.iloc[mid:]
+                    
+                    results1 = process_batch(batch1, batch_num * 2)
+                    results2 = process_batch(batch2, batch_num * 2 + 1)
+                    
+                    return results1 + results2
+                
+                # Call LLM
                 response = self.llm.invoke(full_prompt)
-                llm_output = response.content if hasattr(response, 'content') else str(response)
-                logger.info(f"Batch {batch_num}: LLM output (first 1000 chars):\n{llm_output[:1000]}")
+                response_text = response.content
+                
+                # Log first 500 chars of response for debugging
+                logger.info(f"📊 Batch {batch_num + 1} LLM response (first 500 chars): {response_text[:500]}...")
+                
+                # Parse JSON response (handle markdown code blocks)
+                try:
+                    # Remove markdown code blocks if present
+                    if response_text.startswith('```json'):
+                        response_text = response_text.replace('```json', '').replace('```', '').strip()
+                    elif response_text.startswith('```'):
+                        response_text = response_text.replace('```', '').strip()
+                    
+                    parsed_data = json.loads(response_text)
+                    
+                    # Handle different response structures
+                    if isinstance(parsed_data, list):
+                        findings = parsed_data
+                    elif isinstance(parsed_data, dict) and 'findings' in parsed_data:
+                        findings = parsed_data['findings']
+                    elif isinstance(parsed_data, dict):
+                        # Convert single finding to list
+                        findings = [parsed_data]
+                    else:
+                        logger.warning(f"⚠️ Batch {batch_num + 1} response structure unknown: {type(parsed_data)}")
+                        return []
+                    
+                    if isinstance(findings, list):
+                        logger.info(f"✅ Batch {batch_num + 1} successfully parsed {len(findings)} findings")
+                        return findings
+                    else:
+                        logger.warning(f"⚠️ Batch {batch_num + 1} findings not a list: {type(findings)}")
+                        return []
+                except json.JSONDecodeError as e:
+                    logger.error(f"❌ Failed to parse LLM output as JSON for batch {batch_num + 1}: {e}")
+                    logger.error(f"❌ Response text: {response_text[:1000]}...")
+                    return []
+                    
             except Exception as e:
-                logger.error(f"LLM call failed for batch {batch_num}: {e}")
-                continue
-            all_llm_outputs.append(llm_output)
-            try:
-                json_start = llm_output.find('{')
-                json_end = llm_output.rfind('}') + 1
-                llm_json = llm_output[json_start:json_end]
-                findings_data = json.loads(llm_json)
-            except Exception as e:
-                logger.error(f"Failed to parse LLM output as JSON for batch {batch_num}: {e}")
-                continue
-            try:
-                findings_csv = findings_data.get('findings_csv', '')
-                findings_df = pd.read_csv(StringIO(findings_csv))
-                findings = findings_df.to_dict(orient='records')
-                all_findings.extend(findings)
-            except Exception as e:
-                logger.error(f"Failed to parse findings CSV for batch {batch_num}: {e}")
-            all_summaries.append(findings_data.get('summary', {}))
-            batch_num += 1
+                logger.error(f"❌ Error processing batch {batch_num + 1}: {e}")
+                return []
+        
+        # Process batches in parallel (max 3 concurrent to avoid rate limits)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            # Create batch futures
+            batch_futures = []
+            for i, batch_data in enumerate(batches):
+                future = executor.submit(process_batch, batch_data, i)
+                batch_futures.append(future)
+            
+            # Collect results
+            for i, future in enumerate(batch_futures):
+                try:
+                    batch_findings = future.result(timeout=300)  # 5 minute timeout per batch
+                    all_findings.extend(batch_findings)
+                    successful_batches += 1
+                    logger.info(f"✅ Batch {i + 1} completed with {len(batch_findings)} findings")
+                except Exception as e:
+                    logger.error(f"❌ Batch {i + 1} failed: {e}")
+        
+        logger.info(f"📊 Processing complete: {successful_batches}/{num_batches} batches successful")
+        logger.info(f"📊 Total findings generated: {len(all_findings)}")
 
-        # Save to Supabase
-        self.save_stage3_findings_to_supabase(all_findings, client_id=client_id)
+        # Save findings to database
+        if all_findings:
+            logger.info("💾 Saving enhanced findings to Supabase...")
+            saved_count = self.save_llm_findings_to_supabase(all_findings, client_id)
+            logger.info(f"✅ Saved {saved_count} enhanced findings to Supabase for client {client_id}")
+        else:
+            logger.warning("⚠️ No findings generated to save")
 
-        # Merge summaries (simple aggregation)
-        total_findings = sum(s.get('total_findings', 0) for s in all_summaries)
+        logger.info(f"\n✅ LLM-powered Stage 3 complete! Generated {len(all_findings)} findings across {successful_batches} batches")
+        
+        # Generate robust summary report
+        num_priority = sum(1 for f in all_findings if f.get('priority_level') == 'high')
+        num_critical = sum(1 for f in all_findings if f.get('priority_level') == 'critical')
+        num_standard = sum(1 for f in all_findings if f.get('priority_level') == 'medium')
+        # Compute criteria_covered if possible
+        criteria_covered = set()
+        for f in all_findings:
+            if 'criteria_covered' in f:
+                if isinstance(f['criteria_covered'], (list, set)):
+                    criteria_covered.update(f['criteria_covered'])
+                elif isinstance(f['criteria_covered'], str):
+                    criteria_covered.update([c.strip() for c in f['criteria_covered'].split(',') if c.strip()])
+            elif 'category' in f:
+                criteria_covered.add(f['category'])
         summary = {
-            'total_findings': total_findings,
-            'batches': len(all_summaries),
-            'batch_summaries': all_summaries
+            "total_findings": len(all_findings),
+            "batches": successful_batches,
+            "priority_findings": num_priority,
+            "critical_findings": num_critical,
+            "standard_findings": num_standard,
+            "criteria_covered": len(criteria_covered),
+            # Add more keys as needed for your report
         }
-        logger.info(f"\n✅ LLM-powered Stage 3 complete! Generated {len(all_findings)} findings across {len(all_summaries)} batches")
         self.print_enhanced_summary_report(summary)
-
+        
         return {
             "status": "success",
-            "quotes_processed": len(df),
             "findings_generated": len(all_findings),
-            "summary": summary,
-            "processing_metrics": self.processing_metrics,
-            "llm_outputs": all_llm_outputs
+            "batches_processed": successful_batches,
+            "total_batches": num_batches
         }
     
     def generate_enhanced_summary_statistics(self, findings: List[Dict], patterns: Dict) -> Dict:
@@ -1305,30 +1473,15 @@ class Stage3FindingsAnalyzer:
             'patterns_by_criterion': {k: len(v) for k, v in patterns.items()}
         }
     
-    def print_enhanced_summary_report(self, summary: Dict):
-        """Print enhanced summary report"""
-        
-        logger.info(f"\n📊 ENHANCED STAGE 3 SUMMARY REPORT (Buried Wins v4.0)")
+    def print_enhanced_summary_report(self, summary: dict):
+        logger.info("\n📊 ENHANCED STAGE 3 SUMMARY REPORT (Buried Wins v4.0)")
         logger.info("=" * 70)
-        logger.info(f"Total findings generated: {summary['total_findings']}")
-        logger.info(f"Priority findings (≥4.0): {summary['priority_findings']}")
-        logger.info(f"Standard findings (≥3.0): {summary['standard_findings']}")
-        logger.info(f"Criteria covered: {summary['criteria_covered']}/10")
-        logger.info(f"Average confidence score: {summary['average_confidence_score']:.2f}/10.0")
-        logger.info(f"Average criteria met: {summary['average_criteria_met']:.1f}/8")
-        logger.info(f"Companies affected: {summary['total_companies_affected']}")
-        
-        logger.info(f"\n📈 FINDING TYPE DISTRIBUTION:")
-        for finding_type, count in summary['finding_type_distribution'].items():
-            logger.info(f"  {finding_type}: {count}")
-        
-        logger.info(f"\n🎯 PRIORITY LEVEL DISTRIBUTION:")
-        for priority, count in summary['priority_level_distribution'].items():
-            logger.info(f"  {priority}: {count}")
-        
-        logger.info(f"\n📈 PATTERNS BY CRITERION:")
-        for criterion, pattern_count in summary['patterns_by_criterion'].items():
-            logger.info(f"  {criterion}: {pattern_count} patterns")
+        logger.info(f"Total findings generated: {summary.get('total_findings', 0)}")
+        logger.info(f"Priority findings (≥4.0): {summary.get('priority_findings', 0)}")
+        logger.info(f"Standard findings (≥3.0): {summary.get('standard_findings', 0)}")
+        logger.info(f"Critical findings: {summary.get('critical_findings', 0)}")
+        logger.info(f"Criteria covered: {summary.get('criteria_covered', 0)}/10")
+        logger.info(f"Batches processed: {summary.get('batches', 0)}")
 
     def _validate_evidence_threshold(self, pattern: Dict) -> bool:
         """Validate if a pattern meets evidence threshold requirements - RELAXED FOR BETTER INSIGHTS"""
@@ -2423,36 +2576,154 @@ class Stage3FindingsAnalyzer:
         return merged
     
     def load_llm_prompt(self) -> str:
-        """Load the LLM prompt from Context/Findings Prompt.txt and append criteria from Context/Findings Criteria.txt."""
-        prompt = ""
+        """Load LLM prompt from external files with fallback to optimized prompt."""
+        logger.info("Loading LLM prompt from external files...")
+        
         try:
-            # Try different encodings to handle the file
+            # Try to load the main prompt file with multiple encodings
+            prompt_file = "Context/Buried Wins Finding Production Prompt.txt"
+            standard_file = "Context/Buried Wins Finding Product Standard.txt"
+            
+            # Try different encodings for the prompt file
             encodings = ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+            main_prompt = None
+            standard_content = None
             
             for encoding in encodings:
                 try:
-                    with open('Context/Findings Prompt.txt', 'r', encoding=encoding) as f:
-                        prompt = f.read()
+                    with open(prompt_file, 'r', encoding=encoding) as f:
+                        main_prompt = f.read()
+                    logger.info(f"✅ Loaded main prompt with {encoding} encoding, length: {len(main_prompt)} chars")
                     break
                 except UnicodeDecodeError:
                     continue
             
-            if not prompt:
-                logger.error("Could not read findings prompt file with any encoding")
-                return ""
+            # Try different encodings for the standard file
+            for encoding in encodings:
+                try:
+                    with open(standard_file, 'r', encoding=encoding) as f:
+                        standard_content = f.read()
+                    logger.info(f"✅ Loaded standard with {encoding} encoding, length: {len(standard_content)} chars")
+                    break
+                except UnicodeDecodeError:
+                    continue
+            
+            if main_prompt and standard_content:
+                # Combine the files properly
+                combined_prompt = f"{main_prompt}\n\n{standard_content}"
+                logger.info(f"✅ Successfully combined prompt and standard, total length: {len(combined_prompt)} chars")
+                return combined_prompt
+            elif main_prompt:
+                logger.warning("⚠️ Could not load standard file, using main prompt only")
+                return main_prompt
+            else:
+                logger.error("❌ Could not load either prompt file")
+                raise FileNotFoundError("Could not load prompt files")
                 
         except Exception as e:
-            logger.error(f"Could not load LLM prompt: {e}")
-            return ""
+            logger.error(f"❌ Error loading external prompt files: {e}")
+            logger.info("🔄 Falling back to built-in optimized prompt...")
             
-        # Optionally append criteria
+            # Fallback to optimized prompt
+            return """You are an expert Voice of Customer (VoC) analyst specializing in extracting actionable insights from customer interview data.
+
+TASK: Analyze the provided customer interview responses and extract high-quality findings that represent buried wins, opportunities, or critical insights.
+
+CRITERIA FOR FINDINGS:
+1. **Actionable Insights**: Findings that suggest specific improvements or opportunities
+2. **Buried Wins**: Positive feedback that could be leveraged or expanded
+3. **Pain Points**: Clear customer frustrations or challenges
+4. **Opportunities**: Areas where the product/service could be enhanced
+5. **Competitive Intelligence**: Insights about competitors or market positioning
+
+OUTPUT FORMAT:
+Return a JSON array of findings, each with:
+- "category": The type of finding (opportunity, pain_point, buried_win, competitive_intel)
+- "priority_level": high, medium, or low
+- "title": A concise title for the finding
+- "description": Detailed description of the finding
+- "evidence": Specific quotes or data supporting the finding
+- "business_impact": How this affects the business
+
+RESPONSE FORMAT:
+```json
+{
+  "findings": [
+    {
+      "category": "opportunity",
+      "priority_level": "high",
+      "title": "Clear title",
+      "description": "Detailed description",
+      "evidence": "Supporting evidence",
+      "business_impact": "Business impact"
+    }
+  ]
+}
+```
+
+Analyze the following response data and extract findings:"""
+    
+    def save_llm_findings_to_supabase(self, findings: list, client_id: str = 'default') -> int:
+        """Save LLM-generated findings to Supabase with proper Buried Wins structure, matching all required fields."""
+        logger.info("💾 Saving LLM-generated findings to Supabase...")
+        saved_count = 0
+        
+        for finding in findings:
+            try:
+                # Parse the Buried Wins structure from LLM output
+                impact = finding.get('Impact', '')
+                evidence = finding.get('Evidence', '')
+                context = finding.get('Context', '')
+                score_text = finding.get('Score', '')
+                title = finding.get('Finding Title', 'Untitled Finding')
+                # Compose description as required by NOT NULL constraint
+                description = f"Impact: {impact}\nEvidence: {evidence}\nContext: {context}".strip()
+                # Parse score breakdown if present
+                score_breakdown = finding.get('Score Breakdown', {})
+                if isinstance(score_breakdown, str):
+                    import json
+                    try:
+                        score_breakdown = json.loads(score_breakdown)
+                    except Exception:
+                        score_breakdown = {}
+                total_score = finding.get('Total Score') or finding.get('total_score') or score_breakdown.get('total', 0)
+                novelty_score = score_breakdown.get('novelty', 0)
+                tension_contrast_score = score_breakdown.get('tension_contrast', 0)
+                materiality_score = score_breakdown.get('materiality', 0)
+                actionability_score = score_breakdown.get('actionability', 0)
+                credibility_score = score_breakdown.get('credibility', 0)
+                # Compose db_finding dict with new Buried Wins structure
+                db_finding = {
+                    'client_id': client_id,
+                    'title': title,
+                    'criterion': 'buried_wins',
+                    'finding_type': 'buried_wins',
+                    'impact_statement': impact,
+                    'evidence_specification': evidence,
+                    'strategic_context': context,
+                    'score_justification': score_text,
+                    'total_score': total_score,
+                    'novelty_score': novelty_score,
+                    'tension_contrast_score': tension_contrast_score,
+                    'materiality_score': materiality_score,
+                    'actionability_score': actionability_score,
+                    'credibility_score': credibility_score,
+                    'description': description
+                }
+                # Save to Supabase
+                self.db.supabase.table('stage3_findings').upsert(db_finding).execute()
+                saved_count += 1
+            except Exception as e:
+                logger.error(f"❌ Failed to save finding: {e}")
+                logger.error(f"Finding data: {finding}")
+        return saved_count
+
+    # Helper to get columns for dynamic NOT NULL handling
+    def get_stage3_findings_columns(self):
         try:
-            with open('Context/Findings Criteria.txt', 'r', encoding='utf-8') as f:
-                criteria = f.read()
-            prompt += "\n\n# Buried Wins Findings Criteria (Reference)\n" + criteria
-        except Exception as e:
-            logger.warning(f"Could not load criteria doc: {e}")
-        return prompt
+            return self.db.get_table_columns('stage3_findings')
+        except Exception:
+            return []
 
 def run_stage3_analysis(client_id: str = 'default'):
     """Run enhanced Stage 3 findings analysis"""
