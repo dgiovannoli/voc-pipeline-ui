@@ -19,6 +19,23 @@ def main():
     # Sidebar navigation
     st.sidebar.title("VOC Pipeline Navigation")
     
+    # Production status indicator
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🚀 Production Status")
+    
+    # Check production readiness
+    try:
+        from test_production_setup import test_environment_variables, test_database_connection
+        env_ok = test_environment_variables()
+        db_ok = test_database_connection()
+        
+        if env_ok and db_ok:
+            st.sidebar.success("✅ Production Ready")
+        else:
+            st.sidebar.warning("⚠️ Production Issues")
+    except:
+        st.sidebar.info("ℹ️ Production status unknown")
+    
     # Client ID management
     st.sidebar.markdown("---")
     st.sidebar.subheader("🏢 Client Settings")
@@ -52,6 +69,7 @@ def main():
     page = st.sidebar.radio(
         "Go to:",
         [
+            "🚀 Production Dashboard",
             "Stage 1: Data Response Table",
             "Stage 2: Response Labeling", 
             "Stage 3: Findings",
@@ -61,7 +79,10 @@ def main():
         ]
     )
 
-    if page == "Stage 1: Data Response Table":
+    if page == "🚀 Production Dashboard":
+        from production_dashboard import show_production_dashboard
+        show_production_dashboard()
+    elif page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
     elif page == "Stage 2: Response Labeling":
         show_stage2_response_labeling()

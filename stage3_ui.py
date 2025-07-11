@@ -25,7 +25,7 @@ def get_client_id():
     return client_id
 
 def run_stage3_analysis():
-    """Run Stage 3 findings analysis using database"""
+    """Run Stage 3 findings analysis using the production pipeline"""
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return None
@@ -34,7 +34,25 @@ def run_stage3_analysis():
         from stage3_findings_analyzer import Stage3FindingsAnalyzer
         client_id = get_client_id()
         analyzer = Stage3FindingsAnalyzer()
+        
+        # Use the production pipeline that generates CSV output and saves to Supabase
         result = analyzer.process_stage3_findings(client_id=client_id)
+        
+        # Check if CSV files were generated
+        import os
+        csv_files = []
+        if os.path.exists('findings_after_clustering.csv'):
+            csv_files.append('findings_after_clustering.csv')
+        if os.path.exists('findings_before_clustering.csv'):
+            csv_files.append('findings_before_clustering.csv')
+        
+        if csv_files:
+            st.success(f"✅ Generated {len(csv_files)} CSV files: {', '.join(csv_files)}")
+        
+        # Show Supabase save status
+        if result and result.get('findings_generated', 0) > 0:
+            st.success(f"✅ Saved {result.get('findings_generated', 0)} findings to Supabase for client {client_id}")
+        
         return result
     except Exception as e:
         st.error(f"❌ Stage 3 analysis failed: {e}")
@@ -54,15 +72,30 @@ def get_stage3_summary():
         return None
 
 def show_findings():
-    """Show findings with detailed information"""
+    """Show findings with detailed information from CSV files"""
     st.subheader("🔍 Findings (Stage 3 Results)")
-    client_id = get_client_id()
-    df = db.get_stage3_findings(client_id=client_id)
-    if df.empty:
-        st.info("No findings found. Run Stage 3 analysis.")
-        return
+    
+    # Try to load from CSV files first (preferred format)
+    import os
+    df = None
+    
+    if os.path.exists('findings_after_clustering.csv'):
+        df = pd.read_csv('findings_after_clustering.csv')
+        st.success("📊 Loading findings from production CSV file")
+    elif os.path.exists('findings_before_clustering.csv'):
+        df = pd.read_csv('findings_before_clustering.csv')
+        st.info("📊 Loading findings from pre-clustering CSV file")
+    else:
+        # Fallback to database
+        client_id = get_client_id()
+        df = db.get_stage3_findings(client_id=client_id)
+        if df.empty:
+            st.info("No findings found. Run Stage 3 analysis.")
+            return
+        else:
+            st.info("📊 Loading findings from database (fallback)")
 
-    # Prepare columns: show description and referenced quote
+    # Prepare columns: show finding statement and referenced quote
     def get_first_quote_text(selected_quotes):
         if isinstance(selected_quotes, list) and selected_quotes:
             quote = selected_quotes[0]
@@ -71,52 +104,93 @@ def show_findings():
             return str(quote)
         return ''
 
-    df['Referenced Quote'] = df['selected_quotes'].apply(get_first_quote_text) if 'selected_quotes' in df.columns else ''
+    # Handle different column names from production pipeline
+    if 'selected_quotes' in df.columns:
+        df['Referenced Quote'] = df['selected_quotes'].apply(get_first_quote_text)
+    else:
+        df['Referenced Quote'] = ''
 
+    # Use CSV format field names (Buried Wins format)
     display_cols = [
-        'criterion', 'finding_type', 'priority_level', 'enhanced_confidence',
-        'description', 'Referenced Quote'
+        'Finding_Statement', 'Interview_Company', 'Priority_Level', 'Evidence_Strength',
+        'Finding_Category', 'Criteria_Met', 'Primary_Quote'
     ]
     display_cols = [col for col in display_cols if col in df.columns]
 
+    # Rename columns for better display
+    display_mapping = {
+        'Finding_Statement': 'Finding Statement',
+        'Interview_Company': 'Company',
+        'Priority_Level': 'Priority',
+        'Evidence_Strength': 'Evidence Strength',
+        'Finding_Category': 'Category',
+        'Criteria_Met': 'Criteria Met',
+        'Primary_Quote': 'Primary Quote'
+    }
+
     # Create a styled dataframe with color coding for priority levels
     styled_df = df[display_cols].copy()
+    styled_df.columns = [display_mapping.get(col, col) for col in styled_df.columns]
 
     def color_priority(val):
         if pd.isna(val):
             return 'background-color: lightgray'
-        elif val == 'High':
+        elif val == 'Priority Finding':
             return 'background-color: lightcoral; color: darkred'
-        elif val == 'Medium':
+        elif val == 'Standard Finding':
             return 'background-color: lightyellow; color: darkorange'
-        elif val == 'Low':
-            return 'background-color: lightgreen; color: darkgreen'
         else:
             return 'background-color: lightblue'
 
-    styled_df = styled_df.style.applymap(color_priority, subset=['priority_level'])
+    styled_df = styled_df.style.applymap(color_priority, subset=['Priority'])
 
     st.dataframe(styled_df, use_container_width=True)
 
     st.markdown("**🎨 Priority Level Color Coding:**")
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3 = st.columns(3)
     with col1:
-        st.markdown("🔴 **High** - Critical findings requiring immediate attention")
+        st.markdown("🔴 **Priority Finding** - High confidence findings requiring attention")
     with col2:
-        st.markdown("🟡 **Medium** - Important findings needing consideration")
+        st.markdown("🟡 **Standard Finding** - Important findings for consideration")
     with col3:
-        st.markdown("🟢 **Low** - Minor findings for monitoring")
-    with col4:
         st.markdown("🔵 **Other** - Additional priority levels")
 
-    csv = df.to_csv(index=False)
-    st.download_button(
-        label="📥 Download Findings CSV",
-        data=csv,
-        file_name="findings.csv",
-        mime="text/csv",
-        key="download_findings"
-    )
+    # Add detailed view expander
+    with st.expander("📊 Detailed Findings View"):
+        detailed_cols = [
+            'Finding_ID', 'Finding_Statement', 'Interview_Company', 'Interviewee_Name',
+            'Primary_Quote', 'Secondary_Quote', 'Quote_Attributions', 'Supporting_Response_IDs',
+            'Evidence_Strength', 'Finding_Category', 'Criteria_Met', 'Priority_Level',
+            'Date', 'Deal_Status'
+        ]
+        detailed_cols = [col for col in detailed_cols if col in df.columns]
+        
+        if detailed_cols:
+            detailed_df = df[detailed_cols].copy()
+            st.dataframe(detailed_df, use_container_width=True)
+
+    # Download the actual CSV file if it exists
+    import os
+    if os.path.exists('findings_after_clustering.csv'):
+        with open('findings_after_clustering.csv', 'r') as f:
+            csv_data = f.read()
+        st.download_button(
+            label="📥 Download Production Findings CSV",
+            data=csv_data,
+            file_name="findings_after_clustering.csv",
+            mime="text/csv",
+            key="download_production_findings"
+        )
+    else:
+        # Fallback to current dataframe
+        csv = df.to_csv(index=False)
+        st.download_button(
+            label="📥 Download Findings CSV",
+            data=csv,
+            file_name="findings.csv",
+            mime="text/csv",
+            key="download_findings"
+        )
 
 def show_stage3_findings():
     """Stage 3: Findings - Identify key findings and insights from labeled quotes"""
@@ -143,13 +217,15 @@ def show_stage3_findings():
     # Show current status
     if findings_summary and findings_summary.get('total_findings', 0) > 0:
         st.success(f"✅ Found {findings_summary.get('total_findings', 0)} existing findings")
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Findings", findings_summary.get('total_findings', 0))
         with col2:
             st.metric("Priority Findings", findings_summary.get('priority_findings', 0))
         with col3:
-            st.metric("High Confidence", findings_summary.get('high_confidence_findings', findings_summary.get('priority_findings', 0)))
+            st.metric("Standard Findings", findings_summary.get('standard_findings', 0))
+        with col4:
+            st.metric("Avg Confidence", f"{findings_summary.get('average_confidence', 0):.1f}")
     
     # Run analysis buttons
     col1, col2 = st.columns([3, 1])
@@ -167,11 +243,19 @@ def show_stage3_findings():
         if findings_summary and findings_summary.get('total_findings', 0) > 0:
             if st.button("🔄 Force Reprocess", help="Clear existing findings and run fresh analysis"):
                 with st.spinner("Clearing existing findings and running fresh analysis..."):
-                    # Clear existing findings
+                    # Clear existing findings and CSV files
                     try:
                         client_id = get_client_id()
                         db.supabase.table('stage3_findings').delete().eq('client_id', client_id).execute()
-                        st.success("✅ Cleared existing findings")
+                        
+                        # Clear CSV files
+                        import os
+                        csv_files = ['findings_after_clustering.csv', 'findings_before_clustering.csv']
+                        for file in csv_files:
+                            if os.path.exists(file):
+                                os.remove(file)
+                        
+                        st.success("✅ Cleared existing findings and CSV files")
                         
                         # Run fresh analysis
                         result = run_stage3_analysis()
@@ -193,6 +277,35 @@ def show_stage3_findings():
     else:
         st.info("📊 No findings available yet. Click 'Identify Findings' to run the analysis.")
     
+    # Show production pipeline status
+    st.subheader("🚀 Production Pipeline Status")
+    
+    # Check Supabase connection and findings count
+    if SUPABASE_AVAILABLE:
+        try:
+            client_id = get_client_id()
+            findings_count = db.get_stage3_findings(client_id=client_id).shape[0]
+            st.success(f"✅ Supabase Connected - {findings_count} findings saved for client {client_id}")
+        except Exception as e:
+            st.error(f"❌ Supabase Error: {e}")
+    else:
+        st.error("❌ Supabase not available")
+    
+    # Check if we have the latest findings files
+    import os
+    findings_files = []
+    if os.path.exists('findings_after_clustering.csv'):
+        findings_files.append("✅ findings_after_clustering.csv")
+    if os.path.exists('findings_before_clustering.csv'):
+        findings_files.append("✅ findings_before_clustering.csv")
+    
+    if findings_files:
+        st.success("Production files generated:")
+        for file in findings_files:
+            st.write(f"  {file}")
+    else:
+        st.info("No production files found yet. Run analysis to generate files.")
+    
     # Show findings criteria information
     st.subheader("🔍 Buried Wins v4.0 Evaluation Criteria")
     evaluation_criteria = """
@@ -207,6 +320,22 @@ def show_stage3_findings():
     8. **Metric/Quantification**: Supported by tangible metrics, timeframes, or outcomes
     """
     st.markdown(evaluation_criteria)
+    
+    # Show LLM integration status
+    st.subheader("🤖 LLM Integration Status")
+    
+    # Check if LLM integration is working
+    try:
+        from stage3_findings_analyzer import Stage3FindingsAnalyzer
+        analyzer = Stage3FindingsAnalyzer()
+        prompt = analyzer._load_buried_wins_prompt()
+        if prompt and len(prompt) > 100:
+            st.success("✅ LLM Integration: Buried Wins prompt loaded successfully")
+            st.info(f"📝 Prompt length: {len(prompt)} characters")
+        else:
+            st.warning("⚠️ LLM Integration: Prompt may be incomplete")
+    except Exception as e:
+        st.error(f"❌ LLM Integration: {e}")
     
     # Show finding types
     st.subheader("🎯 Finding Types")
