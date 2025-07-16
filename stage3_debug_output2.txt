@@ -1,0 +1,302 @@
+🔍 Running Enhanced Stage 3: Findings Identification (Buried Wins v4.0) for client 'default'...
+[DEBUG] Response 1: criteria_scores = {'novelty': 0, 'actionability': 2, 'specificity': 2, 'materiality': 0, 'recurrence': 0, 'stakeholder_weight': 0, 'tension_contrast': 2, 'metric_quantification': 1}, criteria_met = 4
+[DEBUG] Response text: I think that the issues with accuracy are a little frustrating at times. Yeah, that is a little frus...
+[DEBUG] Response 2: confidence_score = 4.0
+[DEBUG] finding = No finding generated
+[DEBUG] Response 3: criteria_scores = {'novelty': 0, 'actionability': 2, 'specificity': 2, 'materiality': 2, 'recurrence': 0, 'stakeholder_weight': 0, 'tension_contrast': 2, 'metric_quantification': 1}, criteria_met = 5
+[DEBUG] Response text: I think specific accuracy has to be number two specific features. Honestly, I would put three becaus...
+[DEBUG] finding created: {
+  "criterion": "buried_wins_analysis",
+  "title": "Customer retention risks increase significantly wh...",
+  "finding_type": "Priority Finding",
+  "priority_level": "Priority Finding",
+  "finding_statement": "Customer retention risks increase significantly when accuracy concerns lead to frustration with the product's reliability.",
+  "description": "Customer retention risks increase significantly when accuracy concerns lead to frustration with the product's reliability.",
+  "enhanced_confidence": 7,
+  "criteria_scores": {
+    "novelty": 0,
+    "tension_contrast": 0,
+    "materiality": 2,
+    "actionability": 2,
+    "specificity": 2,
+    "metric_quantification": 1
+  },
+  "criteria_met": 7,
+  "impact_score": 7,
+  "quote_count": 1,
+  "selected_quotes": [
+    {
+      "company": "",
+      "text": "I think specific accuracy has to be number two specific features. Honestly, I would put three because that would be helpful, but if it's not accurate, then who cares? Actually, what to that, I'm going to put accuracy first. I find the costs pretty reasonable. I think it should be an option. I think that the issues with accuracy are a little frustrating at times. It would be fantastic if it got to the stage where I could use it. I was comfortable enough to know that it is absolutely 100% correct or 99, I don't need to go through line by line in a pinch. Yes. I think some kind of indicator where maybe they do it in, I don't know, however, five minute chunks and then analyze the accuracy and then say these are your problem areas, a red flag, flag the areas. I feel they can improve the technology. I know it's out there, it's just applying the technology to it. I think that makes much more sense. That's just a bandaid to the ultimate issue, and they're going to lose people if they don't focus on that.",
+      "verbatim_response": "I think specific accuracy has to be number two specific features. Honestly, I would put three because that would be helpful, but if it's not accurate, then who cares? Actually, what to that, I'm going to put accuracy first. I find the costs pretty reasonable. I think it should be an option. I think that the issues with accuracy are a little frustrating at times. It would be fantastic if it got to the stage where I could use it. I was comfortable enough to know that it is absolutely 100% correct or 99, I don't need to go through line by line in a pinch. Yes. I think some kind of indicator where maybe they do it in, I don't know, however, five minute chunks and then analyze the accuracy and then say these are your problem areas, a red flag, flag the areas. I feel they can improve the technology. I know it's out there, it's just applying the technology to it. I think that makes much more sense. That's just a bandaid to the ultimate issue, and they're going to lose people if they don't focus on that.",
+      "interviewee_name": "Leila Vaez-Iravani",
+      "response_id": "BuriedWins_LeilaVaezIravani_9"
+    }
+  ],
+  "themes": [],
+  "deal_impacts": {},
+  "generated_at": "2025-07-15T12:13:26.540531",
+  "evidence_threshold_met": true,
+  "evidence_strength": 7,
+  "finding_category": "Priority Finding",
+  "criteria_covered": "Materiality,Actionability,Specificity,Metric/Quantification",
+  "interview_companies": [],
+  "interviewee_names": [
+    "Leila Vaez-Iravani"
+  ],
+  "companies_affected": [],
+  "primary_quote": "I think specific accuracy has to be number two specific features. Honestly, I would put three because that would be helpful, but if it's not accurate, then who cares? Actually, what to that, I'm going to put accuracy first. I find the costs pretty reasonable. I think it should be an option. I think that the issues with accuracy are a little frustrating at times. It would be fantastic if it got to the stage where I could use it. I was comfortable enough to know that it is absolutely 100% correct or 99, I don't need to go through line by line in a pinch. Yes. I think some kind of indicator where maybe they do it in, I don't know, however, five minute chunks and then analyze the accuracy and then say these are your problem areas, a red flag, flag the areas. I feel they can improve the technology. I know it's out there, it's just applying the technology to it. I think that makes much more sense. That's just a bandaid to the ultimate issue, and they're going to lose people if they don't focus on that."
+}
+[DEBUG] finding created: {
+  "criterion": "buried_wins_analysis",
+  "title": "Efficiency in case analysis is significantly hinde...",
+  "finding_type": "Standard Finding",
+  "priority_level": "Standard Finding",
+  "finding_statement": "Efficiency in case analysis is significantly hindered when AI lacks the ability to synthesize insights across multiple files due to current limitations.",
+  "description": "Efficiency in case analysis is significantly hindered when AI lacks the ability to synthesize insights across multiple files due to current limitations.",
+  "enhanced_confidence": 5,
+  "criteria_scores": {
+    "novelty": 0,
+    "tension_contrast": 3,
+    "materiality": 0,
+    "actionability": 2,
+    "specificity": 0,
+    "metric_quantification": 0
+  },
+  "criteria_met": 5,
+  "impact_score": 5,
+  "quote_count": 1,
+  "selected_quotes": [
+    {
+      "company": "",
+      "text": "I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful. And then do the same thing with those concepts. any mention of guns, R and d ones an overall take of all the files, rather it just be file by file.",
+      "verbatim_response": "I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful. And then do the same thing with those concepts. any mention of guns, R and d ones an overall take of all the files, rather it just be file by file.",
+      "interviewee_name": "Leila Vaez-Iravani",
+      "response_id": "BuriedWins_LeilaVaezIravani_8"
+    }
+  ],
+  "themes": [],
+  "deal_impacts": {},
+  "generated_at": "2025-07-15T12:13:30.526635",
+  "evidence_threshold_met": true,
+  "evidence_strength": 5,
+  "finding_category": "Standard Finding",
+  "criteria_covered": "Tension/Contrast,Actionability",
+  "interview_companies": [],
+  "interviewee_names": [
+    "Leila Vaez-Iravani"
+  ],
+  "companies_affected": [],
+  "primary_quote": "I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful. And then do the same thing with those concepts. any mention of guns, R and d ones an overall take of all the files, rather it just be file by file."
+}
+[DEBUG] finding created: {
+  "criterion": "buried_wins_analysis",
+  "title": "Client intake efficiency significantly improves wh...",
+  "finding_type": "Standard Finding",
+  "priority_level": "Standard Finding",
+  "finding_statement": "Client intake efficiency significantly improves when AI provides comprehensive analysis of multiple audio files and transcripts.",
+  "description": "Client intake efficiency significantly improves when AI provides comprehensive analysis of multiple audio files and transcripts.",
+  "enhanced_confidence": 5,
+  "criteria_scores": {
+    "novelty": 0,
+    "tension_contrast": 3,
+    "materiality": 0,
+    "actionability": 2,
+    "specificity": 0,
+    "metric_quantification": 0
+  },
+  "criteria_met": 5,
+  "impact_score": 5,
+  "quote_count": 1,
+  "selected_quotes": [
+    {
+      "company": "",
+      "text": "I mean, another way that Rev could maybe pivot is for client intake. let's say a client calls, I don't answer for some reason and it goes to voicemail. I mean, I don't know how useful that would be such a snippet, but I'm just trying to think outside the box of what possibly, yeah, maybe something that you could send a voicemail to Rev and then it could kind of give you the cliff notes, search for names, search for county, search for these things that I would want on a client intake and see if they, I dunno, maybe could easily give you that. I don't know how big of a margin that would really improve my day to day. I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful. And then do the same thing with those concepts. any mention of guns, R and d ones an overall take of all the files, rather it just be file by file.",
+      "verbatim_response": "I mean, another way that Rev could maybe pivot is for client intake. let's say a client calls, I don't answer for some reason and it goes to voicemail. I mean, I don't know how useful that would be such a snippet, but I'm just trying to think outside the box of what possibly, yeah, maybe something that you could send a voicemail to Rev and then it could kind of give you the cliff notes, search for names, search for county, search for these things that I would want on a client intake and see if they, I dunno, maybe could easily give you that. I don't know how big of a margin that would really improve my day to day. I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful. And then do the same thing with those concepts. any mention of guns, R and d ones an overall take of all the files, rather it just be file by file.",
+      "interviewee_name": "Leila Vaez-Iravani",
+      "response_id": "BuriedWins_LeilaVaezIravani_7"
+    }
+  ],
+  "themes": [],
+  "deal_impacts": {},
+  "generated_at": "2025-07-15T12:13:33.291985",
+  "evidence_threshold_met": true,
+  "evidence_strength": 5,
+  "finding_category": "Standard Finding",
+  "criteria_covered": "Tension/Contrast,Actionability",
+  "interview_companies": [],
+  "interviewee_names": [
+    "Leila Vaez-Iravani"
+  ],
+  "companies_affected": [],
+  "primary_quote": "I mean, another way that Rev could maybe pivot is for client intake. let's say a client calls, I don't answer for some reason and it goes to voicemail. I mean, I don't know how useful that would be such a snippet, but I'm just trying to think outside the box of what possibly, yeah, maybe something that you could send a voicemail to Rev and then it could kind of give you the cliff notes, search for names, search for county, search for these things that I would want on a client intake and see if they, I dunno, maybe could easily give you that. I don't know how big of a margin that would really improve my day to day. I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful. And then do the same thing with those concepts. any mention of guns, R and d ones an overall take of all the files, rather it just be file by file."
+}
+[DEBUG] finding created: {
+  "criterion": "buried_wins_analysis",
+  "title": "Legal workflow efficiency suffers significantly du...",
+  "finding_type": "Standard Finding",
+  "priority_level": "Standard Finding",
+  "finding_statement": "Legal workflow efficiency suffers significantly due to inadequate voice recognition technology for multiple speakers and unclear audio conditions.",
+  "description": "Legal workflow efficiency suffers significantly due to inadequate voice recognition technology for multiple speakers and unclear audio conditions.",
+  "enhanced_confidence": 5,
+  "criteria_scores": {
+    "novelty": 0,
+    "tension_contrast": 3,
+    "materiality": 0,
+    "actionability": 2,
+    "specificity": 0,
+    "metric_quantification": 0
+  },
+  "criteria_met": 5,
+  "impact_score": 5,
+  "quote_count": 1,
+  "selected_quotes": [
+    {
+      "company": "",
+      "text": "I do think there's quite a big margin that could be closed that they could improve upon. voice recognition between two different people, maybe some kind of better technology around when it's muffled and things of that nature. Or maybe even better cues, something where you can show the transcript alone and the transcript of the cues where it says unable to, whatever the hangup is. Just I have an idea of, okay, what's going on here? Because there's quite a few times where it got hard, especially with legal, with body-worn cameras, sometimes it's not you have a microphone. Anything they can do to improve that, which I'm sure it's there somewhere, I think would be really good. And I think that it would take the old school lawyers that are used to just sending it to a person would convince them to jump over. Another way that Rev could maybe pivot is for client intake. let's say a client calls, I don't answer for some reason and it goes to voicemail. I mean, I don't know how useful that would be such a snippet, but I'm just trying to think outside the box of what possibly, yeah, maybe something that you could send a voicemail to Rev and then it could kind of give you the cliff notes, search for names, search for county, search for these things that I would want on a client intake and see if they, I dunno, maybe could easily give you that. I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful.",
+      "verbatim_response": "I do think there's quite a big margin that could be closed that they could improve upon. voice recognition between two different people, maybe some kind of better technology around when it's muffled and things of that nature. Or maybe even better cues, something where you can show the transcript alone and the transcript of the cues where it says unable to, whatever the hangup is. Just I have an idea of, okay, what's going on here? Because there's quite a few times where it got hard, especially with legal, with body-worn cameras, sometimes it's not you have a microphone. Anything they can do to improve that, which I'm sure it's there somewhere, I think would be really good. And I think that it would take the old school lawyers that are used to just sending it to a person would convince them to jump over. Another way that Rev could maybe pivot is for client intake. let's say a client calls, I don't answer for some reason and it goes to voicemail. I mean, I don't know how useful that would be such a snippet, but I'm just trying to think outside the box of what possibly, yeah, maybe something that you could send a voicemail to Rev and then it could kind of give you the cliff notes, search for names, search for county, search for these things that I would want on a client intake and see if they, I dunno, maybe could easily give you that. I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful.",
+      "interviewee_name": "Leila Vaez-Iravani",
+      "response_id": "BuriedWins_LeilaVaezIravani_6"
+    }
+  ],
+  "themes": [],
+  "deal_impacts": {},
+  "generated_at": "2025-07-15T12:13:35.638183",
+  "evidence_threshold_met": true,
+  "evidence_strength": 5,
+  "finding_category": "Standard Finding",
+  "criteria_covered": "Tension/Contrast,Actionability",
+  "interview_companies": [],
+  "interviewee_names": [
+    "Leila Vaez-Iravani"
+  ],
+  "companies_affected": [],
+  "primary_quote": "I do think there's quite a big margin that could be closed that they could improve upon. voice recognition between two different people, maybe some kind of better technology around when it's muffled and things of that nature. Or maybe even better cues, something where you can show the transcript alone and the transcript of the cues where it says unable to, whatever the hangup is. Just I have an idea of, okay, what's going on here? Because there's quite a few times where it got hard, especially with legal, with body-worn cameras, sometimes it's not you have a microphone. Anything they can do to improve that, which I'm sure it's there somewhere, I think would be really good. And I think that it would take the old school lawyers that are used to just sending it to a person would convince them to jump over. Another way that Rev could maybe pivot is for client intake. let's say a client calls, I don't answer for some reason and it goes to voicemail. I mean, I don't know how useful that would be such a snippet, but I'm just trying to think outside the box of what possibly, yeah, maybe something that you could send a voicemail to Rev and then it could kind of give you the cliff notes, search for names, search for county, search for these things that I would want on a client intake and see if they, I dunno, maybe could easily give you that. I really think the biggest thing there is a way to feed it discovery, feed it, just the evidence and not just the audio files, but other things. And then may, what would be really good is have them kind of keep note of all the people and places. Kind of a cheat sheet for what you feed it. if I give it 10 files overall, maybe an overall analysis, not just within the transcript. if I put in, let's say there's an envelope, oftentimes when you file things, you have an envelope and within that envelope there's separate files. Okay. Have it give you an overall AI breakdown of the whole envelope. these are all the speakers we identified. Alright. And these are where you can find them in each transcript. if I have one witness, if I have Officer John, I know Officer John is in file, A, E, F, and O, right? And then I can find with each witness where they are I don't have to do any of that analysis myself and go pick through. That would be enormously helpful."
+}
+[DEBUG] finding created: {
+  "criterion": "buried_wins_analysis",
+  "title": "Legal usability is compromised due to significant ...",
+  "finding_type": "Standard Finding",
+  "priority_level": "Standard Finding",
+  "finding_statement": "Legal usability is compromised due to significant voice recognition errors affecting transcript accuracy during multi-speaker scenarios.",
+  "description": "Legal usability is compromised due to significant voice recognition errors affecting transcript accuracy during multi-speaker scenarios.",
+  "enhanced_confidence": 5,
+  "criteria_scores": {
+    "novelty": 0,
+    "tension_contrast": 3,
+    "materiality": 0,
+    "actionability": 2,
+    "specificity": 0,
+    "metric_quantification": 0
+  },
+  "criteria_met": 5,
+  "impact_score": 5,
+  "quote_count": 1,
+  "selected_quotes": [
+    {
+      "company": "",
+      "text": "No, I'm lazy. No, I just was , this worked for me in the past. They did a good enough job. I did notice last time there's quite a few errors I think that I didn't do the human, I think there's one that you can get humans to look it over. I think they just need to crisp it up a little bit. Voice recognition technology or whatever they use. There was a quite a bit of error. Also the distinction between speakers. Sometimes there was two speakers. I thought there was three. again, it wasn't something that I could use in court. It was just helpful to me. I do think there's quite a big margin that could be closed that they could improve upon. voice recognition between two different people, maybe some kind of better technology around when it's muffled and things of that nature. Or maybe even better cues, something where you can show the transcript alone and the transcript of the cues where it says unable to, whatever the hangup is. Just I have an idea of, okay, what's going on here? Because there's quite a few times where it got hard, especially with legal, with body-worn cameras, sometimes it's not you have a microphone.",
+      "verbatim_response": "No, I'm lazy. No, I just was , this worked for me in the past. They did a good enough job. I did notice last time there's quite a few errors I think that I didn't do the human, I think there's one that you can get humans to look it over. I think they just need to crisp it up a little bit. Voice recognition technology or whatever they use. There was a quite a bit of error. Also the distinction between speakers. Sometimes there was two speakers. I thought there was three. again, it wasn't something that I could use in court. It was just helpful to me. I do think there's quite a big margin that could be closed that they could improve upon. voice recognition between two different people, maybe some kind of better technology around when it's muffled and things of that nature. Or maybe even better cues, something where you can show the transcript alone and the transcript of the cues where it says unable to, whatever the hangup is. Just I have an idea of, okay, what's going on here? Because there's quite a few times where it got hard, especially with legal, with body-worn cameras, sometimes it's not you have a microphone.",
+      "interviewee_name": "Leila Vaez-Iravani",
+      "response_id": "BuriedWins_LeilaVaezIravani_5"
+    }
+  ],
+  "themes": [],
+  "deal_impacts": {},
+  "generated_at": "2025-07-15T12:13:38.124838",
+  "evidence_threshold_met": true,
+  "evidence_strength": 5,
+  "finding_category": "Standard Finding",
+  "criteria_covered": "Tension/Contrast,Actionability",
+  "interview_companies": [],
+  "interviewee_names": [
+    "Leila Vaez-Iravani"
+  ],
+  "companies_affected": [],
+  "primary_quote": "No, I'm lazy. No, I just was , this worked for me in the past. They did a good enough job. I did notice last time there's quite a few errors I think that I didn't do the human, I think there's one that you can get humans to look it over. I think they just need to crisp it up a little bit. Voice recognition technology or whatever they use. There was a quite a bit of error. Also the distinction between speakers. Sometimes there was two speakers. I thought there was three. again, it wasn't something that I could use in court. It was just helpful to me. I do think there's quite a big margin that could be closed that they could improve upon. voice recognition between two different people, maybe some kind of better technology around when it's muffled and things of that nature. Or maybe even better cues, something where you can show the transcript alone and the transcript of the cues where it says unable to, whatever the hangup is. Just I have an idea of, okay, what's going on here? Because there's quite a few times where it got hard, especially with legal, with body-worn cameras, sometimes it's not you have a microphone."
+}
+[DEBUG] finding created: {
+  "criterion": "buried_wins_analysis",
+  "title": "Case prioritization shifts significantly when evid...",
+  "finding_type": "Standard Finding",
+  "priority_level": "Standard Finding",
+  "finding_statement": "Case prioritization shifts significantly when evidence volume influences perceived case seriousness, affecting resource allocation for legal defense.",
+  "description": "Case prioritization shifts significantly when evidence volume influences perceived case seriousness, affecting resource allocation for legal defense.",
+  "enhanced_confidence": 6,
+  "criteria_scores": {
+    "novelty": 0,
+    "tension_contrast": 3,
+    "materiality": 0,
+    "actionability": 2,
+    "specificity": 0,
+    "metric_quantification": 1
+  },
+  "criteria_met": 6,
+  "impact_score": 6,
+  "quote_count": 1,
+  "selected_quotes": [
+    {
+      "company": "",
+      "text": "I think that it was actually the fact that the serious cases tend to have more evidence, but that's not always the case. I really that question because it's actually more of the case that it's the volume of the evidence. I would say that with a caveat because a lot of these less serious cases, there may be a ton of evidence, but if I find the evidence which shows that it's a DFL, excuse my French, a dead fucking loser is what we say privately, meaning there's no way we would be able to fight this. It's a matter of getting a good negotiated plea, then I'm not going to really dig for as many. The stakes for A DUI are lower. if it's a DFL, I'm not going to spend hours and hours and hours, even if there's a large amount of discovery, picking it apart piece by piece, it's simply not worth it. And my clients didn't hire me for that level of legal work, to speak, right? I'm going to do the best job, but it's not we're looking at 16 years in prison. We're looking at a slap on the wrist. And I'll do my job, my due diligence for sure, and do the best outcome, but I'm not going to be picking it over as much as if I had a serious case with the same level of evidence, if that makes sense. I think that equally, I mean, I think this is the thing, sure, those more serious cases, maybe the volumes higher and the stakes are higher. However, the amount of cases you get for DUIs and domestic violence are through the roof, and there could be a lower hanging fruit to grab, because those cases have the same things come up over and over that they could easily work on research and get some kind of AI together to tackle. Right. they probably get more bang for their buck that way.",
+      "verbatim_response": "I think that it was actually the fact that the serious cases tend to have more evidence, but that's not always the case. I really that question because it's actually more of the case that it's the volume of the evidence. I would say that with a caveat because a lot of these less serious cases, there may be a ton of evidence, but if I find the evidence which shows that it's a DFL, excuse my French, a dead fucking loser is what we say privately, meaning there's no way we would be able to fight this. It's a matter of getting a good negotiated plea, then I'm not going to really dig for as many. The stakes for A DUI are lower. if it's a DFL, I'm not going to spend hours and hours and hours, even if there's a large amount of discovery, picking it apart piece by piece, it's simply not worth it. And my clients didn't hire me for that level of legal work, to speak, right? I'm going to do the best job, but it's not we're looking at 16 years in prison. We're looking at a slap on the wrist. And I'll do my job, my due diligence for sure, and do the best outcome, but I'm not going to be picking it over as much as if I had a serious case with the same level of evidence, if that makes sense. I think that equally, I mean, I think this is the thing, sure, those more serious cases, maybe the volumes higher and the stakes are higher. However, the amount of cases you get for DUIs and domestic violence are through the roof, and there could be a lower hanging fruit to grab, because those cases have the same things come up over and over that they could easily work on research and get some kind of AI together to tackle. Right. they probably get more bang for their buck that way.",
+      "interviewee_name": "Leila Vaez-Iravani",
+      "response_id": "BuriedWins_LeilaVaezIravani_4"
+    }
+  ],
+  "themes": [],
+  "deal_impacts": {},
+  "generated_at": "2025-07-15T12:13:41.276970",
+  "evidence_threshold_met": true,
+  "evidence_strength": 6,
+  "finding_category": "Standard Finding",
+  "criteria_covered": "Tension/Contrast,Actionability,Metric/Quantification",
+  "interview_companies": [],
+  "interviewee_names": [
+    "Leila Vaez-Iravani"
+  ],
+  "companies_affected": [],
+  "primary_quote": "I think that it was actually the fact that the serious cases tend to have more evidence, but that's not always the case. I really that question because it's actually more of the case that it's the volume of the evidence. I would say that with a caveat because a lot of these less serious cases, there may be a ton of evidence, but if I find the evidence which shows that it's a DFL, excuse my French, a dead fucking loser is what we say privately, meaning there's no way we would be able to fight this. It's a matter of getting a good negotiated plea, then I'm not going to really dig for as many. The stakes for A DUI are lower. if it's a DFL, I'm not going to spend hours and hours and hours, even if there's a large amount of discovery, picking it apart piece by piece, it's simply not worth it. And my clients didn't hire me for that level of legal work, to speak, right? I'm going to do the best job, but it's not we're looking at 16 years in prison. We're looking at a slap on the wrist. And I'll do my job, my due diligence for sure, and do the best outcome, but I'm not going to be picking it over as much as if I had a serious case with the same level of evidence, if that makes sense. I think that equally, I mean, I think this is the thing, sure, those more serious cases, maybe the volumes higher and the stakes are higher. However, the amount of cases you get for DUIs and domestic violence are through the roof, and there could be a lower hanging fruit to grab, because those cases have the same things come up over and over that they could easily work on research and get some kind of AI together to tackle. Right. they probably get more bang for their buck that way."
+}
+[DEBUG] finding created: {
+  "criterion": "buried_wins_analysis",
+  "title": "Legal case analysis efficiency suffers significant...",
+  "finding_type": "Priority Finding",
+  "priority_level": "Priority Finding",
+  "finding_statement": "Legal case analysis efficiency suffers significantly when attorneys manually sift through extensive discovery documents due to inadequate search tools.",
+  "description": "Legal case analysis efficiency suffers significantly when attorneys manually sift through extensive discovery documents due to inadequate search tools.",
+  "enhanced_confidence": 7,
+  "criteria_scores": {
+    "novelty": 0,
+    "tension_contrast": 3,
+    "materiality": 0,
+    "actionability": 2,
+    "specificity": 2,
+    "metric_quantification": 0
+  },
+  "criteria_met": 7,
+  "impact_score": 7,
+  "quote_count": 1,
+  "selected_quotes": [
+    {
+      "company": "",
+      "text": "Yeah, I'll give you an example. A lot of times someone is pulled over let's say for a DUI and then the officer asks, Hey, if they kind of get an idea or maybe run the record, and this is someone that has a long record, they might say, Hey, do you mind if we take a look around the car? look around, do you mind? Things that would give a clue that there's a situation where consent to search is happening. But there's lots of different scenarios that I could think that's just one, right? Oftentimes I get a lot of domestic violence cases too. certain questions, whatever keywords around different types of unwanted touching, punch, grab, shove, all those kinds of things, that would be great because that's where I know when those questions are being answered. But I think there would probably be, it may even be something that they would want to talk to these places, Westlaw or LexiNexis or any of these kind of research platforms that lawyers use and see if there is a way to maybe integrate or if there is a way to say, Hey, look, I'm defense, criminal defense, and then even more specific, this is A DUI case and then have pull from a database that would search those terms. I don't know, whatever. I don't know how AI works. I'm not very technical, but that would be a really, really, really advantageous thing. Another thing that comes up a lot, which I think would be a bit of a pivot is analyzing. it wouldn't necessarily be transcription, but analyzing discovery. sometimes just today there was a thread on my private defenders. I'm in a network for different private defenders around this area we can talk because we don't have an office, there's not a public defender's office. Most of them are solo practitioners me or very, very small firms. And that's kind of the network where we talk, Hey, does anyone have a case on this? Does anyone know this judge? And there was a person that had thousands of pages of discovery and they were looking for a specific interview and it was buried and the DA wasn't giving them any clues. they were saying, Hey, is there anything that we can compel the DA to have to tell us? Is there a discovery rule or any way to get around this? I can't find it. These old timer attorneys are talking about control F on all the PDFs. That's just not efficient. There's such, and I immediately thought, I don't know if there's a tool out there for that, but that would save lawyers much time. If I could just add a PDF, add a PDF, or add a file, whatever, and then they could go through and it could analyze all of that and then find certain things that I'm looking for. I mean, that would be really helpful.",
+      "verbatim_response": "Yeah, I'll give you an example. A lot of times someone is pulled over let's say for a DUI and then the officer asks, Hey, if they kind of get an idea or maybe run the record, and this is someone that has a long record, they might say, Hey, do you mind if we take a look around the car? look around, do you mind? Things that would give a clue that there's a situation where consent to search is happening. But there's lots of different scenarios that I could think that's just one, right? Oftentimes I get a lot of domestic violence cases too. certain questions, whatever keywords around different types of unwanted touching, punch, grab, shove, all those kinds of things, that would be great because that's where I know when those questions are being answered. But I think there would probably be, it may even be something that they would want to talk to these places, Westlaw or LexiNexis or any of these kind of research platforms that lawyers use and see if there is a way to maybe integrate or if there is a way to say, Hey, look, I'm defense, criminal defense, and then even more specific, this is A DUI case and then have pull from a database that would search those terms. I don't know, whatever. I don't know how AI works. I'm not very technical, but that would be a really, really, really advantageous thing. Another thing that comes up a lot, which I think would be a bit of a pivot is analyzing. it wouldn't necessarily be transcription, but analyzing discovery. sometimes just today there was a thread on my private defenders. I'm in a network for different private defenders around this area we can talk because we don't have an office, there's not a public defender's office. Most of them are solo practitioners me or very, very small firms. And that's kind of the network where we talk, Hey, does anyone have a case on this? Does anyone know this judge? And there was a person that had thousands of pages of discovery and they were looking for a specific interview and it was buried and the DA wasn't giving them any clues. they were saying, Hey, is there anything that we can compel the DA to have to tell us? Is there a discovery rule or any way to get around this? I can't find it. These old timer attorneys are talking about control F on all the PDFs. That's just not efficient. There's such, and I immediately thought, I don't know if there's a tool out there for that, but that would save lawyers much time. If I could just add a PDF, add a PDF, or add a file, whatever, and then they could go through and it could analyze all of that and then find certain things that I'm looking for. I mean, that would be really helpful.",
+      "interviewee_name": "Leila Vaez-Iravani",
+      "response_id": "BuriedWins_LeilaVaezIravani_3"
+    }
+  ],
+  "themes": [],
+  "deal_impacts": {},
+  "generated_at": "2025-07-15T12:13:43.654673",
+  "evidence_threshold_met": true,
+  "evidence_strength": 7,
+  "finding_category": "Priority Finding",
+  "criteria_covered": "Tension/Contrast,Actionability,Specificity",
+  "interview_companies": [],
+  "interviewee_names": [
+    "Leila Vaez-Iravani"
+  ],
+  "companies_affected": [],
+  "primary_quote": "Yeah, I'll give you an example. A lot of times someone is pulled over let's say for a DUI and then the officer asks, Hey, if they kind of get an idea or maybe run the record, and this is someone that has a long record, they might say, Hey, do you mind if we take a look around the car? look around, do you mind? Things that would give a clue that there's a situation where consent to search is happening. But there's lots of different scenarios that I could think that's just one, right? Oftentimes I get a lot of domestic violence cases too. certain questions, whatever keywords around different types of unwanted touching, punch, grab, shove, all those kinds of things, that would be great because that's where I know when those questions are being answered. But I think there would probably be, it may even be something that they would want to talk to these places, Westlaw or LexiNexis or any of these kind of research platforms that lawyers use and see if there is a way to maybe integrate or if there is a way to say, Hey, look, I'm defense, criminal defense, and then even more specific, this is A DUI case and then have pull from a database that would search those terms. I don't know, whatever. I don't know how AI works. I'm not very technical, but that would be a really, really, really advantageous thing. Another thing that comes up a lot, which I think would be a bit of a pivot is analyzing. it wouldn't necessarily be transcription, but analyzing discovery. sometimes just today there was a thread on my private defenders. I'm in a network for different private defenders around this area we can talk because we don't have an office, there's not a public defender's office. Most of them are solo practitioners me or very, very small firms. And that's kind of the network where we talk, Hey, does anyone have a case on this? Does anyone know this judge? And there was a person that had thousands of pages of discovery and they were looking for a specific interview and it was buried and the DA wasn't giving them any clues. they were saying, Hey, is there anything that we can compel the DA to have to tell us? Is there a discovery rule or any way to get around this? I can't find it. These old timer attorneys are talking about control F on all the PDFs. That's just not efficient. There's such, and I immediately thought, I don't know if there's a tool out there for that, but that would save lawyers much time. If I could just add a PDF, add a PDF, or add a file, whatever, and then they could go through and it could analyze all of that and then find certain things that I'm looking for. I mean, that would be really helpful."
+}
+✅ Enhanced Stage 3 complete: {'status': 'success', 'quotes_processed': 10, 'findings_generated': 7, 'priority_findings': 0, 'standard_findings': 0, 'summary': {'total_findings': 7, 'priority_findings': 0, 'standard_findings': 0, 'criteria_covered': 1, 'criteria_list': ['buried_wins_analysis'], 'finding_type_distribution': {'Priority Finding': 2, 'Standard Finding': 5}, 'priority_level_distribution': {'Priority Finding': 2, 'Standard Finding': 5}, 'average_confidence_score': 5.714285714285714, 'average_criteria_met': 5.714285714285714, 'total_companies_affected': 0, 'patterns_by_criterion': {}}, 'processing_metrics': {'total_quotes_processed': 10, 'patterns_identified': 0, 'findings_generated': 0, 'priority_findings': 0, 'standard_findings': 0, 'processing_errors': 0}}

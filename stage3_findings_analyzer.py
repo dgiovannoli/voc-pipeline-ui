@@ -868,6 +868,10 @@ class Stage3FindingsAnalyzer:
         """Save enhanced findings to Supabase, including credibility tier"""
         logger.info("💾 Saving enhanced findings to Supabase...")
         for finding in findings:
+            # Always use the primary_quote field from the finding dict
+            primary_quote = finding.get('primary_quote', '')
+            secondary_quote = finding.get('secondary_quote', '')  # Use secondary_quote from finding if available
+            
             db_finding = {
                 'criterion': finding['criterion'],
                 'finding_type': finding['finding_type'],
@@ -883,6 +887,8 @@ class Stage3FindingsAnalyzer:
                 'companies_affected': json.dumps(finding.get('companies_affected', [])),
                 'quote_count': finding['quote_count'],
                 'selected_quotes': json.dumps(finding['selected_quotes']),
+                'primary_quote': primary_quote,
+                'secondary_quote': secondary_quote,
                 'themes': json.dumps(finding['themes']),
                 'deal_impacts': json.dumps(finding['deal_impacts']),
                 'generated_at': finding['generated_at'],
@@ -892,6 +898,7 @@ class Stage3FindingsAnalyzer:
                 'criteria_covered': finding.get('criteria_covered', ''),
                 'client_id': client_id
             }
+            print("[DEBUG] db_finding to be saved:", json.dumps(db_finding, indent=2))  # <--- DEBUG PRINT
             self.db.save_enhanced_finding(db_finding, client_id=client_id)
         logger.info(f"✅ Saved {len(findings)} enhanced findings to Supabase for client {client_id}")
     
@@ -927,7 +934,7 @@ class Stage3FindingsAnalyzer:
                 'question': response.get('question', ''),
                 'key_insight': response.get('key_insight', ''),
                 'deal_status': response.get('deal_status', ''),
-                'company': response.get('company_name', ''),
+                'company': response.get('company', ''),  # Fix: use 'company' field from Stage 1 data
                 'interviewee_name': response.get('interviewee_name', ''),
                 'date': response.get('date_of_interview', ''),
                 'client_id': response.get('client_id', ''),
@@ -1183,14 +1190,56 @@ class Stage3FindingsAnalyzer:
             # Convert findings to DataFrame format for Supabase - matching CSV structure exactly
             findings_data = []
             for i, finding in enumerate(deduplicated_findings, 1):
+                # Extract company information from the finding's quotes
+                selected_quotes = finding.get('selected_quotes', [])
+                interview_company = ""
+                interviewee_name = ""
+                supporting_response_ids = ""
+                
+                if selected_quotes:
+                    # Get company and interviewee from the first quote
+                    primary_quote_data = selected_quotes[0]
+                    if isinstance(primary_quote_data, dict):
+                        interview_company = primary_quote_data.get('company', '')
+                        interviewee_name = primary_quote_data.get('interviewee_name', '')
+                        response_id = primary_quote_data.get('response_id', '')
+                        if response_id:
+                            supporting_response_ids = response_id
+                
+                # If no company found in quotes, try to get from companies_affected
+                if not interview_company and finding.get('companies_affected'):
+                    companies_affected = finding.get('companies_affected', [])
+                    if isinstance(companies_affected, list) and companies_affected:
+                        interview_company = companies_affected[0]
+                    elif isinstance(companies_affected, str) and companies_affected:
+                        interview_company = companies_affected
+                
+                # If still no company, try to get from the finding's direct company field
+                if not interview_company:
+                    interview_company = finding.get('company', '')
+                
+                # If still no company, try to get from interview_companies
+                if not interview_company and finding.get('interview_companies'):
+                    interview_companies = finding.get('interview_companies', [])
+                    if isinstance(interview_companies, list) and interview_companies:
+                        interview_company = interview_companies[0]
+                
+                # If still no company, try to get from interviewee_names to map to company
+                if not interview_company and interviewee_name:
+                    # Map interviewee to company based on Stage 1 data
+                    db = SupabaseDatabase()
+                    response = db.supabase.table('stage1_data_responses').select('company').eq('interviewee_name', interviewee_name).eq('client_id', 'Rev').limit(1).execute()
+                    if response.data:
+                        interview_company = response.data[0].get('company', '')
+                
                 finding_data = {
                     'finding_id': f"F{i}",
                     'finding_statement': finding.get('finding_statement', finding.get('description', '')),
-                    'interview_company': finding.get('company', ''),
+                    'interview_company': interview_company,
                     'date': datetime.now().strftime('%m/%d/%Y'),
                     'deal_status': 'closed won',
-                    'interviewee_name': finding.get('interviewee_name', ''),
-                    'supporting_response_ids': finding.get('supporting_response_ids', ''),
+                    'interviewee_name': interviewee_name,
+                    'supporting_response_ids': supporting_response_ids,
                     'evidence_strength': finding.get('quote_count', 1),
                     'finding_category': finding.get('finding_type', ''),
                     'criteria_met': finding.get('criteria_met', ''),
@@ -1431,6 +1480,8 @@ class Stage3FindingsAnalyzer:
             finding = self._generate_buried_wins_finding(quote_text, company, interviewee_name, response_id, criteria_scores)
             
             if finding:
+                finding['primary_quote'] = quote_text  # <-- Add primary_quote field
+                print("[DEBUG] finding created:", json.dumps(finding, indent=2))  # <-- DEBUG PRINT
                 logger.info(f"✅ Created Buried Wins finding: {finding.get('finding_statement', '')[:100]}...")
                 return finding
             
@@ -2094,6 +2145,7 @@ class Stage3FindingsAnalyzer:
             clean_quote = {
                 'company': company,
                 'text': quote_text,
+                'verbatim_response': quote_text,  # Add verbatim_response for fallback
                 'interviewee_name': interviewee_name,
                 'response_id': response_id
             }
@@ -2112,6 +2164,8 @@ class Stage3FindingsAnalyzer:
                 'impact_score': total_score,
                 'quote_count': 1,
                 'selected_quotes': [clean_quote],
+                'primary_quote': quote_text,  # Set the primary quote from the original quote text
+                'secondary_quote': '',  # Leave secondary quote empty for now
                 'themes': [],
                 'deal_impacts': {},
                 'generated_at': datetime.now().isoformat(),
@@ -2121,7 +2175,9 @@ class Stage3FindingsAnalyzer:
                 'criteria_covered': self._get_criteria_covered_string(criteria_scores),
                 'interview_companies': [company] if company else [],
                 'interviewee_names': [interviewee_name] if interviewee_name else [],
-                'companies_affected': [company] if company else []
+                'companies_affected': [company] if company else [],
+                'company': company,  # Add direct company field for backward compatibility
+                'interviewee_name': interviewee_name  # Add direct interviewee_name field for backward compatibility
             }
             
             return finding

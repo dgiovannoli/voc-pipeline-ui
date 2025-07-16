@@ -525,33 +525,157 @@ class SupabaseDatabase:
             return pd.DataFrame()
     
     def get_stage3_findings(self, client_id: str = 'default', criterion: Optional[str] = None, finding_type: Optional[str] = None, priority_level: Optional[str] = None) -> pd.DataFrame:
-        """Get enhanced findings from Supabase, filtered by client_id"""
+        """Get Stage 3 findings from Supabase, filtered by client_id for data siloing"""
         try:
             query = self.supabase.table('stage3_findings').select('*')
+            
+            # Always filter by client_id for data siloing
             query = query.eq('client_id', client_id)
+            
+            # Apply additional filters
             if criterion:
-                query = query.eq('criterion', criterion)
+                query = query.eq('criteria_met', criterion)
             if finding_type:
-                query = query.eq('finding_type', finding_type)
+                query = query.eq('finding_category', finding_type)
             if priority_level:
                 query = query.eq('priority_level', priority_level)
+            
+            # Order by enhanced_confidence desc
             query = query.order('enhanced_confidence', desc=True)
+            
             result = query.execute()
             df = pd.DataFrame(result.data)
-            if not df.empty:
-                if 'criteria_scores' in df.columns:
-                    df['criteria_scores'] = df['criteria_scores'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
-                if 'selected_quotes' in df.columns:
-                    df['selected_quotes'] = df['selected_quotes'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
-                if 'themes' in df.columns:
-                    df['themes'] = df['themes'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
-                if 'deal_impacts' in df.columns:
-                    df['deal_impacts'] = df['deal_impacts'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+            
             logger.info(f"📊 Retrieved {len(df)} enhanced findings from Supabase for client {client_id}")
             return df
+            
         except Exception as e:
-            logger.error(f"❌ Failed to get enhanced findings: {e}")
+            logger.error(f"❌ Failed to get Stage 3 findings: {e}")
             return pd.DataFrame()
+
+    def get_stage3_findings_list(self, client_id: str = 'default') -> List[Dict[str, Any]]:
+        """Get Stage 3 findings as a list of dictionaries for LLM processing"""
+        try:
+            df = self.get_stage3_findings(client_id=client_id)
+            if df.empty:
+                return []
+            
+            # Convert DataFrame to list of dictionaries
+            findings_list = df.to_dict('records')
+            logger.info(f"📊 Retrieved {len(findings_list)} findings as list for client {client_id}")
+            return findings_list
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to get Stage 3 findings as list: {e}")
+            return []
+
+    def delete_stage4_themes(self, client_id: str = 'default') -> bool:
+        """Delete all Stage 4 themes for a specific client"""
+        try:
+            response = self.supabase.table('stage4_themes').delete().eq('client_id', client_id).execute()
+            deleted_count = len(response.data) if response.data else 0
+            logger.info(f"🗑️ Deleted {deleted_count} existing themes for client {client_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed to delete Stage 4 themes: {e}")
+            return False
+
+    def delete_stage3_findings(self, client_id: str = 'default') -> bool:
+        """Delete all Stage 3 findings for a specific client"""
+        try:
+            response = self.supabase.table('stage3_findings').delete().eq('client_id', client_id).execute()
+            deleted_count = len(response.data) if response.data else 0
+            logger.info(f"🗑️ Deleted {deleted_count} existing findings for client {client_id}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed to delete Stage 3 findings: {e}")
+            return False
+
+    def save_stage4_theme(self, theme_data: Dict[str, Any]) -> bool:
+        """Save a Stage 4 theme or strategic alert to the database with comprehensive protocol schema"""
+        try:
+            # Convert competitive_flag to proper boolean
+            competitive_flag = theme_data.get('competitive_flag', False)
+            if isinstance(competitive_flag, str):
+                competitive_flag = competitive_flag.lower() in ['true', '1', 'yes', 'y', 't']
+            elif isinstance(competitive_flag, int):
+                competitive_flag = bool(competitive_flag)
+            else:
+                competitive_flag = bool(competitive_flag)
+            
+            # Determine if this is a theme or strategic alert
+            theme_type = theme_data.get('theme_type', 'theme')
+            
+            # Prepare data for the comprehensive schema
+            record = {
+                'client_id': theme_data.get('client_id', 'default'),
+                'theme_id': theme_data.get('theme_id', 'T1'),
+                'theme_type': theme_type,
+                'competitive_flag': competitive_flag
+            }
+            
+            # Add theme-specific fields
+            if theme_type == 'theme':
+                record.update({
+                    'theme_title': theme_data.get('theme_title', ''),
+                    'theme_statement': theme_data.get('theme_statement', ''),
+                    'classification': theme_data.get('classification', ''),
+                    'deal_context': theme_data.get('deal_context', ''),
+                    'metadata_insights': theme_data.get('metadata_insights', ''),
+                    'primary_quote': theme_data.get('primary_quote', ''),
+                    'secondary_quote': theme_data.get('secondary_quote', ''),
+                    'supporting_finding_ids': theme_data.get('supporting_finding_ids', ''),
+                    'company_ids': theme_data.get('company_ids', '')
+                })
+            else:  # strategic_alert
+                record.update({
+                    'alert_title': theme_data.get('alert_title', ''),
+                    'alert_statement': theme_data.get('alert_statement', ''),
+                    'alert_classification': theme_data.get('alert_classification', ''),
+                    'strategic_implications': theme_data.get('strategic_implications', ''),
+                    'primary_alert_quote': theme_data.get('primary_alert_quote', ''),
+                    'secondary_alert_quote': theme_data.get('secondary_alert_quote', ''),
+                    'supporting_alert_finding_ids': theme_data.get('supporting_alert_finding_ids', ''),
+                    'alert_company_ids': theme_data.get('alert_company_ids', '')
+                })
+            
+            # Insert record
+            response = self.supabase.table('stage4_themes').insert(record).execute()
+            
+            if response.data and len(response.data) > 0:
+                logger.info(f"✅ Saved Stage 4 {theme_type}: {theme_data.get('theme_id', 'Unknown')}")
+                return True
+            else:
+                logger.error(f"❌ Failed to save Stage 4 {theme_type}: No data returned")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to save Stage 4 {theme_data.get('theme_type', 'item')}: {e}")
+            return False
+    
+    def update_stage3_finding_classification(self, finding_id: str, classification: str, classification_reasoning: str, client_id: str = 'default') -> bool:
+        """Update the classification and classification_reasoning for a Stage 3 finding"""
+        try:
+            # Prepare update data
+            update_data = {
+                'classification': classification,
+                'classification_reasoning': classification_reasoning,
+                'updated_at': datetime.now().isoformat()
+            }
+            
+            # Update the finding in the database
+            result = self.supabase.table('stage3_findings').update(update_data).eq('finding_id', finding_id).eq('client_id', client_id).execute()
+            
+            if result.data:
+                logger.info(f"✅ Updated classification for finding {finding_id}: {classification}")
+                return True
+            else:
+                logger.warning(f"⚠️ No finding found with ID {finding_id} for client {client_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to update classification for finding {finding_id}: {e}")
+            return False
 
     def get_stage3_findings_summary(self, client_id: str = 'default') -> Dict:
         """Get enhanced findings summary statistics, filtered by client_id"""
@@ -674,8 +798,9 @@ class SupabaseDatabase:
     def save_theme(self, theme_data: Dict, client_id: str = 'default') -> bool:
         """Save a theme to the stage4_themes table with client_id for data siloing"""
         try:
-            # Add client_id to theme data
-            theme_data['client_id'] = client_id
+            # Use client_id from theme_data if provided, otherwise use parameter
+            if 'client_id' not in theme_data or not theme_data['client_id']:
+                theme_data['client_id'] = client_id
             response = self.supabase.table('stage4_themes').insert(theme_data).execute()
             return len(response.data) > 0
         except Exception as e:
@@ -685,24 +810,48 @@ class SupabaseDatabase:
     def get_themes(self, client_id: str = 'default') -> pd.DataFrame:
         """Get all themes from the stage4_themes table, filtered by client_id"""
         try:
-            response = self.supabase.table('stage4_themes').select('*').eq('client_id', client_id).order('created_at', desc=True).execute()
+            query = self.supabase.table('stage4_themes').select('*')
+            if client_id is not None:
+                query = query.eq('client_id', client_id)
+            response = query.order('created_at', desc=True).execute()
             df = pd.DataFrame(response.data)
             
-            # Parse JSON columns
+            # Parse JSON columns safely
             if not df.empty:
                 if 'quotes' in df.columns:
-                    df['quotes'] = df['quotes'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                    df['quotes'] = df['quotes'].apply(lambda x: self._safe_json_parse(x))
                 if 'supporting_finding_ids' in df.columns:
-                    df['supporting_finding_ids'] = df['supporting_finding_ids'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                    df['supporting_finding_ids'] = df['supporting_finding_ids'].apply(lambda x: self._safe_json_parse(x))
                 if 'interview_companies' in df.columns:
-                    df['interview_companies'] = df['interview_companies'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                    df['interview_companies'] = df['interview_companies'].apply(lambda x: self._safe_json_parse(x))
                 if 'deal_status_distribution' in df.columns:
-                    df['deal_status_distribution'] = df['deal_status_distribution'].apply(lambda x: json.loads(x) if isinstance(x, str) else x)
+                    df['deal_status_distribution'] = df['deal_status_distribution'].apply(lambda x: self._safe_json_parse(x))
             
             return df
         except Exception as e:
             logger.error(f"Error getting themes: {e}")
             return pd.DataFrame()
+    
+    def _safe_json_parse(self, value):
+        """Safely parse JSON values, returning the original value if parsing fails"""
+        if value is None or value == '':
+            return value
+        
+        if isinstance(value, (dict, list)):
+            return value
+        
+        if isinstance(value, str):
+            value = value.strip()
+            if not value:
+                return value
+            
+            try:
+                return json.loads(value)
+            except (json.JSONDecodeError, ValueError):
+                # If it's not valid JSON, return as is
+                return value
+        
+        return value
 
     def delete_theme(self, theme_id: str, client_id: str = 'default') -> bool:
         """Delete a theme from the stage4_themes table"""
@@ -741,8 +890,17 @@ class SupabaseDatabase:
             # Count unique companies across all themes
             all_companies = []
             for companies in df['interview_companies']:
-                if companies:
-                    all_companies.extend(companies)
+                if companies and isinstance(companies, (list, str)):
+                    if isinstance(companies, str):
+                        try:
+                            companies = self._safe_json_parse(companies)
+                        except:
+                            companies = [companies]
+                    if isinstance(companies, list):
+                        all_companies.extend(companies)
+                    elif isinstance(companies, str) and companies.strip():
+                        # If it's a comma-separated string, split it
+                        all_companies.extend([c.strip() for c in companies.split(',') if c.strip()])
             companies_covered = len(set(all_companies))
             
             return {
@@ -1276,6 +1434,246 @@ class SupabaseDatabase:
         except Exception as e:
             logger.error(f"Error getting approved quotes: {e}")
             return pd.DataFrame()
+
+    def save_json_finding(self, finding_data: Dict[str, Any], client_id: str = 'default') -> bool:
+        """Save a finding with JSON data structure to Supabase"""
+        try:
+            # Prepare data for Supabase with JSONB support
+            data = {
+                'finding_id': finding_data.get('finding_id'),
+                'finding_statement': finding_data.get('finding_statement'),
+                'finding_category': finding_data.get('finding_category'),
+                'impact_score': finding_data.get('impact_score'),
+                'confidence_score': finding_data.get('confidence_score'),
+                'supporting_quotes': json.dumps(finding_data.get('supporting_quotes', [])),
+                'companies_mentioned': json.dumps(finding_data.get('companies_mentioned', [])),
+                'interview_company': finding_data.get('interview_company'),
+                'interview_date': finding_data.get('interview_date'),
+                'interview_type': finding_data.get('interview_type'),
+                'interviewer_name': finding_data.get('interviewer_name'),
+                'interviewee_role': finding_data.get('interviewee_role'),
+                'interviewee_company': finding_data.get('interviewee_company'),
+                'finding_data': json.dumps(finding_data),  # Complete finding as JSON
+                'metadata': json.dumps(finding_data.get('metadata', {})),
+                'created_at': datetime.now().isoformat()
+            }
+            
+            # Remove None values
+            data = {k: v for k, v in data.items() if v is not None}
+            
+            # Upsert to Supabase
+            result = self.supabase.table('stage3_findings').upsert(data).execute()
+            
+            logger.info(f"✅ Saved JSON finding: {finding_data.get('finding_id')}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to save JSON finding: {e}")
+            return False
+    
+    def get_json_findings(self, client_id: str = 'default', filters: Optional[Dict] = None) -> List[Dict[str, Any]]:
+        """Get findings with JSON data structure from Supabase"""
+        try:
+            query = self.supabase.table('stage3_findings').select('*')
+            
+            # Apply filters if provided
+            if filters and isinstance(filters, dict):
+                for key, value in filters.items():
+                    if key in ['finding_category', 'interview_company', 'finding_id']:
+                        query = query.eq(key, value)
+                    elif key == 'date_from':
+                        query = query.gte('interview_date', value)
+                    elif key == 'date_to':
+                        query = query.lte('interview_date', value)
+                    elif key == 'min_impact':
+                        query = query.gte('impact_score', value)
+                    elif key == 'min_confidence':
+                        query = query.gte('confidence_score', value)
+            
+            # Order by created_at desc
+            query = query.order('created_at', desc=True)
+            
+            result = query.execute()
+            
+            # Parse JSON data
+            findings = []
+            for row in result.data:
+                finding = {
+                    'finding_id': row.get('finding_id'),
+                    'finding_statement': row.get('finding_statement'),
+                    'finding_category': row.get('finding_category'),
+                    'impact_score': row.get('impact_score'),
+                    'confidence_score': row.get('confidence_score'),
+                    'supporting_quotes': json.loads(row.get('supporting_quotes', '[]')),
+                    'companies_mentioned': json.loads(row.get('companies_mentioned', '[]')),
+                    'interview_company': row.get('interview_company'),
+                    'interview_date': row.get('interview_date'),
+                    'interview_type': row.get('interview_type'),
+                    'interviewer_name': row.get('interviewer_name'),
+                    'interviewee_role': row.get('interviewee_role'),
+                    'interviewee_company': row.get('interviewee_company'),
+                    'finding_data': json.loads(row.get('finding_data', '{}')),
+                    'metadata': json.loads(row.get('metadata', '{}')),
+                    'created_at': row.get('created_at'),
+                    'updated_at': row.get('updated_at')
+                }
+                findings.append(finding)
+            
+            logger.info(f"📊 Retrieved {len(findings)} JSON findings from Supabase")
+            return findings
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to get JSON findings: {e}")
+            return []
+    
+    def save_json_theme(self, theme_data: Dict[str, Any], client_id: str = 'default') -> bool:
+        """Save a theme with JSON data structure to Supabase"""
+        try:
+            # Prepare data for Supabase with JSONB support
+            data = {
+                'theme_id': theme_data.get('theme_id'),
+                'theme_name': theme_data.get('theme_name'),
+                'theme_description': theme_data.get('theme_description'),
+                'strategic_importance': theme_data.get('strategic_importance'),
+                'action_items': json.dumps(theme_data.get('action_items', [])),
+                'related_findings': json.dumps(theme_data.get('related_findings', [])),
+                'alert_id': theme_data.get('alert_id'),
+                'alert_type': theme_data.get('alert_type'),
+                'alert_message': theme_data.get('alert_message'),
+                'alert_priority': theme_data.get('alert_priority'),
+                'recommended_actions': json.dumps(theme_data.get('recommended_actions', [])),
+                'theme_data': json.dumps(theme_data.get('theme_data', {})),
+                'alert_data': json.dumps(theme_data.get('alert_data', {})),
+                'metadata': json.dumps(theme_data.get('metadata', {})),
+                'analysis_date': theme_data.get('analysis_date'),
+                'created_at': datetime.now().isoformat()
+            }
+            
+            # Remove None values
+            data = {k: v for k, v in data.items() if v is not None}
+            
+            # Upsert to Supabase
+            result = self.supabase.table('stage4_themes').upsert(data).execute()
+            
+            logger.info(f"✅ Saved JSON theme: {theme_data.get('theme_id')}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to save JSON theme: {e}")
+            return False
+    
+    def get_json_themes(self, client_id: str = 'default', filters: Optional[Dict] = None) -> List[Dict[str, Any]]:
+        """Get themes with JSON data structure from Supabase"""
+        try:
+            query = self.supabase.table('stage4_themes').select('*')
+            
+            # Apply filters if provided
+            if filters and isinstance(filters, dict):
+                for key, value in filters.items():
+                    if key in ['theme_id', 'alert_id', 'strategic_importance', 'alert_priority']:
+                        query = query.eq(key, value)
+                    elif key == 'date_from':
+                        query = query.gte('analysis_date', value)
+                    elif key == 'date_to':
+                        query = query.lte('analysis_date', value)
+            
+            # Order by created_at desc
+            query = query.order('created_at', desc=True)
+            
+            result = query.execute()
+            
+            # Parse JSON data
+            themes = []
+            for row in result.data:
+                theme = {
+                    'theme_id': row.get('theme_id'),
+                    'theme_name': row.get('theme_name'),
+                    'theme_description': row.get('theme_description'),
+                    'strategic_importance': row.get('strategic_importance'),
+                    'action_items': json.loads(row.get('action_items', '[]')),
+                    'related_findings': json.loads(row.get('related_findings', '[]')),
+                    'alert_id': row.get('alert_id'),
+                    'alert_type': row.get('alert_type'),
+                    'alert_message': row.get('alert_message'),
+                    'alert_priority': row.get('alert_priority'),
+                    'recommended_actions': json.loads(row.get('recommended_actions', '[]')),
+                    'theme_data': json.loads(row.get('theme_data', '{}')),
+                    'alert_data': json.loads(row.get('alert_data', '{}')),
+                    'metadata': json.loads(row.get('metadata', '{}')),
+                    'analysis_date': row.get('analysis_date'),
+                    'created_at': row.get('created_at'),
+                    'updated_at': row.get('updated_at')
+                }
+                themes.append(theme)
+            
+            logger.info(f"📊 Retrieved {len(themes)} JSON themes from Supabase")
+            return themes
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to get JSON themes: {e}")
+            return []
+    
+    def export_json_findings(self, client_id: str = 'default', filters: Optional[Dict] = None) -> str:
+        """Export findings as JSON file"""
+        try:
+            findings = self.get_json_findings(client_id=client_id, filters=filters)
+            
+            # Create export data structure
+            export_data = {
+                "findings": findings,
+                "metadata": {
+                    "total_findings": len(findings),
+                    "export_date": datetime.now().isoformat(),
+                    "client_id": client_id,
+                    "filters_applied": filters or {}
+                }
+            }
+            
+            # Create filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"findings_export_{client_id}_{timestamp}.json"
+            
+            # Write to file
+            with open(filename, 'w') as f:
+                json.dump(export_data, f, indent=2, default=str)
+            
+            logger.info(f"✅ Exported {len(findings)} findings to {filename}")
+            return filename
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to export JSON findings: {e}")
+            return ""
+    
+    def export_json_themes(self, client_id: str = 'default', filters: Optional[Dict] = None) -> str:
+        """Export themes as JSON file"""
+        try:
+            themes = self.get_json_themes(client_id=client_id, filters=filters)
+            
+            # Create export data structure
+            export_data = {
+                "themes": themes,
+                "metadata": {
+                    "total_themes": len(themes),
+                    "export_date": datetime.now().isoformat(),
+                    "client_id": client_id,
+                    "filters_applied": filters or {}
+                }
+            }
+            
+            # Create filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"themes_export_{client_id}_{timestamp}.json"
+            
+            # Write to file
+            with open(filename, 'w') as f:
+                json.dump(export_data, f, indent=2, default=str)
+            
+            logger.info(f"✅ Exported {len(themes)} themes to {filename}")
+            return filename
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to export JSON themes: {e}")
+            return ""
 
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""
