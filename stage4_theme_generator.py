@@ -669,7 +669,7 @@ JSON OUTPUT FORMAT:
       "secondary_quote": "",
       "competitive_flag": true,
       "supporting_finding_ids": "F1,F2,F3",
-      "company_ids": "..."
+      "company_ids": ""
     }}
     // ... 7-10 comprehensive themes
   ],
@@ -683,7 +683,7 @@ JSON OUTPUT FORMAT:
       "primary_alert_quote": "",
       "secondary_alert_quote": "",
       "supporting_alert_finding_ids": "F1,F2",
-      "alert_company_ids": "..."
+      "alert_company_ids": ""
     }}
     // ... 3-8 strategic alerts
   ]
@@ -769,55 +769,232 @@ Return ONLY the JSON object (no explanations or extra text).
             return []
     
     def _match_themes_to_findings(self, themes: List[Dict], findings: List[Dict]) -> List[Dict]:
-        """Match themes to findings and attach real quotes"""
+        """Match themes to findings using embedding-based association and attach real quotes"""
         try:
-            for theme in themes:
-                # Find best matching findings for quotes
-                supporting_finding_ids = theme.get('supporting_finding_ids', '')
-                if supporting_finding_ids:
-                    # Get primary quote from first finding
-                    finding_ids = [fid.strip() for fid in supporting_finding_ids.split(',') if fid.strip()]
-                    if finding_ids:
-                        first_finding = self._get_finding_by_id(finding_ids[0], findings)
-                        if first_finding:
-                            primary_quote = first_finding.get('primary_quote', '')
-                            if primary_quote:
-                                theme['primary_quote'] = primary_quote
-                            
-                            # Get secondary quote from second finding if available
-                            if len(finding_ids) > 1:
-                                second_finding = self._get_finding_by_id(finding_ids[1], findings)
-                                if second_finding:
-                                    secondary_quote = second_finding.get('primary_quote', '')
-                                    if secondary_quote:
-                                        theme['secondary_quote'] = secondary_quote
-                
-                # For strategic alerts, get alert quotes
-                if theme.get('theme_type') == 'strategic_alert':
-                    alert_finding_ids = theme.get('supporting_alert_finding_ids', '')
-                    if alert_finding_ids:
-                        finding_ids = [fid.strip() for fid in alert_finding_ids.split(',') if fid.strip()]
-                        if finding_ids:
-                            first_finding = self._get_finding_by_id(finding_ids[0], findings)
-                            if first_finding:
-                                primary_quote = first_finding.get('primary_quote', '')
-                                if primary_quote:
-                                    theme['primary_alert_quote'] = primary_quote
-                            
-                            # Get secondary alert quote from second finding if available
-                            if len(finding_ids) > 1:
-                                second_finding = self._get_finding_by_id(finding_ids[1], findings)
-                                if second_finding:
-                                    secondary_quote = second_finding.get('primary_quote', '')
-                                    if secondary_quote:
-                                        theme['secondary_alert_quote'] = secondary_quote
+            # Step 1: Create embeddings for all findings
+            logger.info("🔍 Creating embeddings for all findings...")
+            finding_embeddings = self._create_finding_embeddings(findings)
             
-            logger.info(f"✅ Matched quotes to {len(themes)} themes/alerts")
-            return themes
+            # Step 2: Enhance theme associations using embeddings
+            logger.info("🔍 Enhancing theme associations using embeddings...")
+            enhanced_themes = []
+            
+            # Create embeddings for all themes in batch
+            theme_texts = []
+            theme_indices = []
+            
+            for i, theme in enumerate(themes):
+                theme_text = f"{theme.get('theme_title', '')} {theme.get('theme_statement', '')}"
+                if theme_text.strip():
+                    theme_texts.append(theme_text)
+                    theme_indices.append(i)
+            
+            # Batch API call for theme embeddings
+            theme_embeddings = []
+            if theme_texts:
+                theme_embeddings = self._get_batch_embeddings(theme_texts)
+            
+            # Process each theme with its embedding
+            for i, theme in enumerate(themes):
+                theme_embedding = []
+                if i in theme_indices:
+                    embedding_index = theme_indices.index(i)
+                    if embedding_index < len(theme_embeddings):
+                        theme_embedding = theme_embeddings[embedding_index]
+                
+                # Find most similar findings
+                similar_findings = self._find_similar_findings(
+                    theme_embedding, finding_embeddings, findings, 
+                    top_k=8, similarity_threshold=0.5  # Relaxed threshold for more associations
+                )
+                
+                # Update theme with enhanced associations
+                if similar_findings:
+                    theme['supporting_finding_ids'] = ','.join([f['finding_id'] for f in similar_findings])
+                    
+                    # Extract companies from all associated findings
+                    companies = set()
+                    for finding in similar_findings:
+                        # Try interview_company first
+                        company = finding.get('interview_company', '')
+                        if company and company.strip():
+                            companies.add(company.strip())
+                            logger.info(f"✅ Added company from interview_company: {company.strip()}")
+                        else:
+                            # Try companies_affected (JSON array)
+                            companies_affected = finding.get('companies_affected', '')
+                            if companies_affected:
+                                try:
+                                    # Parse JSON array
+                                    import json
+                                    company_list = json.loads(companies_affected)
+                                    if isinstance(company_list, list):
+                                        for comp in company_list:
+                                            if comp and comp.strip():
+                                                companies.add(comp.strip())
+                                                logger.info(f"✅ Added company from companies_affected: {comp.strip()}")
+                                except (json.JSONDecodeError, TypeError):
+                                    # If not JSON, treat as string
+                                    if companies_affected and companies_affected.strip():
+                                        companies.add(companies_affected.strip())
+                                        logger.info(f"✅ Added company from companies_affected (string): {companies_affected.strip()}")
+                    
+                    theme['company_ids'] = ','.join(list(companies))
+                    logger.info(f"🔍 Theme {theme.get('theme_id', 'unknown')} companies: {list(companies)}")
+                    
+                    # Validate cross-company pattern
+                    if len(companies) >= 2:
+                        theme['cross_company_validated'] = True
+                        logger.info(f"✅ Theme {theme.get('theme_id', 'unknown')}: {len(similar_findings)} findings, {len(companies)} companies")
+                    else:
+                        theme['cross_company_validated'] = False
+                        logger.warning(f"⚠️ Theme {theme.get('theme_id', 'unknown')}: Only {len(companies)} companies")
+                
+                # Attach quotes from enhanced findings
+                self._attach_quotes_to_theme(theme, findings)
+                enhanced_themes.append(theme)
+            
+            logger.info(f"✅ Enhanced associations for {len(enhanced_themes)} themes/alerts")
+            return enhanced_themes
             
         except Exception as e:
             logger.error(f"❌ Error matching themes to findings: {str(e)}")
             return themes
+    
+    def _create_finding_embeddings(self, findings: List[Dict]) -> Dict[str, List[float]]:
+        """Create embeddings for all findings using batch API call"""
+        embeddings = {}
+        
+        # Prepare all texts for batch embedding
+        texts = []
+        finding_ids = []
+        
+        for finding in findings:
+            # Combine finding text for embedding
+            finding_text = f"{finding.get('finding_statement', '')} {finding.get('primary_quote', '')} {finding.get('secondary_quote', '')}"
+            if finding_text.strip():
+                texts.append(finding_text)
+                finding_ids.append(finding['finding_id'])
+        
+        if not texts:
+            logger.warning("No valid texts found for embedding")
+            return embeddings
+        
+        # Single batch API call for all findings
+        try:
+            batch_embeddings = self._get_batch_embeddings(texts)
+            
+            # Map embeddings back to finding IDs
+            for i, embedding in enumerate(batch_embeddings):
+                if i < len(finding_ids):
+                    embeddings[finding_ids[i]] = embedding
+            
+            logger.info(f"✅ Created embeddings for {len(embeddings)} findings using batch API call")
+            return embeddings
+            
+        except Exception as e:
+            logger.error(f"❌ Error in batch embedding creation: {str(e)}")
+            return embeddings
+    
+    def _get_batch_embeddings(self, texts: List[str]) -> List[List[float]]:
+        """Get OpenAI embeddings for multiple texts in a single batch call"""
+        try:
+            client = openai.OpenAI(api_key=self.openai_api_key)
+            response = client.embeddings.create(
+                model="text-embedding-3-small",
+                input=texts
+            )
+            return [data.embedding for data in response.data]
+        except Exception as e:
+            logger.error(f"❌ Error getting batch embeddings: {str(e)}")
+            return []
+    
+    def _get_embedding(self, text: str) -> List[float]:
+        """Get OpenAI embedding for single text (fallback method)"""
+        try:
+            client = openai.OpenAI(api_key=self.openai_api_key)
+            response = client.embeddings.create(
+                model="text-embedding-3-small",
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            logger.error(f"❌ Error getting embedding: {str(e)}")
+            return []
+    
+    def _find_similar_findings(self, theme_embedding: List[float], finding_embeddings: Dict, 
+                              findings: List[Dict], top_k: int = 5, similarity_threshold: float = 0.7) -> List[Dict]:
+        """Find most similar findings using cosine similarity"""
+        similarities = []
+        
+        for finding_id, finding_embedding in finding_embeddings.items():
+            if theme_embedding and finding_embedding:
+                similarity = cosine_similarity([theme_embedding], [finding_embedding])[0][0]
+                if similarity >= similarity_threshold:
+                    similarities.append((finding_id, similarity))
+        
+        # Sort by similarity and return top_k findings
+        similarities.sort(key=lambda x: x[1], reverse=True)
+        top_finding_ids = [fid for fid, _ in similarities[:top_k]]
+        
+        # Return actual finding objects
+        similar_findings = []
+        for finding in findings:
+            if finding['finding_id'] in top_finding_ids:
+                similar_findings.append(finding)
+        
+        # Debug logging
+        if similar_findings:
+            logger.info(f"🔍 Found {len(similar_findings)} similar findings (threshold: {similarity_threshold})")
+            for finding in similar_findings[:3]:  # Log first 3
+                company = finding.get('interview_company', 'NO_COMPANY')
+                logger.info(f"   - {finding['finding_id']}: {company}")
+        else:
+            logger.warning(f"⚠️ No similar findings found with threshold {similarity_threshold}")
+        
+        return similar_findings
+    
+    def _attach_quotes_to_theme(self, theme: Dict, findings: List[Dict]):
+        """Attach quotes from associated findings to theme"""
+        supporting_finding_ids = theme.get('supporting_finding_ids', '')
+        if supporting_finding_ids:
+            finding_ids = [fid.strip() for fid in supporting_finding_ids.split(',') if fid.strip()]
+            
+            # Get primary quote from first finding
+            if finding_ids:
+                first_finding = self._get_finding_by_id(finding_ids[0], findings)
+                if first_finding:
+                    primary_quote = first_finding.get('primary_quote', '')
+                    if primary_quote:
+                        theme['primary_quote'] = primary_quote
+                    
+                    # Get secondary quote from second finding if available
+                    if len(finding_ids) > 1:
+                        second_finding = self._get_finding_by_id(finding_ids[1], findings)
+                        if second_finding:
+                            secondary_quote = second_finding.get('primary_quote', '')
+                            if secondary_quote:
+                                theme['secondary_quote'] = secondary_quote
+        
+        # For strategic alerts, get alert quotes
+        if theme.get('theme_type') == 'strategic_alert':
+            alert_finding_ids = theme.get('supporting_alert_finding_ids', '')
+            if alert_finding_ids:
+                finding_ids = [fid.strip() for fid in alert_finding_ids.split(',') if fid.strip()]
+                if finding_ids:
+                    first_finding = self._get_finding_by_id(finding_ids[0], findings)
+                    if first_finding:
+                        primary_quote = first_finding.get('primary_quote', '')
+                        if primary_quote:
+                            theme['primary_alert_quote'] = primary_quote
+                    
+                    # Get secondary alert quote from second finding if available
+                    if len(finding_ids) > 1:
+                        second_finding = self._get_finding_by_id(finding_ids[1], findings)
+                        if second_finding:
+                            secondary_quote = second_finding.get('primary_quote', '')
+                            if secondary_quote:
+                                theme['secondary_alert_quote'] = secondary_quote
     
     def _save_themes_to_database(self, themes: List[Dict[str, Any]]) -> bool:
         """Save themes to database with enhanced validation"""
