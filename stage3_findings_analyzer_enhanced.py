@@ -34,6 +34,18 @@ class EnhancedStage3FindingsAnalyzer:
         # Load enhanced findings prompt
         self.findings_prompt = self._load_enhanced_findings_prompt()
     
+    def _load_buried_wins_prompt(self) -> str:
+        """Load the Buried Wins prompt for compatibility"""
+        try:
+            prompt_path = "Context/Buried Wins Finding Production Prompt.txt"
+            if os.path.exists(prompt_path):
+                with open(prompt_path, 'r') as f:
+                    return f.read()
+            else:
+                return "Buried Wins prompt file not found"
+        except Exception as e:
+            return f"Error loading Buried Wins prompt: {e}"
+
     def _load_enhanced_findings_prompt(self) -> str:
         """Load the enhanced findings prompt with client-specific detection"""
         return f"""
