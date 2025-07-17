@@ -12,6 +12,7 @@ import re
 from typing import List, Dict, Any
 import openai
 from supabase_database import SupabaseDatabase
+from client_specific_classifier import ClientSpecificClassifier
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -398,10 +399,21 @@ Output in JSON format.
             
             if success:
                 logger.info(f"✅ Enhanced Stage 3 findings analysis completed successfully for client {self.client_id}")
+                
+                # Run client-specific classification as final step
+                logger.info("🔍 Running client-specific classification...")
+                classifier = ClientSpecificClassifier(self.client_id)
+                classification_success = classifier.classify_findings()
+                
+                if classification_success:
+                    logger.info(f"✅ Client-specific classification completed successfully for {self.client_id}")
+                else:
+                    logger.warning(f"⚠️ Client-specific classification failed for {self.client_id}")
+                
+                return True
             else:
                 logger.error(f"❌ Failed to save enhanced findings for client {self.client_id}")
-            
-            return success
+                return False
                 
         except Exception as e:
             logger.error(f"Error in enhanced findings analysis: {e}")

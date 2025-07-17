@@ -1,0 +1,859 @@
+Interview ID,Client Name,Contact ID,Interview List ID,Project ID,Scheduled Date,Contact Phone Number,Moderator Email,Interview Method,Conversion Source,Interview Status,Moderator Notes,Flag Details,Flag Type,Payment Complete,Transcript Link,Audio/Video Link,Interview Contact Full Name,Interview Contact Company Name,Job Title (from Contact ID),Interview Contact Email,Interview Contact Mobile Phone Number,Interview Question ID,Interview Response ID,Discussion Guide Link,Interview Contact Website,Client Website,Moderator Responses,Final Incentive Amount,Completion Date,Auto ID,Deal ID,Deal Status,Company Match Key,Base Incentive Amount,Escalated Incentive Amount,Incentive Change Date,Custom Incentive,Custom Incentive Amount,Interview Guide Context,Interview Guides ID,LinkedIn Profile (from Contact ID),Recruitment Records,Industry,Moderators,Moderator Score,Segment
+IVW-00011,ShipBob,Evan Lefebure,IVL-00006,ShipBob_PRJ-00008,"April 9, 2025 1:30pm",(525) 554-5108,drew@buriedwins.com,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1I8hE7bs4DKrr7b5ypproJbyUby1EK_Np,https://drive.google.com/drive/u/0/folders/1I8hE7bs4DKrr7b5ypproJbyUby1EK_Np,Evan Lefebure,Seven Minerals,Digital Marketing,evan.w.lefebure@gmail.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,www.sevenminerals.com,www.shipbob.com,,85,"April 9, 2025",11,DLS-00003,Closed Lost,ShipBob_PRJ-00008_Seven Minerals,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,,,,
+IVW-00012,ShipBob,Danielle Katan,IVL-00006,ShipBob_PRJ-00008,"April 10, 2025 8:30am",(201) 983-7593,amanda@glassreels.com,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1vjOrJbsuWxvNz2FbTcVG4l7SW-nxGWHk,https://drive.google.com/drive/u/0/folders/1vjOrJbsuWxvNz2FbTcVG4l7SW-nxGWHk,Danielle Katan,Aura Frames,Sr. Manager Fulfillment & Distribution,danielle@auraframes.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://auraframes.com/,www.shipbob.com,,85,"April 10, 2025",12,DLS-00022,Closed Lost,ShipBob_PRJ-00008_Aura Frames,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,https://www.linkedin.com/in/danielle-katan,,Home & Garden,,,
+IVW-00017,Zone & Co.,Daniel Musumeci,IVL-00008,Zone & Co._PRJ-00005,"April 10, 2025 1:30pm",61 410 485 010,drew@buriedwins.com,Zoom,,Completed,,,,checked,,,Daniel Musumeci,ProTen Pty Limited,,daniel.musumeci@proten.com.au,,,,https://forms.gle/znmLexGMuc3KLcYy6,https://proten.com.au,www.zoneandco.com,,105,"April 10, 2025",17,DLS-00422,Closed Won,Zone & Co._PRJ-00005_ProTen Pty Limited,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,,,Food Production,,,
+IVW-00026,ShipBob,Lauren Bodwell,IVL-00006,ShipBob_PRJ-00008,"April 10, 2025 10:26am",,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/15Mw1GBvT8In2rZPKgVQlBJrisRSjjVsp,https://drive.google.com/drive/u/0/folders/15Mw1GBvT8In2rZPKgVQlBJrisRSjjVsp,Lauren Bodwell,Revant Optics Q4,Vice President of Operations,lb@revantoptics.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.revantoptics.com,www.shipbob.com,,85,"April 10, 2025",26,DLS-00034,Closed Lost,ShipBob_PRJ-00008_Revant Optics Q4,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/lbodwell302,,Apparel,,,
+IVW-00027,ShipBob,Summer Perrin,IVL-00006,ShipBob_PRJ-00008,"April 2, 2025 10:28am",,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1s-nlcS9XE8B6vl20W0S9gKB1UFldes3F,https://drive.google.com/drive/u/0/folders/1s-nlcS9XE8B6vl20W0S9gKB1UFldes3F,Summer Perrin,Denim Tears,Operations Manager,summer@denimtears.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.denimtears.com,www.shipbob.com,,85,"April 2, 2025",27,DLS-00047,Closed Lost,ShipBob_PRJ-00008_Denim Tears,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/summer-perrin-341262225,,Apparel,,,
+IVW-00028,ShipBob,Garsten Bergquist,IVL-00006,ShipBob_PRJ-00008,"March 28, 2025 10:29am",,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/11-_v7yTuH3vDrFohKUiTMvlhBOOsdvPh,https://drive.google.com/drive/u/0/folders/11-_v7yTuH3vDrFohKUiTMvlhBOOsdvPh,Garsten Bergquist,Ketone,Brand Manager,garsten@ketone.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.ketone.com,www.shipbob.com,,85,"April 28, 2025",28,DLS-00040,Closed Lost,ShipBob_PRJ-00008_Ketone,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/garsten-bergquist-948a5432,,Health,,,
+IVW-00029,ShipBob,Mathilde Picco,IVL-00006,ShipBob_PRJ-00008,"March 28, 2025 10:47am",,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1oaFiFfc1hOoTQfNmvhOpJr3cw0g4Acyq,https://drive.google.com/drive/u/0/folders/1oaFiFfc1hOoTQfNmvhOpJr3cw0g4Acyq,Mathilde Picco,Skeepers,Manager,mathilde.picco@skeepers.io,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.skeepers.io,www.shipbob.com,,85,"March 28, 2025",29,DLS-00014,Closed Lost,ShipBob_PRJ-00008_Skeepers,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/mathilde-picco-a1b37585,,,,,
+IVW-00030,ShipBob,Lidia Faustova,IVL-00006,ShipBob_PRJ-00008,"March 27, 2025 10:49am",,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1gZx70Po2iodkdVp8Q58EjCwtizC3I8_x,https://drive.google.com/drive/u/0/folders/1gZx70Po2iodkdVp8Q58EjCwtizC3I8_x,Lidia Faustova,FXswede (Tress Wellness),"Director, Operations",lidia@fxswede.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.fxswede.com,www.shipbob.com,,85,"March 27, 2025",30,DLS-00030,Closed Lost,ShipBob_PRJ-00008_FXswede (Tress Wellness),$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/lidia-faustova,,,,,
+IVW-00031,ShipBob,Michael Wald,IVL-00006,ShipBob_PRJ-00008,"March 27, 2025 10:50am",,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1RHY7NrZj5pE500QAcIs4Vjy4UBcf7aVI,https://drive.google.com/drive/u/0/folders/1RHY7NrZj5pE500QAcIs4Vjy4UBcf7aVI,Michael Wald,FOUNDRY,Owner,mwald@foundrybrands.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.foundrybrands.com,www.shipbob.com,,85,"March 27, 2025",31,DLS-00049,Closed Lost,ShipBob_PRJ-00008_FOUNDRY,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/michael-wald-4461a157,,,,,
+IVW-00032,ShipBob,Logan Pederson,IVL-00006,ShipBob_PRJ-00008,"April 15, 2025 10:52am",(952) 270-8326,amanda@glassreels.com,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1yhteZ6NIXUR8MXT470N7SIPgdr1r8Q-D,https://drive.google.com/drive/u/0/folders/1yhteZ6NIXUR8MXT470N7SIPgdr1r8Q-D,Logan Pederson,Three Nails,Business Intelligence Manager,lpedersen@threenails.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.threenails.com,www.shipbob.com,,85,"April 15, 2025",32,DLS-00019,Closed Lost,ShipBob_PRJ-00008_Three Nails,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Apparel,,,
+IVW-00034,ShipBob,Mackenzie Kada-Wong,IVL-00006,ShipBob_PRJ-00008,"March 28, 2025 9:00am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1KpZ6ixKONgx495Ucwdi_wu4oCZlQ6pfL/edit?usp=drive_link&ouid=114042752068304461437&rtpof=true&sd=true,https://drive.google.com/file/d/1hPF35WxXcuCJm74PpW5tI3optLFYyMBR/view?usp=drive_link,Mackenzie Kada-Wong,WithinUs Natural Health Inc,Owner & Founder,mackenzie@withinus.ca,,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.withinus.ca,www.shipbob.com,,85,"March 28, 2025",34,DLS-00051,Closed Lost,ShipBob_PRJ-00008_WithinUs Natural Health Inc,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Health,,,
+IVW-00035,ShipBob,Himani Singh,IVL-00006,ShipBob_PRJ-00008,"April 21, 2025 8:00am",+1 317-922-5383,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1U4lJ6aoCLQNre1vh4pAsY9AMGbFaNmkq,https://drive.google.com/drive/u/0/folders/1U4lJ6aoCLQNre1vh4pAsY9AMGbFaNmkq,Himani Singh,Henry Rose,Medical Director,himani@henryrose.com,1 317-922-5383,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.henryrose.com,www.shipbob.com,,85,"April 21, 2025",35,DLS-00023,Closed Lost,ShipBob_PRJ-00008_Henry Rose,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/himani-singh-65b01995,,Beauty & Fitness,,,
+IVW-00038,ShipBob,Raphael Borges,IVL-00006,ShipBob_PRJ-00008,"April 23, 2025 10:00am",(302) 455-7806,drew@buriedwins.com,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1jgZ9BpWLZGDnjDNkwntRl2bysX056O5R,https://drive.google.com/drive/u/0/folders/1jgZ9BpWLZGDnjDNkwntRl2bysX056O5R,Raphael Borges,Hey Sunday,Director of Operations,raphael@heysunday.com,1 646-983-6019,,,https://forms.gle/nHxATA7Tp3diHSRw9,http://www.heysunday.com,www.shipbob.com,,200,"April 23, 2025",38,DLS-00197,Closed Won,ShipBob_PRJ-00008_Hey Sunday,$85,$105,,checked,$200.00,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,http://www.linkedin.com/in/raphaelvborges,,Home & Garden,,,Micro
+IVW-00041,FastSpring,Joaquim Cardona,IVL-00007,FastSpring_PRJ-00004,"April 22, 2025 9:00am",34 659 13 28 46,drew@buriedwins.com,Zoom,,Completed,,,,checked,,,Joaquim Cardona,Json2Video,Founder,joaquim.cardona@json2video.com,34934963783.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://json2video.com,www.fastspring.com,,105,"April 22, 2025",41,DLS-00197,Closed Won,FastSpring_PRJ-00004_Json2Video,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Online Media,,,Micro
+IVW-00042,FastSpring,Pratul Kalia,IVL-00007,FastSpring_PRJ-00004,"April 25, 2025 6:30am",+91 95355 20400,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Pratul Kalia,Tramline,Founder,pratul@tramline.app,16503134868.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://tramline.app,www.fastspring.com,,105,"April 25, 2025",42,DLS-00075,Closed Won,FastSpring_PRJ-00004_Tramline,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Information Technology & Services,,,Micro
+IVW-00043,FastSpring,Curtis Shoemaker,IVL-00007,FastSpring_PRJ-00004,"April 25, 2025 8:00am",+49 176 43873066,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Curtis Shoemaker,Mz Automation,Sales And Product Marketing Manager,curtis.shoemaker@mz-automation.de,15792550339.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://mz-automation.de,www.fastspring.com,,105,"April 25, 2025",43,DLS-00212,Closed Won,FastSpring_PRJ-00004_Mz Automation,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Information Technology & Services,,,Micro
+IVW-00044,FastSpring,Pooran Rajanna,IVL-00007,FastSpring_PRJ-00004,"April 28, 2025 10:30am",+91 98867 01028,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,,,Pooran Rajanna,1Page,"Helping Salespeople Search Less, Sell More",pooran@get1page.com,56997954618.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://get1page.com,www.fastspring.com,,85,,44,DLS-00072,Closed Lost,FastSpring_PRJ-00004_1Page,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Information Technology & Services,,,Micro
+IVW-00045,Zone & Co.,Gopi Krishhna,IVL-00008,Zone & Co._PRJ-00005,"May 2, 2025 6:30am",+91 97898 03907,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Gopi Krishhna,Freshworks,,gopi.krishhna@freshworks.com,"Yes,+91 97898 03907,Email",,,https://forms.gle/znmLexGMuc3KLcYy6,https://freshworks.com,www.zoneandco.com,,135,"May 2, 2025",45,DLS-00419,,Zone & Co._PRJ-00005_Freshworks,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,,,,,,
+IVW-00046,Zone & Co.,Lawrence Degabriele,IVL-00008,Zone & Co._PRJ-00005,"April 29, 2025 8:30am",+356 9944 2300,drew@buriedwins.com,zoom,Email,No-Show,,,,,,,Lawrence Degabriele,Seabank Hotel And Catering Limited,,ldegabriele@dbgroupmalta.com,"Yes,+356 9944 2300,Email",,,https://forms.gle/znmLexGMuc3KLcYy6,https://deloitte.it,www.zoneandco.com,,105,,46,DLS-00366,,Zone & Co._PRJ-00005_Seabank Hotel And Catering Limited,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,,,,,,
+IVW-00048,FastSpring,Adrian Rus,IVL-00007,FastSpring_PRJ-00004,"April 29, 2025 6:30am",+40 746 702 936,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Adrian Rus,Shortpixel,,adrian@shortpixel.com,40746702936,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://shortpixel.com,www.fastspring.com,,105,"April 29, 2025",48,DLS-00197,Closed Won,FastSpring_PRJ-00004_Shortpixel,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Information Technology & Services,,,Micro
+IVW-00049,FastSpring,Yogesh Gaikwad,IVL-00007,FastSpring_PRJ-00004,"April 29, 2025 7:00am",+91 99000 94366,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,,,Yogesh Gaikwad,Nazara Technologies Limited,General Manager - Game Studios,yogesh.gaikwad@nazara.com,919900094366.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://nazara.com,www.fastspring.com,,105,"April 29, 2025",49,DLS-00197,Closed Won,FastSpring_PRJ-00004_Nazara Technologies Limited,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Computer Games,,,Micro
+IVW-00050,FastSpring,Jennifer Ipsen,IVL-00007,FastSpring_PRJ-00004,"April 28, 2025 8:30am",+46 76 392 37 56,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Jennifer Ipsen,Marionettexr,Chairman Of The Board,jennifer@marionettexr.com,4528512513.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://marionettexr.com,www.fastspring.com,,85,,50,DLS-00252,Closed Won,FastSpring_PRJ-00004_Marionettexr,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,,,,Micro
+IVW-00053,Zone & Co.,Hannelore Koppen,IVL-00008,Zone & Co._PRJ-00005,"April 28, 2025 8:00am",31 6 12345678,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,,,Hannelore Koppen,Kruitbosch Zwolle B.V.,Group Financial Controller,hannelore@kruitbosch.nl,"No,+31 6 12345678,Email",,,https://forms.gle/znmLexGMuc3KLcYy6,https://kruitbosch.nl,www.zoneandco.com,,135,"April 28, 2025",53,DLS-00265,,Zone & Co._PRJ-00005_Kruitbosch Zwolle B.V.,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,http://www.linkedin.com/in/kate-montgomery-fcca-3a075118,,Automotive,,,
+IVW-00054,FastSpring,Wojciech Fialkiewicz,IVL-00007,FastSpring_PRJ-00004,"April 30, 2025 6:30am",+48 508 961 754,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Wojciech Fialkiewicz,Wojciechfialkiewicz,,chris@calculusrobot.net,,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://calculusrobot.net,www.fastspring.com,,85,,54,DLS-00197,Closed Won,FastSpring_PRJ-00004_Wojciechfialkiewicz,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,,,,Micro
+IVW-00056,Flexera,Anne Schellenberg,IVL-00009,Flexera_PRJ-00006,"May 26, 2025 8:00am",+49 1512 7621781,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/16frGVz0LHTywNfDFOrbh9Nb6cHqls3FJICZFRxCsoXs/edit?usp=sharing,https://drive.google.com/file/d/18H5iF_Z36_f2XCUlvTO-StJOGmfuHr1N/view?usp=sharing,Anne Schellenberg,Time to Act,,anne.schellenberg@timetoact.de,"Yes,+49 1512 7621781,Email",,,https://forms.gle/KShWUQ91dFHA7DVw5,www.timetoact.de,www.flexera.com,,50,,56,DLS-00704,,Flexera_PRJ-00006_Time to Act,$50,,,,,"Flexera Products:
+Flexera One
+- IT Visibility
+- ITAM
+- Cloud License Management
+- SaaS Management
+- FinOps
+
+Snow Atlas
+- Snow Spend Optimizer
+- Snow SaaS Management
+
+Other products that may be mentioned: admin studio, software vulnerability manager, Flexnet manager, snow license manager
+
+Client Assumptions on Evaluation Process
+- The ITAM buyer is weak, but still central
+    - There's a clear view that ITAM professionals—especially in mid-sized orgs—lack decision-making power and executive influence.
+    - Despite this, the sales process still relies heavily on them as champions.
+- There’s a desire to understand who is vetting, championing Flexera, who is making the decision, etc. Is Flexera selling to the right people?
+
+Client Assumptions on Competitors:
+- ServiceNow is considered a top competitor that does everything Flexera does but is weaker with newer Cloud and Saas management. Difficult to win accounts that are already invested in ServiceNow.  
+- IBM is considered to be the leader in the FinOps market, with Flexera being #2. 
+- Other competitors across point solutions (SaaS management, ITAM, etc)
+
+Client Assumptions on Why Flexera Wins:
+- Previous experience - Former customers have moved to new companies
+- ServiceNow has failed in capabilities offered or implementation
+- Flexera is market leader in ITAM
+- Technical capabilities are superior
+
+Client Assumptions on Why Flexera Loses:
+- ServiceNow is viewed as often winning not on capability, but due to bundling, existing contracts, or internal politics.
+- Perceptions about Flexera being hard to use or implement
+- Competitors sowing doubt about Flexera since acquisition
+
+Client Assumptions on Sales Process:
+- Sales challenges are due more to execution than product gaps
+    - There’s a strong belief that sales struggles are rooted in sales team attrition, lack of enablement, and poor qualification—not the value of the product itself.
+    - Key sales friction points include inexperienced reps post-acquisition and overreliance on solution consultants early in the sales cycle.
+    - Sales does not work outside of typical ITAM teams and lack cross functional engagement
+- Most pipeline problems are top-of-funnel
+    - Flexera leadership believes that once a deal progresses past early discovery, their close rate is strong—implying product and late-stage sales execution are solid.
+- Their bottleneck is believed to lie in discovery, qualification, and access to decision-makers.
+",IVG-00138,,,IT Consulting,,,
+IVW-00057,Flexera,Mubarik Ibrahim,,Flexera_PRJ-00006,"April 30, 2025 11:30am",+49 176 21513844,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,https://docs.google.com/document/d/1e-Vn3zagKk0EvA9kl8b8yVuM6Tl7-y2svO4o46nZcWE/edit?usp=sharing,https://drive.google.com/file/d/1TLk8QVlmxFFmcr7QDwMdnHMuKPZHT3P0/view?usp=sharing,Mubarik Ibrahim,Kipu Quantum,,mubarik.ibrahim@kipu-quantum.com,+4917621513844,,,https://forms.gle/KShWUQ91dFHA7DVw5,https://kipu-quantum.com,www.flexera.com,,50,"April 30, 2025",57,DLS-00680,Closed Lost,Flexera_PRJ-00006_Kipu Quantum,$50,,,,,"Flexera Products:
+Flexera One
+- IT Visibility
+- ITAM
+- Cloud License Management
+- SaaS Management
+- FinOps
+
+Snow Atlas
+- Snow Spend Optimizer
+- Snow SaaS Management
+
+Other products that may be mentioned: admin studio, software vulnerability manager, Flexnet manager, snow license manager
+
+Client Assumptions on Evaluation Process
+- The ITAM buyer is weak, but still central
+    - There's a clear view that ITAM professionals—especially in mid-sized orgs—lack decision-making power and executive influence.
+    - Despite this, the sales process still relies heavily on them as champions.
+- There’s a desire to understand who is vetting, championing Flexera, who is making the decision, etc. Is Flexera selling to the right people?
+
+Client Assumptions on Competitors:
+- ServiceNow is considered a top competitor that does everything Flexera does but is weaker with newer Cloud and Saas management. Difficult to win accounts that are already invested in ServiceNow.  
+- IBM is considered to be the leader in the FinOps market, with Flexera being #2. 
+- Other competitors across point solutions (SaaS management, ITAM, etc)
+
+Client Assumptions on Why Flexera Wins:
+- Previous experience - Former customers have moved to new companies
+- ServiceNow has failed in capabilities offered or implementation
+- Flexera is market leader in ITAM
+- Technical capabilities are superior
+
+Client Assumptions on Why Flexera Loses:
+- ServiceNow is viewed as often winning not on capability, but due to bundling, existing contracts, or internal politics.
+- Perceptions about Flexera being hard to use or implement
+- Competitors sowing doubt about Flexera since acquisition
+
+Client Assumptions on Sales Process:
+- Sales challenges are due more to execution than product gaps
+    - There’s a strong belief that sales struggles are rooted in sales team attrition, lack of enablement, and poor qualification—not the value of the product itself.
+    - Key sales friction points include inexperienced reps post-acquisition and overreliance on solution consultants early in the sales cycle.
+    - Sales does not work outside of typical ITAM teams and lack cross functional engagement
+- Most pipeline problems are top-of-funnel
+    - Flexera leadership believes that once a deal progresses past early discovery, their close rate is strong—implying product and late-stage sales execution are solid.
+- Their bottleneck is believed to lie in discovery, qualification, and access to decision-makers.
+",IVG-00138,http://www.linkedin.com/in/mubarik-ibrahim,,Information Technology & Services,,,
+IVW-00058,FastSpring,Mark Ford,,FastSpring_PRJ-00004,"May 7, 2025 10:00am",+1 774-571-8071,drew@buriedwins.com,zoom,SMS,Scheduled,,,,checked,,,Mark Ford,Benthic,,markford@benthicsoftware.com,17745718071.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://benthicsoftware.com,www.fastspring.com,,85,,58,DLS-00187,Closed Won,FastSpring_PRJ-00004_Benthic,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Information Technology & Services,,,Small
+IVW-00059,FastSpring,Gor Arakelyan,,FastSpring_PRJ-00004,"May 5, 2025 8:30am",+374 55 099467,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Gor Arakelyan,Gor-Cgi,,info@gor-cgi.com,37455099467.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://gor-cgi.com,www.fastspring.com,,85,,59,DLS-00124,Closed Won,FastSpring_PRJ-00004_Gor-Cgi,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,,,,Micro
+IVW-00060,Flexera,Benjamin Vlietstra,,Flexera_PRJ-00006,"May 2, 2025 7:00am",+1 616-541-1506,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1zPondlc2eDQqAahTpTBo74rNxd0_Qv5xjUniDmGr0rA/edit?usp=drive_link,https://drive.google.com/file/d/1HcyZTNApaSu3a_Vu5Hn9qbkNQDt55Vgs/view?usp=sharing,Benjamin Vlietstra,Acrisure,IT Asset Manager,bvlietstra@acrisure.com,+12697209920,,,https://forms.gle/KShWUQ91dFHA7DVw5,https://acrisure.com,www.flexera.com,,50,"May 2, 2025",60,DLS-00620,Closed Lost,Flexera_PRJ-00006_Acrisure,$50,,,,,"Flexera Products:
+Flexera One
+- IT Visibility
+- ITAM
+- Cloud License Management
+- SaaS Management
+- FinOps
+
+Snow Atlas
+- Snow Spend Optimizer
+- Snow SaaS Management
+
+Other products that may be mentioned: admin studio, software vulnerability manager, Flexnet manager, snow license manager
+
+Client Assumptions on Evaluation Process
+- The ITAM buyer is weak, but still central
+    - There's a clear view that ITAM professionals—especially in mid-sized orgs—lack decision-making power and executive influence.
+    - Despite this, the sales process still relies heavily on them as champions.
+- There’s a desire to understand who is vetting, championing Flexera, who is making the decision, etc. Is Flexera selling to the right people?
+
+Client Assumptions on Competitors:
+- ServiceNow is considered a top competitor that does everything Flexera does but is weaker with newer Cloud and Saas management. Difficult to win accounts that are already invested in ServiceNow.  
+- IBM is considered to be the leader in the FinOps market, with Flexera being #2. 
+- Other competitors across point solutions (SaaS management, ITAM, etc)
+
+Client Assumptions on Why Flexera Wins:
+- Previous experience - Former customers have moved to new companies
+- ServiceNow has failed in capabilities offered or implementation
+- Flexera is market leader in ITAM
+- Technical capabilities are superior
+
+Client Assumptions on Why Flexera Loses:
+- ServiceNow is viewed as often winning not on capability, but due to bundling, existing contracts, or internal politics.
+- Perceptions about Flexera being hard to use or implement
+- Competitors sowing doubt about Flexera since acquisition
+
+Client Assumptions on Sales Process:
+- Sales challenges are due more to execution than product gaps
+    - There’s a strong belief that sales struggles are rooted in sales team attrition, lack of enablement, and poor qualification—not the value of the product itself.
+    - Key sales friction points include inexperienced reps post-acquisition and overreliance on solution consultants early in the sales cycle.
+    - Sales does not work outside of typical ITAM teams and lack cross functional engagement
+- Most pipeline problems are top-of-funnel
+    - Flexera leadership believes that once a deal progresses past early discovery, their close rate is strong—implying product and late-stage sales execution are solid.
+- Their bottleneck is believed to lie in discovery, qualification, and access to decision-makers.
+",IVG-00138,http://www.linkedin.com/in/benvlietstra,,Financial Services,,,
+IVW-00061,Supio,Cathy Rafael,IVL-00010,Supio_PRJ-00011,"May 9, 2025 8:00am",+1 203-241-1500,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1jVPp5ptjfTEK86A0WEB7iy2a3U5mMwM4pK48Ujh03Y0/edit?usp=sharing,https://drive.google.com/file/d/1RH8oooBHAIwzhndIGU11SIJXhUVcTdOg/view?usp=sharing,Cathy Rafael,Ventura Law,Firm Administrator,cathy@venturalaw.com,+12032411500,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://venturalaw.com,Supio.com,,105,,61,DLS-00527,Closed Lost,Supio_PRJ-00011_Ventura Law,$105,$125,,,,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,http://www.linkedin.com/in/cathryn-rafael-51093b13,,Legal Services,,,
+IVW-00062,ShipBob,Vivek Desai,,ShipBob_PRJ-00008,"May 6, 2025 12:00pm",+1 289-680-9201,drew@buriedwins.com,zoom,SMS,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1-YD4OqpPnEv_XU0l07kzaWwj6t7NqwOj,https://drive.google.com/drive/u/0/folders/1-YD4OqpPnEv_XU0l07kzaWwj6t7NqwOj,Vivek Desai,Viasox,"Manager, Warehouse, Logistics & Supply Chain",vivek@viasox.com,12896809201.0,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://viasox.com,www.shipbob.com,,85,"May 6, 2025",62,DLS-00271,Closed Lost,ShipBob_PRJ-00008_Viasox,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Health,,,MM
+IVW-00063,Supio,Lisa Benson,IVL-00010,Supio_PRJ-00011,"May 6, 2025 1:30pm",+1 316-977-9999,drew@buriedwins.com,outbound_call,Email,Completed,,,,checked,https://docs.google.com/document/d/1TzWYTBKtKw8TDaao6-ejZu0FySy5U8_q-CRwvdS8Tss/edit?usp=sharing,https://drive.google.com/file/d/1CoKsdwEJsWX-efKqDv8-xV6BR7xld7hZ/view?usp=sharing,Lisa Benson,Devaughn James,,lbenson@devaughnjames.com,,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://devaughnjames.com,Supio.com,,105,,63,DLS-00601,Closed Won,Supio_PRJ-00011_Devaughn James,$105,$125,,,,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,,,Law Practice,,,
+IVW-00064,FastSpring,Maureen Carroll,,FastSpring_PRJ-00004,"May 13, 2025 1:00pm",+1 425-246-4968,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Maureen Carroll,Her Interactive,Operations Manager,maureen@herinteractive.com,14252464968.0,,,https://forms.gle/9WVkT8TZKHjNbvCS8,https://herinteractive.com,www.fastspring.com,,105,"May 13, 2025",64,DLS-00092,Closed Won,FastSpring_PRJ-00004_Her Interactive,$85,$105,4/15/2025,,,"Client Background & Assumptions
+- There is a strategic shift for FastSpring towards focusing on the gaming market. 
+- The gaming sales process differs significantly, with a focus on pricing, payment methods, and scalability to handle sales spikes, as well as understanding diverse global market
+
+- Paddle is a big competitor with a huge marketing budget and tends to connect with prospects first.
+- A common negative perception of FastSpring is its outdated user interface, which affects customer judgment despite the platform's deeper capabilities.
+
+- FastSpring’s sales team operates globally, with flexibility in territory assignments.
+- Steep learning curve for new team members in understanding FastSpring's offerings and compliance issues.
+- Importance of understanding the sales team's execution, including their ability to uncover value and navigate sales conversations effectively.
+
+",IVG-00139,,,Computer Games,,,Large
+IVW-00065,Zone & Co.,Luke Goncharenko,,Zone & Co._PRJ-00005,"May 7, 2025 12:00pm",+1 562-762-9258,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,,,Luke Goncharenko,Serenity Kids,,luke@myserenitykids.com,,,,https://forms.gle/znmLexGMuc3KLcYy6,https://myserenitykids.com,www.zoneandco.com,,105,,65,DLS-00369,Closed Lost,Zone & Co._PRJ-00005_Serenity Kids,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,,,Food & Beverages,,,
+IVW-00066,ShipBob,Matt Candrian,,ShipBob_PRJ-00008,"May 9, 2025 7:30am",+1 720-435-7670,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,https://docs.google.com/document/d/1qAvM-W27D9ysf4oSsbkhgjFhZzVwb4CBcDTX4scXYRc/edit?tab=t.0,https://drive.google.com/file/d/1EkDE2OuHZBI-n5vDuFlB3XfganBWbal4/view,Matt Candrian,Boroux,Operations,matt@james-enterprise.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://james-enterprise.com,www.shipbob.com,,85,"May 9, 2025",66,DLS-00314,Closed Lost,ShipBob_PRJ-00008_Boroux,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Home & Garden,,,MM
+IVW-00068,ShipBob,Richard Tannous,,ShipBob_PRJ-00008,"May 12, 2025 1:00pm",+1 224-735-9559,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1MW-lA3AJhpQZAMQiJhSkyK0tc_SSfqhG,https://drive.google.com/drive/u/0/folders/1MW-lA3AJhpQZAMQiJhSkyK0tc_SSfqhG,Richard Tannous,Tiesta Tea,In Charge Of Operations,rich@tiestatea.com,12247359559.0,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://tiestatea.com,www.shipbob.com,,85,"May 12, 2025",68,DLS-00273,Closed Lost,ShipBob_PRJ-00008_Tiesta Tea,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Food & Drink,,,Upper SMB
+IVW-00069,ShipBob,Jenna Barone,,ShipBob_PRJ-00008,"May 14, 2025 8:00am",+1 201-988-4020,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1cf5XAUufaRZEbou-TvlxW6G4QAdDmGue,https://drive.google.com/drive/u/0/folders/1cf5XAUufaRZEbou-TvlxW6G4QAdDmGue,Jenna Barone,Electric Picks,Ops Manager,jenna@electricpicks.com,12019884020.0,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://electricpicks.com,www.shipbob.com,,85,"May 14, 2025",69,DLS-00304,Closed Lost,ShipBob_PRJ-00008_Electric Picks,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Apparel,,,MM
+IVW-00070,ShipBob,Allie Rauch,,ShipBob_PRJ-00008,"May 9, 2025 6:30am",+1 610-937-9897,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1zy5Lqt9gj8RWW1j_LKS5jPcPCbBPB5NW,https://drive.google.com/drive/u/0/folders/1zy5Lqt9gj8RWW1j_LKS5jPcPCbBPB5NW,Allie Rauch,Spot & Tango,"Senior Manager, Strategic Operations",allie@spotandtango.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://spotandtango.com,www.shipbob.com,,85,"May 9, 2025",70,DLS-00278,Closed Lost,ShipBob_PRJ-00008_Spot & Tango,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Pets & Animals,,,MM
+IVW-00071,ShipBob,Oscar Rodriguez,,ShipBob_PRJ-00008,"May 14, 2025 6:30am",+1 510-367-1814,drew@buriedwins.com,zoom,Phone Call,No-Show,,,,,,,Oscar Rodriguez,Deor Llc,CEO,rdgz.oscr21@gmail.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,,www.shipbob.com,,85,,71,DLS-00306,Closed Lost,ShipBob_PRJ-00008_Deor Llc,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,,,,MM
+IVW-00072,ShipBob,Lisa Salazar,,ShipBob_PRJ-00008,"May 13, 2025 6:30am",+1 626-560-8336,drew@buriedwins.com,zoom,Phone Call,Completed,,,,checked,https://docs.google.com/document/d/16dqVArZ5MBGO-1ufzFMPOgNZfyfy_1M-hvA5dAUZIr0/edit?tab=t.0,https://drive.google.com/file/d/1caqGRvtybDXvLCT3wXolDK-lIXwLzlj9/view,Lisa Salazar,Alra Care Products,Operations,lisa@alra.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://alra.com,www.shipbob.com,,85,"May 13, 2025",72,DLS-00317,Closed Lost,ShipBob_PRJ-00008_Alra Care Products,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Beauty & Fitness,,,Upper SMB
+IVW-00073,ShipBob,Ondrej Roba,,ShipBob_PRJ-00008,"May 27, 2025 6:30am",+66 92 947 7299,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Ondrej Roba,Conscious Items,Founder,ondrej@consciousitems.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://consciousitems.com,www.shipbob.com,,85,,73,DLS-00308,Closed Lost,ShipBob_PRJ-00008_Conscious Items,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Apparel,,,MM
+IVW-00074,Flexera,Mátyás Jula,,Flexera_PRJ-00006,"May 13, 2025 8:30am",+49 173 3990618,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,https://docs.google.com/document/d/1t03TjiVKx9aLDTM4LBL8EwtifSAosOPBfkASc1-93P0/edit?usp=sharing,https://drive.google.com/file/d/1gGWny6FYABH2ToVxsSH6RjI0nXfuZCPY/view?usp=sharing,Mátyás Jula,KUKA Aktiengesellschaft,Sr Software Asset Manager,matyas_jula@yahoo.com,,,,https://forms.gle/KShWUQ91dFHA7DVw5,https://www.kuka.com/en-us,www.flexera.com,,50,"May 13, 2025",74,DLS-00705,Closed Lost,Flexera_PRJ-00006_KUKA Aktiengesellschaft,$50,,,,,"Flexera Products:
+Flexera One
+- IT Visibility
+- ITAM
+- Cloud License Management
+- SaaS Management
+- FinOps
+
+Snow Atlas
+- Snow Spend Optimizer
+- Snow SaaS Management
+
+Other products that may be mentioned: admin studio, software vulnerability manager, Flexnet manager, snow license manager
+
+Client Assumptions on Evaluation Process
+- The ITAM buyer is weak, but still central
+    - There's a clear view that ITAM professionals—especially in mid-sized orgs—lack decision-making power and executive influence.
+    - Despite this, the sales process still relies heavily on them as champions.
+- There’s a desire to understand who is vetting, championing Flexera, who is making the decision, etc. Is Flexera selling to the right people?
+
+Client Assumptions on Competitors:
+- ServiceNow is considered a top competitor that does everything Flexera does but is weaker with newer Cloud and Saas management. Difficult to win accounts that are already invested in ServiceNow.  
+- IBM is considered to be the leader in the FinOps market, with Flexera being #2. 
+- Other competitors across point solutions (SaaS management, ITAM, etc)
+
+Client Assumptions on Why Flexera Wins:
+- Previous experience - Former customers have moved to new companies
+- ServiceNow has failed in capabilities offered or implementation
+- Flexera is market leader in ITAM
+- Technical capabilities are superior
+
+Client Assumptions on Why Flexera Loses:
+- ServiceNow is viewed as often winning not on capability, but due to bundling, existing contracts, or internal politics.
+- Perceptions about Flexera being hard to use or implement
+- Competitors sowing doubt about Flexera since acquisition
+
+Client Assumptions on Sales Process:
+- Sales challenges are due more to execution than product gaps
+    - There’s a strong belief that sales struggles are rooted in sales team attrition, lack of enablement, and poor qualification—not the value of the product itself.
+    - Key sales friction points include inexperienced reps post-acquisition and overreliance on solution consultants early in the sales cycle.
+    - Sales does not work outside of typical ITAM teams and lack cross functional engagement
+- Most pipeline problems are top-of-funnel
+    - Flexera leadership believes that once a deal progresses past early discovery, their close rate is strong—implying product and late-stage sales execution are solid.
+- Their bottleneck is believed to lie in discovery, qualification, and access to decision-makers.
+",IVG-00138,,,,,,
+IVW-00075,Zone & Co.,Stephen Antenucci,,Zone & Co._PRJ-00005,"May 13, 2025 11:00am",+1 732-406-8216,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Stephen Antenucci,R.E. Carroll,Financial Controller,stephena@recarroll.com,,,,https://forms.gle/znmLexGMuc3KLcYy6,https://www.recarroll.com/,www.zoneandco.com,,105,,75,DLS-00706,Closed Won,Zone & Co._PRJ-00005_R.E. Carroll,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,https://www.linkedin.com/in/stephen-antenucci-cpa-07738789/?trk=people-guest_people_search-card,,,,,
+IVW-00076,ShipBob,Russell Crispin-Okeson,,ShipBob_PRJ-00008,"May 12, 2025 11:00am",+1 415-789-4565,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/13FrUZxPWIU-m5foBfixT49DW22_33xCn,https://drive.google.com/drive/u/0/folders/13FrUZxPWIU-m5foBfixT49DW22_33xCn,Russell Crispin-Okeson,SEEN,Supply Chain Operations Specialist,russellc@helloseen.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://helloseen.com,www.shipbob.com,,85,"May 12, 2025",76,DLS-00281,Closed Lost,ShipBob_PRJ-00008_SEEN,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Beauty & Fitness,,,MM
+IVW-00077,Supio,Justin Wyatt,IVL-00010,Supio_PRJ-00011,"May 13, 2025 9:00am",+1 602-354-7346,drew@buriedwins.com,outbound_call,Email,Completed,,,,checked,https://docs.google.com/document/d/1B_RqXfuBj3oueq0w6CSWnY4E3yx-RlKDDbHCIr_ZOyE/edit?usp=sharing,https://drive.google.com/file/d/18kwslkq8Pmjfb8nbksnhWSW9sI2f6HlM/view?usp=sharing,Justin Wyatt,Wyatt Injury Law Pllc,Litigation Attorney,justin@wyattinjury.com,,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://wyattinjury.com,Supio.com,,105,,77,DLS-00514,Closed Lost,Supio_PRJ-00011_Wyatt Injury Law Pllc,$105,$125,,,,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,http://www.linkedin.com/in/wyattinjurylaw,,Law Practice,,,
+IVW-00078,ShipBob,Damon Goldhammer,,ShipBob_PRJ-00008,"May 12, 2025 1:30pm",(605) 342-0266,drew@buriedwins.com,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/16YpcJjMhs7KIzG7muM6tiCF4VsNfpQx6,https://drive.google.com/drive/u/0/folders/16YpcJjMhs7KIzG7muM6tiCF4VsNfpQx6,Damon Goldhammer,Strider Bikes,Director,damon@striderbikes.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://striderbikes.com,www.shipbob.com,,85,"May 12, 2025",78,DLS-00277,Closed Lost,ShipBob_PRJ-00008_Strider Bikes,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Sports,,,Upper SMB
+IVW-00079,Zone & Co.,Hetal Desai,,Zone & Co._PRJ-00005,"May 13, 2025 8:00am",,drew@buriedwins.com,Zoom,,Completed,,,,checked,,,Hetal Desai,Utility Warehouse,,hetal.desai@uw.co.uk,,,,https://forms.gle/znmLexGMuc3KLcYy6,https://uw.co.uk,www.zoneandco.com,,135,"May 13, 2025",79,,,Zone & Co._PRJ-00005_Utility Warehouse,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,,,Utilities,,,
+IVW-00080,Zone & Co.,Travis McGriff,,Zone & Co._PRJ-00005,"May 21, 2025 10:00am",+1 205-807-0400,drew@buriedwins.com,zoom,LinkedIn,Completed,,,,checked,,,Travis McGriff,MainStreet Family Care,,tmcgriff@mainstreetfamilycare.com,,,,https://forms.gle/znmLexGMuc3KLcYy6,https://mainstreetfamilycare.com,www.zoneandco.com,,135,"May 21, 2025",80,DLS-00399,,Zone & Co._PRJ-00005_MainStreet Family Care,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,,,Hospital & Health Care,,,
+IVW-00081,Zone & Co.,Jarrod Thorne,IVL-00008,Zone & Co._PRJ-00005,"May 28, 2025 9:00am",(902) 870-5096,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,,,Jarrod Thorne,Nova Construction Co. Ltd.,,jthorne@nova-construction.ca,,,,https://forms.gle/znmLexGMuc3KLcYy6,https://nova-construction.ca,www.zoneandco.com,,105,,81,DLS-00365,Closed Won,Zone & Co._PRJ-00005_Nova Construction Co. Ltd.,$105,$135,4/21/2025,,,"Note discussion guide is 20 questions, which is fairly long for a 30-minute interview. Additional questions were added to capture feedback around pricing. 
+
+Competitor Groups:
+ Zone, a billing tool that lives within Netsuite, has 3 competitor groups:
+1. Netsuite (doesn’t have as niche capabilities as Zone)
+2. Other embedded tools like Zone that have similar features (e.g., Square Works)
+3. Tools that are not embedded with broader functionalities outside of Netsuite (e.g., Bill.com, Tipalti, AvidXchange, Ramp)
+
+Client Assumptions on Why Zone Wins:
+-    Robust functionality (e.g., OCR capabilities and approval workflows).
+-    Ease of use compared to complex alternatives
+-    Being a native NetSuite solution that eliminates integration risks
+-    Specific regional advantages (e.g., international focus in EMEA)
+
+Client Assumptions on Why Zone Loses:
+- Pricing issues for low-volume customers.
+- Competitors offering broader functionalities beyond AP automation.
+- Lack of certain features (e.g., simple approval buttons) that competitors highlight during sales cycles.
+- Delays in providing references or adapting to customer demands like free trials.
+
+",IVG-00137,,,Civil Engineering Construction,,,
+IVW-00085,ShipBob,Josh Bartholomew,IVL-00011,ShipBob_PRJ-00008,"May 15, 2025 12:00pm",(406) 546-4994,nick@buriedwins.com,Zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1B16M8xe4rbVUo1wAHSYG8A9_F3ruZQfs,https://drive.google.com/drive/u/0/folders/1B16M8xe4rbVUo1wAHSYG8A9_F3ruZQfs,Josh Bartholomew,DFTBA,Warehouse Manager,josh@dftba.com,14065464994.0,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://dftba.com,www.shipbob.com,,85,"May 15, 2025",85,DLS-00307,Closed Lost,ShipBob_PRJ-00008_DFTBA,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Mass Merchants & Department Stores,,,Upper MM
+IVW-00087,Rev,Angela Law,IVL-00012,Rev_PRJ-00010,"May 27, 2025 12:30pm",+1 801-261-6228,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1xdwBeKEtPhNRr7OQxvbxeXpnNRmRdYBN76ShNeZiIr8/edit?usp=drive_link,https://drive.google.com/file/d/1-G_SMcRAAyF0Z3GoaBrudp_vDid2tc9j/view?usp=drive_link,Angela Law,Greg S. Law,Senior Associate,angela@greglawlegal.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://greglawlegal.com,www.rev.com,,85,"May 27, 2025",87,DLS-01042,Closed Won,Rev_PRJ-00010_Greg S. Law,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/angelawlaw,,Legal Services,,,
+IVW-00088,Rev,Kolawole Oloke,IVL-00012,Rev_PRJ-00010,"May 19, 2025 8:15am",(310) 895-8760,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Kolawole Oloke,Ucla,Head Vas Business,kolawoleo@g.ucla.edu,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://ucla.edu,www.rev.com,,85,,88,DLS-01241,Closed Won,Rev_PRJ-00010_Ucla,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/kolawoleoloke,,higher education,,,
+IVW-00089,Rev,Cyrus Nazarian,IVL-00012,Rev_PRJ-00010,"May 19, 2025 10:00am",(415) 438-4540,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1NfP-bFFPJQR_8DIF4StSM43l9XpOcrX1N2MLgF2zAKs/edit?usp=drive_link,https://drive.google.com/file/d/1GK3HYFhckwN2JIWOrfVe7W4KSl7bYQcx/view?usp=drive_link,Cyrus Nazarian,Altairlaw,,cnazarian@altairlaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://altairlaw.com,www.rev.com,,85,"May 19, 2025",89,DLS-01152,Closed Won,Rev_PRJ-00010_Altairlaw,$85,$105,,,,,IVG-00141,,,Legal Services,,,Personal Injury
+IVW-00090,Rev,Yusuf Elmarakby,IVL-00012,Rev_PRJ-00010,"May 19, 2025 11:00am",(706) 840-8899,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1ui5cw_PPweB1sZC1GzaecnbMQQz2gk86o_DRoUzNf5M/edit?usp=drive_link,https://drive.google.com/file/d/15VKbHZ1Pnm0wJaJ_vtyITniGukt_vn2j/view?usp=drive_link,Yusuf Elmarakby,Bruce Harvey Law Firm,,yusuf@bharveylawfirm.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://bharveylawfirm.com,www.rev.com,,85,"May 19, 2025",90,DLS-01241,Closed Won,Rev_PRJ-00010_Bruce Harvey Law Firm,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00091,Rev,Lawrence Kumar,IVL-00012,Rev_PRJ-00010,"May 19, 2025 11:45am",(424) 333-2711,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Lawrence Kumar,Jluxlabel,Mangement Consultant,lawrence@jluxlabel.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://jluxlabel.com,www.rev.com,,85,,91,DLS-01241,Closed Won,Rev_PRJ-00010_Jluxlabel,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/lawrence-kumar-7062272b,,Retail,,,
+IVW-00092,Rev,Leila Vaez-Iravani,IVL-00012,Rev_PRJ-00010,"May 19, 2025 12:30pm",(408) 656-1919,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/12I1a7qKqxiAhaSPBYLf1SJ00wrAn2uUMf8D3MDCFtf8/edit?usp=drive_link,https://drive.google.com/file/d/1TrzQMych32jknPHFc3_-Jv8EN5x8_bYO/view?usp=drive_link,Leila Vaez-Iravani,Vaeziravanilaw,,leila@vaeziravanilaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://vaeziravanilaw.com,www.rev.com,,85,"May 19, 2025",92,DLS-01241,Closed Won,Rev_PRJ-00010_Vaeziravanilaw,$85,$105,,,,,IVG-00141,Unknown,,,,,
+IVW-00093,Rev,Trish Herrera,IVL-00012,Rev_PRJ-00010,"May 19, 2025 1:30pm",(505) 361-2138,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1vFn-MatVtmwMPYhj0N0hFomEdWZsKZFQor-KPg-EQBA/edit?usp=drive_link,https://drive.google.com/file/d/1wu0YFeAoiUOaq8HtRuYRBZjLU1Q4kJib/view?usp=drive_link,Trish Herrera,Jjllaw,,trish@jjllaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://jjllaw.com,www.rev.com,,85,"May 19, 2025",93,DLS-01241,Closed Won,Rev_PRJ-00010_Jjllaw,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00095,Supio,Michael Rhodes,IVL-00010,Supio_PRJ-00011,"May 22, 2025 10:00am",+1 206-307-1965,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1w9cAlX-nj6Pkbpc-vdTIJyebzKscBtKWK7rDRaYkyeg/edit?usp=sharing,https://drive.google.com/file/d/1IMuvkQSJLZ320gWe5J9EfLqBS6Y_66Fh/view?usp=sharing,Michael Rhodes,Mix Sanders Thompson,Partner,mrhodes@mixsanders.com,+12063071965,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://mixsanders.com,Supio.com,,105,,95,DLS-00505,Closed Lost,Supio_PRJ-00011_Mix Sanders Thompson,$105,$125,,,,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,http://www.linkedin.com/in/mike-rhodes-90b4b323,,Law Practice,,,
+IVW-00096,Rev,Shiann Steele,,Rev_PRJ-00015,"May 20, 2025 6:30am",+1 302-388-5164,drew@buriedwins.com,zoom,Email,No-Show,,,,,,,Shiann Steele,Henrichsen Law Group Pllc,,shiann@hslawyers.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://hslawyers.com,www.rev.com,,85,"May 20, 2025",96,DLS-01284,Closed Won,Rev_PRJ-00015_Henrichsen Law Group Pllc,$85,$105,6/8/2025,,,,IVG-00145,,,Law Practice,,,
+IVW-00097,Rev,Victoria Hardy,IVL-00012,Rev_PRJ-00010,"May 26, 2025 12:45pm",+1 504-388-5759,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1w_FdOQjvKTKlf1MAMo_CfOusnbRttXG07pDiXyrC7Zo/edit?usp=drive_link,https://drive.google.com/file/d/1xfWaM2_mktiiDzEuUrAyfQim7SHOPwbH/view?usp=drive_link,Victoria Hardy,Wealth Planning Law Group,Executive Assistant,victoria@lawealthplan.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://lawealthplan.com,www.rev.com,,85,"May 26, 2025",97,DLS-00955,Closed Won,Rev_PRJ-00010_Wealth Planning Law Group,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/victoria-hardy-0a7228344,,Legal Services,,,
+IVW-00098,Rev,Jenny Ohsberg,IVL-00012,Rev_PRJ-00010,"May 20, 2025 8:30am",(678) 736-7700,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1NO1CvTeIvhS47RcEDL-r4tcx0qHjWo8ppSulqCwZ_3I/edit?usp=drive_link,https://drive.google.com/file/d/1KuWfl-lPGksldsI9e-wTtSWQlgnVxVvH/view?usp=drive_link,Jenny Ohsberg,Vayman & Teitelbaum P.C,Executive Director,jenny@vandtlaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://vandtlaw.com,www.rev.com,,85,"May 20, 2025",98,DLS-01241,Closed Won,Rev_PRJ-00010_Vayman & Teitelbaum P.C,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/jenny-ohsberg-675723259,,Law Practice,,,
+IVW-00099,Rev,Alex Lawrence,IVL-00012,Rev_PRJ-00010,"May 20, 2025 9:30am",(404) 702-5637,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Alex Lawrence,Merge,Enterprise Account Executive,alawrence@mergeworld.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://mergeworld.com,www.rev.com,,85,,99,DLS-01241,Closed Won,Rev_PRJ-00010_Merge,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/alex-lawrence,,Marketing & Advertising,,,
+IVW-00100,Rev,Stephanie Iasiello,IVL-00012,Rev_PRJ-00015,"May 20, 2025 10:15am",(914) 202-5152,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Stephanie Iasiello,Greenwood Law,Partner,steph@greenwood.law,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://greenwood.law,www.rev.com,,85,,100,DLS-01241,Closed Won,Rev_PRJ-00015_Greenwood Law,$85,$105,6/8/2025,,,,IVG-00145,http://www.linkedin.com/in/stephiasiello,,Law Practice,,,
+IVW-00101,Rev,Joel Brand,IVL-00012,Rev_PRJ-00015,"May 20, 2025 1:00pm",(510) 343-5635,drew@buriedwins.com,Zoom,Email,No-Show,,,,,,,Joel Brand,Joel,,joel@joel.law,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://joel.law,www.rev.com,,85,"May 20, 2025",101,DLS-01241,Closed Won,Rev_PRJ-00015_Joel,$85,$105,6/8/2025,,,,IVG-00145,,,,,,
+IVW-00102,Rev,Fatimah Lawal,,Rev_PRJ-00010,"May 27, 2025 1:30pm",+1 765-746-9780,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Fatimah Lawal,Purdue University,,flawal@purdue.edu,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://purdue.edu,www.rev.com,,85,,102,DLS-01048,Closed Won,Rev_PRJ-00010_Purdue University,$85,$105,,,,,IVG-00141,,,Higher Education,,,
+IVW-00103,Rev,Bart Kaspero,IVL-00012,Rev_PRJ-00010,"May 27, 2025 10:45am",+1 714-724-4456,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1azqPgPFU7Bgb2cq5GUtUyCIKrzfYCg0mQiJxRpvsm2o/edit?usp=drive_link,https://drive.google.com/file/d/1jwr747R5Eff-lwsvIIWx3REtbeV0ufKd/view?usp=drive_link,Bart Kaspero,Kaspero Law,Founder & CEO,bk@bartkasperolaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://bartkasperolaw.com,www.rev.com,,85,"May 27, 2025",103,DLS-01010,Closed Won,Rev_PRJ-00010_Kaspero Law,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/bartkaspero,,Law Practice,,,
+IVW-00104,Rev,Christina Fouche,,Rev_PRJ-00015,"May 29, 2025 9:15am",+1 404-661-1773,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Christina Fouche,Luminos,Operations Manager,cf@luminos.law,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://luminos.law,www.rev.com,,85,,104,DLS-00900,Closed Won,Rev_PRJ-00015_Luminos,$85,$105,6/8/2025,,,,IVG-00145,http://www.linkedin.com/in/christina-fouche-08b45013,,Legal Services,,,
+IVW-00105,Rev,Betty Behrens,IVL-00012,Rev_PRJ-00010,"May 21, 2025 11:30am",(202) 812-7378,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1hOq4bHKk_uHtD70FeCHfn6zF9tzvQ898PFpBDH6rzqE/edit?usp=drive_link,https://drive.google.com/file/d/1k2F0j_hXTeIE6IM3vAhd8RYYSZZ5CcMl/view?usp=drive_link,Betty Behrens,Nacelawgroup,,bbehrens@nacelawgroup.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://nacelawgroup.com,www.rev.com,,85,"May 21, 2025",105,DLS-01241,Closed Won,Rev_PRJ-00010_Nacelawgroup,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00106,Rev,Alex Vandenberg,IVL-00012,Rev_PRJ-00010,"May 21, 2025 1:30pm",(646) 691-5233,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1eKtRoB5wbNpOdUYkF28464rH0vaBkXmVGBb-hYLVL1g/edit?usp=drive_link,https://drive.google.com/file/d/1Mf-5GunkCHYtvrfZFiEdR0L-hSSpS_id/view?usp=drive_link,Alex Vandenberg,Vandenberglawfirm,,alex@vandenberglawfirm.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://vandenberglawfirm.com,www.rev.com,,85,"May 21, 2025",106,DLS-01241,Closed Won,Rev_PRJ-00010_Vandenberglawfirm,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00107,Rev,Jeremy Fox,IVL-00012,Rev_PRJ-00010,"May 22, 2025 12:00pm",(302) 612-5925,drew@buriedwins.com,Zoom,Email,No-Show,,,,,,,Jeremy Fox,State Of Delaware,,jeremy.fox@delaware.gov,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://delaware.gov,www.rev.com,,85,"May 22, 2025",107,DLS-01241,Closed Won,Rev_PRJ-00010_State Of Delaware,$85,$105,,,,,IVG-00141,,,Government Administration,,,
+IVW-00108,Rev,Andrea Andolfato,IVL-00012,Rev_PRJ-00010,"May 22, 2025 6:30am",39 333 112 2345,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Andrea Andolfato,Flawless,Co-founder,andrea@flawless.life,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://flawless.life,www.rev.com,,85,,108,DLS-01241,Closed Won,Rev_PRJ-00010_Flawless,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/andolfatoandrea,,Information Technology & Services,,,
+IVW-00109,Rev,Mario Zavala,IVL-00012,Rev_PRJ-00010,"May 22, 2025 12:45pm",(504) 874-1212,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Mario Zavala,Low Swinney Evans & James,Associate Attorney,mzavala@lsejlaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://lsejlaw.com,www.rev.com,,85,"May 22, 2025",109,DLS-01241,Closed Won,Rev_PRJ-00010_Low Swinney Evans & James,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/mario-zavala-jr-a4808b64,,Law Practice,,,
+IVW-00110,Rev,Brian Anderson,IVL-00012,Rev_PRJ-00010,"May 23, 2025 7:00am",(978) 494-0678,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1JnryTinakCfXrG6u7l7VN4fTp4nGxlt2K2UXp6qRESk/edit?usp=drive_link,https://drive.google.com/file/d/1cqjWHXDyXPw1KYvmASrJYZcTwlXnFyM8/view?usp=drive_link,Brian Anderson,Bjandersonlaw,Attorney,brian@bjandersonlaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://bjandersonlaw.com,www.rev.com,,85,"May 23, 2025",110,DLS-01241,Closed Won,Rev_PRJ-00010_Bjandersonlaw,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00111,Rev,Hilary Chapa,IVL-00012,Rev_PRJ-00010,"May 23, 2025 7:45am",(512) 797-7486,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1VowM41zN0GcwkRdwqcbtUvuUywTc7k996VDNQC7HZRk/edit?usp=drive_link,https://drive.google.com/file/d/1Db7AmxZxEU_ETIxiU5cLKI6LS6iXgA7Y/view?usp=drive_link,Hilary Chapa,Low Swinney Evans & James,Paralegal,hchapa@lsejlaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://lsejlaw.com,www.rev.com,,85,"May 23, 2025",111,DLS-01241,Closed Won,Rev_PRJ-00010_Low Swinney Evans & James,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/hilary-chapa-48bb34262,,Law Practice,,,
+IVW-00112,Rev,Michael Conlin-Brandenburg,IVL-00012,Rev_PRJ-00010,"May 26, 2025 10:00am",(651) 383-7848,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Michael Conlin-Brandenburg,Iverson Reuvers Law Firm,,michael@iversonlaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://iversonlaw.com,www.rev.com,,85,,112,DLS-01241,Closed Won,Rev_PRJ-00010_Iverson Reuvers Law Firm,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00113,Rev,Daniella Buenrostro,IVL-00012,Rev_PRJ-00010,"May 28, 2025 10:45am",(714) 305-6814,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1B4P8BTxWsidTjTAUkNaqq8dgLctV3YECYU5-2C-9INQ/edit?usp=drive_link,https://drive.google.com/file/d/1HxWg4dN-A8_PN2AY-joJs8sgwNiotOoq/view?usp=drive_link,Daniella Buenrostro,Schweitzer Law,Family Law Paralegal,daniella@pasadenalawoffice.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://pasadenalawoffice.com,www.rev.com,,85,"May 28, 2025",113,DLS-01241,Closed Won,Rev_PRJ-00010_Schweitzer Law,$85,$105,,,,,IVG-00141,http://www.linkedin.com/in/daniellabuenrostro,,Law Practice,,,
+IVW-00114,Rev,Kelsey Whisler,IVL-00012,Rev_PRJ-00010,"May 26, 2025 1:30pm",(406) 350-1996,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1wvQDULQ64s42UZ9PrjPi3gfLyLQ32fX-YeJdZtIEGvY/edit?usp=drive_link,https://drive.google.com/file/d/1D35RVoEWJad2ttKtRXwUuZnc66rXspkf/view?usp=drive_link,Kelsey Whisler,Schevecklaw,,kelsey@schevecklaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://schevecklaw.com,www.rev.com,,85,"May 28, 2025",114,DLS-01241,Closed Won,Rev_PRJ-00010_Schevecklaw,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00115,Rev,Tracie Reilly,IVL-00012,Rev_PRJ-00015,"May 29, 2025 8:00am",(806) 376-7676,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,,,Tracie Reilly,Reillylawfirmtx,,tracie@reillylawfirmtx.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://reillylawfirmtx.com,www.rev.com,,85,"May 29, 2025",115,DLS-01241,Closed Won,Rev_PRJ-00015_Reillylawfirmtx,$85,$105,6/8/2025,,,,IVG-00145,,,,,,
+IVW-00116,Rev,Ben Evenstad,IVL-00012,Rev_PRJ-00010,"May 29, 2025 1:30pm",(310) 999-2223,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1msgEARyBm6auB_yV8bqTRo08XSLm87q5K--xfwQksOY/edit?usp=drive_link,https://drive.google.com/file/d/1qKQ4md0Sc7nEop7CNDtJe6S39QrEVpbu/view?usp=drive_link,Ben Evenstad,Evenstadlaw,,ben@evenstadlaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://evenstadlaw.com,www.rev.com,,85,"May 29, 2025",116,DLS-01241,Closed Won,Rev_PRJ-00010_Evenstadlaw,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00117,Rev,Anna Murphy,IVL-00012,Rev_PRJ-00010,"May 29, 2025 10:00am",(785) 477-3815,drew@buriedwins.com,Zoom,Email,Canceled,,,,,,,Anna Murphy,Selenalaw,,anna@selenalaw.com,,,,https://forms.gle/gVY8r426Ttu8RJuM9,https://selenalaw.com,www.rev.com,,85,,117,DLS-01241,Closed Won,Rev_PRJ-00010_Selenalaw,$85,$105,,,,,IVG-00141,,,,,,
+IVW-00119,ShipBob,Kyle Roman,,ShipBob_PRJ-00008,"May 29, 2025 12:00pm",+1 863-409-1401,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Kyle Roman,Tiege Hanley,Head Of Operations,kyle.roman@tiege.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://tiege.com,www.shipbob.com,,85,,119,DLS-00274,Closed Lost,ShipBob_PRJ-00008_Tiege Hanley,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Beauty & Fitness,,,MM
+IVW-00121,Rev,Christina Fouche,IVL-00012,Rev_PRJ-00015,"May 29, 2025 6:30am",+1 404-661-1773,drew@buriedwins.com,zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/115MJrfXER3ZZfWqTevw4BfDHHznSrwUy,https://drive.google.com/file/d/1gvz-DDH7LrPP142gSbla_nG1OabBcGVd/view?usp=drive_link,Christina Fouche,Luminos,Operations Manager,cf@luminos.law,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://luminos.law,www.rev.com,,85,"May 29, 2025",121,DLS-00900,Closed Won,Rev_PRJ-00015_Luminos,$85,$105,6/8/2025,,,,IVG-00145,http://www.linkedin.com/in/christina-fouche-08b45013,,Legal Services,,,
+IVW-00123,ShipBob,Nick Nick,,ShipBob_PRJ-00008,"June 2, 2025 10:00am",+1 516-984-0565,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Nick Nick,Metroveincenters,Operations,ncodispoti@metroveincenters.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://metroveincenters.com,www.shipbob.com,,85,,123,DLS-00267,Closed Lost,ShipBob_PRJ-00008_Metroveincenters,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,,,,Upper SMB
+IVW-00124,ShipBob,Kyle Roman,,ShipBob_PRJ-00008,"May 29, 2025 10:00am",+1 863-409-1401,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Kyle Roman,Tiege Hanley,Head Of Operations,kyle.roman@tiege.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://tiege.com,www.shipbob.com,,85,,124,DLS-00274,Closed Lost,ShipBob_PRJ-00008_Tiege Hanley,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Beauty & Fitness,,,MM
+IVW-00125,ShipBob,Kyle Roman,,ShipBob_PRJ-00008,"June 2, 2025 1:00pm",+1 863-409-1401,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Kyle Roman,Tiege Hanley,Head Of Operations,kyle.roman@tiege.com,,,,https://forms.gle/nHxATA7Tp3diHSRw9,https://tiege.com,www.shipbob.com,,85,,125,DLS-00274,Closed Lost,ShipBob_PRJ-00008_Tiege Hanley,$85,$105,,,,"Client is interested in learning more about industry-specific challenges, needs, which competitors are serving this industry well, and how does ShipBob match up",IVG-00136,,,Beauty & Fitness,,,MM
+IVW-00126,Supio,Benjamin Scott,IVL-00010,Supio_PRJ-00011,"May 5, 2025 4:10pm",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1p0PkEzqitDvCz6APKY-lVDEUxrr3zVrwR8a8eD4M3AQ/edit?usp=sharing,https://drive.google.com/file/d/1RRAR4aP1mCzOmGJLyvAchE5GXfpdMRUt/view?usp=sharing,Benjamin Scott,Wells Call Clark Bennett & Clawson,Partner,ben@wellscall.com,,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://wellscall.com,Supio.com,,105,,126,DLS-00535,Closed Lost,Supio_PRJ-00011_Wells Call Clark Bennett & Clawson,$105,$125,,,,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,http://www.linkedin.com/in/benjamin-scott-802b8925,,Law Practice,,,
+IVW-00127,Supio,Elyssa Goldstein,IVL-00010,Supio_PRJ-00011,"April 30, 2025 4:14pm",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1ivBC4HX4Mfw0uk3fpUPMOhLedy1L2nLufJ31mSbOKio/edit?usp=sharing,https://drive.google.com/file/d/1FbaaIL-x2qd-rXQG49j_VduzI2fGW2G4/view?usp=sharing,Elyssa Goldstein,Rebenack Aronow & Mascolo,Chief Operating Officer,egoldstein@ram.law,+19734170277,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://ram.law,Supio.com,,105,,127,DLS-00567,Closed Won,Supio_PRJ-00011_Rebenack Aronow & Mascolo,$105,$125,,,,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,http://www.linkedin.com/in/elyssa-a-goldstein-clm-phr-shrm-cp-2160b640,,Law Practice,,,
+IVW-00128,Supio,Tiffany Gary,IVL-00010,Supio_PRJ-00011,"April 30, 2025 4:18pm",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1vuFjL_skd3D0tRqRZLD8iFAMSGW0BIK8B7VWGBOrzvQ/edit?usp=sharing,https://drive.google.com/file/d/1h3--XBGZw82vCnFlBNw9eE631x1_NvoA/view?usp=sharing,Tiffany Gary,Rocky Mcelhaney Law Firm,,tiffanygary@rockylawfirm.com,,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://rockylawfirm.com,Supio.com,,105,,128,DLS-00589,Closed Lost,Supio_PRJ-00011_Rocky Mcelhaney Law Firm,$105,$125,,,,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,,,Law Practice,,,
+IVW-00129,Supio,Melissa Jorgensen,IVL-00010,Supio_PRJ-00011,"May 29, 2025 8:35am",,drew@buriedwins.com,Phone,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1cmcmI2rpaV5WayR4GGVLV5vC93x8Ug9_,https://drive.google.com/file/d/1fXeom37IpQ-J_za2tJ7MPdFlKydOUKmu/view?usp=sharing,Melissa Jorgensen,Wm Keith Dozier,,melissa@wkd-law.com,,,,https://forms.gle/CA6gKMPBzfPdjKBC7,https://wkd-law.com,Supio.com,,200,"May 29, 2025",129,DLS-00602,Closed Won,Supio_PRJ-00011_Wm Keith Dozier,$105,$125,,checked,$200.00,"Client Background & Assumptions on Key Stakeholders in Evaluation
+- Paralegals: Primary end users
+- Technology/COO: Often champion
+- Partners: Focus on profitability
+
+Client Background & Assumptions on Competitors
+- Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+- Competitors
+    - Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+    - EvenUp: Legal company using tech (50/50 human validation)
+    - FileVine entering the space with lighter offering
+
+Client Background & Assumptions on Strengths & Weaknesses
+- Company alignment, Functionality, Technology
+- Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+Client Background & Assumptions on Sales
+- Need to better articulate value proposition to avoid commoditization
+- Implementation messaging needs improvement
+- New sales team still learning (most reps recently hired)
+- Market segmentation:
+    - Strong fit for 1,000 large plaintiff firms
+    - Good fit for 6,000 mid-size firms (10-50 employees)
+    - Need new model for 40,000 small firms (<10 employees)
+",IVG-00140,,,,,,
+IVW-00130,Supio,Jessica Lockhart,IVL-00015,Supio_PRJ-00027,"June 9, 2025 12:47pm",,,Zoom,LinkedIn,Completed,,,,checked,https://docs.google.com/document/d/1eqSsAJfSxAMgb3wkFlOdwxfpZLHJ3h0PYEvBOHMENAk/edit?tab=t.0#heading=h.n12jyc3z5bqn,https://drive.google.com/file/d/1tZmQR_W2JGzxHjRWjOrdq7zlV_JGErne/view,Jessica Lockhart,The Jeffcoat Firm,Business Intelligence Director,jessica@thejeffcoatfirm.com,+18153700581,,,https://forms.gle/ChYB72eagR6oPzhU8,https://thejeffcoatfirm.com,Supio.com,,200,,130,DLS-00520,Closed Lost,Supio_PRJ-00027_The Jeffcoat Firm,$165,$185,,checked,$200.00,,IVG-00142,http://www.linkedin.com/in/jessica-lockhart-5857924a,,Law Practice,,,
+IVW-00131,ShipBob,Ryan Lookhood,,ShipBob_PRJ-00017,"March 17, 2025 9:38am",,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/0/folders/1UkkVQP_tHozEMmKQ1S7faE8uy5OvwyDB,https://drive.google.com/drive/u/0/folders/1UkkVQP_tHozEMmKQ1S7faE8uy5OvwyDB,Ryan Lookhood,ProMix Nutrition,Chief Supply Chain Officer,ryan@promixnutrition.com,(908) 451-7202,,,,,www.shipbob.com,,85,"March 17, 2025",131,DLS-01369,Closed Lost,ShipBob_PRJ-00017_ProMix Nutrition,,,,checked,$85.00,,,http://www.linkedin.com/in/lockwood-ryan,,,,,
+IVW-00132,ShipBob,Jose Cabral,,ShipBob_PRJ-00017,"February 25, 2025 10:46am",,,Zoom,Email,Completed,,,,checked,,https://drive.google.com/drive/u/1/folders/1go7mIqKWlt2exRna8lrjOcucWl-LB3DJ,Jose Cabral,Fragrant Jewels,Director of Finance And Operations,jose@fragrantjewels.com,(626) 997-0175,,,,,www.shipbob.com,,,"February 25, 2025",132,DLS-01374,Closed Lost,ShipBob_PRJ-00017_Fragrant Jewels,,,,,,,,http://www.linkedin.com/in/jose-cabral-2a23b2269,,,,,
+IVW-00133,ShipBob,Liam Farrell,,ShipBob_PRJ-00017,"February 24, 2025 11:14am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1Yfvy6OH1l2p3WHN3VcNYhC64YqqCQ52oD6vF6-0Px9k/edit?tab=t.0,https://drive.google.com/drive/u/1/folders/1QOmq2FlPo2WY4FuALX35reOHjMdCSrTr,Liam Farrell,NOGU,,liam@nogu.studio,+1 800-338-8840,,,,,www.shipbob.com,,,"February 24, 2025",133,DLS-01375,Closed Won,ShipBob_PRJ-00017_NOGU,,,,,,,,,,,,,
+IVW-00134,ShipBob,Ethan Greaves,,ShipBob_PRJ-00017,"February 28, 2025 9:55am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1X1iPWGaPKWmNZ26raP054nuC_GQYFzzw7AG1VpX9T3U/edit?tab=t.0,https://drive.google.com/file/d/1uLLn9X6_DnpLsZ7Ot7fuHwAW_qiPUFJU/view,Ethan Greaves,E+PATROL,Co-Founder,ethan@epatrol.co,,,,,,www.shipbob.com,,,"February 28, 2025",134,DLS-01241,Closed Won,ShipBob_PRJ-00017_E+PATROL,,,,,$105.00,,,https://www.linkedin.com/in/ethan-greaves-4ba831333/,,,,,
+IVW-00135,ShipBob,Eric NG,,ShipBob_PRJ-00017,,,,Zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1W5_ifdhqYFDIfAxtVGdLuvx3XcBYan-g,https://drive.google.com/drive/u/1/folders/1W5_ifdhqYFDIfAxtVGdLuvx3XcBYan-g,Eric NG,Miss to Mrs,Operations,eric.n@misstomrsbox.com,,,,,,www.shipbob.com,,,"February 26, 2025",135,DLS-01372,Closed Lost,ShipBob_PRJ-00017_Miss to Mrs,,,,,$105.00,,,,,,,,
+IVW-00136,ShipBob,Paul Stanger,,ShipBob_PRJ-00017,"February 24, 2025 11:24am",(208) 420-9049,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1gPvb_VqMP_H2YeY5z7sxxf6OX3KhtiI4Xk60uinsIWo/edit?tab=t.0,https://drive.google.com/drive/u/1/folders/1QOmq2FlPo2WY4FuALX35reOHjMdCSrTr,Paul Stanger,Plant Therapy,President,paul@planttherapy.com,(208) 420-9049,,,,,www.shipbob.com,,,"February 24, 2025",136,DLS-01241,Closed Won,ShipBob_PRJ-00017_Plant Therapy,,,,,,,,http://www.linkedin.com/in/paul-stanger,,,,,
+IVW-00138,ShipBob,Steve Long,,ShipBob_PRJ-00017,"February 25, 2025 10:46am",,,Zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1go7mIqKWlt2exRna8lrjOcucWl-LB3DJ,https://drive.google.com/drive/u/1/folders/1go7mIqKWlt2exRna8lrjOcucWl-LB3DJ,Steve Long,Baron of Dice,,baronofdice@gmail.com,,,,,,www.shipbob.com,,,"February 26, 2025",138,DLS-01241,Closed Won,ShipBob_PRJ-00017_Baron of Dice,,,,,,,,,,,,,
+IVW-00139,ShipBob,Bob  Blake,,ShipBob_PRJ-00018,,,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/10cHyuS8VRgOdNXulhMvVZhve_A21ITPbZkGOVG7TUtk/edit?tab=t.0,https://drive.google.com/file/d/1SipCFXEamfslITRn2xNhCcqu58wGpOO3/view?t=7,Bob  Blake,Fi,"VP Hardware, Operations",bob@tryfi.com,(914) 582-3178,,,,https://tryfi.com/,www.shipbob.com,,105,"February 7, 2025",139,DLS-01378,Closed Lost,ShipBob_PRJ-00018_Fi,,,,checked,$105.00,,,https://www.linkedin.com/in/robertblake84/,,,,,
+IVW-00140,ShipBob,John Christie,,ShipBob_PRJ-00018,,(310) 650-4840,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1Qu75pwA2FzekcZBBwTRRocgZ2IW5VqaV/edit,https://drive.google.com/drive/u/1/folders/1LDauYIRcxW94Ih7qvjEzEpzJlffwg2gf,John Christie,Banco Bradesco S.A,IT Manager in the US,,(m): 732-299-7423 / (o): 212-754-4032,,,,,www.shipbob.com,,85,"February 14, 2025",140,DLS-01377,Closed Won,ShipBob_PRJ-00018_Banco Bradesco S.A,,,,checked,$85.00,,,http://www.linkedin.com/in/john-christie-60618b4a,,,,,
+IVW-00141,ShipBob,Daniel Abramov,,ShipBob_PRJ-00018,"January 30, 2025 1:50pm",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1DgT2sRvMJXj8p34pyZzX2ZjGOFtpxXksnQeK4rLgBy4/edit?tab=t.0,https://drive.google.com/file/d/1tNAyBObb9k2vhxVSPlC1ujihPshLZs2g/view,Daniel Abramov,Tkees,Chief Digital Officer,daniel@tkees.com,(416) 569-5776,,,,https://tkees.com/,www.shipbob.com,,85,"January 30, 2025",141,DLS-01379,Closed Lost,ShipBob_PRJ-00018_Tkees,,,,checked,$85.00,,,https://www.linkedin.com/in/danielabramov/,,,,,
+IVW-00142,ShipBob,Jeff Kashi,,ShipBob_PRJ-00018,"January 29, 2025 2:31pm",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1hby9A0_g76S2YFsOBfE-wxnyAuQoI6cOuK69mNu8j-c/edit?tab=t.0,https://drive.google.com/file/d/1hyD6acLcYbQOnq0Rbpt7-nt_WLVwqYvh/view,Jeff Kashi,Oasis Snacks,Founder,jeff@oasissnacks.com,(212) 937-9720,,,,oasissnacks.com,www.shipbob.com,,85,"January 29, 2025",142,DLS-01380,Closed Lost,ShipBob_PRJ-00018_Oasis Snacks,,,,checked,$85.00,,,https://www.linkedin.com/in/jeff-kashi-98aa4589/,,,,,
+IVW-00143,ShipBob,Gregory Frye,,ShipBob_PRJ-00018,"January 24, 2025 2:36pm",,,Zoom,Email,Completed,,,,checked,,,Gregory Frye,Stingray Direct,VP of Operations,gregoryf@stingraydirect.com,,,,,stingraydirect.com,www.shipbob.com,,85,"January 24, 2025",143,DLS-01381,Closed Won,ShipBob_PRJ-00018_Stingray Direct,,,,checked,$85.00,,,https://www.linkedin.com/in/gregory-frye/,,,,,
+IVW-00144,ShipBob,Sergen Yilmaz,,ShipBob_PRJ-00018,"January 23, 2025 2:46pm",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1zu80v9MaknMUfSHTVbAqm2HzhcMFKtsI/edit,https://drive.google.com/file/d/1dMVPPxI5PpTj0OJlQvw23RF1eeJkn7Zh/view,Sergen Yilmaz,Primal Herbs,,sergen@primalherbs.com,,,,,https://primalherbs.com/pages/home-offer,www.shipbob.com,,105,"January 23, 2025",144,DLS-01382,Closed Won,ShipBob_PRJ-00018_Primal Herbs,,,,checked,$105.00,,,,,,,,
+IVW-00145,ShipBob,Brittany Fusco,,ShipBob_PRJ-00019,"November 25, 2024 2:57pm",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1CgF2cWanPc13od4mmI3aNz4W35c4XArh/edit,https://drive.google.com/file/d/1TXTKs1xWeWhHE-H1soICO0tak14jHk7Y/view,Brittany Fusco,Clean Simple Eats,COO,britt@cleansimpleeats.com,,,,,https://cleansimpleeats.com/,www.shipbob.com,,175,"November 25, 2024",145,DLS-01383,Closed Won,ShipBob_PRJ-00019_Clean Simple Eats,,,,checked,$175.00,,,https://www.linkedin.com/in/brittanyrice/,,,,,
+IVW-00146,ShipBob,John Christie,,ShipBob_PRJ-00019,"November 20, 2024 6:36am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1TE4rTR8x_leOBOWHcQ26_0W0syii-img/edit,https://drive.google.com/file/d/1AHI7dJTti56jCNV0amQgaul6ntvkUQzG/view,John Christie,Banco Bradesco S.A,IT Manager in the US,,(m): 732-299-7423 / (o): 212-754-4032,,,,,www.shipbob.com,,85,"November 20, 2024",146,DLS-01384,Closed Lost,ShipBob_PRJ-00019_Banco Bradesco S.A,,,,checked,$85.00,,,http://www.linkedin.com/in/john-christie-60618b4a,,,,,
+IVW-00147,ShipBob,Marianna Smiley,,ShipBob_PRJ-00019,"November 19, 2024 6:40am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/13JnMM4Hskd121JMwVPUu5UGkMC6GBLH3qR-nYKms8Yk/edit?tab=t.0,https://drive.google.com/file/d/1IXcMzxiYlFP9zPp4EH87J438qjNjS9u4/view?t=2,Marianna Smiley,RiseWell,Strategic Logistics Director,marianna@risewell.com,(251) 391-2965,,,,RiseWell.com,www.shipbob.com,,175,"November 19, 2024",147,DLS-01385,Closed Won,ShipBob_PRJ-00019_RiseWell,,,,checked,$175.00,,,https://www.linkedin.com/in/mariannaasvelozo/,,,,,
+IVW-00148,ShipBob,Alex Goldsmith,,ShipBob_PRJ-00019,"November 8, 2024 6:48am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1guXqCrwqp5RJMCA289Mp_A7yXOdf259-/edit,https://drive.google.com/file/d/1Ofn_blFoLNM-4j5o8EAxWuD9baCXHG9Y/view?t=1,Alex Goldsmith,"Baronet Coffee, Inc.",Director of Business & Technology,alex@baronetcoffee.com,,,,,baronetcoffee.com,www.shipbob.com,,105,"November 8, 2024",148,DLS-01386,Closed Lost,"ShipBob_PRJ-00019_Baronet Coffee, Inc.",,,,checked,$105.00,,,https://www.linkedin.com/in/alex-goldsmith-53082084/,,,,,
+IVW-00149,ShipBob,Enson Yune,,ShipBob_PRJ-00019,"November 8, 2024 8:02am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1VWcxkN03TKAD1SWjCOze46gL6ZLNW7Y9/edit,https://drive.google.com/file/d/1ZoNRvkurdaPvTXpldJtOcOTq8MziKzAh/view?t=7,Enson Yune,Smoko,,enson@smokonow.com,,,,,,www.shipbob.com,,105,"November 8, 2024",149,DLS-01387,Closed Lost,ShipBob_PRJ-00019_Smoko,,,,checked,$105.00,,,,,,,,
+IVW-00150,ShipBob,Jason Sealand,,ShipBob_PRJ-00019,"November 8, 2024 8:14am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1zvmJEO7exMWFO92GF_9rGN0O69QL-gN7/edit?usp=drive_link&ouid=101217857989312185094&rtpof=true&sd=true,https://drive.google.com/file/d/1mo-8nBnjWicSrI0pTR7W4GT28lD_adyx/view?usp=drive_link,Jason Sealand,Mad Viking Beard Co.,CEO,jason@madvikingbeard.com,,,,,,www.shipbob.com,,105,"November 8, 2024",150,DLS-01388,Closed Lost,ShipBob_PRJ-00019_Mad Viking Beard Co.,,,,checked,$105.00,,,https://www.linkedin.com/in/jason-sealand/,,,,,
+IVW-00151,ShipBob,Aisha Umer Chottani,,ShipBob_PRJ-00019,"November 5, 2024 9:06am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1ACVPO4I36irDV8vQpANFVAI58b14hXhX/edit,https://drive.google.com/file/d/15UOIDdplYNDGRUtnkpef0BIKy302TxR7/view,Aisha Umer Chottani,Drink Moment,Founder,aisha@drinkmoment.com,,,,,,www.shipbob.com,,85,"November 5, 2024",151,DLS-01389,Closed Lost,ShipBob_PRJ-00019_Drink Moment,,,,checked,$85.00,,,https://www.linkedin.com/in/aishacee/,,,,,
+IVW-00152,ShipBob,Seth Barnes,,ShipBob_PRJ-00019,"October 18, 2024 9:39am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1ZD3ff_cpwxMi-m2621Fr2OadJuX0go8y/edit?usp=drive_link&ouid=105498957162202247644&rtpof=true&sd=true,https://drive.google.com/file/d/1RUcbYyO8--by-gmP8iU2dGgTilU_T5qw/view?usp=drive_link,Seth Barnes,Raddish Kids,Co-founder & CMO,seth@raddishkids.com,,,,,,www.shipbob.com,,105,"October 18, 2024",152,DLS-01390,Closed Lost,ShipBob_PRJ-00019_Raddish Kids,,,,checked,$105.00,,,https://www.linkedin.com/in/sethbarnes/,,Toys & Hobbies,,,
+IVW-00153,ShipBob,Kartinah Smith,,ShipBob_PRJ-00019,"October 7, 2024 9:43am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1HQNqE2f_oOAFbYf11YAp03op3ae5YiVu/edit?usp=drive_link&ouid=105498957162202247644&rtpof=true&sd=true,https://drive.google.com/file/d/1kRQsQPemZItiq_5AZ1gVlHS8mp_ZA92c/view?usp=drive_link,Kartinah Smith,M.M.LaFleur,Director of Operations,kartinah.smith@mmlafleur.com,,,,,,www.shipbob.com,,85,"October 7, 2024",153,DLS-01391,Closed Lost,ShipBob_PRJ-00019_M.M.LaFleur,,,,checked,$85.00,,,https://www.linkedin.com/in/kartinah-smith/,,Apparel and Accessories,,,
+IVW-00154,ShipBob,Charlotte Katona,,ShipBob_PRJ-00020,"September 26, 2024 9:50am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1OAxPmSqAzIpbcLJYmjH4ccOgOB-ZkDyMLbGwnNT3yEk/edit?usp=drive_link,https://drive.google.com/file/d/1WVNQDq_k0YyTE1kiNX7qAXKC6s-96KZs/view?usp=drive_link,Charlotte Katona,Makesy,President,charlotte@makesy.com,,,,,,www.shipbob.com,,85,"September 26, 2024",154,DLS-01392,Closed Won,ShipBob_PRJ-00020_Makesy,,,,checked,$85.00,,,https://www.linkedin.com/in/charlotte-katona-23700695/,,Household Items,,,
+IVW-00155,ShipBob,Jordan Donovan,,ShipBob_PRJ-00020,"September 24, 2024 10:14am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1HSvPR8GqVJMPrsPWECmKp1em03jkPvB0/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1fdYmaMmOhnZX7PU3uufujzDsMfqnArnc/view?usp=drive_link,Jordan Donovan,Valvoline Global Operations,Global Operations,jsdonovan@valvolineglobal.com,,,,,,www.shipbob.com,,85,"September 24, 2024",155,DLS-01393,Closed Lost,ShipBob_PRJ-00020_Valvoline Global Operations,,,,checked,$85.00,,,https://www.linkedin.com/in/jordan-strait-donovan-2a953312/,,Automotive,,,
+IVW-00156,ShipBob,Bradley Gleeson,,ShipBob_PRJ-00020,"September 24, 2024 10:23am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1Ob79Jg0LB33F22f4XKqR7Z9MEEX3-Lg3/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1417DvE49WZhLXZYggCgMgjvjZB7Zoz5d/view?usp=drive_link,Bradley Gleeson,Contempee,,bradleygleeson@contempee.com,,,,,,www.shipbob.com,,85,"September 24, 2024",156,DLS-01394,Closed Lost,ShipBob_PRJ-00020_Contempee,,,,checked,$85.00,,,,,Home & Garden,,,
+IVW-00157,ShipBob,Keat Chan,,ShipBob_PRJ-00020,"September 24, 2024 9:41am",,,Zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1daCd8-Fdbl-eXtdZK89iv3ZUlhQjjVdx,https://drive.google.com/drive/u/1/folders/1daCd8-Fdbl-eXtdZK89iv3ZUlhQjjVdx,Keat Chan,Cupids LLC,,keat@cupids.com,,,,,,www.shipbob.com,,85,"September 24, 2024",157,DLS-01395,Closed Won,ShipBob_PRJ-00020_Cupids LLC,,,,checked,$85.00,,,,,,,,
+IVW-00159,ShipBob,Karli Bruno,,ShipBob_PRJ-00020,"September 13, 2024 3:53am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1o9MYFWZQtgBeXOHSrk1d4PGG-PUX4q9P/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1p8J3t1Vjf5PFxUiwGlmYq9-L7-mfl6Qd/view?usp=drive_link,Karli Bruno,Davines,Ecommerce & Digital Marketing Manager ,k.bruno@davines.us,,,,,,www.shipbob.com,,105,"September 13, 2024",159,DLS-01396,Closed Lost,ShipBob_PRJ-00020_Davines,,,,checked,$105.00,,,https://www.linkedin.com/in/karli-bruno/,,,,,
+IVW-00160,ShipBob,Wes Poole,,ShipBob_PRJ-00020,"September 9, 2024 4:03am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1gYWMujcydoRkMfznGW61fomf-kqXl5zrzsh1soD9cpc/edit?tab=t.0,https://drive.google.com/file/d/1GOdlRSb8ZCsnfeXxcUa4bqZhVa6GW0dL/view?t=1,Wes Poole,PEScience,COO,wesley@pescience.com,,,,,,www.shipbob.com,,85,"September 9, 2024",160,DLS-01397,Direct Competitor,ShipBob_PRJ-00020_PEScience,,,,checked,$85.00,,,https://www.linkedin.com/in/wes-poole-88406924/,,Wellness and Fitness Services,,,
+IVW-00161,ShipBob,Cagdas Lz,,ShipBob_PRJ-00020,"August 30, 2024 4:10am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1R5szQLfmujvhpaYGtqsR4FdGwKX4kA6xjnIX0N4lIE4/edit?tab=t.0,https://drive.google.com/file/d/1CbPHU7NJNFomLMQqNDIFhmwWWxP0hnIk/view?usp=drive_link,Cagdas Lz,Zorlu Mfg,,cagdas@zorlumfg.com,,,,,,www.shipbob.com,,85,"August 30, 2024",161,DLS-01398,Closed Lost,ShipBob_PRJ-00020_Zorlu Mfg,,,,checked,$85.00,,,,,,,,
+IVW-00162,ShipBob,Nick Edwards,,ShipBob_PRJ-00020,"August 29, 2024 4:15am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1g8Q6CZFrIENZgdBLadCmjWR-Aqstxofk/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1iLdRYNT49KyHzDAs7Oega5sUq4N3-rsB/view?usp=drive_link,Nick Edwards,Fanrock,Co-founder,nick@fanrock.com,,,,,,www.shipbob.com,,85,"September 29, 2024",162,DLS-01399,Closed Lost,ShipBob_PRJ-00020_Fanrock,,,,checked,$85.00,,,https://www.linkedin.com/in/nickedwards1/,,,,,
+IVW-00163,ShipBob,Daniel Schindler,,ShipBob_PRJ-00020,"August 29, 2024 4:25am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/13IX2mB_hWFlE4p8XF9Z3hm1XzSigqytqAwNG_riEvb8/edit?usp=drive_link,https://drive.google.com/file/d/1cKN4dka0Gr3WcciuHMpTMxfn1s4J5rz2/view?usp=drive_link,Daniel Schindler,Buoy,CEO,daniel@justaddbuoy.com,,,,,,www.shipbob.com,,85,"August 28, 2024",163,DLS-01400,Closed Lost,ShipBob_PRJ-00020_Buoy,,,,checked,$85.00,,,https://www.linkedin.com/in/daniel-schindler/,,,,,
+IVW-00164,ShipBob,Neal Applefeld,,ShipBob_PRJ-00020,"August 28, 2024 4:40am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1N7qlnRhHND9Ws_5BP4VvM3lMKXyZWFIe/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1eMKM0jDmPjIqqGRr4zqzfasSwkh0LfDD/view?usp=drive_link,Neal Applefeld,OLD WORLD CHRISTMAS,President and CEO,napplefeld@oldworldchristmas.com,,,,,,www.shipbob.com,,85,"August 28, 2024",164,DLS-01401,Closed Won,ShipBob_PRJ-00020_OLD WORLD CHRISTMAS,,,,checked,$85.00,,,https://www.linkedin.com/in/neal-applefeld-3175396/,,,,,
+IVW-00165,ShipBob,Manny Rios,,ShipBob_PRJ-00020,"August 28, 2024 4:46am",,,Zoom,LinkedIn,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/10eGAHMMJlKyK8CFjYwNuXS21GCus3Fdu,https://drive.google.com/drive/u/1/folders/10eGAHMMJlKyK8CFjYwNuXS21GCus3Fdu,Manny Rios,ShipMonk,Former Enterprise Account Manager,rios.a.manny@gmail.com,,,,,,www.shipbob.com,,105,"August 28, 2024",165,DLS-01402,Direct Competitor,ShipBob_PRJ-00020_ShipMonk,,,,checked,$105.00,,,https://www.linkedin.com/in/manny-a-rios/,,Ecommerce Logistics & Fulfillment Software,,,
+IVW-00166,ShipBob,Kristen Slough,,ShipBob_PRJ-00020,"August 27, 2024 7:13am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1a_ufaLgBYGE1X2GKyDouNA_vUMHM3Vhm/edit,https://drive.google.com/file/d/12XOUiNNi7JXycTmY5JEoxQx7ZAeMgPc8/view?usp=drive_link,Kristen Slough,Merrachi,,kristen@bymerrachi.com,,,,,,www.shipbob.com,,85,"August 27, 2024",166,DLS-01403,Closed Lost,ShipBob_PRJ-00020_Merrachi,,,,checked,$85.00,,,,,Retail Apparel and Fashion,,,
+IVW-00167,ShipBob,Monika Shah,,ShipBob_PRJ-00020,"August 26, 2024 7:32am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1JMQvqGUHWvf4sfea_JxyuxpituNOwILHkqMdFjWkfbc/edit?usp=drive_link,https://drive.google.com/file/d/1VGzYl7z1M0Bg8KVYAsMVBFeTCDTQX4a3/view?usp=drive_link,Monika Shah,The Honest Company,Head of Digital,mshah@thehonestcompany.com,,,,,,www.shipbob.com,,85,"August 26, 2024",167,DLS-01404,Closed Lost,ShipBob_PRJ-00020_The Honest Company,,,,checked,$85.00,,,https://www.linkedin.com/in/monikashah1/,,Manufacturing,,,
+IVW-00168,ShipBob,Matt Rose,,ShipBob_PRJ-00020,"August 26, 2024 7:47am",,,Zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1Uf8iR4JhtjjdhAJ1RZxXcYsm1-GrjWPk,https://drive.google.com/drive/u/1/folders/1Uf8iR4JhtjjdhAJ1RZxXcYsm1-GrjWPk,Matt Rose,ShipMonk,Former Account Executive,matt.rose421@gmail.com,,,,,,www.shipbob.com,,105,"August 26, 2024",168,DLS-01241,Closed Won,ShipBob_PRJ-00020_ShipMonk,,,,checked,$105.00,,,https://www.linkedin.com/in/matthewarose1/,,Ecommerce Logistics & Fulfillment Software,,,
+IVW-00169,ShipBob,Alex Hawkins,,ShipBob_PRJ-00020,"August 23, 2024 11:25am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1Ll9T_WdbU29eS1ZT0Q-GvD7EvMQco7UX/edit?rtpof=true&sd=true,https://drive.google.com/file/d/1t5xln5FOrUpsHTtYs1E-tsxpbosiy3bq/view?usp=drive_link,Alex Hawkins,LimitlessX,Director of Warehouse Operations,alexhawkinsdix@gmail.com,,,,,,www.shipbob.com,,85,"August 23, 2024",169,DLS-01405,Closed Lost,ShipBob_PRJ-00020_LimitlessX,,,,checked,$85.00,,,https://www.linkedin.com/in/alexhawkinsdix/,,Health,,,
+IVW-00170,ShipBob,Jeannie Richards,,ShipBob_PRJ-00020,"August 23, 2024 11:36am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1GCie1jOjMOQGEBkmTFvbwkQCEnKMYG2L/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1FQABwzE8p4qJTQv-Qvp6iL-Ax13q9EvX/view?usp=drive_link,Jeannie Richards,PROBAR,Project Manager,jeannie@theprobar.com,,,,,,www.shipbob.com,,85,"August 23, 2024",170,DLS-01406,Closed Lost,ShipBob_PRJ-00020_PROBAR,,,,checked,$85.00,,,https://www.linkedin.com/in/jeannie-richards-davis-capm%C2%AE-9041501b8/,,Food and Beverage Services,,,
+IVW-00171,ShipBob,Justin Seedman,,ShipBob_PRJ-00020,"August 22, 2024 11:50am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1bFr-i3IJM8DXxVjsOBmi8whLKlznwQcR_Wl20_dAwww/edit?usp=drive_link,https://drive.google.com/file/d/19JgdlH-H4L7zmVHxHpi6XKJIFX2-DL7_/view?usp=drive_link,Justin Seedman,LD Trade INC,VP of Business Operations,justin@ldtrade.com,,,,,,www.shipbob.com,,85,"August 22, 2024",171,DLS-01407,Closed Lost,ShipBob_PRJ-00020_LD Trade INC,,,,checked,$85.00,,,https://www.linkedin.com/in/justin-seedman/,,Ecommerce Logistics & Fulfillment Software,,,
+IVW-00172,ShipBob,Ismail Aktim,,ShipBob_PRJ-00020,"August 22, 2024 12:54pm",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1R4pmXN4n12qEQGVyiC-4rij_RQyXAfjb3oOdEoQcFrQ/edit?usp=drive_link,,Ismail Aktim,MAKROTEKS,VP,ismail@makroteks.com,,,,,,www.shipbob.com,,85,"August 22, 2024",172,DLS-01408,Closed Lost,ShipBob_PRJ-00020_MAKROTEKS,,,,checked,$85.00,,,https://www.linkedin.com/in/ismail-aktim-45692834/,,Textile Manufacturing,,,
+IVW-00173,ShipBob,Blake Shelby,,ShipBob_PRJ-00020,"August 22, 2024 1:04pm",,,Zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1Yfh7ncZJwJSqlhJlQo0HxjbDcdu6zsAc,https://drive.google.com/drive/u/1/folders/1Yfh7ncZJwJSqlhJlQo0HxjbDcdu6zsAc,Blake Shelby,ShipMonk,Former Sales Business Development,blakeshelby9901@gmail.com,,,,,,www.shipbob.com,,105,"August 22, 2024",173,DLS-01402,Direct Competitor,ShipBob_PRJ-00020_ShipMonk,,,,checked,$105.00,,,https://www.linkedin.com/in/blake-shelby-154239219/,,Ecommerce Logistics & Fulfillment Software,,,
+IVW-00174,ShipBob,Miles Mueller,,ShipBob_PRJ-00020,"July 31, 2024 1:32pm",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1ZLgZL1Naz52uMjPxM8Qrrq6j_tTBmhsTb_AgZ61XutQ/edit?usp=drive_link,https://drive.google.com/file/d/1r6yXSBrewi5isWSYxwTZPJkS7OU6BKQY/view?usp=drive_link,Miles Mueller,Halo Collar,,mmueller@halocollar.com,,,,,,www.shipbob.com,,85,"July 31, 2024",174,DLS-01409,Closed Lost,ShipBob_PRJ-00020_Halo Collar,,,,checked,$85.00,,,,,Computers and Electronics Manufacturing,,,
+IVW-00175,ShipBob,John Huelskamp,,ShipBob_PRJ-00020,"July 22, 2024 2:12pm",,,Zoom,Email,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1E2w8VCznf1-_lB7iOgseOtlpaYwxIW_J,https://drive.google.com/drive/u/1/folders/1E2w8VCznf1-_lB7iOgseOtlpaYwxIW_J,John Huelskamp,Flexport,Former VP of Sales,john.huelskamp@gmail.com,,,,,,www.shipbob.com,,115,"July 22, 2024",175,DLS-01410,Direct Competitor,ShipBob_PRJ-00020_Flexport,,,,checked,$115.00,,,https://www.linkedin.com/in/john-huelskamp-394b8a37/,,Ecommerce Logistics & Fulfillment Software,,,
+IVW-00176,ShipBob,Nuno Freitas,,ShipBob_PRJ-00020,"July 22, 2024 7:05am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1yuIUDu3cY4KWlos7FKuqhth4jhJiBhVQZ_tuX5QP_UU/edit?usp=drive_link,https://drive.google.com/file/d/1NETVIgSEgAsn8clKvxyMM1n_vhhNDbNG/view?usp=drive_link,Nuno Freitas,Prozis,Managing Director USA,nunofreitas@prozis.com,,,,,,www.shipbob.com,,105,"July 22, 2024",176,DLS-01411,Closed Lost,ShipBob_PRJ-00020_Prozis,,,,checked,$105.00,,,https://www.linkedin.com/in/nunofreitas/,,"""Health, Wellness & Fitness""",,,
+IVW-00177,ShipBob,Alexandra Vreeland,,ShipBob_PRJ-00020,"July 12, 2024 7:31am",,,Zoom,Email,Completed,,,,checked,https://docs.google.com/document/d/1NjvX6kOUt712CC6Cu8mcP7JcxP4zlbL1OsRApVox33g/edit?usp=drive_link,https://drive.google.com/file/d/1Hl97tCoCHzCYbjxy9i1cgJ3ee7R8kTWm/view?usp=drive_link,Alexandra Vreeland,The Feelist,Partner and COO,alexandra@thefeelist.com,,,,,,www.shipbob.com,,105,"July 12, 2024",177,DLS-01412,Closed Lost,ShipBob_PRJ-00020_The Feelist,,,,checked,$105.00,,,https://www.linkedin.com/in/alexandra-vreeland-15655024a/,,"""Health, Wellness & Fitness""",,,
+IVW-00178,ShipBob,Janis Boss,,ShipBob_PRJ-00020,"July 11, 2024 7:34am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1dfLvpHDEb-AI-0Zalvu9xZxlt25UC_P3wJbvUjcr3ss/edit?usp=drive_link,https://drive.google.com/file/d/1P-ljwMr1hNd2-agkYnPY65bYoytXx5E7/view?usp=drive_link,Janis Boss,Prime Prometics,Head Of Operations,janis@primeprometics.com,,,,,,www.shipbob.com,,85,"July 11, 2024",178,DLS-01413,Closed Won,ShipBob_PRJ-00020_Prime Prometics,,,,checked,$85.00,,,https://www.linkedin.com/in/janisboss/,,Retail Health and Personal Care Products,,,
+IVW-00179,ShipBob,Ren Milne,,ShipBob_PRJ-00020,"June 27, 2024 7:43am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1hoGKlomN0-MhVK-a63mS3pG099vrHiknX43ZA7PQPvs/edit?usp=drive_link,https://drive.google.com/file/d/14ii12L_x9ljIPotyutx3kmFbPKIxlFW1/view?usp=drive_link,Ren Milne,Treecard,Product Manager,ren@treecard.org,,,,,,www.shipbob.com,,105,"June 27, 2024",179,DLS-01414,Closed Lost,ShipBob_PRJ-00020_Treecard,,,,checked,$105.00,,,https://www.linkedin.com/in/ren-milne-026755141/,,"""Technology, Information and Internet """,,,
+IVW-00180,ShipBob,Gabriel Braun,,ShipBob_PRJ-00021,"June 20, 2024 7:46am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1zeAzBwCqCXshsjeuw414Vd2yPSS8a9Gm/edit,https://drive.google.com/file/d/192sd1SVt0hDJL75XuUh9OQzVkzvDmL_B/view,Gabriel Braun,Bushbalm Skincare,Director of Operations,gabe@mybushbalm.com,,,,,,www.shipbob.com,,85,"June 20, 2024",180,DLS-01415,Closed Lost,ShipBob_PRJ-00021_Bushbalm Skincare,,,,checked,$85.00,,,https://www.linkedin.com/in/gabebraun/,,Personal Care Product Manufacturing,,,
+IVW-00181,ShipBob,Kendra Silvestri,,ShipBob_PRJ-00021,,,,Zoom,,Completed,,,,checked,https://drive.google.com/drive/u/1/folders/1a1Akp7Dtu9Koc0vNbUsAhqvSMaqJkRbz,https://drive.google.com/drive/u/1/folders/1a1Akp7Dtu9Koc0vNbUsAhqvSMaqJkRbz,Kendra Silvestri,FreshCut Paper,Director of Operations,kendra@freshcutpaper.com,,,,,,www.shipbob.com,,85,"June 12, 2024",181,DLS-01416,Closed Lost,ShipBob_PRJ-00021_FreshCut Paper,,,,checked,$85.00,,,https://www.linkedin.com/in/kendrasilvestri/,,Retail,,,
+IVW-00182,ShipBob,Tyler Christensen,,ShipBob_PRJ-00021,,,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1UQc9qldIuYtufks_U44bX3lV79nxzLDq/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1K2VGBHjfiX9LeJ_iQfOrhqiyRjdhPba5/view?usp=drive_link,Tyler Christensen,KURU Footwear,COO,tyler.christensen@kurufootwear.com,,,,,,www.shipbob.com,,85,"June 10, 2024",182,DLS-01417,Closed Lost,ShipBob_PRJ-00021_KURU Footwear,,,,checked,$85.00,,,https://www.linkedin.com/in/christensentyler/,,Retail Apparel and Fashion,,,
+IVW-00183,ShipBob,Brandon Newcomen,,ShipBob_PRJ-00021,"June 4, 2024 7:58am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1iF_4LJELu_VFn723sa_E96aGJEBBtNAl/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1GjBXsYSaGbaVGOJYKytJcfNQFy_yPK0O/view?usp=drive_link,Brandon Newcomen,Newco Natural Technology,Online Business Development Manager,brandon@newconatural.ca,,,,,,www.shipbob.com,,105,"June 4, 2024",183,DLS-01418,Closed Lost,ShipBob_PRJ-00021_Newco Natural Technology,,,,checked,$105.00,,,https://www.linkedin.com/in/brandon-newcomen/,,Wellness and Fitness Services,,,
+IVW-00184,ShipBob,Jared Wood,,ShipBob_PRJ-00021,,,,Zoom,,Completed,,,,checked,https://drive.google.com/file/d/1PreZ06NYnYHly8VaJcrFRo6A99K-D8EH/view?usp=drive_link,https://drive.google.com/file/d/1PreZ06NYnYHly8VaJcrFRo6A99K-D8EH/view?usp=drive_link,Jared Wood,Beautiful Yū,Financial Analyst ,jwood@beautifulyu.com,,,,,,www.shipbob.com,,85,"May 31, 2024",184,DLS-01419,Closed Lost,ShipBob_PRJ-00021_Beautiful Yū,,,,checked,$85.00,,,https://www.linkedin.com/in/jared-wood-03119b20a/,,Wellness and Fitness Services,,,
+IVW-00185,ShipBob,Kevin Herring,,ShipBob_PRJ-00021,,,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1SNo1FNqH9YB8Y3ffINKowb8qMDnRXWDf/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/11Hg6cTLNS-2HScadt7BixwK4cmbsZyHM/view?usp=drive_link,Kevin Herring,Denim Tears,,kev@denimtears.com,,,,,http://www.denimtears.com,www.shipbob.com,,85,"May 30, 2024",185,DLS-01420,Closed Lost,ShipBob_PRJ-00021_Denim Tears,,,,checked,$85.00,,,,,Apparel,,,
+IVW-00186,ShipBob,Ali Berradia,,ShipBob_PRJ-00021,"May 29, 2024 8:38am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1cFyzcGZGlmMMqr85Ox_hcamzwbTsaWMs/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1ma9lm3jTjqtJxQpeAsGdE29e9ClSB4iJ/view?usp=drive_link,Ali Berradia,Vitamin Bounty,Customer Operations and Supply Chain Manager,ali@vitaminbounty.com,,,,,,www.shipbob.com,,85,"May 29, 2024",186,DLS-01421,Closed Lost,ShipBob_PRJ-00021_Vitamin Bounty,,,,checked,$85.00,,,https://www.linkedin.com/in/berradia-ali-72098134/,,"""Health, Wellness & Fitness""",,,
+IVW-00187,ShipBob,Easton Dana,,ShipBob_PRJ-00021,"May 28, 2024 8:43am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1cN6_Myxn4B9VEudbhhLQHjtdr5f7GRUN/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1QqQJazYHPgiEsoS9hnCHIQV4V0h7Qhb4/view?usp=drive_link,Easton Dana,Canned Goods,CEO and Founder ,eastondana@cannedgoodsclothing.com,,,,,,www.shipbob.com,,85,"May 28, 2024",187,DLS-01422,Closed Lost,ShipBob_PRJ-00021_Canned Goods,,,,checked,$85.00,,,https://www.linkedin.com/in/easton-dana/,,Sustainable Fashion,,,
+IVW-00188,ShipBob,Tony Kingston,,ShipBob_PRJ-00021,,,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/16N6lFpJVVzZ4jaiD2lBlrRPNPbNBfMry/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1f0n2RBoNKFxEZTgZsxx_b2Y1G68aivp1/view?usp=drive_link,Tony Kingston,Crazy Dog T-Shirts,Digital Marketing Manager,tony@crazydogtshirts.com,,,,,,www.shipbob.com,,85,"May 28, 2024",188,DLS-01423,Closed Lost,ShipBob_PRJ-00021_Crazy Dog T-Shirts,,,,checked,$85.00,,,https://www.linkedin.com/in/tony-kingston-6a365a57/?utm_source=chatgpt.com,,Apparel & Fashion,,,
+IVW-00189,ShipBob,Clinton  Lawley,,ShipBob_PRJ-00021,"May 28, 2024 9:31am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1vgWaDUFXp32uVug2x0cyLivilfHaRlMj/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1zAcFJJc6wpPLv4H-ckhFROO3ZsKulVrs/view?usp=drive_link,Clinton  Lawley,Amy Myers MD,"Senior Manager, Operations",clawley@amymyersmd.com,,,,,,www.shipbob.com,,85,"May 28, 2024",189,DLS-01424,Closed Lost,ShipBob_PRJ-00021_Amy Myers MD,,,,checked,$85.00,,,https://www.linkedin.com/in/clinton-lawley-832220116/,,"""Health, Wellness & Fitness""",,,
+IVW-00190,ShipBob,Arya Bina,,ShipBob_PRJ-00021,"May 23, 2024 9:35am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1w6arJHQ-UdV7mjwO1V5ihh4PVNeQ2kIr/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1t-7ZmqPS-ilvXTtk3_YdRaBV7Nmi6-yB/view?usp=drive_link,Arya Bina,Phoenix Operating LLC,,arya@aryabina.com,,,,,,www.shipbob.com,,85,"May 23, 2024",190,DLS-01425,Closed Lost,ShipBob_PRJ-00021_Phoenix Operating LLC,,,,checked,$85.00,,,,,"""Electricity, Oil & Gas""",,,
+IVW-00191,ShipBob,Bridget Moore,,ShipBob_PRJ-00021,"May 21, 2024 9:39am",,,Zoom,,Completed,,,,checked,https://docs.google.com/document/d/1Zf969AFyH2sZTx6qjTQdeTJUwkn4vGVn/edit?usp=drive_link&ouid=111438076457571393514&rtpof=true&sd=true,https://drive.google.com/file/d/1UwsyFuOu6WMOu46tXPtpvnliW-9DVt5s/view?usp=drive_link,Bridget Moore,Laughing Man Coffee,Chief Creative Officer,bridget@missingpiececollective.com,,,,,,www.shipbob.com,,55,"May 21, 2024",191,DLS-01426,Closed Won,ShipBob_PRJ-00021_Laughing Man Coffee,,,,checked,$55.00,,,https://www.linkedin.com/in/bridget-moore-79911053/,,Food and Beverage Services,,,
+IVW-00192,Rev,Lawrence Kumar,,Rev_PRJ-00015,"June 19, 2025 12:00pm",+1 424-333-2712,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Lawrence Kumar,Jluxlabel,Mangement Consultant,lawrence@jluxlabel.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://jluxlabel.com,www.rev.com,,85,,192,,,Rev_PRJ-00015_Jluxlabel,$85,$105,6/8/2025,,,,IVG-00145,http://www.linkedin.com/in/lawrence-kumar-7062272b,,Retail,,,
+IVW-00193,Rev,Jessica Barr,,Rev_PRJ-00015,"June 20, 2025 7:30am",+1 561-352-0856,drew@buriedwins.com,zoom,Email,No-Show,,,,,,,Jessica Barr,The Employment Law Solution,Office Coordinator,jbarr@theemploymentlawsolution.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://theemploymentlawsolution.com,www.rev.com,,85,,193,,,Rev_PRJ-00015_The Employment Law Solution,$85,$105,6/8/2025,,,,IVG-00145,http://www.linkedin.com/in/jessicaabarr,,Law Practice,,,
+IVW-00196,Supio,Jordan Williams,IVL-00022,Supio_PRJ-00027,"June 18, 2025 8:00am",(203) 470-7288,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,,,Jordan Williams,Barnes Trial Group,,jw@btglaw.com,(203) 470-7288,,,https://forms.gle/ChYB72eagR6oPzhU8,https://btglaw.com,Supio.com,,165,"June 18, 2025",196,DLS-01241,Closed Won,Supio_PRJ-00027_Barnes Trial Group,$165,$185,,,,,IVG-00142,,,law practice,,,
+IVW-00197,Supio,Bridget Smith,IVL-00022,Supio_PRJ-00027,"June 18, 2025 11:00am",(513) 696-4565,drew@buriedwins.com,Zoom,Email,Completed,,,,checked,,,Bridget Smith,,,bridget@rittgers.com,(513) 696-4565,,,https://forms.gle/ChYB72eagR6oPzhU8,,Supio.com,,165,,197,DLS-01241,Closed Won,Supio_PRJ-00027_,$165,$185,,,,,IVG-00142,,,,,,
+IVW-00200,Rev,Grace Lawrence,,Rev_PRJ-00015,"June 24, 2025 1:00pm",+1 815-685-4882,drew@buriedwins.com,zoom,Email,Canceled,,,,,,,Grace Lawrence,Outschool,Performance Marketing Lead,grace.lawrence@outschool.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://outschool.com,www.rev.com,,85,,200,,,Rev_PRJ-00015_Outschool,$85,$105,6/8/2025,,,,IVG-00145,http://www.linkedin.com/in/grace-lawrence,,Information Technology & Services,,,
+IVW-00211,Rev,Eric Clark,IVL-00012,Rev_PRJ-00015,"June 26, 2025 1:30pm",+1 925-788-4517,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Eric Clark,Emclawpc,,emc@emclawpc.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,https://emclawpc.com,www.rev.com,,85,,211,,,Rev_PRJ-00015_Emclawpc,$85,$105,6/8/2025,,,,IVG-00145,,,,,,
+IVW-00212,ShipBob,Rob Capodici,IVL-00021,ShipBob_PRJ-00032,"July 1, 2025 11:00am",+1 610-677-8830,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Rob Capodici,Taos Footwear,ecommerce,rcapodici@taosfootwear.com,+13102184615,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,"July 1, 2025",212,DLS-01495,Closed Lost,ShipBob_PRJ-00032_Taos Footwear,$85,$105,,,,,IVG-00143,,,Apparel,,,1 - US MM
+IVW-00213,Rev,Sarah Lynch,IVL-00012,Rev_PRJ-00015,"June 25, 2025 10:29am",,,Zoom,Email,Completed,,,,checked,https://www.rev.com/file/c/3ee7412280e6e814b563978347821aa97c6e4be7a4d8d241c469f9c4?f=Sarah+Lynch+and+Drew+Giovannoli.docx,https://www.rev.com/file/c/3ee7412280e6e814b563978347821aa97c6e4be7a4d8d241c469f9c4?f=Sarah+Lynch+and+Drew+Giovannoli.docx,Sarah Lynch,Sbbllaw,,sarah@sbbllaw.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,,www.rev.com,,85,,213,DLS-01643,Closed Won,Rev_PRJ-00015_Sbbllaw,$85,$105,6/8/2025,,,,IVG-00145,,,,,,
+IVW-00214,Rev,Tyler Gregston,IVL-00012,Rev_PRJ-00015,"June 24, 2025 10:38am",,,Zoom,Email,Completed,,,,checked,,,Tyler Gregston,Stacy Cole Law P.C.,,tylergregston@gmail.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,,www.rev.com,,105,"June 24, 2025",214,DLS-01644,,Rev_PRJ-00015_Stacy Cole Law P.C.,$85,$105,6/8/2025,,,,IVG-00145,,,,,,
+IVW-00217,ShipBob,Matthew Lebo,,ShipBob_PRJ-00032,"July 3, 2025 8:30am",+1 610-737-2094,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Matthew Lebo,Kroma.,"Director, Operations",matt@kromawellness.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,"July 3, 2025",217,DLS-01505,Closed Lost,ShipBob_PRJ-00032_Kroma.,$85,$105,,,,,IVG-00143,,,Food & Drink,,,3 - US SMB
+IVW-00218,ShipBob,Brian Thomas,IVL-00021,ShipBob_PRJ-00032,"July 3, 2025 12:00pm",+1 410-913-4420,drew@buriedwins.com,zoom,SMS,Completed,,,,checked,,,Brian Thomas,Completing The Puzzle,CEO,brian@completingthepuzzle.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,,218,DLS-01464,Closed Lost,ShipBob_PRJ-00032_Completing The Puzzle,$85,$105,,,,,IVG-00143,,,Games,,,2 - WMS
+IVW-00219,ShipBob,Megan O'Leary,IVL-00021,ShipBob_PRJ-00032,"July 10, 2025 7:00am",+1 740-973-4888,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Megan O'Leary,ShineOn,Head of Merchandising & Logistics,megan@shineon.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,"July 10, 2025",219,DLS-01476,Closed Lost,ShipBob_PRJ-00032_ShineOn,$85,$105,,,,,IVG-00143,,,Toys & Hobbies,,,1 - US MM
+IVW-00220,ShipBob,Kristine Cass,IVL-00021,ShipBob_PRJ-00032,"July 11, 2025 10:30am",+1 617-777-4933,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Kristine Cass,Pink Stork,Chief Financial Officer,kristine@pinkstork.com,+16177774933,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,"July 11, 2025",220,DLS-01456,Closed Lost,ShipBob_PRJ-00032_Pink Stork,$85,$105,,,,,IVG-00143,,,Health,,,3 - US SMB
+IVW-00221,ShipBob,Jeff McCloud,IVL-00021,ShipBob_PRJ-00032,"July 3, 2025 8:19am",,drew@buriedwins.com,Zoom,Email,No-Show,,,,,,,Jeff McCloud,Amare Global,Sr. Director - Global Logistics,jmccloud@amare.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,175,,221,DLS-01467,Closed Lost,ShipBob_PRJ-00032_Amare Global,$85,$105,,checked,$175.00,,IVG-00143,,,Health,,,1 - US MM
+IVW-00222,ShipBob,Leo Wan,IVL-00021,ShipBob_PRJ-00032,"July 10, 2025 12:00pm",+1 385-910-8983,drew@buriedwins.com,zoom,Phone Call,Completed,,,,checked,,,Leo Wan,Viori,"Manager, Supply Chain",leo.wan@viori.com,(385) 910-8983,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,"July 10, 2025",222,DLS-01471,Closed Lost,ShipBob_PRJ-00032_Viori,$85,$105,,,,,IVG-00143,,,Beauty & Fitness,,,1 - US MM
+IVW-00223,ShipBob,Luke Black,IVL-00021,ShipBob_PRJ-00032,"July 14, 2025 12:00pm",+1 832-581-6785,drew@buriedwins.com,zoom,Email,Scheduled,,,,,,,Luke Black,Ashley Black Guru,COO,luke@ashleyblackguru.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,,223,DLS-01511,Closed Lost,ShipBob_PRJ-00032_Ashley Black Guru,$85,$105,,,,,IVG-00143,,,Beauty & Fitness,,,2 - WMS
+IVW-00224,Supio,Margie Smith,IVL-00022,Supio_PRJ-00027,"July 11, 2025 12:30pm",+1 647-230-6031,drew@buriedwins.com,outbound_call,LinkedIn,Completed,,,,checked,,,Margie Smith,MacDonald Law Professional,Office Manager,margie@macdonaldinjurylaw.com,,,,https://forms.gle/ChYB72eagR6oPzhU8,https://macdonaldinjurylaw.com,Supio.com,,165,"July 11, 2025",224,DLS-01535,Closed Won,Supio_PRJ-00027_MacDonald Law Professional,$165,$185,,,,,IVG-00142,http://www.linkedin.com/in/margie-smith-7197b26a,,law practice,,,MidMarket
+IVW-00225,ShipBob,Morgan Lee,IVL-00021,ShipBob_PRJ-00032,"July 11, 2025 1:30pm",+1 707-486-5195,drew@buriedwins.com,zoom,Email,Completed,,,,checked,,,Morgan Lee,Sarah Silks,CFO,morgan@sarahssilks.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,https://sarahssilks.com,www.shipbob.com,,85,"July 11, 2025",225,DLS-01485,Closed Lost,ShipBob_PRJ-00032_Sarah Silks,$85,$105,,,,,IVG-00143,,,retail,,,1 - US MM
+IVW-00226,ShipBob,Amy Fletcher,IVL-00021,ShipBob_PRJ-00032,"July 14, 2025 9:22am",,,Zoom,LinkedIn,Completed,,,,,,,Amy Fletcher,Swanson Health,Marketplace Manager,amy.fletcher@swansonhealth.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,175,"July 14, 2025",226,DLS-01486,Closed Lost,ShipBob_PRJ-00032_Swanson Health,$85,$105,,checked,$175.00,,IVG-00143,,,Health,,,1 - US MM
+IVW-00227,ShipBob,Bryce Harbertson,IVL-00021,ShipBob_PRJ-00032,"July 18, 2025 7:30am",+1 480-322-1890,drew@buriedwins.com,zoom,Email,Scheduled,,,,,,,Bryce Harbertson,Nominal,,bryce@nominalx.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,,227,DLS-01474,Closed Lost,ShipBob_PRJ-00032_Nominal,$85,$105,,,,,IVG-00143,,,Apparel,,,3 - US SMB
+IVW-00228,ShipBob,Matt Mundt,IVL-00021,ShipBob_PRJ-00032,"July 16, 2025 12:15pm",+1 414-581-8226,drew@buriedwins.com,zoom,LinkedIn,Scheduled,,,,,,,Matt Mundt,Hug Sleep,Founder And Chief Executive Officer,matt@hugsleep.com,+14165385457,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,,228,DLS-01482,Closed Lost,ShipBob_PRJ-00032_Hug Sleep,$85,$105,,,,,IVG-00143,,,Health,,,1 - US MM
+IVW-00229,ShipBob,Hieu Nguyen,IVL-00021,ShipBob_PRJ-00032,"July 14, 2025 8:04am",,drew@buriedwins.com,Zoom,LinkedIn,Completed,,,,,,,Hieu Nguyen,Crossian,Operations - Employee - Logistics Manager,hieu.mnguyen@crossian.com,,,,https://forms.gle/9d7hX6o6VYSpoVvd6,,www.shipbob.com,,85,"July 14, 2025",229,DLS-01241,Closed Won,ShipBob_PRJ-00032_Crossian,$85,$105,,,,,IVG-00143,,,,,,
+IVW-00230,Kyndryl,Anne Richardson,,Kyndryl_PRJ-00026,"July 16, 2025 10:00am",+1 706-490-4278,drew@buriedwins.com,zoom,+1 706-490-4278,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/AKNsBdpz8B9KFkyS8,www.buriedwins.com,https://www.kyndryl.com/us/en,,150,,230,,,Kyndryl_PRJ-00026_Buried Wins,$150,,,,,,IVG-00147,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00231,Aiven,Anne Richardson,,Aiven_PRJ-00024,"July 16, 2025 11:00am",+1 706-490-4278,drew@buriedwins.com,zoom,+1 706-490-4278,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/8BEVD1PwZDCxdmyWA,www.buriedwins.com,https://aiven.io,,85,,231,,,Aiven_PRJ-00024_Buried Wins,$85,$105,,,,,IVG-00146,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00232,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,232,DLS-01241,Closed Won,_,,,,,,,,,,,,,
+IVW-00233,Supio,Julia Martinez,IVL-00022,Supio_PRJ-00027,,,,Phone,Email,Scheduled,,,,,,,Julia Martinez,,Head of Product Marketing,julia.martinez@truelayer.com,,,,https://forms.gle/ChYB72eagR6oPzhU8,,Supio.com,,165,,233,DLS-01241,Closed Won,Supio_PRJ-00027_,$165,$185,,,,,IVG-00142,http://www.linkedin.com/in/juliamartinezpena,,,,,
+IVW-00234,Supio,Jeremy E. Citron,IVL-00025,Supio_PRJ-00027,"July 17, 2025 10:26am",,,Zoom,Email,Scheduled,,,,,,,Jeremy E. Citron,The Hurt Boss,,jeremy@citronlawgroup.com,,,,https://forms.gle/ChYB72eagR6oPzhU8,,Supio.com,,165,,234,DLS-03251,Closed Lost,Supio_PRJ-00027_The Hurt Boss,$165,$185,,,,,IVG-00142,,,,,,MidMarket
+IVW-00235,Kyndryl,Anne Richardson,,Kyndryl_PRJ-00026,"August 4, 2025 8:15am",+1 706-490-4278,drew@buriedwins.com,zoom,+1 706-490-4278,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/AKNsBdpz8B9KFkyS8,www.buriedwins.com,https://www.kyndryl.com/us/en,,150,,235,,,Kyndryl_PRJ-00026_Buried Wins,$150,,,,,,IVG-00147,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00236,Kyndryl,Anne Richardson,,Kyndryl_PRJ-00026,"August 4, 2025 8:15am",+1 706-490-4278,drew@buriedwins.com,zoom,+1 706-490-4278,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/AKNsBdpz8B9KFkyS8,www.buriedwins.com,https://www.kyndryl.com/us/en,,150,,236,,,Kyndryl_PRJ-00026_Buried Wins,$150,,,,,,IVG-00147,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00237,Rev,Anne Richardson,,Rev_PRJ-00015,"July 18, 2025 6:00am",+1 706-490-4278,moderator1@buriedwins.com,zoom,Phone Call,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,www.buriedwins.com,www.rev.com,,85,,237,,,Rev_PRJ-00015_Buried Wins,$85,$105,6/8/2025,,,,IVG-00145,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00238,Rev,Anne Richardson,,Rev_PRJ-00015,"July 18, 2025 6:00am",+1 706-490-4278,moderator1@buriedwins.com,zoom,Phone Call,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/Ro97dksQYPBVD3AV6,www.buriedwins.com,www.rev.com,,85,,238,,,Rev_PRJ-00015_Buried Wins,$85,$105,6/8/2025,,,,IVG-00145,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00239,ShipStation API,Anne Richardson,,ShipStation API_PRJ-00029,"July 17, 2025 5:00am",+1 706-490-4278,moderator3@buriedwins.com,custom,Phone Call,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/5SvjfzxE5Gg8emjS8,www.buriedwins.com,,,,,239,,,ShipStation API_PRJ-00029_Buried Wins,,,,,,,IVG-00150,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00240,Kyndryl,Anne Richardson,,Kyndryl_PRJ-00026,"August 4, 2025 10:15am",+1 706-490-4278,drew@buriedwins.com,zoom,+1 706-490-4278,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/AKNsBdpz8B9KFkyS8,www.buriedwins.com,https://www.kyndryl.com/us/en,,150,,240,,,Kyndryl_PRJ-00026_Buried Wins,$150,,,,,,IVG-00147,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00241,Kyndryl,Anne Richardson,,Kyndryl_PRJ-00026,"August 4, 2025 10:15am",+1 706-490-4278,drew@buriedwins.com,zoom,+1 706-490-4278,Completed,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/AKNsBdpz8B9KFkyS8,www.buriedwins.com,https://www.kyndryl.com/us/en,,150,"July 15, 2025",241,,,Kyndryl_PRJ-00026_Buried Wins,$150,,,,,,IVG-00147,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00242,Metapack,Anne Richardson,,Metapack_PRJ-00030,"July 17, 2025 5:00am",+1 706-490-4278,moderator4@buriedwins.com,zoom,Email,Completed,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/R7YMseTiLhNTXJtN9,www.buriedwins.com,,,,"July 15, 2025",242,,,Metapack_PRJ-00030_Buried Wins,,,,,,,IVG-00151,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00243,Metapack,Anne Richardson,,Metapack_PRJ-00035,"July 17, 2025 6:00am",+1 706-490-4278,moderator4@buriedwins.com,zoom,LinkedIn,Completed,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/9qKfaLD3q63sQ1ew8,www.buriedwins.com,,,,"July 15, 2025",243,,,Metapack_PRJ-00035_Buried Wins,,,,,,,IVG-00152,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00245,FastSpring,Anne Richardson,,FastSpring_PRJ-00033,"July 17, 2025 7:30am",+1 706-490-4278,moderator3@buriedwins.com,custom,Email,Completed,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/chF1giXejWYVmCVd9,www.buriedwins.com,www.fastspring.com,,,"July 16, 2025",245,,,FastSpring_PRJ-00033_Buried Wins,,,,,,,IVG-00148,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00246,ShipStation API,Anne Richardson,,ShipStation API_PRJ-00029,"July 17, 2025 8:30am",+1 706-490-4278,moderator3@buriedwins.com,zoom,Phone Call,Completed,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/5SvjfzxE5Gg8emjS8,www.buriedwins.com,,,,"July 16, 2025",246,,,ShipStation API_PRJ-00029_Buried Wins,,,,,,,IVG-00150,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00247,ShipStation API,Anne Richardson,,ShipStation API_PRJ-00029,"July 17, 2025 8:30am",+1 706-490-4278,moderator3@buriedwins.com,zoom,Phone Call,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/5SvjfzxE5Gg8emjS8,www.buriedwins.com,,,,,247,,,ShipStation API_PRJ-00029_Buried Wins,,,,,,,IVG-00150,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,
+IVW-00248,ShipStation API,Anne Richardson,,ShipStation API_PRJ-00034,"July 18, 2025 6:00am",+1 706-490-4278,moderator3@buriedwins.com,zoom,Phone Call,Scheduled,,,,,,,Anne Richardson,Buried Wins,Research,anne@buriedwins.com,,,,https://forms.gle/XxrucCDEkCQZMa4x8,www.buriedwins.com,,,,,248,,,ShipStation API_PRJ-00034_Buried Wins,,,,,,,IVG-00153,https://www.linkedin.com/in/anne-richardson-38299695/,,,,,

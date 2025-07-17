@@ -31,12 +31,12 @@ def run_stage3_analysis():
         return None
     
     try:
-        from stage3_findings_analyzer import Stage3FindingsAnalyzer
+        from stage3_findings_analyzer_enhanced import EnhancedStage3FindingsAnalyzer
         client_id = get_client_id()
-        analyzer = Stage3FindingsAnalyzer()
+        analyzer = EnhancedStage3FindingsAnalyzer(client_id=client_id)
         
-        # Use the production pipeline that generates CSV output and saves to Supabase
-        result = analyzer.process_stage3_findings(client_id=client_id)
+        # Use the enhanced pipeline that includes classification and generates CSV output
+        result = analyzer.analyze_findings()
         
         # Check if CSV files were generated
         import os
@@ -326,8 +326,8 @@ def show_stage3_findings():
     
     # Check if LLM integration is working
     try:
-        from stage3_findings_analyzer import Stage3FindingsAnalyzer
-        analyzer = Stage3FindingsAnalyzer()
+        from stage3_findings_analyzer_enhanced import EnhancedStage3FindingsAnalyzer
+        analyzer = EnhancedStage3FindingsAnalyzer()
         prompt = analyzer._load_buried_wins_prompt()
         if prompt and len(prompt) > 100:
             st.success("✅ LLM Integration: Buried Wins prompt loaded successfully")

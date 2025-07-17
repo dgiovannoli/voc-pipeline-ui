@@ -61,7 +61,7 @@ CRITICAL REQUIREMENTS:
    - Use action verbs and emotional language that creates urgency
    - Focus on what customers are losing, suffering, or missing out on
    - Include specific product issues causing customer frustration
-   - Examples: "Unclear speaker identification in Rev for multi-party recordings is causing user frustration"
+   - Examples: "User experience declines when audio recording capabilities fail to isolate relevant content"
    - Examples: "High transcription costs and lengthy turnaround times are affecting operational efficiency for small firms"
    - Examples: "Subscription fatigue is hindering adoption of Rev's services among new firms"
    - AVOID: Generic titles like "Integration challenges limit workflow optimization"
@@ -94,15 +94,15 @@ CRITICAL REQUIREMENTS:
    - Focus on specific product problems causing customer pain, or opportunities for improvement
 
 EXAMPLE HIGH-QUALITY THEME:
-Title: "Unclear speaker identification in Rev for multi-party recordings is causing user frustration"
-Statement: "Legal professionals are experiencing significant challenges when using Rev for multi-party recordings due to unclear speaker identification, which can lead to confusion during critical moments in legal proceedings. This issue has been highlighted by multiple attorneys who find it difficult to accurately attribute dialogue to the correct individuals, impacting their ability to present evidence effectively."
+Title: "User experience declines when audio recording capabilities fail to isolate relevant content"
+Statement: "Legal professionals are experiencing significant challenges when using Rev for multi-party recordings due to unclear content isolation, which can lead to confusion during critical moments in legal proceedings. This issue has been highlighted by multiple attorneys who find it difficult to accurately process audio content, impacting their ability to present evidence effectively."
 
 EXAMPLE POOR THEME:
 Title: "Integration challenges limit workflow optimization" (too generic, no emotional impact)
 Statement: "Customers are satisfied with the current features. Users report positive experiences." (too generic, no specific impact)
 
 EXECUTIVE TITLE PATTERNS TO FOLLOW:
-- "Unclear speaker identification in Rev for multi-party recordings is causing user frustration"
+- "User experience declines when audio recording capabilities fail to isolate relevant content"
 - "High transcription costs and lengthy turnaround times are affecting operational efficiency for small firms"
 - "Subscription fatigue is hindering adoption of Rev's services among new firms"
 - "Rapid service delivery from Rev is impacting billable hours for attorneys"
@@ -118,7 +118,7 @@ THEME STRUCTURE REQUIREMENTS:
 - Focus on: specific product problems causing customer pain, or opportunities for improvement
 
 COMPREHENSIVE THEME CATEGORIES TO COVER:
-1. Product Quality Issues (speaker identification, audio quality, accuracy)
+1. Product Quality Issues (audio quality, accuracy, content isolation)
 2. Cost and Efficiency Concerns (transcription costs, turnaround times, operational efficiency)
 3. Market Adoption Barriers (subscription fatigue, adoption challenges)
 4. Revenue Impact Issues (billable hours, pricing models)
@@ -519,7 +519,7 @@ CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-st
         return real_patterns
     
     def _get_findings_json(self) -> str:
-        """Convert findings to JSON format for LLM processing with proper validation"""
+        """Convert findings to JSON format for LLM processing with proper validation and Rev-specific prioritization"""
         try:
             # Get findings from database
             findings = self.supabase.get_stage3_findings_list(self.client_id)
@@ -537,12 +537,41 @@ CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-st
                 logger.error("PROCESSING HALTED: Cannot verify company identification")
                 return ""
             
+            # Filter and prioritize findings based on classification
+            prioritized_findings = []
+            
+            # First, prioritize Rev-specific findings
+            rev_specific_findings = []
+            market_trend_findings = []
+            unclassified_findings = []
+            
+            for _, finding in df.iterrows():
+                classification = finding.get('classification', '').strip()
+                
+                if f"{self.client_id}-specific" in classification.lower():
+                    rev_specific_findings.append(finding)
+                elif "market trend" in classification.lower():
+                    market_trend_findings.append(finding)
+                else:
+                    unclassified_findings.append(finding)
+            
+            logger.info(f"📊 Classification breakdown:")
+            logger.info(f"   {self.client_id}-specific findings: {len(rev_specific_findings)}")
+            logger.info(f"   Market trend findings: {len(market_trend_findings)}")
+            logger.info(f"   Unclassified findings: {len(unclassified_findings)}")
+            
+            # Prioritize Rev-specific findings first, then market trends, then unclassified
+            prioritized_findings.extend(rev_specific_findings)
+            prioritized_findings.extend(market_trend_findings)
+            prioritized_findings.extend(unclassified_findings)
+            
             # Ensure all required columns exist
             required_columns = [
                 'finding_id', 'finding_statement', company_field, 'date', 
                 'deal_status', 'interviewee_name', 'supporting_response_ids', 
                 'evidence_strength', 'finding_category', 'criteria_met', 
-                'priority_level', 'primary_quote', 'secondary_quote', 'quote_attributions'
+                'priority_level', 'primary_quote', 'secondary_quote', 'quote_attributions',
+                'classification', 'classification_reasoning'
             ]
             
             for col in required_columns:
@@ -555,17 +584,23 @@ CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-st
                 if col not in df.columns:
                     df[col] = ""
             
-            # Convert to list of dictionaries (JSON format)
-            findings_list = df[required_columns + metadata_columns].to_dict('records')
+            # Convert prioritized findings to list of dictionaries (JSON format)
+            findings_list = []
+            for finding in prioritized_findings:
+                finding_dict = {}
+                for col in required_columns + metadata_columns:
+                    finding_dict[col] = finding.get(col, "")
+                findings_list.append(finding_dict)
             
             # Convert to JSON string
             findings_json = json.dumps(findings_list, indent=2)
             
-            logger.info(f"📊 Prepared {len(findings_list)} findings in JSON format")
+            logger.info(f"📊 Prepared {len(findings_list)} prioritized findings in JSON format")
+            logger.info(f"   Priority order: {self.client_id}-specific → Market trends → Unclassified")
             return findings_json
             
         except Exception as e:
-            logger.error(f"❌ Error preparing findings for LLM: {str(e)}")
+            logger.error(f"❌ Error getting findings JSON: {e}")
             return ""
     
     def _identify_company_field(self, df: pd.DataFrame) -> str:
@@ -626,7 +661,7 @@ THEME STATEMENT REQUIREMENTS (Two-Sentence Executive Framework):
 - Focus on specific product problems causing customer pain, or opportunities for improvement
 
 COMPREHENSIVE THEME CATEGORIES TO COVER:
-1. Product Quality Issues (speaker identification, audio quality, accuracy)
+1. Product Quality Issues (audio quality, accuracy, content isolation)
 2. Cost and Efficiency Concerns (transcription costs, turnaround times, operational efficiency)
 3. Market Adoption Barriers (subscription fatigue, adoption challenges)
 4. Revenue Impact Issues (billable hours, pricing models)
@@ -769,14 +804,14 @@ Return ONLY the JSON object (no explanations or extra text).
             return []
     
     def _match_themes_to_findings(self, themes: List[Dict], findings: List[Dict]) -> List[Dict]:
-        """Match themes to findings using embedding-based association and attach real quotes"""
+        """Match themes to findings using hybrid approach: always try keyword-based matching first, then fallback to embedding-based association"""
         try:
             # Step 1: Create embeddings for all findings
             logger.info("🔍 Creating embeddings for all findings...")
             finding_embeddings = self._create_finding_embeddings(findings)
             
-            # Step 2: Enhance theme associations using embeddings
-            logger.info("🔍 Enhancing theme associations using embeddings...")
+            # Step 2: Enhance theme associations using hybrid matching
+            logger.info("🔍 Enhancing theme associations using hybrid matching (keyword first for all themes)...")
             enhanced_themes = []
             
             # Create embeddings for all themes in batch
@@ -794,7 +829,7 @@ Return ONLY the JSON object (no explanations or extra text).
             if theme_texts:
                 theme_embeddings = self._get_batch_embeddings(theme_texts)
             
-            # Process each theme with its embedding
+            # Process each theme with hybrid matching
             for i, theme in enumerate(themes):
                 theme_embedding = []
                 if i in theme_indices:
@@ -802,11 +837,20 @@ Return ONLY the JSON object (no explanations or extra text).
                     if embedding_index < len(theme_embeddings):
                         theme_embedding = theme_embeddings[embedding_index]
                 
-                # Find most similar findings
-                similar_findings = self._find_similar_findings(
-                    theme_embedding, finding_embeddings, findings, 
-                    top_k=8, similarity_threshold=0.5  # Relaxed threshold for more associations
-                )
+                # Always try keyword-based matching first for all themes
+                keyword_matches = self._find_keyword_matches(theme, findings)
+                
+                if keyword_matches:
+                    # Use keyword matches if found
+                    similar_findings = keyword_matches
+                    logger.info(f"✅ Theme {theme.get('theme_id', 'unknown')}: Found {len(similar_findings)} keyword matches")
+                else:
+                    # Fall back to embedding-based matching
+                    similar_findings = self._find_similar_findings(
+                        theme_embedding, finding_embeddings, findings, 
+                        top_k=8, similarity_threshold=0.5
+                    )
+                    logger.info(f"🔍 Theme {theme.get('theme_id', 'unknown')}: Using embedding matches ({len(similar_findings)} found)")
                 
                 # Update theme with enhanced associations
                 if similar_findings:
@@ -860,6 +904,62 @@ Return ONLY the JSON object (no explanations or extra text).
         except Exception as e:
             logger.error(f"❌ Error matching themes to findings: {str(e)}")
             return themes
+    
+    def _find_keyword_matches(self, theme: Dict, findings: List[Dict]) -> List[Dict]:
+        """Find keyword-based matches for specific themes"""
+        theme_title = theme.get('theme_title', '').lower()
+        theme_statement = theme.get('theme_statement', '').lower()
+        theme_text = f"{theme_title} {theme_statement}"
+        
+        # Define keyword patterns for specific themes
+        keyword_patterns = {
+            'speaker': {
+                'keywords': ['speaker', 'voice recognition', 'multi-speaker', 'speaker identification', 'speaker accuracy'],
+                'finding_keywords': ['speaker', 'voice recognition', 'multi-speaker', 'speaker identification', 'overlapping dialogue', 'speaker attribution']
+            },
+            'accuracy': {
+                'keywords': ['accuracy', 'inaccurate', 'transcription accuracy', 'accuracy issues'],
+                'finding_keywords': ['accuracy', 'inaccurate', 'transcription accuracy', 'errors', 'corrections']
+            },
+            'cost': {
+                'keywords': ['cost', 'pricing', 'subscription', 'expensive', 'affordable'],
+                'finding_keywords': ['cost', 'pricing', 'subscription', 'expensive', 'affordable', 'monthly fee']
+            },
+            'integration': {
+                'keywords': ['integration', 'connect', 'platform', 'workflow'],
+                'finding_keywords': ['integration', 'connect', 'platform', 'workflow', 'tools']
+            },
+            'turnaround': {
+                'keywords': ['turnaround', 'speed', 'time', 'delivery', 'quick'],
+                'finding_keywords': ['turnaround', 'speed', 'time', 'delivery', 'quick', 'minutes', 'hours']
+            }
+        }
+        
+        # Check if theme matches any keyword pattern
+        matched_pattern = None
+        for pattern_name, pattern_data in keyword_patterns.items():
+            if any(keyword in theme_text for keyword in pattern_data['keywords']):
+                matched_pattern = pattern_name
+                break
+        
+        if not matched_pattern:
+            return []
+        
+        # Find findings that match the pattern
+        matching_findings = []
+        for finding in findings:
+            finding_text = f"{finding.get('finding_statement', '')} {finding.get('primary_quote', '')}".lower()
+            
+            # Check if finding contains relevant keywords
+            pattern_keywords = keyword_patterns[matched_pattern]['finding_keywords']
+            if any(keyword in finding_text for keyword in pattern_keywords):
+                matching_findings.append(finding)
+        
+        # Sort by confidence and return top matches
+        matching_findings.sort(key=lambda x: x.get('enhanced_confidence', 0), reverse=True)
+        
+        # Return top 5 matches for the pattern
+        return matching_findings[:5]
     
     def _create_finding_embeddings(self, findings: List[Dict]) -> Dict[str, List[float]]:
         """Create embeddings for all findings using batch API call"""
