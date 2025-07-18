@@ -214,15 +214,17 @@ def show_stage3_findings():
         st.error("❌ Database not available")
         return
     
-    # Check if we have Stage 2 data
+    # Check if we have Stage 1 data (Stage 3 can work directly from Stage 1)
     try:
-        from stage2_ui import get_stage2_summary
-        stage2_summary = get_stage2_summary()
-        if not stage2_summary or stage2_summary.get('quotes_with_scores', 0) == 0:
-            st.info("📊 Please run Stage 2 quote scoring first")
+        client_id = get_client_id()
+        stage1_data = db.get_stage1_data_responses(client_id=client_id)
+        if stage1_data.empty:
+            st.info("📊 Please run Stage 1 data extraction first")
             return
+        else:
+            st.success(f"✅ Found {len(stage1_data)} Stage 1 responses for client {client_id}")
     except Exception as e:
-        st.error(f"❌ Error checking Stage 2 data: {e}")
+        st.error(f"❌ Error checking Stage 1 data: {e}")
         return
     
     # Check if we have existing findings
