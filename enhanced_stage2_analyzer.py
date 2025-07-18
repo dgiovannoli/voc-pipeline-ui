@@ -1165,21 +1165,40 @@ class SupabaseStage2Analyzer:
 
     def _prepare_batch_for_llm(self, batch_df):
         """Helper to prepare batch text for LLM, including headers and criteria"""
-        batch_text = "Analyze the following customer quotes for relevance to different criteria. For each quote, provide:\n"
-        batch_text += "1. Relevance scores (0-10) for each criterion\n"
-        batch_text += "2. Priority level (critical/high/medium/low)\n"
-        batch_text += "3. Confidence level (high/medium/low)\n"
-        batch_text += "4. Brief explanation of relevance\n\n"
-        batch_text += "Criteria: Product Capability, Customer Experience, Pricing, Support, Integration, Performance, Security, Usability, Reliability, Innovation\n\n"
-        batch_text += "Quotes:\n"
+        batch_text = """Analyze the following customer quotes for relevance to 10 executive criteria. For each quote, provide a JSON response with:
+
+1. Relevance scores (0-5) for each criterion where 0=not mentioned, 1=slight mention, 2=clear mention, 3=strong emphasis, 4=critical feedback, 5=exceptional praise
+2. Sentiment (positive/negative/neutral/mixed)
+3. Priority level (critical/high/medium/low)
+4. Confidence level (high/medium/low)
+5. Brief explanation of relevance
+
+The 10 executive criteria are:
+1. product_capability: Functionality, features, performance, core solution fit
+2. implementation_onboarding: Deployment ease, time-to-value, setup complexity
+3. integration_technical_fit: APIs, data compatibility, technical architecture
+4. support_service_quality: Post-sale support, responsiveness, expertise, SLAs
+5. security_compliance: Data protection, certifications, governance, risk management
+6. market_position_reputation: Brand trust, references, analyst recognition
+7. vendor_stability: Financial health, roadmap clarity, long-term viability
+8. sales_experience_partnership: Buying process quality, relationship building
+9. commercial_terms: Price, contract flexibility, ROI, total cost of ownership
+10. speed_responsiveness: Implementation timeline, decision-making speed, agility
+
+Respond with a JSON array where each element has: quote_id, relevance_scores (object with criterion names as keys), sentiment, priority, confidence, explanation.
+
+Quotes:\n"""
         
         for idx, row in batch_df.iterrows():
+            quote_id = row['response_id'] if 'response_id' in row else f'quote_{idx}'
             quote_text = row['verbatim_response'] if 'verbatim_response' in row else ''
             customer_name = row['interviewee_name'] if 'interviewee_name' in row else 'Unknown'
             deal_status = row['deal_status'] if 'deal_status' in row else 'Unknown'
             
-            batch_text += f"Quote {idx + 1} (Customer: {customer_name}, Deal: {deal_status}):\n"
-            batch_text += f"{quote_text}\n\n"
+            batch_text += f"Quote ID: {quote_id}\n"
+            batch_text += f"Customer: {customer_name}\n"
+            batch_text += f"Deal Status: {deal_status}\n"
+            batch_text += f"Text: {quote_text}\n\n"
         
         return batch_text
     
@@ -1196,7 +1215,16 @@ class SupabaseStage2Analyzer:
         )
         
         prompt = ChatPromptTemplate.from_messages([
-            ("system", "You are an expert at analyzing customer feedback for business insights. Provide structured analysis for each quote."),
+            ("system", """You are an expert at analyzing customer feedback for business insights. You must respond with valid JSON only.
+
+For each quote, analyze relevance to 10 executive criteria and provide:
+- Relevance scores (0-5 scale)
+- Sentiment analysis (positive/negative/neutral/mixed)
+- Priority level (critical/high/medium/low)
+- Confidence level (high/medium/low)
+- Brief explanation
+
+Respond with a JSON array where each element contains: quote_id, relevance_scores (object), sentiment, priority, confidence, explanation."""),
             ("user", batch_text)
         ])
         
@@ -1207,31 +1235,68 @@ class SupabaseStage2Analyzer:
         """Parse LLM response for batch of quotes"""
         results = []
         
-        # For now, create a simple result for each quote in the batch
-        # This is a placeholder - in production you'd want proper LLM response parsing
-        for idx, row in batch_df.iterrows():
-            quote_id = row['response_id'] if 'response_id' in row else f'quote_{idx}'
-            
-            result = {
-                'quote_id': quote_id,
-                'criteria_scores': {
-                    'product_capability': 5.0,  # Default scores
-                    'customer_experience': 5.0,
-                    'pricing': 5.0,
-                    'support': 5.0,
-                    'integration': 5.0,
-                    'performance': 5.0,
-                    'security': 5.0,
-                    'usability': 5.0,
-                    'reliability': 5.0,
-                    'innovation': 5.0
-                },
-                'priority': 'medium',
-                'confidence': 'medium',
-                'explanation': 'Default analysis'
-            }
-            
-            results.append(result)
+        try:
+            # Try to extract JSON from the response
+            import re
+            json_match = re.search(r'\[.*\]', llm_response, re.DOTALL)
+            if json_match:
+                json_str = json_match.group()
+                parsed_results = json.loads(json_str)
+                
+                for result in parsed_results:
+                    if isinstance(result, dict) and 'quote_id' in result:
+                        results.append(result)
+                    else:
+                        print(f"Warning: Invalid result format: {result}")
+            else:
+                print(f"Warning: No JSON array found in LLM response")
+                # Fallback to default analysis
+                for idx, row in batch_df.iterrows():
+                    quote_id = row['response_id'] if 'response_id' in row else f'quote_{idx}'
+                    results.append({
+                        'quote_id': quote_id,
+                        'relevance_scores': {
+                            'product_capability': 2,
+                            'implementation_onboarding': 2,
+                            'integration_technical_fit': 2,
+                            'support_service_quality': 2,
+                            'security_compliance': 2,
+                            'market_position_reputation': 2,
+                            'vendor_stability': 2,
+                            'sales_experience_partnership': 2,
+                            'commercial_terms': 2,
+                            'speed_responsiveness': 2
+                        },
+                        'sentiment': 'neutral',
+                        'priority': 'medium',
+                        'confidence': 'medium',
+                        'explanation': 'Default analysis - LLM response parsing failed'
+                    })
+        except Exception as e:
+            print(f"Error parsing LLM response: {e}")
+            print(f"LLM Response: {llm_response[:500]}...")
+            # Fallback to default analysis
+            for idx, row in batch_df.iterrows():
+                quote_id = row['response_id'] if 'response_id' in row else f'quote_{idx}'
+                results.append({
+                    'quote_id': quote_id,
+                    'relevance_scores': {
+                        'product_capability': 2,
+                        'implementation_onboarding': 2,
+                        'integration_technical_fit': 2,
+                        'support_service_quality': 2,
+                        'security_compliance': 2,
+                        'market_position_reputation': 2,
+                        'vendor_stability': 2,
+                        'sales_experience_partnership': 2,
+                        'commercial_terms': 2,
+                        'speed_responsiveness': 2
+                    },
+                    'sentiment': 'neutral',
+                    'priority': 'medium',
+                    'confidence': 'medium',
+                    'explanation': f'Default analysis - Error: {str(e)}'
+                })
         
         return results
     
@@ -1245,27 +1310,36 @@ class SupabaseStage2Analyzer:
             if not isinstance(result, dict):
                 print(f"[ERROR] Skipping non-dict result: {result}")
                 continue
-            for criterion, score in result.get('criteria_scores', {}).items():
+            
+            # Get relevance scores from the result
+            relevance_scores = result.get('relevance_scores', {})
+            if not relevance_scores:
+                print(f"[ERROR] No relevance_scores found in result: {result}")
+                continue
+            
+            # Save each criterion score as a separate record
+            for criterion, score in relevance_scores.items():
+                # Apply deal outcome weighting if available
+                deal_weighted_score = score
+                if 'deal_status' in result:
+                    deal_status = result['deal_status']
+                    if deal_status == 'Closed Lost':
+                        deal_weighted_score = score * 1.2  # 20% higher weight for lost deals
+                    elif deal_status == 'Closed Won':
+                        deal_weighted_score = score * 0.9  # 10% lower weight for won deals
+                
                 db_record = {
                     'quote_id': result.get('quote_id', ''),
                     'criterion': criterion,
-                    'relevance_score': score,
-                    'sentiment': 'neutral',  # Default
+                    'relevance_score': int(score),  # Convert to integer for database constraint
+                    'sentiment': result.get('sentiment', 'neutral'),
                     'priority': result.get('priority', 'medium'),
                     'confidence': result.get('confidence', 'medium'),
                     'relevance_explanation': result.get('explanation', ''),
-                    'deal_weighted_score': score,  # Simple for now
+                    'deal_weighted_score': float(deal_weighted_score),
                     'context_keywords': '',
-                    'question_relevance': 'direct',  # Fixed: use valid constraint value
-                    'client_id': client_id,
-                    'supporting_quote': '',
-                    'quote_context': '',
-                    'subject_verification': '',
-                    'speaker_verification': '',
-                    'quality_score': 0,
-                    'quality_issues': '[]',
-                    'deal_outcome': 'unknown',
-                    'customer_id': 'unknown'
+                    'question_relevance': 'direct',
+                    'client_id': client_id
                 }
                 try:
                     self.supabase.save_stage2_response_labeling(db_record)
