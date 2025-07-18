@@ -1,158 +1,217 @@
 import streamlit as st
+import pandas as pd
 import os
 import sys
 import subprocess
-import pathlib
-import pandas as pd
-from datetime import datetime
-from supabase_database import SupabaseDatabase
-from dotenv import load_dotenv
-import concurrent.futures
+from pathlib import Path
 import threading
-from typing import List, Tuple, Dict
-
-# Load environment variables
-load_dotenv()
-
-# Initialize Supabase database
-try:
-    db = SupabaseDatabase()
-    SUPABASE_AVAILABLE = True
-except Exception as e:
-    SUPABASE_AVAILABLE = False
-    st.error(f"❌ Failed to connect to Supabase: {e}")
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import re
+from typing import Tuple, Dict, List
+from supabase_database import SupabaseDatabase
 
 # Constants
-BASE = pathlib.Path(__file__).parent
-STAGE1_CSV = BASE / "stage1_output.csv"
+BASE = Path("temp")
+STAGE1_CSV = BASE / "stage1_data_responses.csv"
+SUPABASE_AVAILABLE = True
 
-# Thread-safe progress tracking
-progress_lock = threading.Lock()
-progress_data = {"completed": 0, "total": 0, "results": [], "errors": []}
+try:
+    db = SupabaseDatabase()
+except Exception as e:
+    st.error(f"❌ Database connection failed: {e}")
+    SUPABASE_AVAILABLE = False
+
+def extract_interview_id_from_file(file_path: str) -> str:
+    """Extract interview ID from the top of a transcript file"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # Read first few lines to find interview ID
+            first_lines = []
+            for i in range(10):  # Check first 10 lines
+                line = f.readline().strip()
+                if line:
+                    first_lines.append(line)
+            
+            # Look for interview ID patterns
+            for line in first_lines:
+                # Pattern: IVW-XXXXX (Rev format)
+                match = re.search(r'IVW-\d+', line)
+                if match:
+                    return match.group(0)
+                
+                # Pattern: Interview ID: XXXXX
+                match = re.search(r'Interview ID:\s*([A-Z0-9-]+)', line, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+                
+                # Pattern: ID: XXXXX
+                match = re.search(r'ID:\s*([A-Z0-9-]+)', line, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+        
+        return ""
+    except Exception as e:
+        st.warning(f"Could not extract interview ID from {file_path}: {e}")
+        return ""
+
+def get_metadata_for_interview_id(interview_id: str, client_id: str) -> Dict:
+    """Get metadata for a given interview ID from the database"""
+    if not SUPABASE_AVAILABLE or not interview_id:
+        return {}
+    
+    try:
+        # Query the metadata table for this interview ID
+        response = db.supabase.table('interview_metadata').select('*').eq('interview_id', interview_id).eq('client_id', client_id).execute()
+        
+        if response.data:
+            metadata = response.data[0]
+            return {
+                'interviewee_name': metadata.get('interviewee_name', ''),
+                'company': metadata.get('company', ''),
+                'deal_status': metadata.get('deal_status', ''),
+                'date_of_interview': metadata.get('date_of_interview', ''),
+                'interview_id': metadata.get('interview_id', '')
+            }
+        else:
+            st.warning(f"No metadata found for interview ID: {interview_id}")
+            return {}
+    except Exception as e:
+        st.error(f"Error getting metadata for interview ID {interview_id}: {e}")
+        return {}
 
 def extract_interviewee_and_company(filename):
-    """Extract interviewee and company from filename."""
-    import re
-    base = os.path.basename(filename).replace('.docx', '').replace('.txt', '')
+    """Extract interviewee and company from filename"""
+    # Remove file extension
+    name = os.path.splitext(filename)[0]
     
-    if not base.lower().startswith("interview with "):
-        return ("Unknown", "Unknown")
+    # Split by common separators
+    parts = re.split(r'[_\-\s]+', name)
     
-    base = base[len("interview with "):]
-    parts = [p.strip() for p in base.split(",")]
-    interviewee = parts[0] if parts else "Unknown"
-    company = "Unknown"
-    for part in parts[1:]:
-        match = re.search(r'at (.+)', part, re.IGNORECASE)
-        if match:
-            company = match.group(1).strip()
-            break
+    if len(parts) >= 2:
+        # Assume first part is interviewee, second is company
+        interviewee = parts[0]
+        company = parts[1]
+        
+        # Handle cases with more parts
+        if len(parts) > 2:
+            # If there are numbers or additional parts, include them in company
+            company_parts = []
+            for part in parts[1:]:
+                if not part.isdigit() or len(part) <= 2:  # Include short numbers
+                    company_parts.append(part)
+            company = ' '.join(company_parts)
+    else:
+        interviewee = name
+        company = "Unknown"
+    
     return interviewee, company
 
 def save_uploaded_files(uploaded_files, upload_dir="uploads"):
-    """Save uploaded Streamlit files to disk and return a list of file paths."""
+    """Save uploaded files and return their paths"""
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
+    
     saved_paths = []
     for uploaded_file in uploaded_files:
         file_path = os.path.join(upload_dir, uploaded_file.name)
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
         saved_paths.append(file_path)
+    
     return saved_paths
 
 def get_client_id():
-    """Safely get client_id from session state."""
-    client_id = st.session_state.get('client_id', '')
-    if not client_id or client_id == 'default':
-        st.error("❌ **Client ID Required**")
-        st.info("Please set a client ID in the sidebar before proceeding.")
-        st.stop()
-    return client_id
+    """Get client ID from session state or sidebar"""
+    if 'client_id' in st.session_state and st.session_state.client_id:
+        return st.session_state.client_id
+    return ""
 
 def process_single_file(file_info: Tuple[int, str]) -> Dict:
     """Process a single file and return results"""
-    global progress_data
-    
     file_index, file_path = file_info
-    filename = os.path.basename(file_path)
+    result = {
+        'success': False,
+        'filename': os.path.basename(file_path),
+        'data': None,
+        'quotes_count': 0,
+        'error': None
+    }
     
     try:
-        interviewee, company = extract_interviewee_and_company(filename)
+        # Extract interview ID from file
+        interview_id = extract_interview_id_from_file(file_path)
+        client_id = get_client_id()
+        
+        # Get metadata if interview ID found
+        metadata = {}
+        if interview_id:
+            metadata = get_metadata_for_interview_id(interview_id, client_id)
+            st.info(f"📋 Found interview ID: {interview_id} for {os.path.basename(file_path)}")
+        
+        # Use metadata if available, otherwise extract from filename
+        if metadata:
+            interviewee = metadata.get('interviewee_name', '')
+            company = metadata.get('company', '')
+            deal_status = metadata.get('deal_status', 'closed_won')
+            date_of_interview = metadata.get('date_of_interview', '2024-01-01')
+            st.success(f"✅ Using metadata for {os.path.basename(file_path)}: {interviewee} at {company}")
+        else:
+            interviewee, company = extract_interviewee_and_company(os.path.basename(file_path))
+            deal_status = "closed_won"
+            date_of_interview = "2024-01-01"
+            st.info(f"📝 Using filename extraction for {os.path.basename(file_path)}: {interviewee} at {company}")
+        
+        # Create temporary output file
         temp_output = BASE / f"temp_output_{file_index}.csv"
         
-        # Run the extraction process
-        result = subprocess.run([
+        # Run the modular CLI
+        cmd = [
             sys.executable, "-m", "voc_pipeline.modular_cli", "extract-core",
-            file_path, company, interviewee, "closed_won", "2024-01-01", "-o", str(temp_output)
-        ], capture_output=True, text=True, timeout=300)  # 5 minute timeout
+            file_path, company, interviewee, deal_status, date_of_interview, "-o", str(temp_output)
+        ]
         
-        if result.returncode == 0 and temp_output.exists():
+        process_result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+        
+        if process_result.returncode == 0 and temp_output.exists():
             try:
                 df_temp = pd.read_csv(temp_output)
-                file_result = {
-                    'success': True,
-                    'filename': filename,
-                    'quotes_count': len(df_temp),
-                    'data': df_temp,
-                    'error': None
-                }
+                
+                # Add metadata fields if available
+                if metadata:
+                    df_temp['interview_id'] = metadata.get('interview_id', '')
+                    df_temp['interviewee_name'] = metadata.get('interviewee_name', '')
+                    df_temp['company'] = metadata.get('company', '')
+                    df_temp['deal_status'] = metadata.get('deal_status', '')
+                    df_temp['date_of_interview'] = metadata.get('date_of_interview', '')
+                    df_temp['client_id'] = client_id
+                else:
+                    # Use extracted values
+                    df_temp['interviewee_name'] = interviewee
+                    df_temp['company'] = company
+                    df_temp['deal_status'] = deal_status
+                    df_temp['date_of_interview'] = date_of_interview
+                    df_temp['client_id'] = client_id
+                
+                result['data'] = df_temp
+                result['quotes_count'] = len(df_temp)
+                result['success'] = True
+                
             except Exception as e:
-                file_result = {
-                    'success': False,
-                    'filename': filename,
-                    'quotes_count': 0,
-                    'data': None,
-                    'error': f"CSV read error: {e}"
-                }
+                result['error'] = f"Failed to read CSV: {e}"
         else:
-            file_result = {
-                'success': False,
-                'filename': filename,
-                'quotes_count': 0,
-                'data': None,
-                'error': f"Process failed: {result.stderr}"
-            }
+            result['error'] = f"Process failed: {process_result.stderr}"
         
         # Clean up temp file
         if temp_output.exists():
             temp_output.unlink()
-        
-        # Update progress thread-safely
-        with progress_lock:
-            progress_data["completed"] += 1
-            if file_result['success']:
-                progress_data["results"].append(file_result)
-            else:
-                progress_data["errors"].append(file_result)
-        
-        return file_result
-        
+            
     except subprocess.TimeoutExpired:
-        error_result = {
-            'success': False,
-            'filename': filename,
-            'quotes_count': 0,
-            'data': None,
-            'error': "Process timed out (5 minutes)"
-        }
-        with progress_lock:
-            progress_data["completed"] += 1
-            progress_data["errors"].append(error_result)
-        return error_result
-        
+        result['error'] = "Process timed out"
     except Exception as e:
-        error_result = {
-            'success': False,
-            'filename': filename,
-            'quotes_count': 0,
-            'data': None,
-            'error': f"Unexpected error: {e}"
-        }
-        with progress_lock:
-            progress_data["completed"] += 1
-            progress_data["errors"].append(error_result)
-        return error_result
+        result['error'] = str(e)
+    
+    return result
 
 def process_files_with_progress_parallel():
     """Process uploaded files with parallel processing and progress tracking"""
@@ -160,61 +219,48 @@ def process_files_with_progress_parallel():
         st.error("No files uploaded")
         return
     
-    # Reset progress data
-    global progress_data
-    with progress_lock:
-        progress_data = {
-            "completed": 0, 
-            "total": len(st.session_state.uploaded_paths), 
-            "results": [], 
-            "errors": []
-        }
-    
     progress_bar = st.progress(0)
     status_text = st.empty()
     
+    total_files = len(st.session_state.uploaded_paths)
+    completed = 0
+    successful_results = []
+    error_count = 0
+    
     # Determine number of workers (conservative approach)
-    max_workers = min(3, len(st.session_state.uploaded_paths))  # Max 3 concurrent processes
+    max_workers = min(3, total_files)  # Max 3 concurrent processes
     
     # Prepare file info for processing
     file_infos = [(i, path) for i, path in enumerate(st.session_state.uploaded_paths)]
     
     # Process files in parallel
-    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks
         future_to_file = {executor.submit(process_single_file, file_info): file_info for file_info in file_infos}
         
-        # Monitor progress
-        while not all(future.done() for future in future_to_file):
-            with progress_lock:
-                completed = progress_data["completed"]
-                total = progress_data["total"]
-                progress = completed / total if total > 0 else 0
-            
-            progress_bar.progress(progress)
-            status_text.text(f"Processing files... {completed}/{total} completed")
-            
-            # Update every 0.5 seconds
-            import time
-            time.sleep(0.5)
+        # Process completed tasks
+        for future in as_completed(future_to_file):
+            try:
+                result = future.result()
+                completed += 1
+                progress_bar.progress(completed / total_files)
+                status_text.text(f"Processing {completed}/{total_files} files...")
+                
+                if result['success'] and result['data'] is not None:
+                    successful_results.append(result['data'])
+                    st.success(f"✅ {result['filename']}: {result['quotes_count']} quotes extracted")
+                else:
+                    st.warning(f"⚠️ {result['filename']}: {result['error']}")
+                    error_count += 1
+                    
+            except Exception as e:
+                st.error(f"Unexpected error: {e}")
+                completed += 1
+                error_count += 1
     
     # Final progress update
     progress_bar.progress(1.0)
     status_text.text("Processing complete!")
-    
-    # Collect results
-    successful_results = []
-    error_count = 0
-    
-    with progress_lock:
-        for result in progress_data["results"]:
-            if result['success'] and result['data'] is not None:
-                successful_results.append(result['data'])
-                st.success(f"✅ {result['filename']}: {result['quotes_count']} quotes extracted")
-        
-        for error in progress_data["errors"]:
-            st.warning(f"⚠️ {error['filename']}: {error['error']}")
-            error_count += 1
     
     # Combine successful results
     if successful_results:
@@ -272,7 +318,7 @@ def process_files_with_progress():
         st.error("No quotes extracted")
 
 def save_stage1_to_supabase(csv_path):
-    """Save Stage 1 results to Supabase"""
+    """Save Stage 1 results to Supabase with metadata linking"""
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return False
@@ -291,15 +337,21 @@ def save_stage1_to_supabase(csv_path):
                 'deal_status': row.get('deal_status', '') or row.get('Deal Status', 'closed_won'),
                 'company': row.get('company', '') or row.get('Company Name', ''),
                 'interviewee_name': row.get('interviewee_name', '') or row.get('Interviewee Name', ''),
-                'interview_date': row.get('interview_date', '') or row.get('Date of Interview', '2024-01-01'),
+                'interview_date': row.get('date_of_interview', '') or row.get('Date of Interview', '2024-01-01'),
+                'interview_id': row.get('interview_id', ''),  # New field for metadata linking
                 'file_source': 'stage1_processing',
                 'client_id': client_id
             }
+            
             if not response_data['response_id']:
                 st.warning(f"Blank response_id for row: {row}")
+            
             if db.save_core_response(response_data):
                 saved_count += 1
+        
         st.success(f"✅ Saved {saved_count} quotes to database for client: {client_id}")
+        if any(row.get('interview_id') for _, row in df.iterrows()):
+            st.success(f"🔗 {sum(1 for _, row in df.iterrows() if row.get('interview_id'))} quotes linked to metadata")
         return True
     except Exception as e:
         st.error(f"❌ Failed to save to database: {e}")
