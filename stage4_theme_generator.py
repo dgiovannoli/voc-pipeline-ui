@@ -54,6 +54,25 @@ class EnhancedThemeGeneratorScalable:
         return f"""
 CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-style titles that capture SPECIFIC customer feedback and detailed insights from the interview data.
 
+THEME TITLE REQUIREMENTS (CRITICAL - MUST FOLLOW EXACTLY):
+- Titles MUST clearly identify the SPECIFIC problem from findings using exact terminology
+- Use concrete, evidence-based language from actual findings - NO generic terms
+- NO generic titles like "efficiency declines", "quality issues", "user satisfaction"
+- MUST use specific terminology from findings (e.g., "speaker identification fails", "voice recognition errors")
+- Include specific context when available (e.g., "multi-party recordings")
+- Titles MUST be specific enough that Rev immediately understands the exact issue
+- Highlight business impact or consequence using evidence from findings
+
+EXAMPLES OF GOOD TITLES (use this format):
+- "Speaker identification failures in multi-party recordings force manual corrections"
+- "Voice recognition errors affect speaker distinction in legal transcripts"
+- "Transcription inaccuracies require extensive manual revisions during case preparation"
+
+EXAMPLES OF BAD TITLES (DO NOT USE):
+- "Audio quality issues disrupt user satisfaction" (too generic)
+- "Workflow efficiency declines due to unclear audio quality" (too vague)
+- "Transcription quality issues hinder case preparation efficiency" (not specific enough)
+
 THEME COVERAGE REQUIREMENTS:
 - MUST include themes that capture SPECIFIC customer pain points and feedback from the interview data
 - MUST include themes for core product functionality and user experience issues with concrete details
@@ -82,16 +101,7 @@ PRIORITY REQUIREMENTS:
 - CRITICAL: Extract and use SPECIFIC customer pain points, complaints, and feedback from the interview data
 
 CRITICAL REQUIREMENTS:
-1. THEME TITLE REQUIREMENTS (Executive Framework):
-   - MUST clearly identify the SPECIFIC problem or issue from the findings
-   - MUST use concrete, evidence-based language from the actual findings
-   - MUST highlight the business impact or consequence
-   - MUST be specific enough that Rev immediately understands the issue
-   - NO generic titles like "efficiency declines" or "quality issues"
-   - Use specific terminology from findings (e.g., "speaker identification fails", "voice recognition errors")
-   - Include specific context when available (e.g., "multi-party recordings", "legal applications")
-
-2. THEME STATEMENT REQUIREMENTS (Two-Sentence Executive Framework):
+1. THEME STATEMENT REQUIREMENTS (Two-Sentence Executive Framework):
    - EXACTLY two sentences - NO MORE, NO LESS
    - Sentence 1: Decision behavior or specific problem with consequence (25-35 words max)
    - Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words max)
@@ -104,51 +114,35 @@ CRITICAL REQUIREMENTS:
    - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
    - CRITICAL: Use universal business language - NO industry-specific terms (legal, medical, financial, etc.)
    - CRITICAL: Include SPECIFIC customer pain points, complaints, and feedback details from the interview data
+
+2. EVIDENCE-BASED REQUIREMENTS:
+   - Extract SPECIFIC customer pain points, complaints, and feedback from the interview data
+   - Use concrete details like timeframes, specific errors, user behaviors, and customer reactions
+   - Avoid generic statements - every theme should reflect actual customer feedback
+   - Use exact terminology from findings in titles and statements
 
 3. CUSTOMER FEEDBACK REQUIREMENT:
    - Extract SPECIFIC customer pain points, complaints, and feedback from the interview data
    - Use concrete details like timeframes, specific errors, user behaviors, and customer reactions
    - Avoid generic statements - every theme should reflect actual customer feedback
 
-4. EVIDENCE-BASED LANGUAGE REQUIREMENT:
-   - Use ONLY language and terminology that appears in the actual findings
-   - Do not invent metrics, numbers, or specific details not present in findings
-   - Paraphrase customer feedback using the specific terms and concepts from findings
-   - If findings mention "speaker identification fails", use that exact terminology
-   - If findings mention "voice recognition errors", use that exact terminology
-   - If findings mention "multi-party recordings", use that exact context
+4. TITLE SPECIFICITY REQUIREMENTS:
+   - Every title MUST identify the exact problem using terminology from findings
+   - NO generic terms like "issues", "problems", "concerns" without specific context
+   - Use specific product features, errors, or user behaviors mentioned in findings
+   - Include specific context (e.g., "multi-party recordings", "case preparation", "transcript review")
 
-5. THEME STATEMENT REQUIREMENTS (Two-Sentence Executive Framework):
-   - EXACTLY two sentences - NO MORE, NO LESS
-   - Sentence 1: Decision behavior or specific problem with consequence (25-35 words max)
-   - Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words max)
-   - NO direct quotes in the statement - only in the quote fields
-   - NO solutioning language ("indicating a need for", "suggesting", "recommending")
-   - NO generic statements; must be specific and paraphrased using customer feedback details
-   - NO invented numbers or company names
-   - If evidence is qualitative, state it as such
-   - Focus on specific product problems causing customer pain, or opportunities for improvement
-   - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
-   - CRITICAL: Use universal business language - NO industry-specific terms (legal, medical, financial, etc.)
-   - CRITICAL: Include SPECIFIC customer pain points, complaints, and feedback details from the interview data
+5. SPEAKER ACCURACY THEME REQUIREMENT:
+   - CRITICAL: If findings mention speaker identification, voice recognition, or audio quality issues, create a specific theme
+   - Use exact terminology from findings like "speaker identification fails", "voice recognition errors"
+   - Include specific context like "multi-party recordings" or "transcript clarity"
+   - Make the business impact clear (e.g., "force manual corrections", "affect speaker distinction")
 
-EXAMPLE THEME (Evidence-Based):
-Title: "Speaker identification failures in multi-party recordings force manual corrections, increasing transcription review time"
-Statement: "Speaker identification accuracy drops significantly when multiple speakers are present in recordings, forcing users to manually identify speakers during review. Users report that this failure disrupts their workflow and requires extensive manual corrections that increase preparation time."
+EXAMPLE THEME (Follow this exact format):
+Title: "Speaker identification failures in multi-party recordings force manual corrections"
+Statement: "Users report that speaker identification fails in multi-party recordings, which significantly decreases transcription accuracy. Multiple customers mention that this absence affects case preparation timelines and forces them to use time-consuming manual search operations."
 
-OUTPUT FORMAT:
-Generate themes in this exact JSON format:
-{{
-    "themes": [
-        {{
-            "theme_title": "Specific, evidence-based title using terminology from findings",
-            "theme_statement": "First sentence: specific problem with consequence. Second sentence: customer pain point or reaction using evidence from findings.",
-            "supporting_finding_ids": ["F1", "F2", "F3"]
-        }}
-    ]
-}}
-
-CRITICAL: Every theme title and statement must use SPECIFIC evidence and terminology from the actual findings. Do not create generic themes or invent details not present in the findings data.
+CRITICAL: Generate themes that follow this exact format and specificity level. NO generic titles or statements.
 """
     
     def cluster_findings_for_themes(self, findings: List[Dict]) -> List[Dict]:
