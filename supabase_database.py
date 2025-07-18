@@ -134,18 +134,21 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save quote analysis: {e}")
             return False
     
-    def get_stage1_data_responses(self, filters: Optional[Dict] = None, client_id: str = 'default') -> pd.DataFrame:
+    def get_stage1_data_responses(self, filters: Optional[Dict] = None, client_id: Optional[str] = 'default') -> pd.DataFrame:
         """Get core responses from Supabase, filtered by client_id for data siloing"""
         try:
             query = self.supabase.table('stage1_data_responses').select('*')
             
-            # Handle empty or default client_id loudly
-            if not client_id or client_id == '' or client_id == 'default':
+            # Handle None client_id (get all data) or empty/default client_id
+            if client_id is None:
+                # Get all data across all clients
+                logger.info("📊 Retrieving all Stage 1 data across all clients")
+            elif not client_id or client_id == '' or client_id == 'default':
                 logger.error(f"❌ get_stage1_data_responses called with client_id='{client_id}'. Returning empty DataFrame. Call stack:\n" + ''.join(traceback.format_stack()))
                 return pd.DataFrame()
-            
-            # Always filter by client_id for data siloing
-            query = query.eq('client_id', client_id)
+            else:
+                # Filter by specific client_id for data siloing
+                query = query.eq('client_id', client_id)
             
             # Apply additional filters if provided
             if filters and isinstance(filters, dict):
@@ -163,7 +166,10 @@ class SupabaseDatabase:
             result = query.execute()
             df = pd.DataFrame(result.data)
             
-            logger.info(f"📊 Retrieved {len(df)} core responses from Supabase for client {client_id}")
+            if client_id is None:
+                logger.info(f"📊 Retrieved {len(df)} core responses from Supabase (all clients)")
+            else:
+                logger.info(f"📊 Retrieved {len(df)} core responses from Supabase for client {client_id}")
             return df
             
         except Exception as e:
