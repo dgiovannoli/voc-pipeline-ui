@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import logging
 from dotenv import load_dotenv
 import json
+import traceback
 
 # Supabase imports
 try:
@@ -138,9 +139,9 @@ class SupabaseDatabase:
         try:
             query = self.supabase.table('stage1_data_responses').select('*')
             
-            # Handle empty client_id gracefully
-            if not client_id or client_id == '':
-                logger.warning("⚠️ No client_id provided, returning empty dataset")
+            # Handle empty or default client_id loudly
+            if not client_id or client_id == '' or client_id == 'default':
+                logger.error(f"❌ get_stage1_data_responses called with client_id='{client_id}'. Returning empty DataFrame. Call stack:\n" + ''.join(traceback.format_stack()))
                 return pd.DataFrame()
             
             # Always filter by client_id for data siloing
