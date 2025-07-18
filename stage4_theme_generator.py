@@ -281,7 +281,7 @@ CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-st
             
             # Use DBSCAN for clustering with adjusted parameters
             clustering = DBSCAN(
-                eps=0.5,  # Increased threshold
+                eps=0.7,  # Higher threshold for more inclusive clustering
                 min_samples=2,  # Minimum cluster size
                 metric='precomputed'
             )
