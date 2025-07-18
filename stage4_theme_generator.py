@@ -1163,7 +1163,7 @@ Return ONLY the JSON object (no explanations or extra text).
                         }
                     
                     # Save to database
-                    success = self.supabase.save_theme(theme_data)
+                    success = self.supabase.save_theme(theme_data, self.client_id)
                     if success:
                         saved_count += 1
                         logger.info(f"✅ Saved theme/alert: {theme_data.get('theme_id', 'unknown')}")
