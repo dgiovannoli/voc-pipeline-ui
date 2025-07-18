@@ -52,7 +52,7 @@ class EnhancedThemeGeneratorScalable:
     def _load_comprehensive_theme_prompt(self) -> str:
         """Load the comprehensive theme generation prompt"""
         return f"""
-CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-style titles that capture SPECIFIC customer feedback and detailed insights from the interview data.
+⚠️ CRITICAL INSTRUCTION: You MUST follow these title requirements EXACTLY. If you do not follow them, your response will be rejected.
 
 THEME TITLE REQUIREMENTS (CRITICAL - MUST FOLLOW EXACTLY):
 - Titles MUST clearly identify the SPECIFIC problem from findings using exact terminology
@@ -72,6 +72,8 @@ EXAMPLES OF BAD TITLES (DO NOT USE):
 - "Audio quality issues disrupt user satisfaction" (too generic)
 - "Workflow efficiency declines due to unclear audio quality" (too vague)
 - "Transcription quality issues hinder case preparation efficiency" (not specific enough)
+
+CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-style titles that capture SPECIFIC customer feedback and detailed insights from the interview data.
 
 THEME COVERAGE REQUIREMENTS:
 - MUST include themes that capture SPECIFIC customer pain points and feedback from the interview data
@@ -850,10 +852,10 @@ Return ONLY the JSON object (no explanations or extra text).
             response = client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": "You are an expert B2B SaaS competitive intelligence analyst specializing in win/loss analysis and executive communication."},
+                    {"role": "system", "content": "You are an expert B2B SaaS competitive intelligence analyst specializing in win/loss analysis and executive communication. You MUST follow the user's instructions EXACTLY. Do not deviate from the specified format or requirements."},
                     {"role": "user", "content": full_prompt}
                 ],
-                temperature=0.3,
+                temperature=0.1,
                 max_tokens=4000
             )
             
