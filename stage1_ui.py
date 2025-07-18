@@ -7,6 +7,9 @@ import pandas as pd
 from datetime import datetime
 from supabase_database import SupabaseDatabase
 from dotenv import load_dotenv
+import concurrent.futures
+import threading
+from typing import List, Tuple, Dict
 
 # Load environment variables
 load_dotenv()
@@ -22,6 +25,10 @@ except Exception as e:
 # Constants
 BASE = pathlib.Path(__file__).parent
 STAGE1_CSV = BASE / "stage1_output.csv"
+
+# Thread-safe progress tracking
+progress_lock = threading.Lock()
+progress_data = {"completed": 0, "total": 0, "results": [], "errors": []}
 
 def extract_interviewee_and_company(filename):
     """Extract interviewee and company from filename."""
@@ -63,8 +70,165 @@ def get_client_id():
         st.stop()
     return client_id
 
+def process_single_file(file_info: Tuple[int, str]) -> Dict:
+    """Process a single file and return results"""
+    global progress_data
+    
+    file_index, file_path = file_info
+    filename = os.path.basename(file_path)
+    
+    try:
+        interviewee, company = extract_interviewee_and_company(filename)
+        temp_output = BASE / f"temp_output_{file_index}.csv"
+        
+        # Run the extraction process
+        result = subprocess.run([
+            sys.executable, "-m", "voc_pipeline.modular_cli", "extract-core",
+            file_path, company, interviewee, "closed_won", "2024-01-01", "-o", str(temp_output)
+        ], capture_output=True, text=True, timeout=300)  # 5 minute timeout
+        
+        if result.returncode == 0 and temp_output.exists():
+            try:
+                df_temp = pd.read_csv(temp_output)
+                file_result = {
+                    'success': True,
+                    'filename': filename,
+                    'quotes_count': len(df_temp),
+                    'data': df_temp,
+                    'error': None
+                }
+            except Exception as e:
+                file_result = {
+                    'success': False,
+                    'filename': filename,
+                    'quotes_count': 0,
+                    'data': None,
+                    'error': f"CSV read error: {e}"
+                }
+        else:
+            file_result = {
+                'success': False,
+                'filename': filename,
+                'quotes_count': 0,
+                'data': None,
+                'error': f"Process failed: {result.stderr}"
+            }
+        
+        # Clean up temp file
+        if temp_output.exists():
+            temp_output.unlink()
+        
+        # Update progress thread-safely
+        with progress_lock:
+            progress_data["completed"] += 1
+            if file_result['success']:
+                progress_data["results"].append(file_result)
+            else:
+                progress_data["errors"].append(file_result)
+        
+        return file_result
+        
+    except subprocess.TimeoutExpired:
+        error_result = {
+            'success': False,
+            'filename': filename,
+            'quotes_count': 0,
+            'data': None,
+            'error': "Process timed out (5 minutes)"
+        }
+        with progress_lock:
+            progress_data["completed"] += 1
+            progress_data["errors"].append(error_result)
+        return error_result
+        
+    except Exception as e:
+        error_result = {
+            'success': False,
+            'filename': filename,
+            'quotes_count': 0,
+            'data': None,
+            'error': f"Unexpected error: {e}"
+        }
+        with progress_lock:
+            progress_data["completed"] += 1
+            progress_data["errors"].append(error_result)
+        return error_result
+
+def process_files_with_progress_parallel():
+    """Process uploaded files with parallel processing and progress tracking"""
+    if not st.session_state.uploaded_paths:
+        st.error("No files uploaded")
+        return
+    
+    # Reset progress data
+    global progress_data
+    with progress_lock:
+        progress_data = {
+            "completed": 0, 
+            "total": len(st.session_state.uploaded_paths), 
+            "results": [], 
+            "errors": []
+        }
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    # Determine number of workers (conservative approach)
+    max_workers = min(3, len(st.session_state.uploaded_paths))  # Max 3 concurrent processes
+    
+    # Prepare file info for processing
+    file_infos = [(i, path) for i, path in enumerate(st.session_state.uploaded_paths)]
+    
+    # Process files in parallel
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        future_to_file = {executor.submit(process_single_file, file_info): file_info for file_info in file_infos}
+        
+        # Monitor progress
+        while not all(future.done() for future in future_to_file):
+            with progress_lock:
+                completed = progress_data["completed"]
+                total = progress_data["total"]
+                progress = completed / total if total > 0 else 0
+            
+            progress_bar.progress(progress)
+            status_text.text(f"Processing files... {completed}/{total} completed")
+            
+            # Update every 0.5 seconds
+            import time
+            time.sleep(0.5)
+    
+    # Final progress update
+    progress_bar.progress(1.0)
+    status_text.text("Processing complete!")
+    
+    # Collect results
+    successful_results = []
+    error_count = 0
+    
+    with progress_lock:
+        for result in progress_data["results"]:
+            if result['success'] and result['data'] is not None:
+                successful_results.append(result['data'])
+                st.success(f"✅ {result['filename']}: {result['quotes_count']} quotes extracted")
+        
+        for error in progress_data["errors"]:
+            st.warning(f"⚠️ {error['filename']}: {error['error']}")
+            error_count += 1
+    
+    # Combine successful results
+    if successful_results:
+        combined_df = pd.concat(successful_results, ignore_index=True)
+        combined_df.to_csv(STAGE1_CSV, index=False)
+        st.success(f"🎉 Processed {len(successful_results)} files successfully with {len(combined_df)} total quotes")
+        if error_count > 0:
+            st.warning(f"⚠️ {error_count} files had errors")
+        st.session_state.current_step = 2
+    else:
+        st.error("No quotes extracted from any files")
+
 def process_files_with_progress():
-    """Process uploaded files with progress tracking"""
+    """Legacy sequential processing - kept for fallback"""
     if not st.session_state.uploaded_paths:
         st.error("No files uploaded")
         return
@@ -167,7 +331,19 @@ def show_stage1_data_responses():
         # Process button
         if st.button("🚀 Extract Quotes", type="primary", help="Process files to extract customer quotes"):
             with st.spinner("Extracting quotes from interviews..."):
-                process_files_with_progress()
+                # Add processing mode selection
+                processing_mode = st.radio(
+                    "Processing Mode",
+                    ["Parallel (Faster)", "Sequential (More Stable)"],
+                    horizontal=True,
+                    help="Parallel processing is faster but may use more resources"
+                )
+                
+                if processing_mode == "Parallel (Faster)":
+                    process_files_with_progress_parallel()
+                else:
+                    process_files_with_progress()
+                    
                 if SUPABASE_AVAILABLE and os.path.exists(STAGE1_CSV):
                     if save_stage1_to_supabase(STAGE1_CSV):
                         st.success("✅ Quotes extracted and saved to database")

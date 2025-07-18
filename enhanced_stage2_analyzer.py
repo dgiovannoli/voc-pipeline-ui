@@ -9,8 +9,17 @@ from langchain.prompts import PromptTemplate
 import concurrent.futures
 import hashlib
 from datetime import datetime
+import pandas as pd
+import numpy as np
+from typing import List, Dict, Any, Optional
+import time
+import threading
 
 load_dotenv()
+
+# Thread-safe progress tracking for Stage 2
+stage2_progress_lock = threading.Lock()
+stage2_progress_data = {"completed_batches": 0, "total_batches": 0, "results": [], "errors": []}
 
 class EnhancedTraceableStage2Analyzer:
     def __init__(self):
@@ -1001,10 +1010,11 @@ if __name__ == "__main__":
     run_enhanced_traceability_analysis()
 
 class SupabaseStage2Analyzer:
-    """Supabase-integrated Stage 2 analyzer with batched processing"""
+    """Supabase-integrated Stage 2 analyzer with parallel batched processing"""
     
-    def __init__(self, batch_size=50):  # Increased from 10 to 50 for faster processing
+    def __init__(self, batch_size=50, max_workers=2):  # Conservative parallel processing
         self.batch_size = batch_size
+        self.max_workers = max_workers  # Limit concurrent LLM calls
         self.supabase = None
         try:
             from supabase_database import SupabaseDatabase
@@ -1013,7 +1023,7 @@ class SupabaseStage2Analyzer:
             print("Warning: Supabase database not available")
     
     def process_incremental(self, client_id="default"):
-        """Process quotes from database for Stage 2 analysis in batches"""
+        """Process quotes from database for Stage 2 analysis with parallel batch processing"""
         if not self.supabase:
             raise Exception("Supabase database not available")
         
@@ -1023,29 +1033,56 @@ class SupabaseStage2Analyzer:
             print("No quotes found for analysis")
             return {"success": False, "message": "No quotes found"}
         
-        print(f"Processing {len(quotes_df)} quotes in batches of {self.batch_size}...")
+        print(f"Processing {len(quotes_df)} quotes in batches of {self.batch_size} with {self.max_workers} workers...")
         
-        # Process quotes in batches
-        total_processed = 0
-        total_analyzed = 0
+        # Reset progress data
+        global stage2_progress_data
+        with stage2_progress_lock:
+            stage2_progress_data = {
+                "completed_batches": 0,
+                "total_batches": (len(quotes_df) + self.batch_size - 1) // self.batch_size,
+                "results": [],
+                "errors": []
+            }
         
+        # Create batches
+        batches = []
         for i in range(0, len(quotes_df), self.batch_size):
             batch = quotes_df.iloc[i:i + self.batch_size]
             batch_num = i // self.batch_size + 1
-            total_batches = (len(quotes_df) + self.batch_size - 1) // self.batch_size
+            batches.append((batch_num, batch, client_id))
+        
+        # Process batches in parallel
+        total_processed = 0
+        total_analyzed = 0
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all batch processing tasks
+            future_to_batch = {
+                executor.submit(self._process_batch_parallel, batch_info): batch_info 
+                for batch_info in batches
+            }
             
-            print(f"Processing batch {batch_num}/{total_batches} ({len(batch)} quotes)...")
-            
-            try:
-                batch_results = self._process_batch(batch, client_id)
-                total_processed += len(batch)
-                total_analyzed += batch_results.get('analyzed_count', 0)
+            # Monitor progress and collect results
+            for future in concurrent.futures.as_completed(future_to_batch):
+                batch_info = future_to_batch[future]
+                batch_num = batch_info[0]
                 
-                print(f"✅ Batch {batch_num} completed: {batch_results.get('analyzed_count', 0)}/{len(batch)} quotes analyzed")
-                
-            except Exception as e:
-                print(f"❌ Error processing batch {batch_num}: {e}")
-                continue
+                try:
+                    batch_result = future.result()
+                    total_processed += batch_result.get('batch_size', 0)
+                    total_analyzed += batch_result.get('analyzed_count', 0)
+                    
+                    print(f"✅ Batch {batch_num} completed: {batch_result.get('analyzed_count', 0)}/{batch_result.get('batch_size', 0)} quotes analyzed")
+                    
+                except Exception as e:
+                    print(f"❌ Error processing batch {batch_num}: {e}")
+                    with stage2_progress_lock:
+                        stage2_progress_data["errors"].append({
+                            'batch_num': batch_num,
+                            'error': str(e)
+                        })
+                    continue
         
         print(f"\n🎉 Stage 2 analysis completed!")
         print(f"📊 Total quotes processed: {total_processed}")
@@ -1062,8 +1099,49 @@ class SupabaseStage2Analyzer:
             "success_rate": total_analyzed/total_processed if total_processed > 0 else 0
         }
 
+    def _process_batch_parallel(self, batch_info: tuple) -> Dict:
+        """Process a batch of quotes through the LLM (thread-safe version)"""
+        batch_num, batch_df, client_id = batch_info
+        
+        try:
+            # Add small delay to avoid rate limiting
+            time.sleep(0.5)
+            
+            # Prepare batch data for LLM
+            batch_text = self._prepare_batch_for_llm(batch_df)
+
+            # Call LLM with batch
+            llm_response = self._call_llm_batch(batch_text)
+            results = self._parse_llm_batch_response(llm_response, batch_df)
+
+            # Save results to database
+            self._save_batch_results_to_database(results, client_id)
+
+            # Update progress
+            with stage2_progress_lock:
+                stage2_progress_data["completed_batches"] += 1
+                stage2_progress_data["results"].append({
+                    'batch_num': batch_num,
+                    'analyzed_count': len(results),
+                    'batch_size': len(batch_df)
+                })
+
+            return {
+                "analyzed_count": len(results),
+                "batch_size": len(batch_df)
+            }
+
+        except Exception as e:
+            print(f"Error in batch {batch_num} processing: {e}")
+            with stage2_progress_lock:
+                stage2_progress_data["errors"].append({
+                    'batch_num': batch_num,
+                    'error': str(e)
+                })
+            return {"analyzed_count": 0, "batch_size": len(batch_df)}
+
     def _process_batch(self, batch_df, client_id):
-        """Process a batch of quotes through the LLM"""
+        """Legacy sequential batch processing - kept for fallback"""
         # Prepare batch data for LLM
         batch_text = self._prepare_batch_for_llm(batch_df)
 

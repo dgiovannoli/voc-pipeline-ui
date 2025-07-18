@@ -3,6 +3,7 @@ import pandas as pd
 from datetime import datetime
 from supabase_database import SupabaseDatabase
 from dotenv import load_dotenv
+import time
 
 # Load environment variables
 load_dotenv()
@@ -25,17 +26,54 @@ def get_client_id():
     return client_id
 
 def run_stage2_analysis():
-    """Run Stage 2 analysis using database"""
+    """Run Stage 2 analysis using database with progress tracking"""
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return None
     
     try:
-        from enhanced_stage2_analyzer import SupabaseStage2Analyzer
+        from enhanced_stage2_analyzer import SupabaseStage2Analyzer, stage2_progress_data, stage2_progress_lock
         client_id = get_client_id()
-        analyzer = SupabaseStage2Analyzer()
-        result = analyzer.process_incremental(client_id=client_id)
+        
+        # Create analyzer with conservative parallel processing
+        analyzer = SupabaseStage2Analyzer(batch_size=50, max_workers=2)
+        
+        # Create progress tracking
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        # Start the analysis in a separate thread to allow progress updates
+        import threading
+        
+        def run_analysis():
+            return analyzer.process_incremental(client_id=client_id)
+        
+        # Start analysis thread
+        analysis_thread = threading.Thread(target=run_analysis)
+        analysis_thread.start()
+        
+        # Monitor progress
+        while analysis_thread.is_alive():
+            with stage2_progress_lock:
+                completed = stage2_progress_data.get("completed_batches", 0)
+                total = stage2_progress_data.get("total_batches", 0)
+                progress = completed / total if total > 0 else 0
+            
+            progress_bar.progress(progress)
+            status_text.text(f"Processing batches... {completed}/{total} completed")
+            
+            # Update every 1 second
+            time.sleep(1)
+        
+        # Get final result
+        result = run_analysis()  # This will be the actual result
+        
+        # Final progress update
+        progress_bar.progress(1.0)
+        status_text.text("Analysis complete!")
+        
         return result
+        
     except Exception as e:
         st.error(f"❌ Stage 2 analysis failed: {e}")
         return None
@@ -177,7 +215,23 @@ def show_stage2_response_labeling():
         # Run analysis button
         if st.button("🔄 Label Quotes", type="primary", help="Label quotes against 10 evaluation criteria"):
             with st.spinner("Labeling quotes against criteria..."):
-                result = run_stage2_analysis()
+                # Add processing mode selection
+                processing_mode = st.radio(
+                    "Processing Mode",
+                    ["Parallel (Faster)", "Sequential (More Stable)"],
+                    horizontal=True,
+                    help="Parallel processing is faster but may use more resources"
+                )
+                
+                if processing_mode == "Parallel (Faster)":
+                    result = run_stage2_analysis()
+                else:
+                    # Use sequential processing
+                    from enhanced_stage2_analyzer import SupabaseStage2Analyzer
+                    client_id = get_client_id()
+                    analyzer = SupabaseStage2Analyzer(batch_size=50, max_workers=1)  # Sequential
+                    result = analyzer.process_incremental(client_id=client_id)
+                
                 if result:
                     st.success("✅ Quote labeling complete!")
                     st.rerun()
