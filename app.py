@@ -6,7 +6,6 @@ from stage3_ui import show_stage3_findings
 from stage4_ui import show_stage4_themes
 from admin_ui import show_admin_utilities, show_admin_panel
 from curation_ui import show_curation_ui
-from metadata_upload_process import main as show_metadata_upload
 
 def main():
     st.set_page_config(page_title="VOC Pipeline", layout="wide")
@@ -73,7 +72,6 @@ def main():
         "Go to:",
         [
             "🚀 Production Dashboard",
-            "📋 Upload Metadata",
             "Stage 1: Data Response Table",
             "Stage 2: Response Labeling", 
             "Stage 3: Findings",
@@ -86,8 +84,6 @@ def main():
     if page == "🚀 Production Dashboard":
         from production_dashboard import show_production_dashboard
         show_production_dashboard()
-    elif page == "📋 Upload Metadata":
-        show_metadata_upload()
     elif page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
     elif page == "Stage 2: Response Labeling":
