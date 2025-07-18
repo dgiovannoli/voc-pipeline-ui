@@ -126,7 +126,7 @@ def get_client_id():
     """Get client ID from session state or sidebar"""
     if 'client_id' in st.session_state and st.session_state.client_id:
         return st.session_state.client_id
-    return ""
+    return "Rev"  # Default to "Rev" for this project
 
 def process_single_file(file_info: Tuple[int, str]) -> Dict:
     """Process a single file and return results"""

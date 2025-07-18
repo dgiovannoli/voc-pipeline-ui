@@ -13,7 +13,7 @@ def main():
     
     # Initialize session state
     if 'client_id' not in st.session_state:
-        st.session_state.client_id = ''
+        st.session_state.client_id = 'Rev'  # Default to "Rev" for this project
     if 'current_step' not in st.session_state:
         st.session_state.current_step = 1
     
