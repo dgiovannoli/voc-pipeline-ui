@@ -1123,6 +1123,8 @@ Return ONLY the JSON object (no explanations or extra text).
                             'secondary_quote': '',
                             'supporting_finding_ids': '',
                             'company_ids': '',
+                            'evidence_strength': theme.get('evidence_strength', 'Weak'),
+                            'evidence_score': theme.get('evidence_score', 0),
                             
                             # Strategic Alert fields
                             'alert_title': theme.get('alert_title', ''),
@@ -1150,6 +1152,8 @@ Return ONLY the JSON object (no explanations or extra text).
                             'secondary_quote': theme.get('secondary_quote', ''),
                             'supporting_finding_ids': theme.get('supporting_finding_ids', ''),
                             'company_ids': theme.get('company_ids', ''),
+                            'evidence_strength': theme.get('evidence_strength', 'Weak'),
+                            'evidence_score': theme.get('evidence_score', 0),
                             
                             # Strategic Alert fields (empty for themes)
                             'alert_title': '',
