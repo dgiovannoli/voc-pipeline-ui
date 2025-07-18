@@ -31,12 +31,26 @@ def run_stage3_analysis():
         return None
     
     try:
-        from stage3_findings_analyzer_enhanced import EnhancedStage3FindingsAnalyzer
         client_id = get_client_id()
-        analyzer = EnhancedStage3FindingsAnalyzer(client_id=client_id)
         
-        # Use the enhanced pipeline that includes classification and generates CSV output
-        result = analyzer.analyze_findings()
+        # First, run the regular Stage 3 analysis to generate findings from Stage 1 data
+        from stage3_findings_analyzer import Stage3FindingsAnalyzer
+        analyzer = Stage3FindingsAnalyzer()
+        result = analyzer.process_stage3_findings(client_id=client_id)
+        
+        if result and result.get('status') == 'success':
+            st.success(f"✅ Generated {result.get('findings_generated', 0)} findings from Stage 1 data for client {client_id}")
+            
+            # Optionally run enhanced analysis on the generated findings
+            try:
+                from stage3_findings_analyzer_enhanced import EnhancedStage3FindingsAnalyzer
+                enhanced_analyzer = EnhancedStage3FindingsAnalyzer(client_id=client_id)
+                enhanced_result = enhanced_analyzer.analyze_enhanced_findings()
+                
+                if enhanced_result:
+                    st.success(f"✅ Enhanced analysis completed for client {client_id}")
+            except Exception as e:
+                st.warning(f"⚠️ Enhanced analysis failed: {e}")
         
         # Check if CSV files were generated
         import os
@@ -48,10 +62,6 @@ def run_stage3_analysis():
         
         if csv_files:
             st.success(f"✅ Generated {len(csv_files)} CSV files: {', '.join(csv_files)}")
-        
-        # Show Supabase save status
-        if result and result.get('findings_generated', 0) > 0:
-            st.success(f"✅ Saved {result.get('findings_generated', 0)} findings to Supabase for client {client_id}")
         
         return result
     except Exception as e:
