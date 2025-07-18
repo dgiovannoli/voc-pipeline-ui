@@ -438,7 +438,11 @@ def main():
     if len(sys.argv) > 1:
         client_id = sys.argv[1]
     else:
-        client_id = 'Rev'  # Default client
+        client_id = ''
+    
+    if not client_id or client_id == 'default':
+        print("❌ ERROR: You must provide a valid client_id (not 'default'). Set client_id in the UI or pass as argument.")
+        sys.exit(1)
     
     analyzer = EnhancedStage3FindingsAnalyzer(client_id)
     success = analyzer.analyze_enhanced_findings()
