@@ -126,7 +126,16 @@ def get_client_id():
     """Get client ID from session state or sidebar"""
     if 'client_id' in st.session_state and st.session_state.client_id:
         return st.session_state.client_id
-    return ""
+    
+    # If no client_id is set, show a warning and guide user to set one
+    st.warning("⚠️ **Client ID Required**")
+    st.info("Please set a Client ID in the sidebar before proceeding.")
+    st.info("💡 **How to set Client ID:**")
+    st.info("1. Look in the sidebar under '🏢 Client Settings'")
+    st.info("2. Enter a unique identifier for this client's data")
+    st.info("3. Press Enter to save")
+    st.stop()
+    return None
 
 def process_single_file(file_info: Tuple[int, str]) -> Dict:
     """Process a single file and return results"""
