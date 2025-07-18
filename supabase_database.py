@@ -84,6 +84,7 @@ class SupabaseDatabase:
                 'company': response_data.get('company'),
                 'interviewee_name': response_data.get('interviewee_name'),
                 'interview_date': response_data.get('interview_date'),
+                'industry': response_data.get('industry'),
                 'file_source': response_data.get('file_source', ''),
                 'client_id': response_data.get('client_id', 'default'),
                 'created_at': datetime.now().isoformat()

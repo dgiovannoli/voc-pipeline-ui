@@ -109,6 +109,7 @@ def show_stage1_data_responses():
         - `Interview Contact Company Name` - Company name
         - `Deal Status` - Status of the deal (e.g., "Closed Won", "Closed Lost")
         - `Completion Date` - Date of the interview
+        - `Industry` - Industry/sector of the company
         - `Raw Transcript` - Full transcript text
         - `Interview Status` - Must be "Completed" for processing
         """.format(client_id=client_id))
