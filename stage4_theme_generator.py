@@ -50,42 +50,73 @@ class EnhancedThemeGeneratorScalable:
         self.require_company_data = False  # Whether to require company data (temporarily disabled for testing)
         
     def _load_comprehensive_theme_prompt(self) -> str:
-        """Load the comprehensive theme prompt that generates detailed themes like V1"""
-        return """
-COMPREHENSIVE THEME GENERATION - EXECUTIVE-STYLE TITLES WITH TWO-SENTENCE FORMAT
+        """Load the comprehensive theme generation prompt"""
+        return f"""
+CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-style titles that capture SPECIFIC customer feedback and detailed insights from the interview data.
+
+THEME COVERAGE REQUIREMENTS:
+- MUST include themes that capture SPECIFIC customer pain points and feedback from the interview data
+- MUST include themes for core product functionality and user experience issues with concrete details
+- MUST include themes for workflow efficiency and integration challenges with specific examples
+- MUST include themes for pricing and subscription models with actual customer reactions
+- MUST include themes for feature adoption and user engagement with specific user behaviors
+- MUST include themes for service quality and accuracy issues with detailed customer complaints
+- MUST include themes for core product functionality issues that appear multiple times across interviews
+- MUST include themes for technical accuracy problems that affect user workflow and satisfaction
+- Each theme must use specific product terminology and customer feedback from the findings
+- NO industry-specific language (e.g., no "legal", "law", "attorney", "court", "case", "evidence", "discovery", "defender", "firm", "processes" references)
+- Use universal business terms: "client", "customer", "user", "organization", "business", "workflow", "process", "operations", "activities"
+- CRITICAL: Replace any industry-specific terms with universal business language
+- CRITICAL: Use SPECIFIC details, quotes, and customer feedback from the interview data - avoid generic statements
+- CRITICAL: Pay special attention to findings marked as "Priority Finding" or containing technical accuracy issues
+
+PRIORITY REQUIREMENTS:
+- MUST prioritize client-specific findings first (client-specific findings should be the primary focus)
+- MUST create dedicated themes for client-specific product issues with SPECIFIC customer feedback
+- MUST ensure each client-specific finding is included in at least one theme
+- MUST use specific product terminology and customer quotes from the findings
+- MUST create themes that specifically address: core product functionality, user experience, workflow efficiency, integration challenges
+- Quality over quantity - fewer, better themes that capture real client-specific issues with concrete details
+- CRITICAL: Review all client-specific findings and ensure each major product issue gets its own dedicated theme
+- CRITICAL: Use universal business language - NO industry-specific terms
+- CRITICAL: Extract and use SPECIFIC customer pain points, complaints, and feedback from the interview data
 
 CRITICAL REQUIREMENTS:
+1. THEME TITLE REQUIREMENTS (Executive Framework):
+   - MUST clearly identify the SPECIFIC problem or issue from the findings
+   - MUST use concrete, evidence-based language from the actual findings
+   - MUST highlight the business impact or consequence
+   - MUST be specific enough that Rev immediately understands the issue
+   - NO generic titles like "efficiency declines" or "quality issues"
+   - Use specific terminology from findings (e.g., "speaker identification fails", "voice recognition errors")
+   - Include specific context when available (e.g., "multi-party recordings", "legal applications")
 
-1. EXECUTIVE-STYLE TITLE REQUIREMENTS:
-   - Titles MUST highlight customer pain and business impact with emotional urgency
-   - Use action verbs and emotional language that creates urgency
-   - Focus on what legal professionals are losing, suffering, or missing out on
-   - Include specific product features, capabilities, or functionality issues causing attorney frustration
-   - Use legal-specific terminology and feature names when available (e.g., 'trial preparation', 'case records', 'exhibits', 'attorneys', 'depositions')
-   - Examples: "Speaker identification failures in multi-party legal recordings force attorneys to manually attribute statements, increasing trial preparation time and risk of misattribution."
-   - Examples: "High transcription costs and lengthy turnaround times are affecting operational efficiency for small law firms"
-   - Examples: "Subscription fatigue is hindering adoption of Rev's services among solo practitioners"
-   - AVOID: Generic titles like "Integration challenges limit workflow optimization"
+2. THEME STATEMENT REQUIREMENTS (Two-Sentence Executive Framework):
+   - EXACTLY two sentences - NO MORE, NO LESS
+   - Sentence 1: Decision behavior or specific problem with consequence (25-35 words max)
+   - Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words max)
+   - NO direct quotes in the statement - only in the quote fields
+   - NO solutioning language ("indicating a need for", "suggesting", "recommending")
+   - NO generic statements; must be specific and paraphrased using customer feedback details
+   - NO invented numbers or company names
+   - If evidence is qualitative, state it as such
+   - Focus on specific product problems causing customer pain, or opportunities for improvement
+   - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
+   - CRITICAL: Use universal business language - NO industry-specific terms (legal, medical, financial, etc.)
+   - CRITICAL: Include SPECIFIC customer pain points, complaints, and feedback details from the interview data
 
-2. BUSINESS IMPACT FOCUS:
-   - Every theme MUST connect to revenue, cost, efficiency, or competitive advantage for the client
-   - Focus on what legal professionals will pay for or what drives purchasing decisions
-   - Highlight competitive advantages or vulnerabilities
-   - Include quantifiable impact where possible (%, $, time savings, etc.), but ONLY if present in the findings
-   - DO NOT invent numbers or metrics
+3. CUSTOMER FEEDBACK REQUIREMENT:
+   - Extract SPECIFIC customer pain points, complaints, and feedback from the interview data
+   - Use concrete details like timeframes, specific errors, user behaviors, and customer reactions
+   - Avoid generic statements - every theme should reflect actual customer feedback
 
-3. CLIENT-SPECIFIC FOCUS:
-   - All themes must relate to the client's core legal capabilities, products, or services
-   - Focus on specific product features, capabilities, and user experience issues in legal workflows
-   - Market themes are ONLY acceptable if they reveal specific buyer preferences or needs that inform the client's legal strategy
-   - Avoid generic market observations with no actionable insights
-   - Use legal-specific terminology and feature names when describing client-specific issues
-
-4. EVIDENCE QUALITY:
-   - Use detailed, specific quotes from findings with attribution
-   - Include multiple supporting findings per theme
-   - Cross-company validation required
-   - Specific examples and concrete details
+4. EVIDENCE-BASED LANGUAGE REQUIREMENT:
+   - Use ONLY language and terminology that appears in the actual findings
+   - Do not invent metrics, numbers, or specific details not present in findings
+   - Paraphrase customer feedback using the specific terms and concepts from findings
+   - If findings mention "speaker identification fails", use that exact terminology
+   - If findings mention "voice recognition errors", use that exact terminology
+   - If findings mention "multi-party recordings", use that exact context
 
 5. THEME STATEMENT REQUIREMENTS (Two-Sentence Executive Framework):
    - EXACTLY two sentences - NO MORE, NO LESS
@@ -93,69 +124,31 @@ CRITICAL REQUIREMENTS:
    - Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words max)
    - NO direct quotes in the statement - only in the quote fields
    - NO solutioning language ("indicating a need for", "suggesting", "recommending")
-   - NO generic statements; must be specific and paraphrased using only details present in the findings
+   - NO generic statements; must be specific and paraphrased using customer feedback details
    - NO invented numbers or company names
    - If evidence is qualitative, state it as such
-   - Focus on specific legal product problems causing attorney pain, or opportunities for improvement
+   - Focus on specific product problems causing customer pain, or opportunities for improvement
    - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
-   - CRITICAL: Use legal-specific language and context
+   - CRITICAL: Use universal business language - NO industry-specific terms (legal, medical, financial, etc.)
+   - CRITICAL: Include SPECIFIC customer pain points, complaints, and feedback details from the interview data
 
-EXAMPLE HIGH-QUALITY THEME:
-Title: "Speaker identification failures in multi-party legal recordings force attorneys to manually attribute statements, increasing trial preparation time and risk of misattribution."
-Statement: "When three or more speakers are present, Rev’s transcription service frequently fails to accurately identify speakers, requiring attorneys to review and manually assign dialogue. Attorneys report this process is time-consuming and creates concern about potential errors in trial exhibits and case records."
-
-EXAMPLE POOR THEME:
-Title: "Workflow efficiency declines due to unclear audio quality in multi-party recordings" (too generic, not legal-specific)
-Statement: "Users report that unclear audio quality makes it harder to work efficiently." (too generic, not legal-specific)
-
-EXECUTIVE TITLE PATTERNS TO FOLLOW:
-- "Product feature failures in multi-party scenarios disrupt user workflow and compromise output accuracy"
-- "High service costs and lengthy turnaround times are affecting operational efficiency for small organizations"
-- "Subscription fatigue is hindering adoption of the client's services among new customers"
-- "Rapid service delivery from the client is impacting billable hours for professionals"
-- "AI tools are significantly improving efficiency in document processing for users"
-- "Users are seeking improved integration capabilities for core services"
-- "Core functionality errors in the client's system compromise feature distinction and output clarity for professional applications"
-
-THEME STRUCTURE REQUIREMENTS:
-- Title: MUST highlight specific product issues causing customer impact with clear business consequences AND emotional urgency
-- Statement: MUST use two-sentence executive framework with specific details and business impact
-- Must include: company examples, business impact, client-specific details, real quotes with attribution
-- Avoid: generic language, vague observations, market trends unrelated to the client
-- Focus on: specific product problems causing customer pain, or opportunities for improvement
-
-COMPREHENSIVE THEME CATEGORIES TO COVER:
-1. Product Quality Issues (audio quality, accuracy, content isolation)
-2. Cost and Efficiency Concerns (transcription costs, turnaround times, operational efficiency)
-3. Market Adoption Barriers (subscription fatigue, adoption challenges)
-4. Revenue Impact Issues (billable hours, pricing models)
-5. Competitive Advantages (AI capabilities, efficiency gains)
-6. Integration and Workflow Needs (platform integration, workflow optimization)
-7. User Experience Problems (audio recording, interface issues)
+EXAMPLE THEME (Evidence-Based):
+Title: "Speaker identification failures in multi-party recordings force manual corrections, increasing transcription review time"
+Statement: "Speaker identification accuracy drops significantly when multiple speakers are present in recordings, forcing users to manually identify speakers during review. Users report that this failure disrupts their workflow and requires extensive manual corrections that increase preparation time."
 
 OUTPUT FORMAT:
-{
-  "themes": [
-    {
-      "theme_id": "T1",
-      "theme_title": "Executive-style title highlighting customer pain and business impact",
-      "theme_statement": "Sentence 1: Decision behavior or specific problem with consequence (25-35 words). Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words).",
-      "classification": "REVENUE_THREAT|COMPETITIVE_VULNERABILITY|MARKET_OPPORTUNITY|COST_EFFICIENCY|COMPETITIVE_ADVANTAGE",
-      "supporting_finding_ids": "F1,F2,F3",
-      "primary_quote": "Specific quote from findings with attribution",
-      "secondary_quote": "Supporting quote from findings with attribution"
-    }
-  ]
-}
+Generate themes in this exact JSON format:
+{{
+    "themes": [
+        {{
+            "theme_title": "Specific, evidence-based title using terminology from findings",
+            "theme_statement": "First sentence: specific problem with consequence. Second sentence: customer pain point or reaction using evidence from findings.",
+            "supporting_finding_ids": ["F1", "F2", "F3"]
+        }}
+    ]
+}}
 
-CRITICAL FORMAT REQUIREMENTS:
-- Each theme_statement MUST be exactly two sentences
-- First sentence: 25-35 words describing the problem/behavior
-- Second sentence: 25-35 words describing the pain point/reaction
-- NO paragraphs, NO long narratives, NO more than two sentences
-- Use concise, executive language that fits on presentation slides
-
-CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-style titles that cover the full spectrum of customer insights and business impact areas.
+CRITICAL: Every theme title and statement must use SPECIFIC evidence and terminology from the actual findings. Do not create generic themes or invent details not present in the findings data.
 """
     
     def cluster_findings_for_themes(self, findings: List[Dict]) -> List[Dict]:
