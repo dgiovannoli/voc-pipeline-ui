@@ -134,46 +134,30 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save quote analysis: {e}")
             return False
     
-    def get_stage1_data_responses(self, filters: Optional[Dict] = None, client_id: Optional[str] = 'default') -> pd.DataFrame:
+    def get_stage1_data_responses(self, filters: Optional[Dict] = None, client_id: Optional[str] = None) -> pd.DataFrame:
         """Get core responses from Supabase, filtered by client_id for data siloing"""
         try:
             query = self.supabase.table('stage1_data_responses').select('*')
             
-            # Handle None client_id (get all data) or empty/default client_id
-            if client_id is None:
-                # Get all data across all clients
-                logger.info("📊 Retrieving all Stage 1 data across all clients")
-            elif not client_id or client_id == '' or client_id == 'default':
-                logger.error(f"❌ get_stage1_data_responses called with client_id='{client_id}'. Returning empty DataFrame. Call stack:\n" + ''.join(traceback.format_stack()))
+            # Require explicit client_id in production
+            if not client_id or client_id == '' or client_id == 'default':
+                logger.error(f"❌ get_stage1_data_responses called with invalid client_id='{client_id}'. You must provide a valid client_id. Returning empty DataFrame. Call stack:\n" + ''.join(traceback.format_stack()))
                 return pd.DataFrame()
-            else:
-                # Filter by specific client_id for data siloing
-                query = query.eq('client_id', client_id)
+            
+            # Always filter by client_id for data siloing
+            query = query.eq('client_id', client_id)
             
             # Apply additional filters if provided
-            if filters and isinstance(filters, dict):
+            if filters:
                 for key, value in filters.items():
-                    if key in ['company', 'deal_status', 'interviewee_name']:
-                        query = query.eq(key, value)
-                    elif key == 'date_from':
-                        query = query.gte('interview_date', value)
-                    elif key == 'date_to':
-                        query = query.lte('interview_date', value)
+                    query = query.eq(key, value)
             
-            # Order by created_at desc
-            query = query.order('created_at', desc=True)
-            
-            result = query.execute()
+            result = query.order('created_at', desc=True).execute()
             df = pd.DataFrame(result.data)
-            
-            if client_id is None:
-                logger.info(f"📊 Retrieved {len(df)} core responses from Supabase (all clients)")
-            else:
-                logger.info(f"📊 Retrieved {len(df)} core responses from Supabase for client {client_id}")
+            logger.info(f"📊 Retrieved {len(df)} core responses from Supabase for client {client_id}")
             return df
-            
         except Exception as e:
-            logger.error(f"❌ Failed to get core responses: {e}")
+            logger.error(f"❌ Failed to get Stage 1 data responses: {e}")
             return pd.DataFrame()
     
     def get_stage2_response_labeling(self, quote_id: Optional[str] = None, client_id: str = 'default') -> pd.DataFrame:
