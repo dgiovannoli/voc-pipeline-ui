@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 from typing import Tuple, Dict, List
 from supabase_database import SupabaseDatabase
+from metadata_stage1_processor import MetadataStage1Processor
 
 # Constants
 BASE = Path("temp")
@@ -367,19 +368,162 @@ def save_stage1_to_supabase(csv_path):
         st.error(f"❌ Failed to save to database: {e}")
         return False
 
+def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False):
+    """Process Stage 1 data from metadata CSV file"""
+    try:
+        processor = MetadataStage1Processor()
+        
+        # Save uploaded file temporarily
+        temp_csv_path = f"temp_metadata_{client_id}.csv"
+        with open(temp_csv_path, "wb") as f:
+            f.write(csv_file.getbuffer())
+        
+        # Process the metadata CSV
+        result = processor.process_metadata_csv(
+            csv_file_path=temp_csv_path,
+            client_id=client_id,
+            max_interviews=max_interviews,
+            dry_run=dry_run
+        )
+        
+        # Clean up temp file
+        if os.path.exists(temp_csv_path):
+            os.remove(temp_csv_path)
+        
+        return result
+    except Exception as e:
+        st.error(f"❌ Error processing metadata CSV: {e}")
+        return {'success': False, 'error': str(e)}
+
 def show_stage1_data_responses():
     """Stage 1: Data Response Table - Upload and extract quotes from interview files"""
     st.title("📊 Stage 1: Data Response Table")
     st.markdown("Upload interview transcripts and extract customer quotes and insights.")
     
-    # File upload section
-    st.subheader("📤 Upload Interview Files")
-    uploaded_files = st.file_uploader(
-        "Choose files",
-        type=['txt', 'docx'],
-        accept_multiple_files=True,
-        help="Select one or more interview transcript files"
-    )
+    # Create tabs for different processing methods
+    tab1, tab2 = st.tabs(["📊 Metadata CSV (Recommended)", "📁 File Upload (Legacy)"])
+    
+    with tab1:
+        st.subheader("📊 Metadata CSV Processing")
+        
+        st.info("""
+        **Metadata CSV Processing** allows you to process Stage 1 data directly from a metadata CSV file 
+        that contains interview transcripts. This approach ensures perfect metadata linkage and eliminates 
+        filename parsing issues.
+        
+        **Required CSV Columns:**
+        - `Interview ID` - Unique identifier for each interview
+        - `Client Name` - Client identifier (must match your current client ID)
+        - `Interview Contact Full Name` - Name of the interviewee
+        - `Interview Contact Company Name` - Company name
+        - `Deal Status` - Status of the deal (e.g., "Closed Won", "Closed Lost")
+        - `Completion Date` - Date of the interview
+        - `Raw Transcript` - Full transcript text
+        - `Interview Status` - Must be "Completed" for processing
+        """)
+        
+        # File upload
+        uploaded_csv = st.file_uploader(
+            "Upload metadata CSV file",
+            type=['csv'],
+            help="Upload a CSV file containing interview metadata and transcripts",
+            key="metadata_csv_uploader"
+        )
+        
+        if uploaded_csv:
+            st.success(f"✅ CSV file uploaded: {uploaded_csv.name}")
+            
+            # Show CSV preview
+            try:
+                df_preview = pd.read_csv(uploaded_csv)
+                st.info(f"📊 CSV contains {len(df_preview)} rows")
+                
+                # Show available clients
+                if 'Client Name' in df_preview.columns:
+                    available_clients = df_preview['Client Name'].dropna().unique()
+                    st.info(f"👥 Available clients: {', '.join(available_clients)}")
+                
+                # Show column info
+                st.write("**CSV Columns:**")
+                st.write(list(df_preview.columns))
+                
+                # Show first few rows
+                st.write("**Preview (first 3 rows):**")
+                st.dataframe(df_preview.head(3), use_container_width=True)
+                
+            except Exception as e:
+                st.error(f"❌ Error reading CSV: {e}")
+                return
+            
+            # Processing options
+            col1, col2 = st.columns(2)
+            with col1:
+                max_interviews = st.number_input(
+                    "Max interviews to process (0 = all)",
+                    min_value=0,
+                    value=0,
+                    help="Limit the number of interviews to process (0 means process all)"
+                )
+            with col2:
+                dry_run = st.checkbox(
+                    "Dry run (don't save to database)",
+                    help="Process without saving to database to test the results"
+                )
+            
+            # Process button
+            if st.button("🚀 Process Metadata CSV", type="primary", key="process_metadata_csv"):
+                client_id = get_client_id()
+                
+                with st.spinner("Processing metadata CSV..."):
+                    result = process_metadata_csv(
+                        uploaded_csv, 
+                        client_id, 
+                        max_interviews if max_interviews > 0 else None,
+                        dry_run
+                    )
+                
+                if result['success']:
+                    st.success(f"✅ Processing completed successfully!")
+                    
+                    # Show results
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Interviews Processed", result['processed'])
+                    with col2:
+                        st.metric("Successful", result['successful'])
+                    with col3:
+                        st.metric("Failed", result['failed'])
+                    with col4:
+                        st.metric("Total Responses", result['total_responses'])
+                    
+                    # Show detailed results
+                    if result['results']:
+                        st.write("**Detailed Results:**")
+                        results_df = pd.DataFrame(result['results'])
+                        st.dataframe(results_df, use_container_width=True)
+                    
+                    if dry_run:
+                        st.info("🔍 This was a dry run - no data was saved to the database")
+                    else:
+                        st.success(f"💾 {result['total_responses']} responses saved to database")
+                else:
+                    st.error(f"❌ Processing failed: {result.get('error', 'Unknown error')}")
+    
+    with tab2:
+        st.subheader("📁 Upload Interview Files (Legacy Method)")
+        
+        st.info("""
+        **Legacy File Upload Method** - This method processes individual transcript files.
+        For better results and perfect metadata linkage, use the **Metadata CSV** method above.
+        """)
+        
+        uploaded_files = st.file_uploader(
+            "Choose files",
+            type=['txt', 'docx'],
+            accept_multiple_files=True,
+            help="Select one or more interview transcript files",
+            key="legacy_file_uploader"
+        )
     
     if uploaded_files:
         st.session_state.uploaded_paths = save_uploaded_files(uploaded_files)
