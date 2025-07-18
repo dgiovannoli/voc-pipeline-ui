@@ -5,7 +5,6 @@ from stage2_ui import show_stage2_response_labeling
 from stage3_ui import show_stage3_findings
 from stage4_ui import show_stage4_themes
 from admin_ui import show_admin_utilities, show_admin_panel
-from curation_ui import show_curation_ui
 
 def main():
     st.set_page_config(page_title="VOC Pipeline", layout="wide")
@@ -73,10 +72,9 @@ def main():
         [
             "🚀 Production Dashboard",
             "Stage 1: Data Response Table",
-            "Stage 2: Response Labeling", 
-            "Stage 3: Findings",
-            "Stage 4: Themes",
-            "Stage 5: Human Curation",
+            "Stage 2: Findings",
+            "Stage 3: Themes",
+            "Scorecard Label Experiment",
             "Admin / Utilities"
         ]
     )
@@ -86,14 +84,12 @@ def main():
         show_production_dashboard()
     elif page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
-    elif page == "Stage 2: Response Labeling":
-        show_stage2_response_labeling()
-    elif page == "Stage 3: Findings":
+    elif page == "Stage 2: Findings":
         show_stage3_findings()
-    elif page == "Stage 4: Themes":
+    elif page == "Stage 3: Themes":
         show_stage4_themes()
-    elif page == "Stage 5: Human Curation":
-        show_curation_ui()
+    elif page == "Scorecard Label Experiment":
+        show_stage2_response_labeling()
     elif page == "Admin / Utilities":
         show_admin_panel()
 
