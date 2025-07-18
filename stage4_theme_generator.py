@@ -546,9 +546,9 @@ CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-st
             unclassified_findings = []
             
             for _, finding in df.iterrows():
-                classification = finding.get('classification', '').strip()
+                classification = finding['classification'].strip() if pd.notna(finding['classification']) else ''
                 
-                if f"{self.client_id}-specific" in classification.lower():
+                if f"{self.client_id}-specific".lower() in classification.lower():
                     rev_specific_findings.append(finding)
                 elif "market trend" in classification.lower():
                     market_trend_findings.append(finding)
