@@ -160,7 +160,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get Stage 1 data responses: {e}")
             return pd.DataFrame()
     
-    def get_stage2_response_labeling(self, quote_id: Optional[str] = None, client_id: str = 'default') -> pd.DataFrame:
+    def get_stage2_response_labeling(self, client_id: str, quote_id: Optional[str] = None) -> pd.DataFrame:
         """Get quote analysis from Supabase, filtered by client_id for data siloing"""
         try:
             query = self.supabase.table('stage2_response_labeling').select('*')
@@ -181,7 +181,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get quote analysis: {e}")
             return pd.DataFrame()
     
-    def get_unanalyzed_quotes(self, client_id: str = 'default') -> pd.DataFrame:
+    def get_unanalyzed_quotes(self, client_id: str) -> pd.DataFrame:
         """Get quotes that haven't been analyzed yet, filtered by client_id"""
         try:
             # Get all core responses for this client
@@ -204,7 +204,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get unanalyzed quotes: {e}")
             return pd.DataFrame()
     
-    def get_summary_statistics(self, client_id: str = 'default') -> Dict[str, Any]:
+    def get_summary_statistics(self, client_id: str) -> Dict[str, Any]:
         """Get summary statistics from Supabase, filtered by client_id for data siloing"""
         try:
             # Get core responses
@@ -301,7 +301,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to delete core response: {e}")
             return False
     
-    def export_data(self, format: str = 'csv', client_id: str = 'default') -> str:
+    def export_data(self, client_id: str, format: str = 'csv') -> str:
         """Export data from Supabase, filtered by client_id"""
         try:
             # Get all data
@@ -328,7 +328,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to export data: {e}")
             return f"Export failed: {e}"
     
-    def get_scored_quotes(self, client_id: str = 'default') -> pd.DataFrame:
+    def get_scored_quotes(self, client_id: str) -> pd.DataFrame:
         """Get all quotes with scores from Supabase for Stage 3 analysis, filtered by client_id"""
         try:
             # Get core responses
@@ -392,7 +392,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save finding: {e}")
             return False
     
-    def save_enhanced_finding(self, finding_data: Dict[str, Any], client_id: str = 'default') -> bool:
+    def save_enhanced_finding(self, finding_data: Dict[str, Any], client_id: str) -> bool:
         """Save an enhanced finding to Supabase with Buried Wins v4.0 framework"""
         try:
             # Generate unique finding ID if not provided
@@ -520,7 +520,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get findings: {e}")
             return pd.DataFrame()
     
-    def get_stage3_findings(self, client_id: str = 'default', criterion: Optional[str] = None, finding_type: Optional[str] = None, priority_level: Optional[str] = None) -> pd.DataFrame:
+    def get_stage3_findings(self, client_id: str, criterion: Optional[str] = None, finding_type: Optional[str] = None, priority_level: Optional[str] = None) -> pd.DataFrame:
         """Get Stage 3 findings from Supabase, filtered by client_id for data siloing"""
         try:
             query = self.supabase.table('stage3_findings').select('*')
@@ -549,7 +549,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get Stage 3 findings: {e}")
             return pd.DataFrame()
 
-    def get_stage3_findings_list(self, client_id: str = 'default') -> List[Dict[str, Any]]:
+    def get_stage3_findings_list(self, client_id: str) -> List[Dict[str, Any]]:
         """Get Stage 3 findings as a list of dictionaries for LLM processing"""
         try:
             df = self.get_stage3_findings(client_id=client_id)
@@ -565,7 +565,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get Stage 3 findings as list: {e}")
             return []
 
-    def delete_stage4_themes(self, client_id: str = 'default') -> bool:
+    def delete_stage4_themes(self, client_id: str) -> bool:
         """Delete all Stage 4 themes for a specific client"""
         try:
             response = self.supabase.table('stage4_themes').delete().eq('client_id', client_id).execute()
@@ -576,7 +576,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to delete Stage 4 themes: {e}")
             return False
 
-    def delete_stage3_findings(self, client_id: str = 'default') -> bool:
+    def delete_stage3_findings(self, client_id: str) -> bool:
         """Delete all Stage 3 findings for a specific client"""
         try:
             response = self.supabase.table('stage3_findings').delete().eq('client_id', client_id).execute()
@@ -649,7 +649,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save Stage 4 {theme_data.get('theme_type', 'item')}: {e}")
             return False
     
-    def update_stage3_finding_classification(self, finding_id: str, classification: str, classification_reasoning: str, client_id: str = 'default') -> bool:
+    def update_stage3_finding_classification(self, finding_id: str, classification: str, classification_reasoning: str, client_id: str) -> bool:
         """Update the classification and classification_reasoning for a Stage 3 finding"""
         try:
             # Prepare update data
@@ -673,7 +673,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to update classification for finding {finding_id}: {e}")
             return False
 
-    def get_stage3_findings_summary(self, client_id: str = 'default') -> Dict:
+    def get_stage3_findings_summary(self, client_id: str) -> Dict:
         """Get enhanced findings summary statistics, filtered by client_id"""
         try:
             df = self.get_stage3_findings(client_id=client_id)
@@ -791,7 +791,7 @@ class SupabaseDatabase:
             logger.error(f"Error getting high confidence findings: {e}")
             return pd.DataFrame()
 
-    def save_theme(self, theme_data: Dict, client_id: str = 'default') -> bool:
+    def save_theme(self, theme_data: Dict, client_id: str) -> bool:
         """Save a theme to the stage4_themes table with client_id for data siloing"""
         try:
             # Use client_id from theme_data if provided, otherwise use parameter
@@ -803,7 +803,7 @@ class SupabaseDatabase:
             logger.error(f"Error saving theme: {e}")
             return False
 
-    def get_themes(self, client_id: str = 'default') -> pd.DataFrame:
+    def get_themes(self, client_id: str) -> pd.DataFrame:
         """Get all themes from the stage4_themes table, filtered by client_id"""
         try:
             query = self.supabase.table('stage4_themes').select('*')
@@ -849,7 +849,7 @@ class SupabaseDatabase:
         
         return value
 
-    def delete_theme(self, theme_id: str, client_id: str = 'default') -> bool:
+    def delete_theme(self, theme_id: str, client_id: str) -> bool:
         """Delete a theme from the stage4_themes table"""
         try:
             response = self.supabase.table('stage4_themes').delete().eq('id', theme_id).eq('client_id', client_id).execute()
@@ -858,7 +858,7 @@ class SupabaseDatabase:
             logger.error(f"Error deleting theme: {e}")
             return False
 
-    def get_themes_summary(self, client_id: str = 'default') -> Dict:
+    def get_themes_summary(self, client_id: str) -> Dict:
         """Get summary statistics for stage4_themes, filtered by client_id"""
         try:
             # Get total themes count filtered by client_id
@@ -967,7 +967,7 @@ class SupabaseDatabase:
             logger.error(f"Error getting themes for executive synthesis: {e}")
             return pd.DataFrame()
 
-    def generate_criteria_scorecard(self, client_id: str = 'default') -> Dict:
+    def generate_criteria_scorecard(self, client_id: str) -> Dict:
         """Generate executive criteria scorecard from Stage 2 data, filtered by client_id"""
         try:
             # Get quote analysis data filtered by client_id
@@ -1178,7 +1178,7 @@ class SupabaseDatabase:
             logger.error(f"Error saving criteria scorecard: {e}")
             return False
 
-    def get_executive_themes(self, client_id: str = 'default') -> pd.DataFrame:
+    def get_executive_themes(self, client_id: str) -> pd.DataFrame:
         """Get all executive themes filtered by client_id"""
         try:
             response = self.supabase.table('executive_themes').select('*').eq('client_id', client_id).order('priority_score', desc=True).execute()
@@ -1196,7 +1196,7 @@ class SupabaseDatabase:
             logger.error(f"Error getting criteria scorecard: {e}")
             return pd.DataFrame()
 
-    def get_executive_synthesis_summary(self, client_id: str = 'default') -> Dict:
+    def get_executive_synthesis_summary(self, client_id: str) -> Dict:
         """Get summary statistics for executive synthesis, filtered by client_id"""
         try:
             # Get executive themes count filtered by client_id
@@ -1293,7 +1293,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to merge client data: {e}")
             return False
 
-    def get_theme_quotes(self, theme_id: str, client_id: str = 'default') -> pd.DataFrame:
+    def get_theme_quotes(self, theme_id: str, client_id: str) -> pd.DataFrame:
         """Get all quotes that contributed to a specific theme from stage4_themes"""
         try:
             # First get the theme to find supporting finding IDs
@@ -1366,7 +1366,7 @@ class SupabaseDatabase:
             logger.error(f"Error getting theme quotes: {e}")
             return pd.DataFrame()
 
-    def get_themes_for_curation(self, client_id: str = 'default') -> pd.DataFrame:
+    def get_themes_for_curation(self, client_id: str) -> pd.DataFrame:
         """Get themes that need human curation."""
         try:
             response = self.supabase.table('stage4_themes').select('*').eq('client_id', client_id).execute()
@@ -1390,7 +1390,7 @@ class SupabaseDatabase:
             logger.error(f"Error saving theme curation: {e}")
             return False
 
-    def get_curation_summary(self, client_id: str = 'default') -> dict:
+    def get_curation_summary(self, client_id: str) -> dict:
         """Get summary of curation progress."""
         try:
             themes = self.get_themes_for_curation(client_id)
@@ -1413,7 +1413,7 @@ class SupabaseDatabase:
             logger.error(f"Error getting curation summary: {e}")
             return {}
 
-    def get_approved_themes_for_export(self, client_id: str = 'default') -> pd.DataFrame:
+    def get_approved_themes_for_export(self, client_id: str) -> pd.DataFrame:
         """Get approved themes for export."""
         try:
             response = self.supabase.table('stage4_themes').select('*').eq('client_id', client_id).eq('curation_status', 'approved').execute()
@@ -1431,7 +1431,7 @@ class SupabaseDatabase:
             logger.error(f"Error getting approved quotes: {e}")
             return pd.DataFrame()
 
-    def save_json_finding(self, finding_data: Dict[str, Any], client_id: str = 'default') -> bool:
+    def save_json_finding(self, finding_data: Dict[str, Any], client_id: str) -> bool:
         """Save a finding with JSON data structure to Supabase"""
         try:
             # Prepare data for Supabase with JSONB support
@@ -1467,7 +1467,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save JSON finding: {e}")
             return False
     
-    def get_json_findings(self, client_id: str = 'default', filters: Optional[Dict] = None) -> List[Dict[str, Any]]:
+    def get_json_findings(self, client_id: str, filters: Optional[Dict] = None) -> List[Dict[str, Any]]:
         """Get findings with JSON data structure from Supabase"""
         try:
             query = self.supabase.table('stage3_findings').select('*')
@@ -1522,7 +1522,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get JSON findings: {e}")
             return []
     
-    def save_json_theme(self, theme_data: Dict[str, Any], client_id: str = 'default') -> bool:
+    def save_json_theme(self, theme_data: Dict[str, Any], client_id: str) -> bool:
         """Save a theme with JSON data structure to Supabase"""
         try:
             # Prepare data for Supabase with JSONB support
@@ -1558,7 +1558,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save JSON theme: {e}")
             return False
     
-    def get_json_themes(self, client_id: str = 'default', filters: Optional[Dict] = None) -> List[Dict[str, Any]]:
+    def get_json_themes(self, client_id: str, filters: Optional[Dict] = None) -> List[Dict[str, Any]]:
         """Get themes with JSON data structure from Supabase"""
         try:
             query = self.supabase.table('stage4_themes').select('*')
@@ -1609,7 +1609,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get JSON themes: {e}")
             return []
     
-    def export_json_findings(self, client_id: str = 'default', filters: Optional[Dict] = None) -> str:
+    def export_json_findings(self, client_id: str, filters: Optional[Dict] = None) -> str:
         """Export findings as JSON file"""
         try:
             findings = self.get_json_findings(client_id=client_id, filters=filters)
@@ -1640,7 +1640,7 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to export JSON findings: {e}")
             return ""
     
-    def export_json_themes(self, client_id: str = 'default', filters: Optional[Dict] = None) -> str:
+    def export_json_themes(self, client_id: str, filters: Optional[Dict] = None) -> str:
         """Export themes as JSON file"""
         try:
             themes = self.get_json_themes(client_id=client_id, filters=filters)

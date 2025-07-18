@@ -65,78 +65,104 @@ def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False
 def show_stage1_data_responses():
     """Stage 1: Data Response Table - Process metadata CSV to extract quotes"""
     st.title("📊 Stage 1: Data Response Table")
-    st.markdown("Upload metadata CSV files and extract customer quotes and insights from interview transcripts.")
+    st.markdown("Extract customer quotes and insights from interview transcripts using metadata CSV files.")
     
-    st.subheader("📊 Metadata CSV Processing")
+    # Get client ID first
+    client_id = get_client_id()
     
-    st.info("""
-    **Metadata CSV Processing** processes Stage 1 data directly from a metadata CSV file 
-    that contains interview transcripts. This approach ensures perfect metadata linkage and eliminates 
-    filename parsing issues.
+    # Status overview at the top
+    st.subheader("📈 Current Status")
     
-    **Required CSV Columns:**
-    - `Interview ID` - Unique identifier for each interview
-    - `Client Name` - Client identifier (must match your current client ID)
-    - `Interview Contact Full Name` - Name of the interviewee
-    - `Interview Contact Company Name` - Company name
-    - `Deal Status` - Status of the deal (e.g., "Closed Won", "Closed Lost")
-    - `Completion Date` - Date of the interview
-    - `Raw Transcript` - Full transcript text
-    - `Interview Status` - Must be "Completed" for processing
-    """)
+    if SUPABASE_AVAILABLE:
+        try:
+            df = db.get_stage1_data_responses(client_id=client_id)
+            if df.empty:
+                st.info(f"📭 No Stage 1 data found for client: **{client_id}**")
+                st.info("Upload a metadata CSV file below to get started.")
+            else:
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total Responses", len(df))
+                with col2:
+                    st.metric("Interviews", df['interview_id'].nunique())
+                with col3:
+                    st.metric("Companies", df['company'].nunique())
+                with col4:
+                    st.metric("Interviewees", df['interviewee_name'].nunique())
+                st.success(f"✅ Stage 1 data ready for analysis")
+        except Exception as e:
+            st.error(f"❌ Error checking status: {e}")
+    else:
+        st.error("❌ Database not available")
+        return
     
-    # File upload
+    # Main workflow section
+    st.subheader("🚀 Process New Data")
+    
+    # Collapsible help section
+    with st.expander("📋 Required CSV Format", expanded=False):
+        st.markdown("""
+        **Your CSV must contain these columns:**
+        - `Interview ID` - Unique identifier for each interview
+        - `Client Name` - Must match your current client ID: **{client_id}**
+        - `Interview Contact Full Name` - Name of the interviewee
+        - `Interview Contact Company Name` - Company name
+        - `Deal Status` - Status of the deal (e.g., "Closed Won", "Closed Lost")
+        - `Completion Date` - Date of the interview
+        - `Raw Transcript` - Full transcript text
+        - `Interview Status` - Must be "Completed" for processing
+        """.format(client_id=client_id))
+    
+    # File upload with better visual design
     uploaded_csv = st.file_uploader(
-        "Upload metadata CSV file",
+        "📁 Upload metadata CSV file",
         type=['csv'],
         help="Upload a CSV file containing interview metadata and transcripts"
     )
     
     if uploaded_csv:
-        st.success(f"✅ CSV file uploaded: {uploaded_csv.name}")
+        # Preview section
+        with st.expander("📊 File Preview", expanded=True):
+            try:
+                df_preview = pd.read_csv(uploaded_csv)
+                st.info(f"📊 CSV contains {len(df_preview)} interviews")
+                
+                # Validate client match
+                if 'Client Name' in df_preview.columns:
+                    available_clients = df_preview['Client Name'].dropna().unique()
+                    if client_id in available_clients:
+                        st.success(f"✅ Client ID '{client_id}' found in CSV")
+                    else:
+                        st.warning(f"⚠️ Client ID '{client_id}' not found in CSV")
+                        st.info(f"Available clients: {', '.join(available_clients)}")
+                
+                # Show first few rows
+                st.dataframe(df_preview.head(3), use_container_width=True)
+                
+            except Exception as e:
+                st.error(f"❌ Error reading CSV: {e}")
+                return
         
-        # Show CSV preview
-        try:
-            df_preview = pd.read_csv(uploaded_csv)
-            st.info(f"📊 CSV contains {len(df_preview)} rows")
-            
-            # Show available clients
-            if 'Client Name' in df_preview.columns:
-                available_clients = df_preview['Client Name'].dropna().unique()
-                st.info(f"👥 Available clients: {', '.join(available_clients)}")
-            
-            # Show column info
-            st.write("**CSV Columns:**")
-            st.write(list(df_preview.columns))
-            
-            # Show first few rows
-            st.write("**Preview (first 3 rows):**")
-            st.dataframe(df_preview.head(3), use_container_width=True)
-            
-        except Exception as e:
-            st.error(f"❌ Error reading CSV: {e}")
-            return
+        # Processing options in a cleaner layout
+        st.subheader("⚙️ Processing Options")
         
-        # Processing options
         col1, col2 = st.columns(2)
         with col1:
             max_interviews = st.number_input(
-                "Max interviews to process (0 = all)",
+                "Max interviews to process",
                 min_value=0,
                 value=0,
-                help="Limit the number of interviews to process (0 means process all)"
+                help="0 = process all interviews"
             )
         with col2:
             dry_run = st.checkbox(
-                "Dry run (don't save to database)",
-                help="Process without saving to database to test the results"
+                "🔍 Dry run (test without saving)",
+                help="Process without saving to database"
             )
         
-        # Process button
-        if st.button("🚀 Process Metadata CSV", type="primary"):
-            client_id = get_client_id()
-            
-            with st.spinner("Processing metadata CSV..."):
+        # Process button with better styling
+        if st.button("🚀 Process Interviews", type="primary", use_container_width=True):
+            with st.spinner("Processing interviews..."):
                 result = process_metadata_csv(
                     uploaded_csv, 
                     client_id, 
@@ -145,92 +171,59 @@ def show_stage1_data_responses():
                 )
             
             if result['success']:
-                st.success(f"✅ Processing completed successfully!")
+                st.success("✅ Processing completed!")
                 
-                # Show results
+                # Results in a clean card layout
+                st.subheader("📊 Processing Results")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("Interviews Processed", result['processed'])
+                    st.metric("Interviews", result['processed'])
                 with col2:
                     st.metric("Successful", result['successful'])
                 with col3:
                     st.metric("Failed", result['failed'])
                 with col4:
-                    st.metric("Total Responses", result['total_responses'])
-                
-                # Show detailed results
-                if result['results']:
-                    st.write("**Detailed Results:**")
-                    results_df = pd.DataFrame(result['results'])
-                    st.dataframe(results_df, use_container_width=True)
+                    st.metric("Responses", result['total_responses'])
                 
                 if dry_run:
-                    st.info("🔍 This was a dry run - no data was saved to the database")
+                    st.info("🔍 Dry run completed - no data was saved")
                 else:
                     st.success(f"💾 {result['total_responses']} responses saved to database")
+                    
+                    # Auto-refresh the page to show updated status
+                    st.rerun()
             else:
                 st.error(f"❌ Processing failed: {result.get('error', 'Unknown error')}")
     
-    # Show existing Stage 1 data from database
-    st.subheader("📊 Existing Stage 1 Data")
+    # Existing data section (only show if there's data)
+    if SUPABASE_AVAILABLE:
+        try:
+            df = db.get_stage1_data_responses(client_id=client_id)
+            if not df.empty:
+                st.subheader("📊 Current Data")
+                
+                # Download option
+                csv = df.to_csv(index=False)
+                st.download_button(
+                    label="📥 Download Current Data",
+                    data=csv,
+                    file_name=f"stage1_data_{client_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+                
+                # Show data in expandable section
+                with st.expander("📋 View All Responses", expanded=False):
+                    st.dataframe(df, use_container_width=True)
+        except Exception as e:
+            st.error(f"❌ Error retrieving data: {e}")
     
-    if not SUPABASE_AVAILABLE:
-        st.error("❌ Database not available")
-        return
-    
-    try:
-        client_id = get_client_id()
-        df = db.get_stage1_data_responses(client_id=client_id)
-        
-        if df.empty:
-            st.info("📭 No Stage 1 data responses found for this client")
-        else:
-            st.success(f"✅ Found {len(df)} Stage 1 data responses for client: {client_id}")
-            
-            # Display summary statistics
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                st.metric("Total Responses", len(df))
-            with col2:
-                st.metric("Unique Interviews", df['interview_id'].nunique())
-            with col3:
-                st.metric("Unique Companies", df['company'].nunique())
-            with col4:
-                st.metric("Unique Interviewees", df['interviewee_name'].nunique())
-            
-            # Show data
-            st.dataframe(df, use_container_width=True)
-            
-            # Download button
-            csv = df.to_csv(index=False)
-            st.download_button(
-                label="📥 Download Stage 1 Data as CSV",
-                data=csv,
-                file_name=f"stage1_data_responses_{client_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
-                mime="text/csv"
-            )
-        
-    except Exception as e:
-        st.error(f"❌ Error retrieving Stage 1 data: {e}")
-    
-    # Processing details
-    st.subheader("🔧 Processing Details")
-    st.markdown("""
-    **How the metadata-driven pipeline extracts quotes from your interviews:**
-    
-    **Perfect Metadata Linkage:**
-    - All responses are automatically linked with correct interviewee, company, deal status, and interview_id
-    - No filename parsing required - metadata comes directly from the CSV
-    - Ensures data consistency and eliminates manual errors
-    
-    **Batch Processing:**
-    - Multiple interviews are processed from a single CSV file
-    - Each interview transcript is processed through the same Stage 1 extraction pipeline
-    - Supports parallel processing for faster results
-    
-    **Advanced LLM Processing:**
-    - Uses token-based chunking with ~2K tokens per chunk
-    - Q&A-aware segmentation that preserves conversation boundaries
-    - Intelligent overlap of 200 tokens to maintain continuity
-    - Each chunk is processed by GPT-3.5-turbo-16k for comprehensive quote extraction
-    """) 
+    # Technical details in collapsible section
+    with st.expander("🔧 Technical Details", expanded=False):
+        st.markdown("""
+        **Processing Pipeline:**
+        - **Perfect Metadata Linkage**: All responses automatically linked with correct interviewee, company, and interview details
+        - **Intelligent Chunking**: Uses ~2K token chunks with 200 token overlap for context preservation
+        - **Q&A Preservation**: Maintains conversation boundaries during processing
+        - **Parallel Processing**: Multiple interviews processed simultaneously for faster results
+        - **LLM Enhancement**: GPT-3.5-turbo-16k extracts comprehensive quotes and insights
+        """) 
