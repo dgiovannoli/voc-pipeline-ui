@@ -237,7 +237,106 @@ CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-st
                 else:
                     logger.info(f"⚠️ Rejected cluster in '{category}': only {len(companies)} companies")
         
-        logger.info(f"🎯 Generated {len(theme_clusters)} valid theme clusters")
+        # Stage 3: Cross-category semantic clustering for important patterns
+        logger.info(f"🔍 Performing cross-category semantic clustering on all {len(findings)} findings")
+        cross_category_clusters = self._semantic_cluster_findings(findings)
+        
+        for i, cluster in enumerate(cross_category_clusters):
+            if len(cluster) < 2:
+                continue
+                
+            # Check if this cluster spans multiple categories
+            categories_in_cluster = set()
+            for finding in cluster:
+                category = finding.get('finding_category', '')
+                if category:
+                    categories_in_cluster.add(category)
+            
+            # Only create cross-category clusters if they span multiple categories
+            if len(categories_in_cluster) > 1:
+                logger.info(f"🔍 Found cross-category cluster {i+1} spanning {len(categories_in_cluster)} categories: {list(categories_in_cluster)}")
+                
+                # Check companies in this cross-category cluster
+                companies = set()
+                for finding in cluster:
+                    company = finding.get('interview_company', '')
+                    if company and company.strip():
+                        companies.add(company.strip())
+                
+                # For cross-category clusters, we can be more lenient with company requirements
+                # since these represent important cross-cutting issues
+                min_companies_for_cross_category = max(2, self.min_companies_per_theme - 1)
+                
+                if len(companies) >= min_companies_for_cross_category:
+                    confidence = self._calculate_cluster_confidence(cluster)
+                    theme_clusters.append({
+                        'category': f'Cross_Category_{i+1}',
+                        'findings': cluster,
+                        'companies': list(companies),
+                        'confidence': confidence,
+                        'cluster_id': f"cross_category_cluster_{i+1}",
+                        'finding_ids': [f.get('finding_id', '') for f in cluster],
+                        'cross_company': len(companies) >= self.min_companies_per_theme
+                    })
+                    logger.info(f"✅ Created cross-category cluster {i+1}: {len(companies)} companies, {len(cluster)} findings, confidence: {confidence:.2f}")
+                else:
+                    logger.info(f"⚠️ Rejected cross-category cluster {i+1}: only {len(companies)} companies (minimum {min_companies_for_cross_category})")
+        
+        # Stage 4: Priority-based clustering for high-impact findings that don't cluster naturally
+        logger.info(f"🔍 Checking for high-impact findings that need special treatment")
+        
+        # Find findings that appear in Priority Finding category (indicating high importance)
+        priority_findings = []
+        for finding in findings:
+            if finding.get('finding_category') == 'Priority Finding':
+                priority_findings.append(finding)
+        
+        # For each priority finding, check if it has related findings across categories
+        for priority_finding in priority_findings:
+            priority_text = priority_finding.get('finding_statement', '').lower()
+            
+            # Find related findings by looking for similar key concepts
+            related_findings = [priority_finding]
+            
+            for finding in findings:
+                if finding.get('finding_id') == priority_finding.get('finding_id'):
+                    continue  # Skip self
+                    
+                finding_text = finding.get('finding_statement', '').lower()
+                
+                # Check for semantic similarity using key terms (industry-agnostic)
+                priority_words = set(priority_text.split())
+                finding_words = set(finding_text.split())
+                
+                # Find common significant words (longer than 4 chars)
+                common_words = [w for w in priority_words.intersection(finding_words) if len(w) > 4]
+                
+                # If they share significant terms and are from different categories, consider them related
+                if len(common_words) >= 2 and finding.get('finding_category') != priority_finding.get('finding_category'):
+                    related_findings.append(finding)
+            
+            # If we found related findings across categories, create a special cluster
+            if len(related_findings) >= 2:
+                companies = set()
+                for finding in related_findings:
+                    company = finding.get('interview_company', '')
+                    if company and company.strip():
+                        companies.add(company.strip())
+                
+                if len(companies) >= 2:  # Lower threshold for priority-based clusters
+                    confidence = self._calculate_cluster_confidence(related_findings)
+                    theme_clusters.append({
+                        'category': f'Priority_Cross_Category_{priority_finding.get("finding_id")}',
+                        'findings': related_findings,
+                        'companies': list(companies),
+                        'confidence': confidence,
+                        'cluster_id': f"priority_cross_category_{priority_finding.get('finding_id')}",
+                        'finding_ids': [f.get('finding_id', '') for f in related_findings],
+                        'cross_company': len(companies) >= self.min_companies_per_theme
+                    })
+                    logger.info(f"✅ Created priority-based cross-category cluster for F{priority_finding.get('finding_id')}: {len(companies)} companies, {len(related_findings)} findings, confidence: {confidence:.2f}")
+        
+        logger.info(f"🎯 Generated {len(theme_clusters)} valid theme clusters (including priority-based)")
         return theme_clusters
     
     def _semantic_cluster_findings(self, findings: List[Dict]) -> List[List[Dict]]:
