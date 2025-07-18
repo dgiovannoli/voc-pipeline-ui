@@ -60,10 +60,11 @@ CRITICAL REQUIREMENTS:
    - Titles MUST highlight customer pain and business impact with emotional urgency
    - Use action verbs and emotional language that creates urgency
    - Focus on what customers are losing, suffering, or missing out on
-   - Include specific product issues causing customer frustration
-   - Examples: "User experience declines when audio recording capabilities fail to isolate relevant content"
-   - Examples: "High transcription costs and lengthy turnaround times are affecting operational efficiency for small firms"
-   - Examples: "Subscription fatigue is hindering adoption of Rev's services among new firms"
+   - Include specific product features, capabilities, or functionality issues causing customer frustration
+   - Use specific product terminology and feature names when available
+   - Examples: "User experience declines when core product features fail to perform as expected"
+   - Examples: "High service costs and lengthy turnaround times are affecting operational efficiency for small organizations"
+   - Examples: "Subscription fatigue is hindering adoption of the client's services among new customers"
    - AVOID: Generic titles like "Integration challenges limit workflow optimization"
 
 2. BUSINESS IMPACT FOCUS:
@@ -74,10 +75,10 @@ CRITICAL REQUIREMENTS:
 
 3. CLIENT-SPECIFIC FOCUS:
    - All themes must relate to the client's core capabilities, products, or services
-   - For Rev: Focus on transcription accuracy, speaker identification, voice recognition, audio quality, and workflow integration
+   - Focus on specific product features, capabilities, and user experience issues
    - Market themes are ONLY acceptable if they reveal specific buyer preferences or needs that inform the client's strategy
    - Avoid generic market observations with no actionable insights
-   - When describing Rev-specific issues, use specific product terminology: "speaker identification", "voice recognition", "transcript accuracy", "audio quality"
+   - Use specific product terminology and feature names when describing client-specific issues
 
 4. EVIDENCE QUALITY:
    - Use detailed, specific quotes from findings with attribution
@@ -98,21 +99,21 @@ CRITICAL REQUIREMENTS:
    - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
 
 EXAMPLE HIGH-QUALITY THEME:
-Title: "Speaker identification failures in multi-party recordings disrupt legal workflow and compromise transcript accuracy"
-Statement: "Legal professionals experience significant challenges when Rev's voice recognition system fails to distinguish between speakers in complex recordings. Multiple attorneys report that unclear speaker attribution leads to inaccurate transcripts and additional editing time during critical legal proceedings."
+Title: "Product feature failures in multi-party scenarios disrupt user workflow and compromise output accuracy"
+Statement: "Users experience significant challenges when the system's core functionality fails to distinguish between multiple inputs in complex scenarios. Multiple users report that unclear attribution leads to inaccurate outputs and additional editing time during critical work sessions."
 
 EXAMPLE POOR THEME:
 Title: "Integration challenges limit workflow optimization" (too generic, no emotional impact)
 Statement: "Customers are satisfied with the current features. Users report positive experiences." (too generic, no specific impact)
 
 EXECUTIVE TITLE PATTERNS TO FOLLOW:
-- "Speaker identification failures in multi-party recordings disrupt legal workflow and compromise transcript accuracy"
-- "High transcription costs and lengthy turnaround times are affecting operational efficiency for small firms"
-- "Subscription fatigue is hindering adoption of Rev's services among new firms"
-- "Rapid service delivery from Rev is impacting billable hours for attorneys"
-- "AI tools are significantly improving efficiency in document review for attorneys"
-- "Legal professionals are seeking improved integration capabilities for transcription services"
-- "Voice recognition errors in Rev's system compromise speaker distinction and transcript clarity for legal applications"
+- "Product feature failures in multi-party scenarios disrupt user workflow and compromise output accuracy"
+- "High service costs and lengthy turnaround times are affecting operational efficiency for small organizations"
+- "Subscription fatigue is hindering adoption of the client's services among new customers"
+- "Rapid service delivery from the client is impacting billable hours for professionals"
+- "AI tools are significantly improving efficiency in document processing for users"
+- "Users are seeking improved integration capabilities for core services"
+- "Core functionality errors in the client's system compromise feature distinction and output clarity for professional applications"
 
 THEME STRUCTURE REQUIREMENTS:
 - Title: MUST highlight specific product issues causing customer impact with clear business consequences AND emotional urgency
