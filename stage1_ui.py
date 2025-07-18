@@ -13,6 +13,7 @@ from supabase_database import SupabaseDatabase
 
 # Constants
 BASE = Path("temp")
+BASE.mkdir(exist_ok=True)
 STAGE1_CSV = BASE / "stage1_data_responses.csv"
 SUPABASE_AVAILABLE = True
 
