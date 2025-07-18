@@ -55,7 +55,7 @@ def test_database_connection() -> bool:
             return False
         
         # Test table access
-        stage1_count = len(db.get_stage1_data_responses())
+        stage1_count = len(db.get_stage1_data_responses(client_id='default'))
         logger.info(f"✅ Database connection successful. Found {stage1_count} stage1 records")
         
         return True
