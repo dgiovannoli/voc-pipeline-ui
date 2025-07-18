@@ -19,7 +19,9 @@ def get_client_id():
     """Safely get client_id from session state."""
     client_id = st.session_state.get('client_id', '')
     if not client_id or client_id == 'default':
-        return "Rev"  # Default to "Rev" for this project
+        st.error("❌ **Client ID Required**")
+        st.info("Please set a client ID in the sidebar before proceeding.")
+        st.stop()
     return client_id
 
 def get_curator_name():
