@@ -37,7 +37,7 @@ class EnhancedThemeGeneratorScalable:
         self.theme_prompt = self._load_comprehensive_theme_prompt()
         
         # Quality thresholds
-        self.min_evidence_strength = 3  # Minimum score for theme inclusion
+        self.min_evidence_strength = 1  # Minimum score for theme inclusion (temporarily lowered to debug)
         self.min_companies_per_theme = 2  # Minimum companies for cross-company validation
         self.min_findings_per_theme = 2   # Minimum findings per theme
         
