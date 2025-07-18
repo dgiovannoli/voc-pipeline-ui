@@ -16,6 +16,8 @@ CREATE TABLE IF NOT EXISTS stage1_data_responses (
     interviewee_name VARCHAR(255),
     interview_date DATE,
     industry VARCHAR(255),
+    audio_video_link TEXT,
+    contact_website VARCHAR(500),
     file_source VARCHAR(255),
     client_id VARCHAR(100) DEFAULT 'default',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -28,6 +30,8 @@ CREATE INDEX IF NOT EXISTS idx_stage1_company ON stage1_data_responses(company_n
 CREATE INDEX IF NOT EXISTS idx_stage1_deal_status ON stage1_data_responses(deal_status);
 CREATE INDEX IF NOT EXISTS idx_stage1_interview_date ON stage1_data_responses(interview_date);
 CREATE INDEX IF NOT EXISTS idx_stage1_industry ON stage1_data_responses(industry);
+CREATE INDEX IF NOT EXISTS idx_stage1_audio_video_link ON stage1_data_responses(audio_video_link);
+CREATE INDEX IF NOT EXISTS idx_stage1_contact_website ON stage1_data_responses(contact_website);
 CREATE INDEX IF NOT EXISTS idx_stage1_created_at ON stage1_data_responses(created_at);
 
 -- ============================================================================
