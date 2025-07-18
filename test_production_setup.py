@@ -54,8 +54,9 @@ def test_database_connection() -> bool:
             logger.error("❌ Database connection test failed")
             return False
         
-        # Test table access
-        stage1_count = len(db.get_stage1_data_responses())
+        # Test table access - check for any data across all clients
+        all_data = db.get_stage1_data_responses(client_id=None)  # Get all data
+        stage1_count = len(all_data)
         logger.info(f"✅ Database connection successful. Found {stage1_count} stage1 records")
         
         return True
