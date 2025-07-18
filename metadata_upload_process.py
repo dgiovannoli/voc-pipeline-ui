@@ -20,21 +20,21 @@ class MetadataUploadProcess:
     def get_existing_interviews(self, client_id):
         """Get existing interviews that need metadata"""
         try:
-            response = self.db.supabase.table('stage1_data_responses').select(
-                'response_id,interviewee_name,company,date_of_interview,subject'
+            response = self.db.supabase.table('interview_metadata').select(
+                'id,interview_id,interviewee_name,company,deal_status,date_of_interview'
             ).eq('client_id', client_id).execute()
             
             if response.data:
                 df = pd.DataFrame(response.data)
                 # Group by interviewee to show unique interviews
                 unique_interviews = df.groupby('interviewee_name').agg({
-                    'response_id': 'count',
+                    'id': 'count',
                     'company': 'first',
                     'date_of_interview': 'first',
-                    'subject': lambda x: ', '.join(set(x))
+                    'deal_status': 'first'
                 }).reset_index()
                 
-                unique_interviews.columns = ['Interviewee', 'Response Count', 'Current Company', 'Date', 'Subjects']
+                unique_interviews.columns = ['Interviewee', 'Interview Count', 'Current Company', 'Date', 'Deal Status']
                 return unique_interviews
             else:
                 return pd.DataFrame()
@@ -46,8 +46,8 @@ class MetadataUploadProcess:
     def update_interview_metadata(self, client_id, interviewee_name, company, industry, firm_size, role, notes):
         """Update metadata for a specific interviewee"""
         try:
-            # Update all responses for this interviewee
-            response = self.db.supabase.table('stage1_data_responses').update({
+            # Update all interviews for this interviewee
+            response = self.db.supabase.table('interview_metadata').update({
                 'company': company,
                 'industry': industry,
                 'firm_size': firm_size,
@@ -60,7 +60,7 @@ class MetadataUploadProcess:
                 st.success(f"✅ Updated metadata for {interviewee_name}")
                 return True
             else:
-                st.warning(f"No responses found for {interviewee_name}")
+                st.warning(f"No interviews found for {interviewee_name}")
                 return False
                 
         except Exception as e:
@@ -86,7 +86,7 @@ class MetadataUploadProcess:
             for _, row in df.iterrows():
                 try:
                     # Update metadata for each interviewee
-                    response = self.db.supabase.table('stage1_data_responses').update({
+                    response = self.db.supabase.table('interview_metadata').update({
                         'company': row.get('company', ''),
                         'industry': row.get('industry', ''),
                         'firm_size': row.get('firm_size', ''),
