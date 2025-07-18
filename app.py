@@ -45,6 +45,8 @@ def main():
     current_client_id = st.session_state.get('client_id', '')
     if not current_client_id or current_client_id == 'default':
         st.sidebar.warning("⚠️ Please set a Client ID")
+        st.sidebar.info("💡 Enter a unique identifier for this client's data")
+        st.sidebar.info("📝 Examples: 'Rev', 'Client_A', 'Project_Alpha'")
     
     # Client ID input with validation
     new_client_id = st.sidebar.text_input(

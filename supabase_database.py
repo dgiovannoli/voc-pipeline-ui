@@ -138,6 +138,11 @@ class SupabaseDatabase:
         try:
             query = self.supabase.table('stage1_data_responses').select('*')
             
+            # Handle empty client_id gracefully
+            if not client_id or client_id == '':
+                logger.warning("⚠️ No client_id provided, returning empty dataset")
+                return pd.DataFrame()
+            
             # Always filter by client_id for data siloing
             query = query.eq('client_id', client_id)
             

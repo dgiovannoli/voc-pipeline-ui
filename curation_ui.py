@@ -19,8 +19,12 @@ def get_client_id():
     """Safely get client_id from session state."""
     client_id = st.session_state.get('client_id', '')
     if not client_id or client_id == 'default':
-        st.error("❌ **Client ID Required**")
-        st.info("Please set a client ID in the sidebar before proceeding.")
+        st.warning("⚠️ **Client ID Required**")
+        st.info("Please set a Client ID in the sidebar before proceeding.")
+        st.info("💡 **How to set Client ID:**")
+        st.info("1. Look in the sidebar under '🏢 Client Settings'")
+        st.info("2. Enter a unique identifier for this client's data")
+        st.info("3. Press Enter to save")
         st.stop()
     return client_id
 
