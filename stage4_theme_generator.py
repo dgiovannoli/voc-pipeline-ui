@@ -59,26 +59,27 @@ CRITICAL REQUIREMENTS:
 1. EXECUTIVE-STYLE TITLE REQUIREMENTS:
    - Titles MUST highlight customer pain and business impact with emotional urgency
    - Use action verbs and emotional language that creates urgency
-   - Focus on what customers are losing, suffering, or missing out on
-   - Include specific product features, capabilities, or functionality issues causing customer frustration
-   - Use specific product terminology and feature names when available
-   - Examples: "User experience declines when core product features fail to perform as expected"
-   - Examples: "High service costs and lengthy turnaround times are affecting operational efficiency for small organizations"
-   - Examples: "Subscription fatigue is hindering adoption of the client's services among new customers"
+   - Focus on what legal professionals are losing, suffering, or missing out on
+   - Include specific product features, capabilities, or functionality issues causing attorney frustration
+   - Use legal-specific terminology and feature names when available (e.g., 'trial preparation', 'case records', 'exhibits', 'attorneys', 'depositions')
+   - Examples: "Speaker identification failures in multi-party legal recordings force attorneys to manually attribute statements, increasing trial preparation time and risk of misattribution."
+   - Examples: "High transcription costs and lengthy turnaround times are affecting operational efficiency for small law firms"
+   - Examples: "Subscription fatigue is hindering adoption of Rev's services among solo practitioners"
    - AVOID: Generic titles like "Integration challenges limit workflow optimization"
 
 2. BUSINESS IMPACT FOCUS:
    - Every theme MUST connect to revenue, cost, efficiency, or competitive advantage for the client
-   - Focus on what customers will pay for or what drives purchasing decisions
+   - Focus on what legal professionals will pay for or what drives purchasing decisions
    - Highlight competitive advantages or vulnerabilities
-   - Include quantifiable impact where possible (%, $, time savings, etc.)
+   - Include quantifiable impact where possible (%, $, time savings, etc.), but ONLY if present in the findings
+   - DO NOT invent numbers or metrics
 
 3. CLIENT-SPECIFIC FOCUS:
-   - All themes must relate to the client's core capabilities, products, or services
-   - Focus on specific product features, capabilities, and user experience issues
-   - Market themes are ONLY acceptable if they reveal specific buyer preferences or needs that inform the client's strategy
+   - All themes must relate to the client's core legal capabilities, products, or services
+   - Focus on specific product features, capabilities, and user experience issues in legal workflows
+   - Market themes are ONLY acceptable if they reveal specific buyer preferences or needs that inform the client's legal strategy
    - Avoid generic market observations with no actionable insights
-   - Use specific product terminology and feature names when describing client-specific issues
+   - Use legal-specific terminology and feature names when describing client-specific issues
 
 4. EVIDENCE QUALITY:
    - Use detailed, specific quotes from findings with attribution
@@ -92,19 +93,20 @@ CRITICAL REQUIREMENTS:
    - Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words max)
    - NO direct quotes in the statement - only in the quote fields
    - NO solutioning language ("indicating a need for", "suggesting", "recommending")
-   - NO generic statements; must be specific and paraphrased
+   - NO generic statements; must be specific and paraphrased using only details present in the findings
    - NO invented numbers or company names
    - If evidence is qualitative, state it as such
-   - Focus on specific product problems causing customer pain, or opportunities for improvement
+   - Focus on specific legal product problems causing attorney pain, or opportunities for improvement
    - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
+   - CRITICAL: Use legal-specific language and context
 
 EXAMPLE HIGH-QUALITY THEME:
-Title: "Product feature failures in multi-party scenarios disrupt user workflow and compromise output accuracy"
-Statement: "Users experience significant challenges when the system's core functionality fails to distinguish between multiple inputs in complex scenarios. Multiple users report that unclear attribution leads to inaccurate outputs and additional editing time during critical work sessions."
+Title: "Speaker identification failures in multi-party legal recordings force attorneys to manually attribute statements, increasing trial preparation time and risk of misattribution."
+Statement: "When three or more speakers are present, Rev’s transcription service frequently fails to accurately identify speakers, requiring attorneys to review and manually assign dialogue. Attorneys report this process is time-consuming and creates concern about potential errors in trial exhibits and case records."
 
 EXAMPLE POOR THEME:
-Title: "Integration challenges limit workflow optimization" (too generic, no emotional impact)
-Statement: "Customers are satisfied with the current features. Users report positive experiences." (too generic, no specific impact)
+Title: "Workflow efficiency declines due to unclear audio quality in multi-party recordings" (too generic, not legal-specific)
+Statement: "Users report that unclear audio quality makes it harder to work efficiently." (too generic, not legal-specific)
 
 EXECUTIVE TITLE PATTERNS TO FOLLOW:
 - "Product feature failures in multi-party scenarios disrupt user workflow and compromise output accuracy"
