@@ -65,7 +65,7 @@ class MetadataStage1Processor:
         
         # Validate required columns
         required_columns = ['Interview ID', 'Client Name', 'Interview Contact Full Name', 
-                          'Interview Contact Company Name', 'Deal Status', 'Completion Date']
+                          'Interview Contact Company Name', 'Deal Status', 'Completion Date', 'Industry']
         
         missing_columns = [col for col in required_columns if col not in df.columns]
         if missing_columns:
@@ -122,6 +122,7 @@ class MetadataStage1Processor:
             company = row['Interview Contact Company Name']
             deal_status = row['Deal Status']
             date_of_interview = row['Completion Date']
+            industry = row['Industry']
             
             logger.info(f"📝 Processing interview {interview_id}: {interviewee_name} from {company}")
             
@@ -151,6 +152,7 @@ class MetadataStage1Processor:
                         response['company'] = company
                         response['deal_status'] = deal_status
                         response['date_of_interview'] = date_of_interview
+                        response['industry'] = industry
                     
                     # Save to database if not dry run
                     if not dry_run:
