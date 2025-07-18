@@ -37,7 +37,7 @@ class EnhancedThemeGeneratorScalable:
         self.theme_prompt = self._load_comprehensive_theme_prompt()
         
         # Quality thresholds
-        self.min_evidence_strength = 1  # Minimum score for theme inclusion (temporarily lowered to debug)
+        self.min_evidence_strength = 3  # Minimum score for theme inclusion
         self.min_companies_per_theme = 2  # Minimum companies for cross-company validation
         self.min_findings_per_theme = 2   # Minimum findings per theme
         
@@ -1216,6 +1216,24 @@ Return ONLY the JSON object (no explanations or extra text).
             if not themes:
                 logger.warning("No themes generated from findings")
                 return False
+            
+            # Filter out themes with invalid IDs (unknown, empty, or missing)
+            valid_themes = []
+            for theme in themes:
+                theme_id = theme.get('theme_id', '')
+                theme_title = theme.get('theme_title', '')
+                
+                if theme_id and theme_id.strip() and theme_id != 'unknown' and theme_title and theme_title.strip():
+                    valid_themes.append(theme)
+                else:
+                    logger.warning(f"⚠️ Filtering out invalid theme: id='{theme_id}', title='{theme_title[:50]}...'")
+            
+            if not valid_themes:
+                logger.warning("No valid themes after filtering")
+                return False
+            
+            logger.info(f"📊 Generated {len(themes)} themes, {len(valid_themes)} valid after filtering")
+            themes = valid_themes
             
             # Apply quality thresholds
             quality_themes = self.apply_quality_thresholds(themes, findings)
