@@ -123,6 +123,8 @@ class MetadataStage1Processor:
             deal_status = row['Deal Status']
             date_of_interview = row['Completion Date']
             industry = row['Industry']
+            audio_video_link = row.get('Audio/Video Link', '')
+            contact_website = row.get('Interview Contact Website', '')
             
             logger.info(f"📝 Processing interview {interview_id}: {interviewee_name} from {company}")
             
@@ -153,6 +155,8 @@ class MetadataStage1Processor:
                         response['deal_status'] = deal_status
                         response['date_of_interview'] = date_of_interview
                         response['industry'] = industry
+                        response['audio_video_link'] = audio_video_link
+                        response['contact_website'] = contact_website
                     
                     # Save to database if not dry run
                     if not dry_run:

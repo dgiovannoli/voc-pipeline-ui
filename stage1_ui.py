@@ -112,6 +112,10 @@ def show_stage1_data_responses():
         - `Industry` - Industry/sector of the company
         - `Raw Transcript` - Full transcript text
         - `Interview Status` - Must be "Completed" for processing
+        
+        **Optional columns (will be saved if present):**
+        - `Audio/Video Link` - URL to the original audio/video file
+        - `Interview Contact Website` - Website URL for the contact/company
         """.format(client_id=client_id))
     
     # File upload with better visual design
