@@ -90,14 +90,22 @@ def show_production_dashboard():
                 st.metric("Active Clients", active_clients)
             
             with col3:
-                # Get findings count
-                findings_df = db.get_stage3_findings()
-                st.metric("Total Findings", len(findings_df))
+                # Get findings count - need to get client_id from session state
+                client_id = st.session_state.get('client_id', '')
+                if client_id:
+                    findings_df = db.get_stage3_findings(client_id=client_id)
+                    st.metric("Total Findings", len(findings_df))
+                else:
+                    st.metric("Total Findings", "Set Client ID")
             
             with col4:
-                # Get themes count
-                themes_df = db.get_themes()
-                st.metric("Total Themes", len(themes_df))
+                # Get themes count - need to get client_id from session state
+                client_id = st.session_state.get('client_id', '')
+                if client_id:
+                    themes_df = db.get_themes(client_id=client_id)
+                    st.metric("Total Themes", len(themes_df))
+                else:
+                    st.metric("Total Themes", "Set Client ID")
             
             # Show client breakdown
             if client_summary:
@@ -117,7 +125,10 @@ def show_production_dashboard():
                     st.dataframe(client_df, use_container_width=True)
         
         except Exception as e:
-            st.error(f"❌ Error loading statistics: {e}")
+            if "missing 1 required positional argument: 'client_id'" in str(e):
+                st.error("❌ Error loading statistics: Please set a Client ID in the sidebar to view data")
+            else:
+                st.error(f"❌ Error loading statistics: {e}")
     
     # Production Files
     st.subheader("📁 Production Files")
@@ -156,15 +167,19 @@ def show_production_dashboard():
     
     if db_available:
         try:
-            # Get recent findings
-            recent_findings = db.get_stage3_findings()
-            if not recent_findings.empty and 'created_at' in recent_findings.columns:
-                recent_findings['created_at'] = pd.to_datetime(recent_findings['created_at'])
-                recent_findings = recent_findings.sort_values('created_at', ascending=False).head(5)
-                
-                st.write("**Recent Findings:**")
-                for idx, row in recent_findings.iterrows():
-                    st.write(f"• {row.get('finding_statement', 'No statement')[:100]}...")
+            # Get recent findings - need to get client_id from session state
+            client_id = st.session_state.get('client_id', '')
+            if client_id:
+                recent_findings = db.get_stage3_findings(client_id=client_id)
+                if not recent_findings.empty and 'created_at' in recent_findings.columns:
+                    recent_findings['created_at'] = pd.to_datetime(recent_findings['created_at'])
+                    recent_findings = recent_findings.sort_values('created_at', ascending=False).head(5)
+                    
+                    st.write("**Recent Findings:**")
+                    for idx, row in recent_findings.iterrows():
+                        st.write(f"• {row.get('finding_statement', 'No statement')[:100]}...")
+            else:
+                st.info("Set Client ID to view recent findings")
         except Exception as e:
             st.error(f"❌ Error loading recent activity: {e}")
     
