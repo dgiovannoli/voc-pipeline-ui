@@ -74,8 +74,10 @@ CRITICAL REQUIREMENTS:
 
 3. CLIENT-SPECIFIC FOCUS:
    - All themes must relate to the client's core capabilities, products, or services
+   - For Rev: Focus on transcription accuracy, speaker identification, voice recognition, audio quality, and workflow integration
    - Market themes are ONLY acceptable if they reveal specific buyer preferences or needs that inform the client's strategy
    - Avoid generic market observations with no actionable insights
+   - When describing Rev-specific issues, use specific product terminology: "speaker identification", "voice recognition", "transcript accuracy", "audio quality"
 
 4. EVIDENCE QUALITY:
    - Use detailed, specific quotes from findings with attribution
@@ -96,21 +98,21 @@ CRITICAL REQUIREMENTS:
    - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
 
 EXAMPLE HIGH-QUALITY THEME:
-Title: "User experience declines when audio recording capabilities fail to isolate relevant content"
-Statement: "Legal professionals experience significant challenges when using Rev for multi-party recordings due to unclear content isolation during critical moments. Multiple attorneys report difficulty accurately processing audio content, which impacts their ability to present evidence effectively."
+Title: "Speaker identification failures in multi-party recordings disrupt legal workflow and compromise transcript accuracy"
+Statement: "Legal professionals experience significant challenges when Rev's voice recognition system fails to distinguish between speakers in complex recordings. Multiple attorneys report that unclear speaker attribution leads to inaccurate transcripts and additional editing time during critical legal proceedings."
 
 EXAMPLE POOR THEME:
 Title: "Integration challenges limit workflow optimization" (too generic, no emotional impact)
 Statement: "Customers are satisfied with the current features. Users report positive experiences." (too generic, no specific impact)
 
 EXECUTIVE TITLE PATTERNS TO FOLLOW:
-- "User experience declines when audio recording capabilities fail to isolate relevant content"
+- "Speaker identification failures in multi-party recordings disrupt legal workflow and compromise transcript accuracy"
 - "High transcription costs and lengthy turnaround times are affecting operational efficiency for small firms"
 - "Subscription fatigue is hindering adoption of Rev's services among new firms"
 - "Rapid service delivery from Rev is impacting billable hours for attorneys"
 - "AI tools are significantly improving efficiency in document review for attorneys"
 - "Legal professionals are seeking improved integration capabilities for transcription services"
-- "User experience declines when audio recording capabilities fail to isolate relevant audio sources"
+- "Voice recognition errors in Rev's system compromise speaker distinction and transcript clarity for legal applications"
 
 THEME STRUCTURE REQUIREMENTS:
 - Title: MUST highlight specific product issues causing customer impact with clear business consequences AND emotional urgency
