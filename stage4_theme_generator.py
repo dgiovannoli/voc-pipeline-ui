@@ -84,18 +84,20 @@ CRITICAL REQUIREMENTS:
    - Specific examples and concrete details
 
 5. THEME STATEMENT REQUIREMENTS (Two-Sentence Executive Framework):
-   - EXACTLY two sentences
-   - Sentence 1: Decision behavior or specific problem with consequence
-   - Sentence 2: Summarize the most common interviewee pain point or reaction in your own words (no direct quotes)
-   - No solutioning language
-   - No generic statements; must be specific and paraphrased
-   - No invented numbers or company names
+   - EXACTLY two sentences - NO MORE, NO LESS
+   - Sentence 1: Decision behavior or specific problem with consequence (25-35 words max)
+   - Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words max)
+   - NO direct quotes in the statement - only in the quote fields
+   - NO solutioning language ("indicating a need for", "suggesting", "recommending")
+   - NO generic statements; must be specific and paraphrased
+   - NO invented numbers or company names
    - If evidence is qualitative, state it as such
    - Focus on specific product problems causing customer pain, or opportunities for improvement
+   - CRITICAL: Each statement MUST be exactly two sentences, not paragraphs
 
 EXAMPLE HIGH-QUALITY THEME:
 Title: "User experience declines when audio recording capabilities fail to isolate relevant content"
-Statement: "Legal professionals are experiencing significant challenges when using Rev for multi-party recordings due to unclear content isolation, which can lead to confusion during critical moments in legal proceedings. This issue has been highlighted by multiple attorneys who find it difficult to accurately process audio content, impacting their ability to present evidence effectively."
+Statement: "Legal professionals experience significant challenges when using Rev for multi-party recordings due to unclear content isolation during critical moments. Multiple attorneys report difficulty accurately processing audio content, which impacts their ability to present evidence effectively."
 
 EXAMPLE POOR THEME:
 Title: "Integration challenges limit workflow optimization" (too generic, no emotional impact)
@@ -132,7 +134,7 @@ OUTPUT FORMAT:
     {
       "theme_id": "T1",
       "theme_title": "Executive-style title highlighting customer pain and business impact",
-      "theme_statement": "Sentence 1: Decision behavior or specific problem with consequence. Sentence 2: Most common interviewee pain point or reaction in your own words.",
+      "theme_statement": "Sentence 1: Decision behavior or specific problem with consequence (25-35 words). Sentence 2: Most common interviewee pain point or reaction in your own words (25-35 words).",
       "classification": "REVENUE_THREAT|COMPETITIVE_VULNERABILITY|MARKET_OPPORTUNITY|COST_EFFICIENCY|COMPETITIVE_ADVANTAGE",
       "supporting_finding_ids": "F1,F2,F3",
       "primary_quote": "Specific quote from findings with attribution",
@@ -140,6 +142,13 @@ OUTPUT FORMAT:
     }
   ]
 }
+
+CRITICAL FORMAT REQUIREMENTS:
+- Each theme_statement MUST be exactly two sentences
+- First sentence: 25-35 words describing the problem/behavior
+- Second sentence: 25-35 words describing the pain point/reaction
+- NO paragraphs, NO long narratives, NO more than two sentences
+- Use concise, executive language that fits on presentation slides
 
 CRITICAL: Generate 7-10 comprehensive, business-focused themes with executive-style titles that cover the full spectrum of customer insights and business impact areas.
 """
