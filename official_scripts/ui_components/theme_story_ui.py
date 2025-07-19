@@ -80,22 +80,7 @@ def show_theme_story_scorecard():
                     st.error(f"❌ Error generating report: {str(e)}")
                     st.exception(e)
         
-        # Report outline development
-        st.markdown("---")
-        st.header("📋 Develop Report Outline")
-        
-        if st.button("🎨 Create Report Outline", use_container_width=True):
-            if not client_id:
-                st.error("❌ Please select a client ID")
-                return
-            
-            with st.spinner("📋 Developing report outline..."):
-                try:
-                    outline = create_report_outline(client_id)
-                    show_report_outline(outline)
-                except Exception as e:
-                    st.error(f"❌ Error creating outline: {str(e)}")
-                    st.exception(e)
+
     
     with col2:
         st.header("📈 Quick Stats")
@@ -255,101 +240,7 @@ def show_download_options(scorecard, client_id):
             use_container_width=True
         )
 
-def create_report_outline(client_id):
-    """Create a report outline based on the theme analysis"""
-    
-    try:
-        from official_scripts.rev_theme_story_scorecard import RevThemeStoryScorecard
-        
-        # Create generator instance
-        generator = RevThemeStoryScorecard()
-        generator.client_id = client_id
-        
-        # Generate the report to get data
-        scorecard = generator.generate_theme_story_report()
-        
-        # Create outline structure
-        outline = {
-            'client_id': client_id,
-            'generated_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'overall_score': calculate_overall_score(scorecard),
-            'sections': []
-        }
-        
-        # Add sections based on scorecard criteria
-        for criterion, data in scorecard.items():
-            section = {
-                'title': data['framework']['title'],
-                'weight': data['scorecard_metrics']['weight'],
-                'score': data['scorecard_metrics']['score'],
-                'performance': data['scorecard_metrics']['performance'],
-                'story_theme': data['narrative_analysis']['story_theme'],
-                'win_narrative': data['narrative_analysis']['win_narrative'],
-                'loss_narrative': data['narrative_analysis']['loss_narrative'],
-                'key_themes': []
-            }
-            
-            # Add key themes
-            for theme in data['story_themes'][:3]:
-                section['key_themes'].append({
-                    'title': theme['title'],
-                    'direction': theme['story_direction']['direction'],
-                    'story_type': theme['story_direction']['story_type']
-                })
-            
-            outline['sections'].append(section)
-        
-        return outline
-        
-    except Exception as e:
-        st.error(f"Error creating outline: {str(e)}")
-        return None
 
-def show_report_outline(outline):
-    """Display the report outline"""
-    
-    if not outline:
-        return
-    
-    st.header("📋 Report Outline")
-    
-    # Overall summary
-    st.subheader("📊 Overall Summary")
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Client", outline['client_id'])
-    
-    with col2:
-        st.metric("Overall Score", f"{outline['overall_score']:.1f}/10")
-    
-    with col3:
-        st.metric("Generated", outline['generated_date'])
-    
-    # Sections
-    st.subheader("📋 Report Sections")
-    
-    for i, section in enumerate(outline['sections'], 1):
-        with st.expander(f"{i}. {section['title']} (Score: {section['score']:.1f}/10)"):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.write(f"**Weight:** {section['weight']*100:.0f}%")
-                st.write(f"**Performance:** {section['performance']}")
-                st.write(f"**Story Theme:** {section['story_theme']}")
-            
-            with col2:
-                if section['win_narrative'] != "No clear winning themes identified in this area.":
-                    st.success(f"**Win:** {section['win_narrative'][:100]}...")
-                
-                if section['loss_narrative'] != "No significant challenges identified in this area.":
-                    st.error(f"**Loss:** {section['loss_narrative'][:100]}...")
-            
-            # Key themes
-            st.write("**Key Themes:**")
-            for theme in section['key_themes']:
-                direction_color = "🟢" if theme['direction'] == 'positive' else "🔴" if theme['direction'] == 'negative' else "🟡"
-                st.write(f"{direction_color} {theme['title']} ({theme['story_type']})")
 
 def get_performance_level(score):
     """Get performance level description"""
