@@ -30,15 +30,15 @@ def show_theme_story_scorecard():
             
             with st.spinner("📋 Creating report outline..."):
                 try:
-                    # Import and run the theme story scorecard
-                    from official_scripts.rev_theme_story_scorecard import RevThemeStoryScorecard
+                    # Import and run the enhanced theme story scorecard
+                    from official_scripts.enhanced_theme_story_scorecard import EnhancedThemeStoryScorecard
                     
                     # Create generator instance
-                    generator = RevThemeStoryScorecard()
+                    generator = EnhancedThemeStoryScorecard()
                     generator.client_id = client_id
                     
-                    # Generate the report
-                    scorecard = generator.generate_theme_story_report()
+                    # Generate the enhanced report
+                    scorecard = generator.generate_enhanced_report()
                     
                     # Display results
                     st.success("✅ Report outline created successfully!")
@@ -106,7 +106,7 @@ def show_executive_summary(scorecard):
         st.metric("Performance", performance_level.split(" - ")[0])
     
     with col3:
-        total_themes = sum(len(data['story_themes']) for data in scorecard.values())
+        total_themes = sum(len(data['all_themes']) for data in scorecard.values())
         st.metric("Total Themes", total_themes)
     
     # Scorecard framework
@@ -127,16 +127,11 @@ def show_executive_summary(scorecard):
             with col3:
                 st.metric("Evidence", f"{metrics.get('total_evidence', 0)} items")
             
-            # Story theme
+            # Executive narrative
             narrative = data['narrative_analysis']
-            st.write(f"**Story Theme:** {narrative['story_theme']}")
-            
-            # Win/Loss narratives
-            if narrative['win_narrative'] != "No clear winning themes identified in this area.":
-                st.success(f"**Win Narrative:** {narrative['win_narrative']}")
-            
-            if narrative['loss_narrative'] != "No significant challenges identified in this area.":
-                st.error(f"**Loss Narrative:** {narrative['loss_narrative']}")
+            st.write(f"**Strengths:** {narrative['strengths_narrative']}")
+            st.write(f"**Areas for Improvement:** {narrative['weaknesses_narrative']}")
+            st.write(f"**Opportunities:** {narrative['opportunities_narrative']}")
 
 def show_detailed_analysis(scorecard):
     """Display detailed theme analysis"""
@@ -152,15 +147,15 @@ def show_detailed_analysis(scorecard):
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Win Themes", dist['win_themes'])
+            st.metric("Positive Themes", dist['positive_themes'])
         with col2:
-            st.metric("Loss Themes", dist['loss_themes'])
+            st.metric("Negative Themes", dist['negative_themes'])
         with col3:
             st.metric("Neutral Themes", dist['neutral_themes'])
         
         # Key themes
         st.write("**Key Themes:**")
-        for theme in data['story_themes'][:3]:  # Top 3 themes
+        for theme in data['all_themes'][:3]:  # Top 3 themes
             evidence = data['theme_evidence'].get(theme['theme_id'], {})
             evidence_summary = evidence.get('evidence_summary', {})
             
@@ -168,22 +163,23 @@ def show_detailed_analysis(scorecard):
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    st.write(f"**Direction:** {theme['story_direction']['direction']}")
-                    st.write(f"**Story Type:** {theme['story_direction']['story_type']}")
+                    st.write(f"**Direction:** {theme['direction']['direction']}")
+                    st.write(f"**Business Impact:** {theme['business_impact']['description']}")
                     st.write(f"**Evidence:** {evidence_summary.get('total_evidence', 0)} items")
                     st.write(f"**Strength:** {evidence_summary.get('strength', 'none')}")
+                    st.write(f"**Executive Summary:** {theme['executive_summary']}")
                 
                 with col2:
                     # Top supporting evidence
                     if evidence.get('quotes'):
                         top_quote = evidence['quotes'][0]
                         st.write(f"**Key Quote:** {top_quote['quote'][:100]}...")
-                        st.caption(f"Source: {top_quote['company']} - {top_quote['interviewee']}")
+                        st.caption(f"Source: {top_quote['company']} - {top_quote['interviewee_name']}")
                     
                     if evidence.get('findings'):
                         top_finding = evidence['findings'][0]
                         st.write(f"**Key Finding:** {top_finding['statement'][:100]}...")
-                        st.caption(f"Source: {top_finding['company']} - {top_finding['interviewee']}")
+                        st.caption(f"Source: {top_finding['company']} - {top_finding['interviewee_name']}")
 
 def show_download_options(scorecard, client_id):
     """Show download options for the report"""
@@ -241,8 +237,8 @@ def generate_report_text(scorecard, client_id):
     """Generate the full report text"""
     
     report_lines = []
-    report_lines.append(f"🎯 {client_id.upper()} THEME-STORY SCORECARD REPORT")
-    report_lines.append("Themes Tell the Story, Evidence Supports, Scorecard Anchors")
+    report_lines.append(f"🎯 {client_id.upper()} ENHANCED THEME-STORY SCORECARD REPORT")
+    report_lines.append("Executive-Ready: Themes, Evidence, Credibility, Actionable Insights")
     report_lines.append("="*80)
     report_lines.append(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     report_lines.append("")
@@ -274,13 +270,13 @@ def generate_report_text(scorecard, client_id):
         report_lines.append(f"     Performance: {data['scorecard_metrics']['performance']}")
         
         narrative = data['narrative_analysis']
-        report_lines.append(f"     🎭 Story Theme: {narrative['story_theme']}")
-        report_lines.append(f"     🏆 Win Narrative: {narrative['win_narrative']}")
-        report_lines.append(f"     ❌ Loss Narrative: {narrative['loss_narrative']}")
+        report_lines.append(f"     🏆 Strengths: {narrative['strengths_narrative']}")
+        report_lines.append(f"     🔧 Areas for Improvement: {narrative['weaknesses_narrative']}")
+        report_lines.append(f"     💡 Opportunities: {narrative['opportunities_narrative']}")
         report_lines.append(f"     📖 Overall Story: {narrative['overall_story']}")
         
         dist = narrative['theme_distribution']
-        report_lines.append(f"     📊 Theme Distribution: {dist['win_themes']} wins, {dist['loss_themes']} losses, {dist['neutral_themes']} neutral")
+        report_lines.append(f"     📊 Theme Distribution: {dist['positive_themes']} positive, {dist['negative_themes']} negative, {dist['neutral_themes']} neutral")
     
     return "\n".join(report_lines)
 
@@ -308,8 +304,8 @@ def generate_executive_summary_text(scorecard, client_id):
         narrative = data['narrative_analysis']
         
         if metrics['performance'] in ['poor', 'critical']:
-            summary_lines.append(f"• {data['framework']['title']}: {narrative['loss_narrative']}")
+            summary_lines.append(f"• {data['framework']['title']}: {narrative['weaknesses_narrative']}")
         elif metrics['performance'] in ['excellent', 'good']:
-            summary_lines.append(f"• {data['framework']['title']}: {narrative['win_narrative']}")
+            summary_lines.append(f"• {data['framework']['title']}: {narrative['strengths_narrative']}")
     
     return "\n".join(summary_lines) 
