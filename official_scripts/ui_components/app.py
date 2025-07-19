@@ -76,7 +76,7 @@ def main():
         "Go to:",
         [
             "Stage 1: Data Response Table",
-            "Response Labeling",
+            "Stage 2: Response Labeling",
             "Stage 2: Findings",
             "Stage 3: Themes",
             "📋 Create Report Outline",
@@ -88,7 +88,7 @@ def main():
 
     if page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
-    elif page == "Response Labeling":
+    elif page == "Stage 2: Response Labeling":
         show_stage2_response_labeling()
     elif page == "Stage 2: Findings":
         show_stage3_findings()
