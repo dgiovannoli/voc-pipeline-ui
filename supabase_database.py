@@ -1276,6 +1276,23 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get client summary: {e}")
             return {}
 
+    def get_interview_metadata(self, client_id: str) -> pd.DataFrame:
+        """Get interview metadata with deal outcomes for competitive intelligence analysis"""
+        try:
+            response = self.supabase.table('interview_metadata').select('*').eq('client_id', client_id).execute()
+            df = pd.DataFrame(response.data)
+            
+            if not df.empty:
+                logger.info(f"📊 Retrieved {len(df)} interview metadata records for client {client_id}")
+            else:
+                logger.info(f"📊 No interview metadata found for client {client_id}")
+            
+            return df
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to get interview metadata: {e}")
+            return pd.DataFrame()
+
     def merge_client_data(self, from_client_id: str, to_client_id: str) -> bool:
         """Merge data from one client_id to another"""
         try:

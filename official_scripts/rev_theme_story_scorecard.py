@@ -160,32 +160,82 @@ class RevThemeStoryScorecard:
         
         theme_text = f"{theme['theme_title']} {theme['theme_statement']}".lower()
         
-        # Analyze theme sentiment and impact
-        positive_indicators = ['efficiency', 'improve', 'enhance', 'benefit', 'advantage', 'success']
-        negative_indicators = ['risk', 'decline', 'suffer', 'complicate', 'fail', 'threat']
+        # First, check for clear problem indicators that override everything else
+        problem_indicators = [
+            'inaccuracies', 'inaccuracy', 'error', 'errors', 'mistake', 'mistakes',
+            'fail', 'fails', 'failure', 'failures', 'broken', 'break', 'breaks',
+            'problem', 'problems', 'issue', 'issues', 'bug', 'bugs',
+            'risk', 'risks', 'threat', 'threats', 'danger', 'dangers',
+            'suffer', 'suffers', 'suffering', 'decline', 'declines', 'declining',
+            'lose', 'loses', 'loss', 'losses', 'losing',
+            'complicate', 'complicates', 'complicated', 'complex', 'complexity',
+            'difficult', 'difficulty', 'difficulties', 'hard', 'challenging',
+            'slow', 'slower', 'slowly', 'delay', 'delays', 'delayed',
+            'expensive', 'costly', 'overpriced', 'unaffordable',
+            'frustrated', 'frustrating', 'annoyed', 'annoying', 'irritated'
+        ]
         
+        # Check for clear positive indicators
+        positive_indicators = [
+            'improve', 'improves', 'improved', 'improvement', 'improvements',
+            'enhance', 'enhances', 'enhanced', 'enhancement', 'enhancements',
+            'benefit', 'benefits', 'beneficial', 'advantage', 'advantages', 'advantageous',
+            'success', 'successful', 'succeed', 'succeeds', 'succeeding',
+            'excellent', 'excellence', 'outstanding', 'superior', 'best',
+            'easy', 'easier', 'easiest', 'simple', 'simpler', 'simplest',
+            'fast', 'faster', 'fastest', 'quick', 'quicker', 'quickest',
+            'efficient', 'efficiency', 'effective', 'effectiveness',
+            'love', 'loves', 'loved', 'like', 'likes', 'liked',
+            'great', 'good', 'better', 'best', 'amazing', 'wonderful'
+        ]
+        
+        # Count problem and positive indicators
+        problem_count = sum(1 for indicator in problem_indicators if indicator in theme_text)
         positive_count = sum(1 for indicator in positive_indicators if indicator in theme_text)
-        negative_count = sum(1 for indicator in negative_indicators if indicator in theme_text)
         
-        if positive_count > negative_count:
-            direction = 'positive'
-            impact_score = 7
-            story_type = 'success_story'
-        elif negative_count > positive_count:
-            direction = 'negative'
-            impact_score = 3
-            story_type = 'challenge_story'
+        # Special logic for transcription-related themes
+        if 'transcription' in theme_text:
+            if any(word in theme_text for word in ['inaccuracy', 'inaccuracies', 'error', 'errors', 'correction', 'corrections']):
+                # Transcription accuracy problems are always negative
+                direction = 'negative'
+                impact_score = 3
+                story_type = 'challenge_story'
+            elif any(word in theme_text for word in ['accuracy', 'accurate', 'precise', 'precision']):
+                # Transcription accuracy improvements are positive
+                direction = 'positive'
+                impact_score = 7
+                story_type = 'success_story'
+            else:
+                # Default for transcription themes
+                direction = 'neutral'
+                impact_score = 5
+                story_type = 'observation_story'
         else:
-            direction = 'neutral'
-            impact_score = 5
-            story_type = 'observation_story'
+            # General logic for other themes
+            if problem_count > positive_count:
+                direction = 'negative'
+                impact_score = 3
+                story_type = 'challenge_story'
+            elif positive_count > problem_count:
+                direction = 'positive'
+                impact_score = 7
+                story_type = 'success_story'
+            else:
+                direction = 'neutral'
+                impact_score = 5
+                story_type = 'observation_story'
         
         return {
             'direction': direction,
             'impact_score': impact_score,
             'story_type': story_type,
             'positive_indicators': positive_count,
-            'negative_indicators': negative_count
+            'negative_indicators': problem_count,
+            'analysis': {
+                'theme_text': theme_text,
+                'problem_indicators_found': [ind for ind in problem_indicators if ind in theme_text],
+                'positive_indicators_found': [ind for ind in positive_indicators if ind in theme_text]
+            }
         }
     
     def _determine_narrative_role(self, theme: pd.Series, story_direction: dict, framework: dict) -> str:

@@ -4,6 +4,7 @@ from stage1_ui import show_stage1_data_responses
 from stage2_ui import show_stage2_response_labeling
 from stage3_ui import show_stage3_findings
 from stage4_ui import show_stage4_themes
+from competitive_intelligence_ui import show_competitive_intelligence
 from admin_ui import show_admin_utilities, show_admin_panel
 
 def main():
@@ -75,6 +76,7 @@ def main():
             "Stage 2: Findings",
             "Stage 3: Themes",
             "Scorecard Label Experiment",
+            "🎯 Competitive Intelligence",
             "Admin / Utilities"
         ]
     )
@@ -90,6 +92,8 @@ def main():
         show_stage4_themes()
     elif page == "Scorecard Label Experiment":
         show_stage2_response_labeling()
+    elif page == "🎯 Competitive Intelligence":
+        show_competitive_intelligence()
     elif page == "Admin / Utilities":
         show_admin_panel()
 
