@@ -76,9 +76,9 @@ def main():
         [
             "Stage 1: Data Response Table",
             "Stage 2: Response Labeling",
-            "Stage 2: Findings",
-            "Stage 3: Themes",
-            "📋 Create Report Outline",
+            "Stage 3: Findings",
+            "Stage 4: Themes",
+            "BETA: Create Report Outline",
             "Admin / Utilities",
             "🚀 Production Dashboard"
         ]
@@ -88,11 +88,11 @@ def main():
         show_stage1_data_responses()
     elif page == "Stage 2: Response Labeling":
         show_stage2_response_labeling()
-    elif page == "Stage 2: Findings":
+    elif page == "Stage 3: Findings":
         show_stage3_findings()
-    elif page == "Stage 3: Themes":
+    elif page == "Stage 4: Themes":
         show_stage4_themes()
-    elif page == "📋 Create Report Outline":
+    elif page == "BETA: Create Report Outline":
         from official_scripts.ui_components.theme_story_ui import show_theme_story_scorecard
         show_theme_story_scorecard()
     elif page == "Admin / Utilities":
