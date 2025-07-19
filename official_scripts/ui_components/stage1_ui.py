@@ -4,8 +4,12 @@ import os
 from pathlib import Path
 from datetime import datetime
 from typing import Dict
-from supabase_database import SupabaseDatabase
-from metadata_stage1_processor import MetadataStage1Processor
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from official_scripts.database.supabase_database import SupabaseDatabase
+from official_scripts.utilities.metadata_stage1_processor import MetadataStage1Processor
 
 # Constants
 SUPABASE_AVAILABLE = True

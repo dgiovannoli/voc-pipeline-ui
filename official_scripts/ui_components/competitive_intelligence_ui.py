@@ -3,8 +3,12 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-from enhanced_competitive_intelligence import EnhancedCompetitiveIntelligence
-from supabase_database import SupabaseDatabase
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from official_scripts.core_analytics.enhanced_competitive_intelligence import EnhancedCompetitiveIntelligence
+from official_scripts.database.supabase_database import SupabaseDatabase
 import json
 from datetime import datetime
 
@@ -337,7 +341,7 @@ def generate_executive_insights(dashboard_data: dict) -> list:
 def save_competitive_analysis(dashboard_data: dict, client_id: str) -> bool:
     """Save competitive analysis results to database"""
     try:
-        from supabase_database import SupabaseDatabase
+        from official_scripts.database.supabase_database import SupabaseDatabase
         db = SupabaseDatabase()
         
         analysis_data = {

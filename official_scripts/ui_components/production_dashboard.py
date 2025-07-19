@@ -1,8 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import streamlit as st
 import pandas as pd
 import os
 from datetime import datetime
-from supabase_database import SupabaseDatabase
+from official_scripts.database.supabase_database import SupabaseDatabase
 
 def show_production_dashboard():
     """Show production pipeline dashboard"""

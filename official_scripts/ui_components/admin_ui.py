@@ -1,8 +1,12 @@
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
-from supabase_database import SupabaseDatabase
+from official_scripts.database.supabase_database import SupabaseDatabase
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -322,7 +326,7 @@ def show_welcome_screen():
         
         # Show quick stats with better labels
         try:
-            from stage2_ui import get_stage2_summary
+            from official_scripts.ui_components.stage2_ui import get_stage2_summary
             summary = get_stage2_summary()
             if summary and 'total_quotes' in summary:
                 col1, col2, col3 = st.columns(3)

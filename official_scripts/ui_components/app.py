@@ -1,11 +1,15 @@
 import streamlit as st
 import re
-from stage1_ui import show_stage1_data_responses
-from stage2_ui import show_stage2_response_labeling
-from stage3_ui import show_stage3_findings
-from stage4_ui import show_stage4_themes
-from competitive_intelligence_ui import show_competitive_intelligence
-from admin_ui import show_admin_utilities, show_admin_panel
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from official_scripts.ui_components.stage1_ui import show_stage1_data_responses
+from official_scripts.ui_components.stage2_ui import show_stage2_response_labeling
+from official_scripts.ui_components.stage3_ui import show_stage3_findings
+from official_scripts.ui_components.stage4_ui import show_stage4_themes
+from official_scripts.ui_components.competitive_intelligence_ui import show_competitive_intelligence
+from official_scripts.ui_components.admin_ui import show_admin_utilities, show_admin_panel
 
 def main():
     st.set_page_config(page_title="VOC Pipeline", layout="wide")
@@ -25,7 +29,7 @@ def main():
     
     # Check production readiness
     try:
-        from test_production_setup import test_environment_variables, test_database_connection
+        from official_scripts.utilities.test_production_setup import test_environment_variables, test_database_connection
         env_ok = test_environment_variables()
         db_ok = test_database_connection()
         
@@ -83,10 +87,10 @@ def main():
     )
 
     if page == "🚀 Production Dashboard":
-        from production_dashboard import show_production_dashboard
+        from official_scripts.ui_components.production_dashboard import show_production_dashboard
         show_production_dashboard()
     elif page == "🎯 Theme Story Scorecard":
-        from theme_story_ui import show_theme_story_scorecard
+        from official_scripts.ui_components.theme_story_ui import show_theme_story_scorecard
         show_theme_story_scorecard()
     elif page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
