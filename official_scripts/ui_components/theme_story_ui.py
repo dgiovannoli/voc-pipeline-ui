@@ -10,11 +10,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 def show_theme_story_scorecard():
     """Show the theme story scorecard interface"""
     
-    st.title("🎯 Theme Story Scorecard Report Generator")
-    st.markdown("Generate theme-driven story reports where themes tell the story, evidence supports the narrative, and scorecard framework anchors the analysis.")
+    st.title("📋 Create Report Outline")
+    st.markdown("Generate comprehensive report outlines with theme-driven narratives, evidence matrix, and scorecard framework for executive presentations.")
     
     # Sidebar for configuration
-    st.sidebar.header("⚙️ Report Configuration")
+    st.sidebar.header("⚙️ Outline Configuration")
     
     # Client selection
     client_id = st.sidebar.selectbox(
@@ -28,9 +28,9 @@ def show_theme_story_scorecard():
     
     # Report type selection
     report_type = st.sidebar.selectbox(
-        "Report Type:",
-        ["Theme Story Scorecard", "Executive Summary", "Detailed Analysis"],
-        help="Choose the type of report to generate"
+        "Outline Type:",
+        ["Comprehensive Outline", "Executive Summary", "Detailed Analysis"],
+        help="Choose the type of outline to generate"
     )
     
     # Analysis depth
@@ -44,15 +44,15 @@ def show_theme_story_scorecard():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.header("📊 Report Generation")
+        st.header("📋 Report Outline Creation")
         
         # Generate report button
-        if st.button("🚀 Generate Theme Story Report", type="primary", use_container_width=True):
+        if st.button("📋 Create Report Outline", type="primary", use_container_width=True):
             if not client_id:
                 st.error("❌ Please select a client ID")
                 return
             
-            with st.spinner("🎯 Generating theme story scorecard report..."):
+            with st.spinner("📋 Creating report outline..."):
                 try:
                     # Import and run the theme story scorecard
                     from official_scripts.rev_theme_story_scorecard import RevThemeStoryScorecard
@@ -65,7 +65,7 @@ def show_theme_story_scorecard():
                     scorecard = generator.generate_theme_story_report()
                     
                     # Display results
-                    st.success("✅ Report generated successfully!")
+                    st.success("✅ Report outline created successfully!")
                     
                     # Show executive summary
                     show_executive_summary(scorecard)
@@ -77,7 +77,7 @@ def show_theme_story_scorecard():
                     show_download_options(scorecard, client_id)
                     
                 except Exception as e:
-                    st.error(f"❌ Error generating report: {str(e)}")
+                    st.error(f"❌ Error creating report outline: {str(e)}")
                     st.exception(e)
         
 
@@ -103,7 +103,7 @@ def show_theme_story_scorecard():
                 
                 # Recent activity
                 st.subheader("🕒 Recent Activity")
-                st.info("Report generation ready")
+                st.info("Outline creation ready")
                 
             except Exception as e:
                 st.warning("⚠️ Unable to load stats")
