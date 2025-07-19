@@ -64,6 +64,10 @@ def show_theme_story_scorecard():
                     # Generate the report
                     scorecard = generator.generate_theme_story_report()
                     
+                    # Store in session state for persistence
+                    st.session_state['current_scorecard'] = scorecard
+                    st.session_state['current_client_id'] = client_id
+                    
                     # Display results
                     st.success("✅ Report outline created successfully!")
                     
@@ -73,12 +77,20 @@ def show_theme_story_scorecard():
                     # Show detailed analysis
                     show_detailed_analysis(scorecard)
                     
-                    # Show download options
-                    show_download_options(scorecard, client_id)
-                    
                 except Exception as e:
                     st.error(f"❌ Error creating report outline: {str(e)}")
                     st.exception(e)
+        
+        # Show download section (always visible if report exists)
+        if 'current_scorecard' in st.session_state and st.session_state['current_scorecard']:
+            st.markdown("---")
+            show_download_options(st.session_state['current_scorecard'], st.session_state['current_client_id'])
+        
+        # Show report content if it exists
+        if 'current_scorecard' in st.session_state and st.session_state['current_scorecard']:
+            scorecard = st.session_state['current_scorecard']
+            show_executive_summary(scorecard)
+            show_detailed_analysis(scorecard)
         
 
     
@@ -103,11 +115,42 @@ def show_theme_story_scorecard():
                 
                 # Recent activity
                 st.subheader("🕒 Recent Activity")
-                st.info("Outline creation ready")
+                if 'current_scorecard' in st.session_state:
+                    st.success("✅ Report available for download")
+                else:
+                    st.info("Outline creation ready")
                 
             except Exception as e:
                 st.warning("⚠️ Unable to load stats")
                 st.caption(f"Error: {str(e)}")
+        
+        # Quick download access
+        st.header("📥 Quick Download")
+        if 'current_scorecard' in st.session_state and st.session_state['current_scorecard']:
+            scorecard = st.session_state['current_scorecard']
+            client_id = st.session_state['current_client_id']
+            
+            # Generate report text
+            report_text = generate_report_text(scorecard, client_id)
+            exec_summary = generate_executive_summary_text(scorecard, client_id)
+            
+            st.download_button(
+                label="📄 Download Full Report",
+                data=report_text,
+                file_name=f"{client_id}_THEME_STORY_REPORT_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+            
+            st.download_button(
+                label="📋 Download Executive Summary",
+                data=exec_summary,
+                file_name=f"{client_id}_EXECUTIVE_SUMMARY_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+        else:
+            st.info("Generate a report first to access downloads")
 
 def show_executive_summary(scorecard):
     """Display the executive summary"""
