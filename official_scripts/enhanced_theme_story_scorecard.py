@@ -336,7 +336,7 @@ class EnhancedThemeStoryScorecard:
         supporting_findings = []
         
         for _, finding in findings.iterrows():
-            finding_text = f"{finding['statement']}".lower()
+            finding_text = f"{finding['finding_statement']}".lower()
             
             # Check keyword relevance
             keyword_matches = sum(1 for keyword in theme_keywords if keyword in finding_text)
@@ -344,9 +344,9 @@ class EnhancedThemeStoryScorecard:
                 # Add full client context
                 supporting_findings.append({
                     'finding_id': finding['finding_id'],
-                    'statement': finding['statement'],
+                    'statement': finding['finding_statement'],
                     'confidence': finding.get('enhanced_confidence', 0.5),
-                    'company': finding.get('company', 'Unknown Company'),
+                    'company': finding.get('interview_company', 'Unknown Company'),
                     'interviewee_name': finding.get('interviewee_name', 'Unknown'),
                     'interviewee_role': finding.get('interviewee_role', 'Unknown Role'),
                     'industry': finding.get('industry', 'Unknown Industry'),
@@ -365,19 +365,19 @@ class EnhancedThemeStoryScorecard:
         supporting_quotes = []
         
         for _, quote in quotes.iterrows():
-            quote_text = f"{quote['quote']}".lower()
+            quote_text = f"{quote['verbatim_response']}".lower()
             
             # Check keyword relevance
             keyword_matches = sum(1 for keyword in theme_keywords if keyword in quote_text)
             if keyword_matches > 0:
                 # Analyze quote sentiment and impact
-                sentiment = self._analyze_quote_sentiment(quote['quote'])
-                impact = self._analyze_quote_impact(quote['quote'])
+                sentiment = self._analyze_quote_sentiment(quote['verbatim_response'])
+                impact = self._analyze_quote_impact(quote['verbatim_response'])
                 
                 # Add full client context
                 supporting_quotes.append({
-                    'quote_id': quote['quote_id'],
-                    'quote': quote['quote'],
+                    'quote_id': quote['response_id'],
+                    'quote': quote['verbatim_response'],
                     'company': quote.get('company', 'Unknown Company'),
                     'interviewee_name': quote.get('interviewee_name', 'Unknown'),
                     'interviewee_role': quote.get('interviewee_role', 'Unknown Role'),
