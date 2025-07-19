@@ -72,6 +72,7 @@ def main():
         "Go to:",
         [
             "🚀 Production Dashboard",
+            "🎯 Theme Story Scorecard",
             "Stage 1: Data Response Table",
             "Stage 2: Findings",
             "Stage 3: Themes",
@@ -84,6 +85,9 @@ def main():
     if page == "🚀 Production Dashboard":
         from production_dashboard import show_production_dashboard
         show_production_dashboard()
+    elif page == "🎯 Theme Story Scorecard":
+        from theme_story_ui import show_theme_story_scorecard
+        show_theme_story_scorecard()
     elif page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
     elif page == "Stage 2: Findings":

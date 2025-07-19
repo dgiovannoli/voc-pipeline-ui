@@ -48,15 +48,24 @@ streamlit run app.py
 
 Generate comprehensive Win/Loss reports where themes tell the story, evidence supports the narrative, and scorecard framework anchors the analysis:
 
+#### **Command Line:**
 ```bash
 python official_scripts/rev_theme_story_scorecard.py
 ```
+
+#### **Streamlit Interface:**
+```bash
+streamlit run official_scripts/ui_components/app.py
+```
+Then navigate to "🎯 Theme Story Scorecard" in the sidebar.
 
 **Key Features**:
 - **Themes Drive Narrative**: Each criterion has compelling story themes
 - **Evidence Matrix**: Findings and quotes support every theme
 - **Scorecard Framework**: McKinsey-ready structure with weighted scoring
 - **Strategic Insights**: Executive summary with competitive implications
+- **Interactive UI**: Generate reports and develop outlines through Streamlit
+- **Download Options**: Export reports as TXT files with timestamps
 
 ### Enhanced Stage 2 Analysis
 
