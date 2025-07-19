@@ -17,6 +17,7 @@ reports/*.txt
 *.txt
 !README.md
 !*.md
+!*.py
 
 # Database files
 *.db
