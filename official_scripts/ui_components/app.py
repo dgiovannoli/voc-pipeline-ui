@@ -70,40 +70,40 @@ def main():
     
     # Navigation
     st.sidebar.markdown("---")
-    st.sidebar.subheader("📊 Pipeline Stages")
+    st.sidebar.subheader("🔄 VOC Pipeline Flow")
     
     page = st.sidebar.radio(
         "Go to:",
         [
-            "🚀 Production Dashboard",
-            "📋 Create Report Outline",
             "Stage 1: Data Response Table",
+            "Scorecard Label Experiment",
             "Stage 2: Findings",
             "Stage 3: Themes",
-            "Scorecard Label Experiment",
+            "📋 Create Report Outline",
             "🎯 Competitive Intelligence",
-            "Admin / Utilities"
+            "Admin / Utilities",
+            "🚀 Production Dashboard"
         ]
     )
 
-    if page == "🚀 Production Dashboard":
-        from official_scripts.ui_components.production_dashboard import show_production_dashboard
-        show_production_dashboard()
-    elif page == "📋 Create Report Outline":
-        from official_scripts.ui_components.theme_story_ui import show_theme_story_scorecard
-        show_theme_story_scorecard()
-    elif page == "Stage 1: Data Response Table":
+    if page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
+    elif page == "Scorecard Label Experiment":
+        show_stage2_response_labeling()
     elif page == "Stage 2: Findings":
         show_stage3_findings()
     elif page == "Stage 3: Themes":
         show_stage4_themes()
-    elif page == "Scorecard Label Experiment":
-        show_stage2_response_labeling()
+    elif page == "📋 Create Report Outline":
+        from official_scripts.ui_components.theme_story_ui import show_theme_story_scorecard
+        show_theme_story_scorecard()
     elif page == "🎯 Competitive Intelligence":
         show_competitive_intelligence()
     elif page == "Admin / Utilities":
         show_admin_panel()
+    elif page == "🚀 Production Dashboard":
+        from official_scripts.ui_components.production_dashboard import show_production_dashboard
+        show_production_dashboard()
 
 if __name__ == "__main__":
     main()
