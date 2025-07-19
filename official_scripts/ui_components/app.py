@@ -8,7 +8,6 @@ from official_scripts.ui_components.stage1_ui import show_stage1_data_responses
 from official_scripts.ui_components.stage2_ui import show_stage2_response_labeling
 from official_scripts.ui_components.stage3_ui import show_stage3_findings
 from official_scripts.ui_components.stage4_ui import show_stage4_themes
-from official_scripts.ui_components.competitive_intelligence_ui import show_competitive_intelligence
 from official_scripts.ui_components.admin_ui import show_admin_utilities, show_admin_panel
 
 def main():
@@ -80,7 +79,6 @@ def main():
             "Stage 2: Findings",
             "Stage 3: Themes",
             "📋 Create Report Outline",
-            "🎯 Competitive Intelligence",
             "Admin / Utilities",
             "🚀 Production Dashboard"
         ]
@@ -97,8 +95,6 @@ def main():
     elif page == "📋 Create Report Outline":
         from official_scripts.ui_components.theme_story_ui import show_theme_story_scorecard
         show_theme_story_scorecard()
-    elif page == "🎯 Competitive Intelligence":
-        show_competitive_intelligence()
     elif page == "Admin / Utilities":
         show_admin_panel()
     elif page == "🚀 Production Dashboard":
