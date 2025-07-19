@@ -1,17 +1,52 @@
-assets/external/
-.states
-.web
-__pycache__/
-*.py[cod]
-*.sqlite3
-*.db
+# Draft and temporary files
+drafts/
 *.log
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
 .venv/
-.env
-uploads/
-samples/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Report outputs (keep official scripts, exclude temporary outputs)
+reports/*.txt
+*.txt
+!README.md
+!*.md
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE files
 .vscode/
 .idea/
-validated_quotes.csv
-stage1_output.csv
-voc_pipeline.db
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Large files
+*.csv
+*.json
+!requirements.txt
+!pyproject.toml
