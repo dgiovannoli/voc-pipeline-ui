@@ -176,7 +176,10 @@ class EnhancedCompetitiveIntelligence:
             
             # Extract interview_id from quote_id (assuming format: file_interviewid_qa_criterion)
             stage2_data['interview_id'] = stage2_data['quote_id'].str.extract(r'_(\d+)_')[0]
-            stage2_data['interview_id'] = pd.to_numeric(stage2_data['interview_id'], errors='coerce')
+            
+            # Ensure both dataframes have interview_id as string type for consistent merging
+            stage2_data['interview_id'] = stage2_data['interview_id'].astype(str)
+            stage1_data['interview_id'] = stage1_data['interview_id'].astype(str)
             
             # Merge with Stage 1 metadata
             merged_data = stage2_data.merge(
