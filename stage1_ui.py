@@ -57,10 +57,29 @@ def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False
         if os.path.exists(temp_csv_path):
             os.remove(temp_csv_path)
         
+        # Ensure result has all required keys
+        if result is None:
+            result = {}
+        
+        # Set default values for missing keys
+        result.setdefault('success', False)
+        result.setdefault('processed', 0)
+        result.setdefault('successful', 0)
+        result.setdefault('failed', 0)
+        result.setdefault('total_responses', 0)
+        result.setdefault('error', 'Unknown error')
+        
         return result
     except Exception as e:
         st.error(f"❌ Error processing metadata CSV: {e}")
-        return {'success': False, 'error': str(e)}
+        return {
+            'success': False, 
+            'error': str(e),
+            'processed': 0,
+            'successful': 0,
+            'failed': 0,
+            'total_responses': 0
+        }
 
 def show_stage1_data_responses():
     """Stage 1: Data Response Table - Process metadata CSV to extract quotes"""
@@ -174,31 +193,41 @@ def show_stage1_data_responses():
                     max_interviews if max_interviews > 0 else None,
                     dry_run
                 )
+                
+                # Debug: Show result structure (only in development)
+                if st.session_state.get('debug_mode', False):
+                    with st.expander("🔧 Debug: Result Structure", expanded=False):
+                        st.json(result)
             
-            if result['success']:
+            if result.get('success', False):
                 st.success("✅ Processing completed!")
                 
                 # Results in a clean card layout
                 st.subheader("📊 Processing Results")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("Interviews", result['processed'])
+                    st.metric("Interviews", result.get('processed', 0))
                 with col2:
-                    st.metric("Successful", result['successful'])
+                    st.metric("Successful", result.get('successful', 0))
                 with col3:
-                    st.metric("Failed", result['failed'])
+                    st.metric("Failed", result.get('failed', 0))
                 with col4:
-                    st.metric("Responses", result['total_responses'])
+                    st.metric("Responses", result.get('total_responses', 0))
                 
                 if dry_run:
                     st.info("🔍 Dry run completed - no data was saved")
                 else:
-                    st.success(f"💾 {result['total_responses']} responses saved to database")
+                    st.success(f"💾 {result.get('total_responses', 0)} responses saved to database")
                     
                     # Auto-refresh the page to show updated status
                     st.rerun()
             else:
-                st.error(f"❌ Processing failed: {result.get('error', 'Unknown error')}")
+                error_message = result.get('error', 'Unknown error')
+                st.error(f"❌ Processing failed: {error_message}")
+                
+                # Show additional error details if available
+                if 'message' in result:
+                    st.info(f"ℹ️ Additional info: {result['message']}")
     
     # Existing data section (only show if there's data)
     if SUPABASE_AVAILABLE:
@@ -231,4 +260,10 @@ def show_stage1_data_responses():
         - **Q&A Preservation**: Maintains conversation boundaries during processing
         - **Parallel Processing**: Multiple interviews processed simultaneously for faster results
         - **LLM Enhancement**: GPT-3.5-turbo-16k extracts comprehensive quotes and insights
-        """) 
+        """)
+        
+        # Debug mode toggle
+        debug_mode = st.checkbox("🐛 Enable Debug Mode", value=st.session_state.get('debug_mode', False))
+        st.session_state.debug_mode = debug_mode
+        if debug_mode:
+            st.info("🔧 Debug mode enabled - additional information will be shown during processing") 

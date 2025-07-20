@@ -179,25 +179,25 @@ def show_stage1_data_responses():
                     dry_run
                 )
             
-            if result['success']:
+            if result.get('success', False):
                 st.success("✅ Processing completed!")
                 
                 # Results in a clean card layout
                 st.subheader("📊 Processing Results")
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("Interviews", result['processed'])
+                    st.metric("Interviews", result.get('processed', 0))
                 with col2:
-                    st.metric("Successful", result['successful'])
+                    st.metric("Successful", result.get('successful', 0))
                 with col3:
-                    st.metric("Failed", result['failed'])
+                    st.metric("Failed", result.get('failed', 0))
                 with col4:
-                    st.metric("Responses", result['total_responses'])
+                    st.metric("Responses", result.get('total_responses', 0))
                 
                 if dry_run:
                     st.info("🔍 Dry run completed - no data was saved")
                 else:
-                    st.success(f"💾 {result['total_responses']} responses saved to database")
+                    st.success(f"💾 {result.get('total_responses', 0)} responses saved to database")
                     
                     # Auto-refresh the page to show updated status
                     st.rerun()
