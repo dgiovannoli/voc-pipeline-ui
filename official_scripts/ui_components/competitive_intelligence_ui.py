@@ -440,10 +440,147 @@ def show_competitive_intelligence_setup():
         st.error(f"Error checking status: {e}")
 
 def show_competitive_intelligence():
-    """Main competitive intelligence interface"""
+    """Show the competitive intelligence interface"""
     
-    # Check if we should show the dashboard or setup
-    if st.session_state.get('show_competitive_dashboard', False):
-        show_competitive_intelligence_dashboard()
+    st.title("🎯 Competitive Intelligence Dashboard")
+    st.markdown("Analyze competitive positioning, win/loss patterns, and customer satisfaction across different criteria.")
+    
+    # Get client ID
+    client_id = get_client_id()
+    
+    if not client_id:
+        st.error("❌ Please select a client ID")
+        return
+    
+    # Data type selection
+    data_type = st.selectbox(
+        "Select Analysis Type",
+        ["satisfaction", "win_loss"],
+        format_func=lambda x: "Customer Satisfaction Analysis" if x == "satisfaction" else "Win/Loss Analysis"
+    )
+    
+    if data_type == "satisfaction":
+        st.info("📊 **Satisfaction Analysis Mode** - Analyzing customer satisfaction and engagement patterns")
     else:
-        show_competitive_intelligence_setup() 
+        st.info("🏆 **Win/Loss Analysis Mode** - Analyzing competitive positioning and win/loss patterns")
+    
+    # Generate analysis button
+    if st.button("🎯 Generate Competitive Intelligence", type="primary", use_container_width=True):
+        with st.spinner("🎯 Generating competitive intelligence analysis..."):
+            try:
+                # Import and run the competitive intelligence analyzer
+                from official_scripts.core_analytics.competitive_intelligence_analyzer import CompetitiveIntelligenceAnalyzer
+                
+                # Create analyzer instance
+                analyzer = CompetitiveIntelligenceAnalyzer()
+                
+                # Generate analysis
+                dashboard_data = analyzer.generate_dashboard_data(client_id, data_type)
+                
+                # Display results
+                st.success("✅ Competitive intelligence analysis completed!")
+                
+                # Show dashboard
+                show_competitive_intelligence_dashboard(dashboard_data, client_id, data_type)
+                
+            except Exception as e:
+                st.error(f"❌ Error generating competitive intelligence: {str(e)}")
+                st.exception(e)
+
+def get_client_id():
+    """Get client ID from session state or user input"""
+    client_id = st.session_state.get('client_id', '')
+    if not client_id:
+        client_id = st.text_input("Enter Client ID", value="Rev", help="Enter the client ID to analyze")
+        if client_id:
+            st.session_state['client_id'] = client_id
+    return client_id
+
+def show_competitive_intelligence_dashboard(dashboard_data: dict, client_id: str, data_type: str):
+    """Display the competitive intelligence dashboard"""
+    
+    st.header("📊 Competitive Intelligence Dashboard")
+    
+    # Summary metrics
+    summary = dashboard_data['summary_metrics']
+    
+    # Key metrics row
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if data_type == "win_loss":
+            st.metric("Competitive Health Score", f"{summary['overall_score']}/100")
+        else:
+            st.metric("Overall Satisfaction Score", f"{summary['overall_score']}/100")
+    with col2:
+        if data_type == "win_loss":
+            st.metric("Win Rate", f"{summary['win_rate']}%")
+        else:
+            st.metric("Customer Satisfaction", f"{summary['win_rate']}%")
+    with col3:
+        st.metric("Critical Issues", summary['critical_issues_count'])
+    with col4:
+        st.metric("Key Strengths", summary['strengths_count'])
+    
+    # Interview-Weighted VOC Metrics (for satisfaction analysis)
+    if data_type == "satisfaction":
+        st.markdown("---")
+        st.subheader("🎯 Interview-Weighted VOC Metrics")
+        
+        try:
+            from official_scripts.database.supabase_database import SupabaseDatabase
+            from official_scripts.core_analytics.interview_weighted_base import InterviewWeightedBase
+            
+            db = SupabaseDatabase()
+            analyzer = InterviewWeightedBase(db)
+            metrics = analyzer.get_customer_metrics(client_id)
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.metric(
+                    "Customer Satisfaction", 
+                    f"{metrics['customer_satisfaction_rate']}%",
+                    help="Interview-weighted customer satisfaction"
+                )
+            
+            with col2:
+                st.metric(
+                    "Overall Score", 
+                    f"{metrics['overall_score']}/10",
+                    help="Interview-weighted score"
+                )
+            
+            with col3:
+                st.metric(
+                    "Problem Customers", 
+                    f"{metrics['problem_customers']}",
+                    help="Customers with product issues"
+                )
+            
+            with col4:
+                st.metric(
+                    "Satisfied Customers", 
+                    f"{metrics['satisfied_customers']}/{metrics['total_customers']}",
+                    help="Satisfied vs total customers"
+                )
+            
+            # Performance indicator
+            performance_color = {
+                "Excellent": "green",
+                "Good": "blue", 
+                "Fair": "orange",
+                "Poor": "red",
+                "Critical": "red"
+            }.get(metrics['performance_level'], "gray")
+            
+            st.markdown(f"""
+            <div style="padding: 10px; border-radius: 5px; background-color: {performance_color}20; border-left: 4px solid {performance_color};">
+                <strong>Interview-Weighted Performance:</strong> {metrics['performance_level']} ({metrics['overall_score']}/10)
+                <br><small>Each customer counts equally, preventing overweighing of verbose customers</small>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        except Exception as e:
+            st.warning(f"⚠️ Unable to load interview-weighted metrics: {str(e)}")
+    
+    st.markdown("---") 

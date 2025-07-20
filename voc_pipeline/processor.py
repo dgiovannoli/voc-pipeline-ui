@@ -93,9 +93,9 @@ def create_qa_aware_chunks(text: str, target_tokens: int = 8000, overlap_tokens:
     4. Preserve Q&A boundaries - never split mid-Q&A
     5. Focus on quality: fewer chunks but richer insights
     """
-    # Initialize tokenizer for gpt-3.5-turbo-16k
+    # Initialize tokenizer for gpt-4o-mini
     try:
-        encoding = tiktoken.encoding_for_model("gpt-3.5-turbo-16k")
+        encoding = tiktoken.encoding_for_model("gpt-4o-mini")
     except:
         # Fallback to cl100k_base encoding
         encoding = tiktoken.get_encoding("cl100k_base")
@@ -572,10 +572,10 @@ Interview chunk to analyze:
 {chunk_text}"""
     )
     
-    # Create LLM chain (RunnableSequence) - using ChatOpenAI for gpt-3.5-turbo-16k
+    # Create LLM chain (RunnableSequence) - using ChatOpenAI for gpt-4o-mini
     from langchain_openai import ChatOpenAI
     llm = ChatOpenAI(
-        model_name="gpt-3.5-turbo-16k",
+        model_name="gpt-4o-mini",
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         max_tokens=4096,
         temperature=0.1

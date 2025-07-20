@@ -65,6 +65,7 @@ def show_theme_story_scorecard():
         if client_id:
             try:
                 from official_scripts.database.supabase_database import SupabaseDatabase
+                from official_scripts.core_analytics.interview_weighted_base import InterviewWeightedBase
                 db = SupabaseDatabase()
                 
                 # Get data counts
@@ -76,6 +77,42 @@ def show_theme_story_scorecard():
                 st.metric("Themes", len(themes))
                 st.metric("Findings", len(findings))
                 st.metric("Quotes", len(client_data))
+                
+                # Interview-Weighted VOC Metrics
+                st.subheader("🎯 Interview-Weighted VOC")
+                analyzer = InterviewWeightedBase(db)
+                metrics = analyzer.get_customer_metrics(client_id)
+                
+                st.metric(
+                    "Customer Satisfaction", 
+                    f"{metrics['customer_satisfaction_rate']}%",
+                    help="Percentage of satisfied customers"
+                )
+                st.metric(
+                    "Overall Score", 
+                    f"{metrics['overall_score']}/10",
+                    help="Interview-weighted score"
+                )
+                st.metric(
+                    "Problem Customers", 
+                    f"{metrics['problem_customers']}",
+                    help="Customers with issues"
+                )
+                
+                # Performance indicator
+                performance_color = {
+                    "Excellent": "green",
+                    "Good": "blue", 
+                    "Fair": "orange",
+                    "Poor": "red",
+                    "Critical": "red"
+                }.get(metrics['performance_level'], "gray")
+                
+                st.markdown(f"""
+                <div style="padding: 8px; border-radius: 4px; background-color: {performance_color}20; border-left: 3px solid {performance_color}; font-size: 0.9em;">
+                    <strong>{metrics['performance_level']}</strong> ({metrics['overall_score']}/10)
+                </div>
+                """, unsafe_allow_html=True)
                 
                 # Recent activity
                 st.subheader("🕒 Recent Activity")

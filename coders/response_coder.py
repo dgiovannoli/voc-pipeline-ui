@@ -7,7 +7,7 @@ from coders.schemas import CRITERIA_LIST, SWOT_LIST, PHASE_LIST
 class ResponseCoder:
     def __init__(self):
         self.llm = OpenAI(
-            model_name="gpt-3.5-turbo-16k",
+            model_name="gpt-4o-mini",
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             max_tokens=16000,
             temperature=0.1

@@ -27,7 +27,7 @@ def cli():
 @click.argument('deal_status')
 @click.argument('date_of_interview')
 @click.option('--output', '-o', help='Output file for core responses (CSV or JSON)')
-@click.option('--model', '-m', default='gpt-3.5-turbo-16k', help='LLM model to use')
+@click.option('--model', '-m', default='gpt-4o-mini', help='LLM model to use')
 def extract_core(transcript_path: str, company: str, interviewee: str, deal_status: str, 
                 date_of_interview: str, output: Optional[str], model: str):
     """Stage 1: Extract core verbatim responses and metadata only."""
@@ -73,7 +73,7 @@ def extract_core(transcript_path: str, company: str, interviewee: str, deal_stat
 @cli.command()
 @click.argument('stage1_data_responses_file')
 @click.option('--output', '-o', help='Output JSON file for enriched responses')
-@click.option('--model', '-m', default='gpt-3.5-turbo-16k', help='LLM model to use')
+@click.option('--model', '-m', default='gpt-4o-mini', help='LLM model to use')
 def enrich_analysis(stage1_data_responses_file: str, output: Optional[str], model: str):
     """Stage 2: Add AI-generated analysis to core responses."""
     try:
@@ -113,7 +113,7 @@ def enrich_analysis(stage1_data_responses_file: str, output: Optional[str], mode
 @cli.command()
 @click.argument('responses_file')
 @click.option('--output', '-o', help='Output JSON file for labeled responses')
-@click.option('--model', '-m', default='gpt-3.5-turbo-16k', help='LLM model to use')
+@click.option('--model', '-m', default='gpt-4o-mini', help='LLM model to use')
 def add_labels(responses_file: str, output: Optional[str], model: str):
     """Stage 3: Add structured labels to responses."""
     try:
@@ -161,7 +161,7 @@ def add_labels(responses_file: str, output: Optional[str], model: str):
 @click.argument('deal_status')
 @click.argument('date_of_interview')
 @click.option('--output', '-o', help='Output JSON file for complete results')
-@click.option('--model', '-m', default='gpt-3.5-turbo-16k', help='LLM model to use')
+@click.option('--model', '-m', default='gpt-4o-mini', help='LLM model to use')
 @click.option('--save-db/--no-save-db', default=True, help='Save results to database')
 def run_pipeline(transcript_path: str, company: str, interviewee: str, deal_status: str, 
                 date_of_interview: str, output: Optional[str], model: str, save_db: bool):

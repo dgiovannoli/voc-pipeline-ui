@@ -202,9 +202,9 @@ class RevThemeStoryScorecard:
                 story_type = 'challenge_story'
             elif any(word in theme_text for word in ['accuracy', 'accurate', 'precise', 'precision']):
                 # Transcription accuracy improvements are positive
-                direction = 'positive'
-                impact_score = 7
-                story_type = 'success_story'
+            direction = 'positive'
+            impact_score = 7
+            story_type = 'success_story'
             else:
                 # Default for transcription themes
                 direction = 'neutral'
@@ -213,17 +213,17 @@ class RevThemeStoryScorecard:
         else:
             # General logic for other themes
             if problem_count > positive_count:
-                direction = 'negative'
-                impact_score = 3
-                story_type = 'challenge_story'
+            direction = 'negative'
+            impact_score = 3
+            story_type = 'challenge_story'
             elif positive_count > problem_count:
                 direction = 'positive'
                 impact_score = 7
                 story_type = 'success_story'
-            else:
-                direction = 'neutral'
-                impact_score = 5
-                story_type = 'observation_story'
+        else:
+            direction = 'neutral'
+            impact_score = 5
+            story_type = 'observation_story'
         
         return {
             'direction': direction,

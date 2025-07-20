@@ -7,6 +7,7 @@ import pandas as pd
 import os
 from datetime import datetime
 from official_scripts.database.supabase_database import SupabaseDatabase
+from official_scripts.core_analytics.interview_weighted_base import InterviewWeightedBase
 
 def show_production_dashboard():
     """Show production pipeline dashboard"""
@@ -110,6 +111,80 @@ def show_production_dashboard():
                     st.metric("Total Themes", len(themes_df))
                 else:
                     st.metric("Total Themes", "Set Client ID")
+            
+            # Interview-Weighted VOC Metrics
+            client_id = st.session_state.get('client_id', '')
+            if client_id:
+                st.subheader("🎯 Interview-Weighted VOC Metrics")
+                
+                # Initialize interview-weighted analyzer
+                analyzer = InterviewWeightedBase(db)
+                metrics = analyzer.get_customer_metrics(client_id)
+                
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric(
+                        "Customer Satisfaction", 
+                        f"{metrics['customer_satisfaction_rate']}%",
+                        help="Percentage of satisfied customers (interview-weighted)"
+                    )
+                
+                with col2:
+                    st.metric(
+                        "Overall Score", 
+                        f"{metrics['overall_score']}/10",
+                        help="Interview-weighted score (0-10)"
+                    )
+                
+                with col3:
+                    st.metric(
+                        "Problem Customers", 
+                        f"{metrics['problem_customers']}",
+                        help="Number of customers with product issues"
+                    )
+                
+                with col4:
+                    st.metric(
+                        "Satisfied Customers", 
+                        f"{metrics['satisfied_customers']}/{metrics['total_customers']}",
+                        help="Satisfied customers out of total customers"
+                    )
+                
+                # Performance indicator
+                performance_color = {
+                    "Excellent": "green",
+                    "Good": "blue", 
+                    "Fair": "orange",
+                    "Poor": "red",
+                    "Critical": "red"
+                }.get(metrics['performance_level'], "gray")
+                
+                st.markdown(f"""
+                <div style="padding: 10px; border-radius: 5px; background-color: {performance_color}20; border-left: 4px solid {performance_color};">
+                    <strong>Performance Level:</strong> {metrics['performance_level']} ({metrics['overall_score']}/10)
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Customer breakdown
+                if metrics['customer_groups']:
+                    breakdown = analyzer.get_customer_breakdown(metrics['customer_groups'])
+                    
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.write("**Customer Categories:**")
+                        st.write(f"• Problem Customers: {len(breakdown['problem_customers'])}")
+                        st.write(f"• Benefit Customers: {len(breakdown['benefit_customers'])}")
+                        st.write(f"• Mixed Customers: {len(breakdown['mixed_customers'])}")
+                        st.write(f"• Neutral Customers: {len(breakdown['neutral_customers'])}")
+                    
+                    with col2:
+                        st.write("**Methodology:**")
+                        st.write("• Interview-weighted analysis")
+                        st.write("• Each customer counts equally")
+                        st.write("• Prevents overweighing verbose customers")
+                        st.write("• More representative of customer sentiment")
             
             # Show client breakdown
             if client_summary:

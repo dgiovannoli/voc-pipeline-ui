@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 class ModularProcessor:
     """Modular processor for independent pipeline stages."""
     
-    def __init__(self, model_name: str = "gpt-3.5-turbo-16k", max_tokens: int = 4096, temperature: float = 0.3):
+    def __init__(self, model_name: str = "gpt-4o-mini", max_tokens: int = 4096, temperature: float = 0.3):
         self.model_name = model_name
         self.max_tokens = max_tokens
         self.temperature = temperature
@@ -392,7 +392,7 @@ class ModularProcessor:
         
         # Initialize tokenizer
         try:
-            encoding = tiktoken.encoding_for_model("gpt-3.5-turbo-16k")
+            encoding = tiktoken.encoding_for_model("gpt-4o-mini")
         except:
             # Fallback to cl100k_base encoding
             encoding = tiktoken.get_encoding("cl100k_base")

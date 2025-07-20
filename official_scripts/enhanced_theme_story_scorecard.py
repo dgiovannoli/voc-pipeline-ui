@@ -9,6 +9,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from official_scripts.database.supabase_database import SupabaseDatabase
+from official_scripts.enhanced_quote_scoring import EnhancedQuoteScoring
 
 class EnhancedThemeStoryScorecard:
     """Generate executive-ready theme-driven story with enhanced credibility and clarity"""
@@ -16,6 +17,7 @@ class EnhancedThemeStoryScorecard:
     def __init__(self):
         self.client_id = 'Rev'
         self.db = SupabaseDatabase()
+        self.quote_scoring = EnhancedQuoteScoring()
         
     def generate_enhanced_report(self):
         """Generate enhanced theme-driven story with executive focus"""
@@ -37,6 +39,10 @@ class EnhancedThemeStoryScorecard:
         
         # Build enhanced scorecard framework
         scorecard = self._build_enhanced_scorecard(themes, findings, rev_data)
+        
+        # Extract competitive intelligence
+        competitive_intelligence = self._extract_competitive_intelligence(themes, rev_data)
+        scorecard['competitive_intelligence'] = competitive_intelligence
         
         return scorecard
     
@@ -186,7 +192,9 @@ class EnhancedThemeStoryScorecard:
             'love', 'loves', 'loved', 'like', 'likes', 'liked',
             'great', 'good', 'better', 'best', 'amazing', 'wonderful',
             'seamless', 'smooth', 'reliable', 'consistent', 'accurate',
-            'valuable', 'worth', 'worthwhile', 'productive', 'time-saving'
+            'valuable', 'worth', 'worthwhile', 'productive', 'time-saving',
+            'reasonable', 'fair', 'acceptable', 'adequate', 'satisfactory',
+            'helpful', 'useful', 'convenient', 'practical', 'functional'
         ]
         
         # Enhanced negative indicators for B2B context
@@ -203,29 +211,100 @@ class EnhancedThemeStoryScorecard:
             'expensive', 'costly', 'overpriced', 'unaffordable',
             'frustrated', 'frustrating', 'annoyed', 'annoying', 'irritated',
             'disappointing', 'disappointed', 'unreliable', 'inconsistent',
-            'waste', 'wastes', 'wasting', 'inefficient', 'ineffective'
+            'waste', 'wastes', 'wasting', 'inefficient', 'ineffective',
+            'concern', 'concerns', 'worried', 'worry', 'worries'
         ]
         
-        # Count indicators
+        # NEW: Positive comparative indicators (Rev vs competitors)
+        positive_comparative_indicators = [
+            'better than', 'better than the', 'better than other', 'better than previous',
+            'switched to', 'switched from', 'moved to', 'moved from',
+            'instead of', 'rather than', 'compared to', 'unlike',
+            'solved', 'solves', 'solving', 'solution', 'solutions',
+            'fixed', 'fixes', 'fixing', 'resolved', 'resolves',
+            'perfect', 'perfect for', 'exactly what', 'exactly what i',
+            'happily', 'glad', 'pleased', 'satisfied', 'satisfaction',
+            'recommend', 'recommends', 'recommended', 'would recommend',
+            'love it', 'loved it', 'like it', 'liked it',
+            'great service', 'great product', 'great tool',
+            'worth it', 'worth the', 'worth every penny',
+            'no problem', 'no issues', 'no complaints',
+            'works great', 'works perfectly', 'works well',
+            'much better', 'way better', 'so much better',
+            'huge help', 'big help', 'really helpful',
+            'saved me', 'saves me', 'saving me',
+            'time saver', 'time saving', 'saves time'
+        ]
+        
+        # NEW: Problem-solving narrative indicators
+        problem_solving_indicators = [
+            'used to', 'before', 'previously', 'earlier',
+            'had problems with', 'had issues with', 'struggled with',
+            'was frustrated with', 'was annoyed with', 'was disappointed with',
+            'then i found', 'then i discovered', 'then i came across',
+            'so i switched', 'so i moved', 'so i changed',
+            'now i can', 'now i am', 'now it is',
+            'this solved', 'this fixed', 'this resolved',
+            'no longer', 'not anymore', 'never again',
+            'much easier', 'much faster', 'much better',
+            'finally', 'at last', 'eventually'
+        ]
+        
+        # Count basic indicators
         positive_count = sum(1 for indicator in positive_indicators if indicator in theme_text)
         negative_count = sum(1 for indicator in negative_indicators if indicator in theme_text)
         
-        # Determine direction with confidence
-        if positive_count > negative_count:
+        # NEW: Count comparative and problem-solving indicators
+        positive_comparative_count = sum(1 for indicator in positive_comparative_indicators if indicator in theme_text)
+        problem_solving_count = sum(1 for indicator in problem_solving_indicators if indicator in theme_text)
+        
+        # NEW: Enhanced direction determination with comparative context
+        # Problem-solving narratives with positive outcomes are POSITIVE
+        if problem_solving_count > 0 and (positive_count > 0 or positive_comparative_count > 0):
+            direction = 'positive'
+            confidence = min(1.0, (positive_count + positive_comparative_count + problem_solving_count) / max(negative_count, 1))
+        # Positive comparative statements are POSITIVE
+        elif positive_comparative_count > 0:
+            direction = 'positive'
+            confidence = min(1.0, (positive_count + positive_comparative_count) / max(negative_count, 1))
+        # Traditional positive/negative logic
+        elif positive_count > negative_count:
             direction = 'positive'
             confidence = min(1.0, positive_count / max(negative_count, 1))
         elif negative_count > positive_count:
             direction = 'negative'
             confidence = min(1.0, negative_count / max(positive_count, 1))
-        else:
+        elif positive_count == negative_count and positive_count > 0:
+            # Equal positive and negative indicators - likely neutral
             direction = 'neutral'
             confidence = 0.5
+        else:
+            # No clear indicators - check for neutral/balanced language
+            neutral_indicators = ['balance', 'mixed', 'both', 'while', 'however', 'but', 'although']
+            neutral_count = sum(1 for indicator in neutral_indicators if indicator in theme_text)
+            
+            if neutral_count > 0:
+                direction = 'neutral'
+                confidence = 0.6
+            else:
+                # Default to neutral for unclear cases
+                direction = 'neutral'
+                confidence = 0.4
         
         return {
             'direction': direction,
             'confidence': confidence,
             'positive_indicators': positive_count,
-            'negative_indicators': negative_count
+            'negative_indicators': negative_count,
+            'positive_comparative_indicators': positive_comparative_count,
+            'problem_solving_indicators': problem_solving_count,
+            'analysis': {
+                'theme_text': theme_text,
+                'positive_indicators_found': [ind for ind in positive_indicators if ind in theme_text],
+                'negative_indicators_found': [ind for ind in negative_indicators if ind in theme_text],
+                'positive_comparative_indicators_found': [ind for ind in positive_comparative_indicators if ind in theme_text],
+                'problem_solving_indicators_found': [ind for ind in problem_solving_indicators if ind in theme_text]
+            }
         }
     
     def _assess_business_impact(self, theme_text: str, direction: dict, framework: dict) -> dict:
@@ -296,9 +375,9 @@ class EnhancedThemeStoryScorecard:
     def _get_criterion_keywords(self, criterion: str) -> list:
         """Get keywords for criterion"""
         keyword_mapping = {
-            'product_capability': ['efficiency', 'accuracy', 'speed', 'feature', 'transcription', 'delay', 'inaccuracy', 'correction', 'quality', 'performance'],
-            'commercial_terms': ['pricing', 'cost', 'revenue', 'transparency', 'allocation', 'strategy', 'value', 'investment', 'roi', 'budget'],
-            'integration_technical_fit': ['integration', 'workflow', 'clio', 'software', 'system', 'efficiency', 'manual', 'automation', 'api', 'technical'],
+            'product_capability': ['transcription', 'accuracy', 'speed', 'feature', 'delay', 'inaccuracy', 'correction', 'quality', 'performance', 'efficiency', 'time', 'faster', 'quicker', 'helpful', 'worth', 'love', 'great', 'amazing', 'saves', 'saved'],
+            'commercial_terms': ['pricing', 'cost', 'revenue', 'transparency', 'allocation', 'strategy', 'value', 'investment', 'roi', 'budget', 'expensive', 'cheaper', 'afford'],
+            'integration_technical_fit': ['integration', 'workflow', 'clio', 'software', 'system', 'manual', 'automation', 'api', 'technical', 'platform', 'sync', 'connect'],
             'security_compliance': ['security', 'compliance', 'confidential', 'data', 'risk', 'trust', 'privacy', 'protection', 'audit'],
             'implementation_onboarding': ['implementation', 'onboarding', 'training', 'adoption', 'setup', 'record', 'deployment', 'migration']
         }
@@ -359,7 +438,7 @@ class EnhancedThemeStoryScorecard:
         return supporting_findings[:10]  # Top 10 findings
     
     def _find_supporting_quotes_with_context(self, theme: dict, quotes: pd.DataFrame) -> list:
-        """Find supporting quotes with full client context"""
+        """Find supporting quotes with full client context and priority scoring"""
         
         theme_keywords = self._extract_theme_keywords(theme)
         supporting_quotes = []
@@ -374,8 +453,8 @@ class EnhancedThemeStoryScorecard:
                 sentiment = self._analyze_quote_sentiment(quote['verbatim_response'])
                 impact = self._analyze_quote_impact(quote['verbatim_response'])
                 
-                # Add full client context
-                supporting_quotes.append({
+                # Create quote dict for scoring
+                quote_dict = {
                     'quote_id': quote['response_id'],
                     'quote': quote['verbatim_response'],
                     'company': quote.get('company', 'Unknown Company'),
@@ -385,12 +464,46 @@ class EnhancedThemeStoryScorecard:
                     'sentiment': sentiment,
                     'impact': impact,
                     'relevance_score': keyword_matches / len(theme_keywords) if theme_keywords else 0
-                })
+                }
+                
+                # Calculate priority score
+                priority_score = self.quote_scoring.calculate_quote_priority_score(quote_dict)
+                quote_dict['priority_score'] = priority_score
+                
+                supporting_quotes.append(quote_dict)
         
-        # Sort by relevance and impact
-        supporting_quotes.sort(key=lambda x: (x['relevance_score'], x['impact']['score']), reverse=True)
+        # Sort by priority score first, then relevance
+        supporting_quotes.sort(key=lambda x: (x['priority_score']['total_score'], x['relevance_score']), reverse=True)
         
         return supporting_quotes[:15]  # Top 15 quotes
+    
+    def _extract_competitive_intelligence(self, themes: pd.DataFrame, quotes: pd.DataFrame) -> dict:
+        """Extract competitive intelligence from themes and quotes"""
+        
+        # Convert quotes to list of dicts for competitive analysis
+        quotes_list = []
+        for _, quote in quotes.iterrows():
+            quotes_list.append({
+                'quote_id': quote['response_id'],
+                'quote': quote['verbatim_response'],
+                'interviewee_name': quote.get('interviewee_name', 'Unknown'),
+                'company': quote.get('company', 'Unknown Company'),
+                'interviewee_role': quote.get('interviewee_role', 'Unknown Role')
+            })
+        
+        # Convert themes to list of dicts
+        themes_list = []
+        for _, theme in themes.iterrows():
+            themes_list.append({
+                'title': theme['theme_title'],
+                'statement': theme['theme_statement'],
+                'classification': theme.get('classification', 'Unknown')
+            })
+        
+        # Extract competitive intelligence using the enhanced scoring system
+        competitive_intelligence = self.quote_scoring.extract_competitive_intelligence(quotes_list, themes_list)
+        
+        return competitive_intelligence
     
     def _extract_theme_keywords(self, theme: dict) -> list:
         """Extract keywords from theme"""
@@ -692,9 +805,20 @@ class EnhancedThemeStoryScorecard:
         
         total_impact = positive_score + negative_score + neutral_score
         
+        # Improved scoring logic that handles all-negative themes better
         if total_impact > 0:
-            # Normalize to 0-10 scale
-            overall_score = min(10.0, (positive_score / total_impact) * 10)
+            if positive_score > 0:
+                # Normal case: mix of positive and negative themes
+                overall_score = min(10.0, (positive_score / total_impact) * 10)
+            elif negative_score > 0 and positive_score == 0:
+                # All negative themes - score based on severity
+                # Higher negative scores = lower overall score
+                max_negative_score = len(negative_themes) * 1.5  # Maximum possible negative score
+                severity_ratio = negative_score / max_negative_score
+                overall_score = max(1.0, 5.0 - (severity_ratio * 4.0))  # Score between 1-5
+            else:
+                # Only neutral themes
+                overall_score = 5.0
         else:
             overall_score = 5.0
         

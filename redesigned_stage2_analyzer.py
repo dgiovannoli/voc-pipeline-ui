@@ -37,7 +37,7 @@ class RedesignedStage2Analyzer:
         
         # Initialize LLM with optimized settings
         self.llm = ChatOpenAI(
-            model_name="gpt-4o-mini",  # Better reasoning for complex analysis
+            model_name="gpt-4o-mini",  # Cost-effective and high-quality analysis
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             max_tokens=4000,
             temperature=0.1

@@ -24,7 +24,7 @@ stage2_progress_data = {"completed_batches": 0, "total_batches": 0, "results": [
 class EnhancedTraceableStage2Analyzer:
     def __init__(self):
         self.llm = OpenAI(
-            model_name="gpt-3.5-turbo-16k",
+            model_name="gpt-4o-mini",
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             max_tokens=16000,
             temperature=0.1
@@ -1217,7 +1217,7 @@ Quotes:\n"""
         from langchain.prompts import ChatPromptTemplate
         
         llm = ChatOpenAI(
-            model_name="gpt-3.5-turbo-16k",
+            model_name="gpt-4o-mini",
             openai_api_key=os.getenv("OPENAI_API_KEY"),
             max_tokens=3000,  # Increased for better response quality
             temperature=0.1
