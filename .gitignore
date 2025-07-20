@@ -1,37 +1,48 @@
-# Draft and temporary files
-drafts/
-*.log
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.staging
+*.env
+
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
 venv/
+env/
+ENV/
 .venv/
-pip-log.txt
-pip-delete-this-directory.txt
+.env/
 
-# Report outputs (keep official scripts, exclude temporary outputs)
-reports/*.txt
-*.txt
-!README.md
-!*.md
-!*.py
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# IDE files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS files
+# OS
 .DS_Store
 .DS_Store?
 ._*
@@ -40,14 +51,50 @@ reports/*.txt
 ehthumbs.db
 Thumbs.db
 
+# Streamlit
+.streamlit/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
 # Temporary files
 *.tmp
 *.temp
-*.bak
-*.backup
+temp/
+tmp/
 
-# Large files
-*.csv
-*.json
-!requirements.txt
-!pyproject.toml
+# API keys and secrets
+secrets.json
+config.json
+credentials.json
+
+# Cache
+.cache/
+*.cache
+
+# State files
+.states/
+*.pkl
+*.pickle
+
+# Reports and outputs (keep only final versions)
+reports/*.txt
+reports/*.csv
+!reports/README.md
+
+# Uploads (keep only sample files)
+uploads/*.docx
+uploads/*.pdf
+uploads/*.txt
+!uploads/README.md
+
+# Test outputs
+test_*.csv
+test_*.txt
+test_*.json
