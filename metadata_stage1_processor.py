@@ -52,8 +52,69 @@ class MetadataStage1Processor:
         
         # Read metadata CSV
         try:
-            df = pd.read_csv(csv_file_path)
+            # Check if file exists and has content
+            if not os.path.exists(csv_file_path):
+                logger.error(f"❌ CSV file does not exist: {csv_file_path}")
+                return {
+                    'success': False,
+                    'error': f"CSV file does not exist: {csv_file_path}",
+                    'processed': 0,
+                    'total_responses': 0
+                }
+            
+            # Check file size
+            file_size = os.path.getsize(csv_file_path)
+            if file_size == 0:
+                logger.error(f"❌ CSV file is empty: {csv_file_path}")
+                return {
+                    'success': False,
+                    'error': f"CSV file is empty: {csv_file_path}",
+                    'processed': 0,
+                    'total_responses': 0
+                }
+            
+            logger.info(f"📁 CSV file size: {file_size} bytes")
+            
+            # Try to read CSV with different encodings
+            df = None
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    df = pd.read_csv(csv_file_path, encoding=encoding)
+                    logger.info(f"✅ Successfully read CSV with {encoding} encoding")
+                    break
+                except UnicodeDecodeError:
+                    continue
+                except Exception as e:
+                    if "No columns to parse" in str(e):
+                        logger.error(f"❌ CSV has no valid columns to parse: {e}")
+                        # Try to read as text to see what's in the file
+                        try:
+                            with open(csv_file_path, 'r', encoding='utf-8') as f:
+                                first_lines = f.readlines()[:5]
+                            logger.error(f"❌ First 5 lines of file: {first_lines}")
+                        except:
+                            pass
+                        return {
+                            'success': False,
+                            'error': f"CSV has no valid columns to parse: {e}",
+                            'processed': 0,
+                            'total_responses': 0
+                        }
+                    else:
+                        continue
+            
+            if df is None:
+                logger.error(f"❌ Failed to read CSV with any encoding")
+                return {
+                    'success': False,
+                    'error': "Failed to read CSV with any encoding",
+                    'processed': 0,
+                    'total_responses': 0
+                }
+            
             logger.info(f"📊 Found {len(df)} rows in metadata CSV")
+            logger.info(f"📊 CSV columns: {list(df.columns)}")
+            
         except Exception as e:
             logger.error(f"❌ Failed to read metadata CSV: {e}")
             return {
@@ -87,13 +148,77 @@ class MetadataStage1Processor:
                 'total_responses': 0
             }
         
+        # Debug: Show what's in the data
+        logger.info(f"🔍 Debug: Client Name values: {df['Client Name'].unique()}")
+        logger.info(f"🔍 Debug: Interview Status values: {df['Interview Status'].unique()}")
+        logger.info(f"🔍 Debug: Transcript column '{transcript_column}' has {df[transcript_column].notna().sum()} non-null values")
+        logger.info(f"🔍 Debug: Transcript column '{transcript_column}' has {len(df[df[transcript_column] != ''])} non-empty values")
+        
+        # Show sample data for debugging
+        logger.info(f"🔍 Debug: Sample data:")
+        for idx, row in df.head(3).iterrows():
+            transcript_value = row.get(transcript_column, '')
+            logger.info(f"  Row {idx}: Client='{row.get('Client Name', 'N/A')}', Status='{row.get('Interview Status', 'N/A')}', TranscriptLength={len(str(transcript_value))}, TranscriptPreview='{str(transcript_value)[:100]}...'")
+        
+        # Check what's actually in the transcript column
+        logger.info(f"🔍 Debug: Transcript column analysis:")
+        transcript_values = df[transcript_column].dropna()
+        logger.info(f"  Non-null count: {len(transcript_values)}")
+        logger.info(f"  Empty string count: {(transcript_values == '').sum()}")
+        logger.info(f"  Whitespace-only count: {(transcript_values.astype(str).str.strip() == '').sum()}")
+        logger.info(f"  Non-empty count: {(transcript_values.astype(str).str.strip() != '').sum()}")
+        
+        # Check if there's a Raw Transcript File column that might contain the actual transcripts
+        if 'Raw Transcript File' in df.columns:
+            logger.info(f"🔍 Debug: Raw Transcript File column analysis:")
+            file_values = df['Raw Transcript File'].dropna()
+            logger.info(f"  Non-null count: {len(file_values)}")
+            logger.info(f"  Sample values: {file_values.head(3).tolist()}")
+        
+        # Check if there's a Transcript Link column
+        if 'Transcript Link' in df.columns:
+            logger.info(f"🔍 Debug: Transcript Link column analysis:")
+            link_values = df['Transcript Link'].dropna()
+            logger.info(f"  Non-null count: {len(link_values)}")
+            logger.info(f"  Sample values: {link_values.head(3).tolist()}")
+        
+        # Auto-detect which column contains actual transcript content
+        transcript_columns_to_check = [
+            'Raw Transcript',
+            'Raw Transcript File', 
+            'Transcript Link',
+            'Moderator Responses'
+        ]
+        
+        actual_transcript_column = None
+        for col in transcript_columns_to_check:
+            if col in df.columns:
+                non_empty_count = df[col].dropna().astype(str).str.strip().str.len().gt(0).sum()
+                logger.info(f"🔍 Column '{col}' has {non_empty_count} non-empty values")
+                if non_empty_count > 0:
+                    actual_transcript_column = col
+                    logger.info(f"✅ Found transcripts in column: '{col}'")
+                    break
+        
+        if actual_transcript_column is None:
+            logger.warning(f"⚠️ No transcript content found in any column")
+            return {
+                'success': True,
+                'processed': 0,
+                'total_responses': 0,
+                'message': f"No transcript content found in any column for client {client_id}"
+            }
+        
         # Filter for target client and completed interviews with transcripts
+        # More robust filtering that handles various empty/whitespace cases
         target_data = df[
             (df['Client Name'] == client_id) & 
             (df['Interview Status'] == 'Completed') &
-            (df[transcript_column].notna()) &
-            (df[transcript_column] != '')
+            (df[actual_transcript_column].notna()) &
+            (df[actual_transcript_column].astype(str).str.strip().str.len() > 0)
         ].copy()
+        
+        logger.info(f"🎯 Using transcript column: '{actual_transcript_column}'")
         
         logger.info(f"🎯 Found {len(target_data)} completed {client_id} interviews with transcripts")
         
@@ -117,7 +242,7 @@ class MetadataStage1Processor:
         
         for idx, row in target_data.iterrows():
             interview_id = row['Interview ID']
-            transcript = row[transcript_column]
+            transcript = row[actual_transcript_column]  # Use the detected column
             interviewee_name = row['Interview Contact Full Name']
             company = row['Interview Contact Company Name']
             deal_status = row['Deal Status']

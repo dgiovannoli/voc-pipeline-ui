@@ -5,39 +5,37 @@ import os
 import json
 from typing import List, Dict, Any
 import openai
+from dotenv import load_dotenv
 
-# Configuration
-SUPABASE_URL = os.getenv('SUPABASE_URL')
-SUPABASE_KEY = os.getenv('SUPABASE_ANON_KEY')  # Use anon key for client access
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+# Load environment variables from .env file (fallback)
+load_dotenv()
+
+# Configuration - Use Streamlit secrets if available, otherwise fall back to environment variables
+SUPABASE_URL = st.secrets.get("SUPABASE_URL", os.getenv('SUPABASE_URL'))
+SUPABASE_KEY = st.secrets.get("SUPABASE_ANON_KEY", os.getenv('SUPABASE_ANON_KEY'))
+OPENAI_API_KEY = st.secrets.get("OPENAI_API_KEY", os.getenv('OPENAI_API_KEY'))
 
 # Initialize clients
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 def get_client_data(client_id: str) -> Dict[str, Any]:
-    """Fetch all relevant data for a specific client."""
+    """Fetch all relevant data for a specific client with enhanced context."""
     try:
-        # Get themes
+        # Get themes with full context
         themes = supabase.table('stage4_themes').select('*').eq('client_id', client_id).execute()
         
-        # Get findings
+        # Get findings with enhanced data
         findings = supabase.table('stage3_findings').select('*').eq('client_id', client_id).execute()
         
-        # Get responses
+        # Get responses with metadata
         responses = supabase.table('stage1_data_responses').select('*').eq('client_id', client_id).execute()
         
         # Add debugging information
         if themes.data:
             st.sidebar.success(f"✅ Found {len(themes.data)} themes")
-            if themes.data:
-                st.sidebar.info(f"Theme columns: {list(themes.data[0].keys())}")
-        
         if findings.data:
             st.sidebar.success(f"✅ Found {len(findings.data)} findings")
-            if findings.data:
-                st.sidebar.info(f"Finding columns: {list(findings.data[0].keys())}")
-        
         if responses.data:
             st.sidebar.success(f"✅ Found {len(responses.data)} responses")
         
@@ -50,79 +48,195 @@ def get_client_data(client_id: str) -> Dict[str, Any]:
         st.error(f"Error fetching data: {e}")
         return {}
 
-def create_system_prompt(client_data: Dict[str, Any]) -> str:
-    """Create a system prompt with the client's data context and answer framework."""
-    themes_summary = "\n".join([
-        f"- {theme.get('theme_statement', 'N/A')} (Strength: {theme.get('theme_strength', 'N/A')})"
-        for theme in client_data.get('themes', [])
-    ])
+def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
+    """Create a best-in-class system prompt with comprehensive data context and citation requirements."""
     
-    findings_summary = "\n".join([
-        f"- {finding.get('finding_statement', 'N/A')}"
-        for finding in client_data.get('findings', [])
-    ])
+    # Build comprehensive themes summary
+    themes_summary = ""
+    for theme in client_data.get('themes', []):
+        theme_statement = theme.get('theme_statement', theme.get('theme_name', 'N/A'))
+        theme_strength = theme.get('theme_strength', theme.get('theme_confidence', 'N/A'))
+        supporting_findings = theme.get('supporting_finding_ids', theme.get('theme_findings', []))
+        companies_affected = theme.get('companies_affected', theme.get('theme_companies_affected', 1))
+        
+        themes_summary += f"**Theme: {theme_statement}**\n"
+        themes_summary += f"  - Strength: {theme_strength}\n"
+        themes_summary += f"  - Companies Affected: {companies_affected}\n"
+        themes_summary += f"  - Supporting Findings: {len(supporting_findings) if isinstance(supporting_findings, list) else 'N/A'}\n\n"
     
-    return f"""You are an AI assistant helping a client understand their customer interview data.
+    # Build comprehensive findings summary
+    findings_summary = ""
+    for finding in client_data.get('findings', []):
+        finding_statement = finding.get('finding_statement', 'N/A')
+        confidence = finding.get('enhanced_confidence', finding.get('confidence_score', 'N/A'))
+        impact = finding.get('impact_score', 'N/A')
+        companies = finding.get('companies_affected', 1)
+        primary_quote = finding.get('primary_quote', 'N/A')
+        interview_company = finding.get('interview_company', 'N/A')
+        priority_level = finding.get('priority_level', 'Standard Finding')
+        
+        findings_summary += f"**Finding: {finding_statement}**\n"
+        findings_summary += f"  - Confidence: {confidence}/10\n"
+        findings_summary += f"  - Impact Score: {impact}/5\n"
+        findings_summary += f"  - Priority: {priority_level}\n"
+        findings_summary += f"  - Companies: {companies}\n"
+        findings_summary += f"  - Source: {interview_company}\n"
+        if primary_quote and primary_quote != 'N/A':
+            findings_summary += f"  - Key Quote: \"{primary_quote[:100]}...\"\n"
+        findings_summary += "\n"
+    
+    # Build sample responses summary
+    responses_summary = ""
+    sample_responses = client_data.get('responses', [])[:3]  # Top 3 for context
+    for response in sample_responses:
+        verbatim = response.get('verbatim_response', 'N/A')
+        company = response.get('company_name', 'N/A')
+        interviewee = response.get('interviewee_name', 'N/A')
+        subject = response.get('subject', 'N/A')
+        
+        responses_summary += f"**Response from {company} ({interviewee}):**\n"
+        responses_summary += f"Subject: {subject}\n"
+        responses_summary += f"\"{verbatim[:150]}...\"\n\n"
+    
+    return f"""You are an expert B2B SaaS research analyst providing strategic insights from customer interview data. Your responses must be evidence-driven, precisely cited, and executive-ready.
 
-AVAILABLE DATA:
-Themes ({len(client_data.get('themes', []))}):
+## AVAILABLE DATA SOURCES
+
+### 📊 Synthesized Themes ({len(client_data.get('themes', []))}):
 {themes_summary}
 
-Key Findings ({len(client_data.get('findings', []))}):
+### 🔍 Key Findings ({len(client_data.get('findings', []))}):
 {findings_summary}
 
-Customer Responses: {len(client_data.get('responses', []))} total responses
+### 💬 Customer Responses ({len(client_data.get('responses', []))}):
+{responses_summary}
 
-INSTRUCTIONS:
-When answering, always follow this structure:
+## RESPONSE FRAMEWORK REQUIREMENTS
 
-1. **Summary/Direct Answer:** Start with a clear, concise summary that directly addresses the user's question.
-2. **Mentioned by:** List the companies/clients whose data supports the answer (e.g., “Mentioned by: Company A, Company B”).
-3. **Direct Quotes:** Provide 1–3 direct quotes or responses from the data, each attributed to the relevant company/client.
-4. **Relevant Theme/Finding:** Reference the theme or finding (by name or short description) that the answer is based on.
-5. **Actionable Suggestion (if appropriate):** Suggest a next step or insight.
+### 1. **Executive Summary (2-3 sentences)**
+- High-level answer with key metrics and confidence levels
+- Reference specific themes and findings by name
+- Include impact scores and company coverage
 
-**Formatting:**
-- Use bold for section headers (e.g., **Direct Quotes:**).
-- Use bullet points for lists.
-- Attribute each quote to the relevant company/client.
-- If no direct quotes are available, say so, but still provide a summary and theme reference.
+### 2. **Evidence-Based Insights**
+- **MUST** reference specific themes and findings by ID/name
+- Include confidence scores and impact metrics
+- Mention number of companies/respondents supporting each insight
+- Connect insights to broader business implications
 
-**Example:**
+### 3. **Direct Evidence with Full Attribution**
+- Provide 2-3 specific verbatim quotes from customer responses
+- **REQUIRED ATTRIBUTION**: Company name, interviewee name, context
+- Include confidence scores and impact metrics for each quote
+- Reference the specific finding or theme that supports each quote
 
-Q: What do people say about onboarding?
+### 4. **Strategic Context and Business Impact**
+- Connect insights to executive themes when relevant
+- Include performance metrics and competitive implications
+- Reference specific business outcomes and strategic implications
 
-A:
-Several clients expressed concerns about the onboarding process, particularly around training and initial setup.
+### 5. **Actionable Recommendations with Evidence**
+- Suggest specific next steps based on the data
+- Prioritize by impact score and confidence level
+- Reference supporting evidence for each recommendation
+- Include expected business impact and timeline
 
-**Mentioned by:**
-- Company Alpha
-- Company Beta
+## CITATION REQUIREMENTS
 
-**Direct Quotes:**
-- “The onboarding training was too generic for our needs.” — Company Alpha
-- “We struggled to get our team up to speed in the first month.” — Company Beta
+### For Every Claim:
+- **Theme Reference**: "Supported by Theme: [Theme Name] (Strength: X/10)"
+- **Finding Reference**: "Based on Finding: [Finding Statement] (Confidence: X/10)"
+- **Quote Attribution**: "Quote from [Company Name] - [Interviewee Name]"
+- **Impact Metrics**: "Impact Score: X/5, Companies Affected: Y"
 
-**Relevant Theme:**
-Onboarding process lacks customization and support.
+### For Every Quote:
+- **Full Attribution**: Company name, interviewee name, context
+- **Confidence Level**: Based on finding confidence score
+- **Business Context**: What this quote reveals about the business
 
-**Suggestion:**
-Consider offering tailored onboarding sessions for new clients.
+## FORMATTING STANDARDS
 
-Remember: This is their private customer interview data. Be helpful and insightful.""" 
+### Headers:
+- Use bold headers for each section
+- Include metrics and confidence scores in headers
 
-def chat_with_data(user_message: str, client_data: Dict[str, Any]) -> str:
-    """Send user message to OpenAI with client data context."""
+### Evidence Presentation:
+- Use bullet points for lists and evidence
+- Include confidence scores and impact metrics
+- Attribute all quotes to specific companies/interviewees
+- Reference specific themes and findings by name
+
+### Professional Language:
+- Executive-appropriate, neutral tone
+- Specific, actionable insights
+- Clear traceability to source data
+- Strategic business implications
+
+## EXAMPLE RESPONSE STRUCTURE:
+
+**Executive Summary:**
+[Clear, high-level answer with key metrics and confidence levels]
+
+**Key Insights:**
+• [Insight 1] - Supported by Theme: [Theme Name] (Strength: X/10), Confidence: Y/10
+• [Insight 2] - Based on Finding: [Finding Statement] (Confidence: X/10), Impact: Y/5
+
+**Direct Evidence:**
+• "[Specific quote]" — [Company Name], [Interviewee Name] (Confidence: X/10)
+• "[Specific quote]" — [Company Name], [Interviewee Name] (Confidence: X/10)
+
+**Strategic Implications:**
+[Connect to broader business impact and executive themes]
+
+**Recommended Actions:**
+1. [Action 1] - Priority: [High/Medium/Low], Impact: [High/Medium/Low], Evidence: [Theme/Finding Reference]
+2. [Action 2] - Priority: [High/Medium/Low], Impact: [High/Medium/Low], Evidence: [Theme/Finding Reference]
+
+## CRITICAL REQUIREMENTS:
+
+1. **EVERY** claim must be supported by specific data
+2. **EVERY** quote must have full attribution
+3. **EVERY** insight must reference confidence scores
+4. **EVERY** recommendation must cite supporting evidence
+5. **NO** generic statements without data backing
+6. **NO** unsourced quotes or claims
+7. **MUST** use exact theme and finding names from the data
+8. **MUST** include impact scores and confidence levels
+
+Remember: This is their private customer interview data. Provide insights that are both strategic and actionable, always backed by specific evidence from their data with full traceability to source materials."""
+
+def process_research_query(user_message: str, client_data: Dict[str, Any]) -> str:
+    """Process research queries with best-in-class evidence and citation requirements."""
+    
+    # Create comprehensive system prompt
+    system_prompt = create_best_in_class_system_prompt(client_data)
+    
+    # Enhanced user message with citation requirements
+    enhanced_user_message = f"""
+RESEARCH QUERY: {user_message}
+
+REQUIRED RESPONSE ELEMENTS:
+1. Executive summary with key metrics
+2. Evidence-based insights with specific theme/finding references
+3. Direct quotes with full attribution (company, interviewee, confidence)
+4. Strategic implications with business impact
+5. Actionable recommendations with supporting evidence
+
+CITATION REQUIREMENTS:
+- Reference specific themes and findings by name
+- Include confidence scores and impact metrics
+- Provide full attribution for all quotes
+- Connect insights to broader business implications
+"""
+    
     try:
-        system_prompt = create_system_prompt(client_data)
-        
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
+                {"role": "user", "content": enhanced_user_message}
             ],
-            max_tokens=1000,
+            max_tokens=2000,
             temperature=0.7
         )
         
@@ -131,8 +245,8 @@ def chat_with_data(user_message: str, client_data: Dict[str, Any]) -> str:
         return f"Error generating response: {e}"
 
 def show_data_summary(client_data: Dict[str, Any]):
-    """Display a summary of the client's data."""
-    col1, col2, col3 = st.columns(3)
+    """Display a comprehensive summary of the client's data."""
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.metric("Themes", len(client_data.get('themes', [])))
@@ -142,19 +256,30 @@ def show_data_summary(client_data: Dict[str, Any]):
     
     with col3:
         st.metric("Responses", len(client_data.get('responses', [])))
+    
+    with col4:
+        # Calculate average confidence
+        findings = client_data.get('findings', [])
+        if findings:
+            confidences = [f.get('enhanced_confidence', f.get('confidence_score', 0)) for f in findings if f.get('enhanced_confidence') or f.get('confidence_score')]
+            avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+            st.metric("Avg Confidence", f"{avg_confidence:.1f}/10")
 
 def show_themes_table(client_data: Dict[str, Any]):
-    """Display themes in a table format."""
+    """Display themes in a comprehensive table format."""
     if client_data.get('themes'):
         themes_df = pd.DataFrame(client_data['themes'])
-        st.subheader("Key Themes")
+        st.subheader("📊 Key Themes")
         
         # Check which columns are available and use them
         available_columns = []
         column_mapping = {
             'theme_statement': 'Theme Statement',
+            'theme_name': 'Theme Name',
             'theme_strength': 'Strength', 
-            'competitive_flag': 'Competitive'
+            'theme_confidence': 'Confidence',
+            'competitive_flag': 'Competitive',
+            'companies_affected': 'Companies Affected'
         }
         
         for col in column_mapping.keys():
@@ -177,27 +302,61 @@ def show_themes_table(client_data: Dict[str, Any]):
         else:
             st.warning("No displayable columns found in themes data.")
 
+def show_findings_table(client_data: Dict[str, Any]):
+    """Display findings in a comprehensive table format."""
+    if client_data.get('findings'):
+        findings_df = pd.DataFrame(client_data['findings'])
+        st.subheader("🔍 Key Findings")
+        
+        # Check which columns are available and use them
+        available_columns = []
+        column_mapping = {
+            'finding_statement': 'Finding Statement',
+            'confidence_score': 'Confidence Score',
+            'enhanced_confidence': 'Enhanced Confidence',
+            'impact_score': 'Impact Score',
+            'priority_level': 'Priority Level',
+            'interview_company': 'Company',
+            'companies_affected': 'Companies Affected'
+        }
+        
+        for col in column_mapping.keys():
+            if col in findings_df.columns:
+                available_columns.append(col)
+        
+        if available_columns:
+            display_df = findings_df[available_columns].head(10)
+            # Rename columns for display
+            display_df = display_df.rename(columns=column_mapping)
+            
+            st.dataframe(
+                display_df,
+                use_container_width=True
+            )
+        else:
+            st.warning("No displayable columns found in findings data.")
+
 def main():
     st.set_page_config(
-        page_title="Customer Insights Chat",
-        page_icon="💬",
+        page_title="Research-Grade Customer Insights",
+        page_icon="🔬",
         layout="wide"
     )
     
-    st.title("💬 Customer Insights Chat")
-    st.markdown("Ask questions about your customer interview data and get AI-powered insights.")
+    st.title("🔬 Research-Grade Customer Insights")
+    st.markdown("Ask questions about your customer interview data and get evidence-driven, executive-ready insights with full citations.")
     
     # Client ID input (in production, this would be authenticated)
     client_id = st.sidebar.text_input("Client ID", value="demo_client")
     
     if st.sidebar.button("Load Data"):
-        with st.spinner("Loading your data..."):
+        with st.spinner("Loading your research data..."):
             client_data = get_client_data(client_id)
             if client_data and (client_data.get('themes') or client_data.get('findings') or client_data.get('responses')):
                 st.session_state.client_data = client_data
-                st.success("Data loaded successfully!")
+                st.success("Research data loaded successfully!")
             else:
-                st.error(f"No data found for Client ID: {client_id}")
+                st.error(f"No research data found for Client ID: {client_id}")
                 st.info("💡 Try using 'demo_client' or check your Client ID.")
                 st.session_state.client_data = None
     
@@ -210,14 +369,14 @@ def main():
         show_data_summary(st.session_state.client_data)
         
         # Tabs for different views
-        tab1, tab2 = st.tabs(["💬 Chat", "📊 Data Overview"])
+        tab1, tab2, tab3 = st.tabs(["🔬 Research Chat", "📊 Data Overview", "📈 Insights Dashboard"])
         
         with tab1:
             # Chat input at the top
-            if prompt := st.chat_input("Ask about your customer insights..."):
+            if prompt := st.chat_input("Ask a research question about your customer insights..."):
                 st.session_state.messages.append({"role": "user", "content": prompt})
-                with st.spinner("Thinking..."):
-                    response = chat_with_data(prompt, st.session_state.client_data)
+                with st.spinner("Analyzing research data..."):
+                    response = process_research_query(prompt, st.session_state.client_data)
                 st.session_state.messages.append({"role": "assistant", "content": response})
             
             # Display chat messages in chronological order (oldest at the top)
@@ -226,39 +385,49 @@ def main():
                     st.markdown(message["content"])
         
         with tab2:
-            show_themes_table(st.session_state.client_data)
+            col1, col2 = st.columns(2)
             
-            # Show sample findings
-            if st.session_state.client_data.get('findings'):
-                st.subheader("Sample Findings")
-                findings_df = pd.DataFrame(st.session_state.client_data['findings'])
-                
-                # Check which columns are available for findings
-                findings_columns = []
-                findings_mapping = {
-                    'finding_statement': 'Finding Statement',
-                    'confidence_score': 'Confidence Score',
-                    'enhanced_confidence': 'Enhanced Confidence'
-                }
-                
-                for col in findings_mapping.keys():
-                    if col in findings_df.columns:
-                        findings_columns.append(col)
-                
-                if findings_columns:
-                    display_findings_df = findings_df[findings_columns].head(10)
-                    # Rename columns for display
-                    display_findings_df = display_findings_df.rename(columns=findings_mapping)
-                    
-                    st.dataframe(
-                        display_findings_df,
-                        use_container_width=True
-                    )
+            with col1:
+                show_themes_table(st.session_state.client_data)
+            
+            with col2:
+                show_findings_table(st.session_state.client_data)
+        
+        with tab3:
+            st.subheader("📈 Research Insights Dashboard")
+            
+            # Show high-confidence findings
+            findings = st.session_state.client_data.get('findings', [])
+            if findings:
+                high_confidence_findings = [f for f in findings if f.get('enhanced_confidence', f.get('confidence_score', 0)) >= 7.0]
+                if high_confidence_findings:
+                    st.success(f"🎯 {len(high_confidence_findings)} High-Confidence Findings (≥7.0/10)")
+                    for finding in high_confidence_findings[:3]:
+                        with st.expander(f"Confidence: {finding.get('enhanced_confidence', finding.get('confidence_score', 'N/A'))}/10 - {finding.get('finding_statement', 'N/A')[:100]}..."):
+                            st.write(f"**Statement:** {finding.get('finding_statement', 'N/A')}")
+                            st.write(f"**Company:** {finding.get('interview_company', 'N/A')}")
+                            st.write(f"**Impact Score:** {finding.get('impact_score', 'N/A')}/5")
+                            if finding.get('primary_quote'):
+                                st.write(f"**Key Quote:** \"{finding.get('primary_quote', 'N/A')}\"")
                 else:
-                    st.warning("No displayable columns found in findings data.")
+                    st.info("No high-confidence findings available.")
+            
+            # Show competitive themes
+            themes = st.session_state.client_data.get('themes', [])
+            if themes:
+                competitive_themes = [t for t in themes if t.get('competitive_flag', False)]
+                if competitive_themes:
+                    st.warning(f"⚔️ {len(competitive_themes)} Competitive Themes")
+                    for theme in competitive_themes[:3]:
+                        with st.expander(f"Competitive Theme: {theme.get('theme_statement', theme.get('theme_name', 'N/A'))[:100]}..."):
+                            st.write(f"**Statement:** {theme.get('theme_statement', theme.get('theme_name', 'N/A'))}")
+                            st.write(f"**Strength:** {theme.get('theme_strength', theme.get('theme_confidence', 'N/A'))}")
+                            st.write(f"**Companies Affected:** {theme.get('companies_affected', 'N/A')}")
+                else:
+                    st.info("No competitive themes identified.")
     
     else:
-        st.info("👈 Enter your Client ID in the sidebar and click 'Load Data' to get started.")
+        st.info("👈 Enter your Client ID in the sidebar and click 'Load Data' to start your research analysis.")
 
 if __name__ == "__main__":
     main() 

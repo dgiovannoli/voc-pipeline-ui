@@ -9,12 +9,18 @@ from metadata_stage1_processor import MetadataStage1Processor
 
 # Constants
 SUPABASE_AVAILABLE = True
+db = None
 
-try:
-    db = SupabaseDatabase()
-except Exception as e:
-    st.error(f"❌ Database connection failed: {e}")
-    SUPABASE_AVAILABLE = False
+def get_database():
+    """Get database connection with lazy loading"""
+    global db
+    if db is None:
+        try:
+            db = SupabaseDatabase()
+        except Exception as e:
+            st.error(f"❌ Database connection failed: {e}")
+            return None
+    return db
 
 
 
@@ -40,10 +46,13 @@ def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False
     try:
         processor = MetadataStage1Processor()
         
-        # Save uploaded file temporarily
+        # Use the stored dataframe directly (no mapping needed)
+        df = st.session_state.df_preview
+        
+        # Save the dataframe as CSV temporarily
         temp_csv_path = f"temp_metadata_{client_id}.csv"
-        with open(temp_csv_path, "wb") as f:
-            f.write(csv_file.getbuffer())
+        df.to_csv(temp_csv_path, index=False)
+        st.success(f"✅ Saved CSV to {temp_csv_path}")
         
         # Process the metadata CSV
         result = processor.process_metadata_csv(
@@ -94,6 +103,10 @@ def show_stage1_data_responses():
     
     if SUPABASE_AVAILABLE:
         try:
+            db = get_database()
+            if db is None:
+                st.error("❌ Database not available for step 1")
+                return
             df = db.get_stage1_data_responses(client_id=client_id)
             if df.empty:
                 st.info(f"📭 No Stage 1 data found for client: **{client_id}**")
@@ -117,6 +130,9 @@ def show_stage1_data_responses():
     
     # Main workflow section
     st.subheader("🚀 Process New Data")
+    
+    # Show processing status
+    st.success("✅ Ready to process your CSV!")
     
     # Collapsible help section
     with st.expander("📋 Required CSV Format", expanded=False):
@@ -145,10 +161,46 @@ def show_stage1_data_responses():
     )
     
     if uploaded_csv:
+        # CSV validation and debugging
+        st.subheader("🔍 CSV Validation")
+        
+        # Check file info
+        file_info = uploaded_csv.getvalue()
+        st.info(f"📁 File size: {len(file_info)} bytes")
+        
+        # Try to read CSV and show basic info
+        try:
+            df_preview = pd.read_csv(uploaded_csv)
+            st.success(f"✅ CSV read successfully")
+            st.info(f"📊 Rows: {len(df_preview)}")
+            st.info(f"📊 Columns: {len(df_preview.columns)}")
+            st.info(f"📊 Column names: {list(df_preview.columns)}")
+            
+            # Show first few rows
+            with st.expander("👀 First 3 rows", expanded=False):
+                st.dataframe(df_preview.head(3), use_container_width=True)
+                
+            # Store the dataframe in session state for reuse
+            st.session_state.df_preview = df_preview
+                
+        except Exception as e:
+            st.error(f"❌ Failed to read CSV: {e}")
+            st.stop()
+        
+        # Show CSV info and processing button
+        st.success("✅ CSV loaded successfully! Ready to process.")
+        st.info(f"📊 Found {len(st.session_state.df_preview)} rows with columns: {', '.join(st.session_state.df_preview.columns)}")
+        
+        # Add processing button
+        if st.button("🚀 Process CSV", type="primary"):
+            st.info("🔄 Processing your CSV...")
+            # The processing will happen in the next section
+        
         # Preview section
         with st.expander("📊 File Preview", expanded=True):
             try:
-                df_preview = pd.read_csv(uploaded_csv)
+                # Use the stored dataframe instead of reading again
+                df_preview = st.session_state.df_preview
                 st.info(f"📊 CSV contains {len(df_preview)} interviews")
                 
                 # Validate client match
@@ -232,6 +284,10 @@ def show_stage1_data_responses():
     # Existing data section (only show if there's data)
     if SUPABASE_AVAILABLE:
         try:
+            db = get_database()
+            if db is None:
+                st.error("❌ Database not available for step 1")
+                return
             df = db.get_stage1_data_responses(client_id=client_id)
             if not df.empty:
                 st.subheader("📊 Current Data")
