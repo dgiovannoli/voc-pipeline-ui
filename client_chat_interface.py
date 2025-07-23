@@ -72,17 +72,32 @@ def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
         impact = finding.get('impact_score', 'N/A')
         companies = finding.get('companies_affected', 1)
         primary_quote = finding.get('primary_quote', 'N/A')
+        secondary_quote = finding.get('secondary_quote', 'N/A')
         interview_company = finding.get('interview_company', 'N/A')
         priority_level = finding.get('priority_level', 'Standard Finding')
+        deal_status = finding.get('deal_status', 'N/A')
+        interviewee_name = finding.get('interviewee_name', 'N/A')
+        interview_date = finding.get('date', 'N/A')
+        finding_category = finding.get('finding_category', 'N/A')
+        credibility_tier = finding.get('credibility_tier', 'N/A')
+        evidence_strength = finding.get('evidence_strength', 'N/A')
         
         findings_summary += f"**Finding: {finding_statement}**\n"
         findings_summary += f"  - Confidence: {confidence}/10\n"
         findings_summary += f"  - Impact Score: {impact}/5\n"
         findings_summary += f"  - Priority: {priority_level}\n"
-        findings_summary += f"  - Companies: {companies}\n"
-        findings_summary += f"  - Source: {interview_company}\n"
+        findings_summary += f"  - Category: {finding_category}\n"
+        findings_summary += f"  - Credibility Tier: {credibility_tier}\n"
+        findings_summary += f"  - Evidence Strength: {evidence_strength}\n"
+        findings_summary += f"  - Companies Affected: {companies}\n"
+        findings_summary += f"  - Source Company: {interview_company}\n"
+        findings_summary += f"  - Interviewee: {interviewee_name}\n"
+        findings_summary += f"  - Deal Status: {deal_status}\n"
+        findings_summary += f"  - Interview Date: {interview_date}\n"
         if primary_quote and primary_quote != 'N/A':
-            findings_summary += f"  - Key Quote: \"{primary_quote[:100]}...\"\n"
+            findings_summary += f"  - Primary Quote: \"{primary_quote[:100]}...\"\n"
+        if secondary_quote and secondary_quote != 'N/A':
+            findings_summary += f"  - Secondary Quote: \"{secondary_quote[:100]}...\"\n"
         findings_summary += "\n"
     
     # Build sample responses summary
@@ -90,12 +105,20 @@ def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
     sample_responses = client_data.get('responses', [])[:3]  # Top 3 for context
     for response in sample_responses:
         verbatim = response.get('verbatim_response', 'N/A')
-        company = response.get('company_name', 'N/A')
+        company = response.get('company', response.get('company_name', 'N/A'))
         interviewee = response.get('interviewee_name', 'N/A')
         subject = response.get('subject', 'N/A')
+        deal_status = response.get('deal_status', 'N/A')
+        interview_date = response.get('interview_date', response.get('date_of_interview', 'N/A'))
+        industry = response.get('industry', 'N/A')
+        segment = response.get('segment', 'N/A')
         
         responses_summary += f"**Response from {company} ({interviewee}):**\n"
         responses_summary += f"Subject: {subject}\n"
+        responses_summary += f"Deal Status: {deal_status}\n"
+        responses_summary += f"Interview Date: {interview_date}\n"
+        responses_summary += f"Industry: {industry}\n"
+        responses_summary += f"Segment: {segment}\n"
         responses_summary += f"\"{verbatim[:150]}...\"\n\n"
     
     return f"""You are an expert B2B SaaS research analyst providing strategic insights from customer interview data. Your responses must be evidence-driven, precisely cited, and executive-ready.
