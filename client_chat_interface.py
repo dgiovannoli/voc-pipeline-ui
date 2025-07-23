@@ -25,11 +25,11 @@ def get_client_data(client_id: str) -> Dict[str, Any]:
         # Get themes with full context
         themes = supabase.table('stage4_themes').select('*').eq('client_id', client_id).execute()
         
-        # Get findings with enhanced data
-        findings = supabase.table('stage3_findings').select('*').eq('client_id', client_id).execute()
+        # Get findings with enhanced data - order by earliest date first
+        findings = supabase.table('stage3_findings').select('*').eq('client_id', client_id).order('date', desc=False).execute()
         
-        # Get responses with metadata
-        responses = supabase.table('stage1_data_responses').select('*').eq('client_id', client_id).execute()
+        # Get responses with metadata - order by earliest date first
+        responses = supabase.table('stage1_data_responses').select('*').eq('client_id', client_id).order('interview_date', desc=False).execute()
         
         # Add debugging information
         if themes.data:
@@ -48,6 +48,130 @@ def get_client_data(client_id: str) -> Dict[str, Any]:
         st.error(f"Error fetching data: {e}")
         return {}
 
+def select_diversified_responses(responses: List[Dict], max_samples: int = 5) -> List[Dict]:
+    """Select diversified sample responses prioritizing different companies and earliest dates."""
+    if not responses:
+        return []
+    
+    # Sort responses by date (earliest first)
+    sorted_responses = sorted(responses, key=lambda x: x.get('interview_date', x.get('date_of_interview', '9999-12-31')))
+    
+    # Group responses by company
+    company_groups = {}
+    for response in sorted_responses:
+        company = response.get('company', response.get('company_name', 'Unknown'))
+        if company not in company_groups:
+            company_groups[company] = []
+        company_groups[company].append(response)
+    
+    # Select diversified sample
+    selected_responses = []
+    companies_selected = set()
+    
+    # First pass: select earliest response from each company
+    for company, company_responses in company_groups.items():
+        if len(selected_responses) >= max_samples:
+            break
+        if company not in companies_selected:
+            # Take the earliest response from this company
+            earliest_response = min(company_responses, key=lambda x: x.get('interview_date', x.get('date_of_interview', '9999-12-31')))
+            selected_responses.append(earliest_response)
+            companies_selected.add(company)
+    
+    # Second pass: if we have room, add more responses from different companies
+    remaining_slots = max_samples - len(selected_responses)
+    if remaining_slots > 0:
+        for company, company_responses in company_groups.items():
+            if len(selected_responses) >= max_samples:
+                break
+            # Skip companies we already selected from
+            if company in companies_selected:
+                continue
+            # Take the earliest response from this company
+            earliest_response = min(company_responses, key=lambda x: x.get('interview_date', x.get('date_of_interview', '9999-12-31')))
+            selected_responses.append(earliest_response)
+            companies_selected.add(company)
+    
+    # If we still have room, add more responses from companies we haven't selected from yet
+    if len(selected_responses) < max_samples:
+        for company, company_responses in company_groups.items():
+            if len(selected_responses) >= max_samples:
+                break
+            # Get responses we haven't selected yet from this company
+            selected_company_responses = [r for r in selected_responses if r.get('company', r.get('company_name', '')) == company]
+            available_responses = [r for r in company_responses if r not in selected_company_responses]
+            if available_responses:
+                # Take the next earliest response
+                next_earliest = min(available_responses, key=lambda x: x.get('interview_date', x.get('date_of_interview', '9999-12-31')))
+                selected_responses.append(next_earliest)
+    
+    # Sort final selection by date (earliest first)
+    selected_responses.sort(key=lambda x: x.get('interview_date', x.get('date_of_interview', '9999-12-31')))
+    
+    return selected_responses
+
+def select_diversified_findings(findings: List[Dict], max_samples: int = 5) -> List[Dict]:
+    """Select diversified sample findings prioritizing different companies and earliest dates."""
+    if not findings:
+        return []
+    
+    # Sort findings by date (earliest first)
+    sorted_findings = sorted(findings, key=lambda x: x.get('date', '9999-12-31'))
+    
+    # Group findings by company
+    company_groups = {}
+    for finding in sorted_findings:
+        company = finding.get('interview_company', 'Unknown')
+        if company not in company_groups:
+            company_groups[company] = []
+        company_groups[company].append(finding)
+    
+    # Select diversified sample
+    selected_findings = []
+    companies_selected = set()
+    
+    # First pass: select earliest finding from each company
+    for company, company_findings in company_groups.items():
+        if len(selected_findings) >= max_samples:
+            break
+        if company not in companies_selected:
+            # Take the earliest finding from this company
+            earliest_finding = min(company_findings, key=lambda x: x.get('date', '9999-12-31'))
+            selected_findings.append(earliest_finding)
+            companies_selected.add(company)
+    
+    # Second pass: if we have room, add more findings from different companies
+    remaining_slots = max_samples - len(selected_findings)
+    if remaining_slots > 0:
+        for company, company_findings in company_groups.items():
+            if len(selected_findings) >= max_samples:
+                break
+            # Skip companies we already selected from
+            if company in companies_selected:
+                continue
+            # Take the earliest finding from this company
+            earliest_finding = min(company_findings, key=lambda x: x.get('date', '9999-12-31'))
+            selected_findings.append(earliest_finding)
+            companies_selected.add(company)
+    
+    # If we still have room, add more findings from companies we haven't selected from yet
+    if len(selected_findings) < max_samples:
+        for company, company_findings in company_groups.items():
+            if len(selected_findings) >= max_samples:
+                break
+            # Get findings we haven't selected yet from this company
+            selected_company_findings = [f for f in selected_findings if f.get('interview_company', '') == company]
+            available_findings = [f for f in company_findings if f not in selected_company_findings]
+            if available_findings:
+                # Take the next earliest finding
+                next_earliest = min(available_findings, key=lambda x: x.get('date', '9999-12-31'))
+                selected_findings.append(next_earliest)
+    
+    # Sort final selection by date (earliest first)
+    selected_findings.sort(key=lambda x: x.get('date', '9999-12-31'))
+    
+    return selected_findings
+
 def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
     """Create a best-in-class system prompt with comprehensive data context and citation requirements."""
     
@@ -64,9 +188,14 @@ def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
         themes_summary += f"  - Companies Affected: {companies_affected}\n"
         themes_summary += f"  - Supporting Findings: {len(supporting_findings) if isinstance(supporting_findings, list) else 'N/A'}\n\n"
     
-    # Build comprehensive findings summary
+    # Build comprehensive findings summary with diversification
     findings_summary = ""
-    for finding in client_data.get('findings', []):
+    all_findings = client_data.get('findings', [])
+    
+    # Select diversified findings (prioritize different companies and earliest dates)
+    sample_findings = select_diversified_findings(all_findings, max_samples=5)
+    
+    for finding in sample_findings:
         finding_statement = finding.get('finding_statement', 'N/A')
         confidence = finding.get('enhanced_confidence', finding.get('confidence_score', 'N/A'))
         impact = finding.get('impact_score', 'N/A')
@@ -100,9 +229,13 @@ def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
             findings_summary += f"  - Secondary Quote: \"{secondary_quote[:100]}...\"\n"
         findings_summary += "\n"
     
-    # Build sample responses summary
+    # Build sample responses summary with diversification
     responses_summary = ""
-    sample_responses = client_data.get('responses', [])[:3]  # Top 3 for context
+    all_responses = client_data.get('responses', [])
+    
+    # Select diversified sample responses (prioritize different companies and earliest dates)
+    sample_responses = select_diversified_responses(all_responses, max_samples=5)
+    
     for response in sample_responses:
         verbatim = response.get('verbatim_response', 'N/A')
         company = response.get('company', response.get('company_name', 'N/A'))
