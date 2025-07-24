@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class Stage4ThemeAnalyzer:
     """Stage 4 Theme Analyzer that wraps EnhancedThemeGeneratorScalable"""
     
-    def __init__(self, client_id: str = "Rev"):
+    def __init__(self, client_id: str):
         self.client_id = client_id
         self.generator = EnhancedThemeGeneratorScalable(client_id=client_id)
     
@@ -112,7 +112,7 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description='Stage 4 Theme Analyzer')
-    parser.add_argument('--client_id', type=str, default='Rev', help='Client ID to process')
+    parser.add_argument('--client_id', type=str, required=True, help='Client ID to process')
     
     args = parser.parse_args()
     

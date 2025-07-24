@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class EnhancedThemeGeneratorScalable:
-    def __init__(self, client_id: str = "Rev"):
+    def __init__(self, client_id: str):
         self.client_id = client_id
         self.supabase = SupabaseDatabase()
         
@@ -60,7 +60,7 @@ THEME TITLE REQUIREMENTS (CRITICAL - MUST FOLLOW EXACTLY):
 - NO generic titles like "efficiency declines", "quality issues", "user satisfaction"
 - MUST use specific terminology from findings (e.g., "speaker identification fails", "voice recognition errors")
 - Include specific context when available (e.g., "multi-party recordings")
-- Titles MUST be specific enough that Rev immediately understands the exact issue
+- Titles MUST be specific enough that the client immediately understands the exact issue
 - Highlight business impact or consequence using evidence from findings
 
 EXAMPLES OF GOOD TITLES (use this format):
@@ -621,7 +621,7 @@ CRITICAL: Generate themes that follow this exact format and specificity level. N
         return real_patterns
     
     def _get_findings_json(self) -> str:
-        """Convert findings to JSON format for LLM processing with proper validation and Rev-specific prioritization"""
+        """Convert findings to JSON format for LLM processing with proper validation and client-specific prioritization"""
         try:
             # Get findings from database
             findings = self.supabase.get_stage3_findings_list(self.client_id)
@@ -642,8 +642,8 @@ CRITICAL: Generate themes that follow this exact format and specificity level. N
             # Filter and prioritize findings based on classification
             prioritized_findings = []
             
-            # First, prioritize Rev-specific findings
-            rev_specific_findings = []
+            # First, prioritize client-specific findings
+            client_specific_findings = []
             market_trend_findings = []
             unclassified_findings = []
             
@@ -651,19 +651,19 @@ CRITICAL: Generate themes that follow this exact format and specificity level. N
                 classification = finding['classification'].strip() if pd.notna(finding['classification']) else ''
                 
                 if f"{self.client_id}-specific".lower() in classification.lower():
-                    rev_specific_findings.append(finding)
+                    client_specific_findings.append(finding)
                 elif "market trend" in classification.lower():
                     market_trend_findings.append(finding)
                 else:
                     unclassified_findings.append(finding)
             
             logger.info(f"📊 Classification breakdown:")
-            logger.info(f"   {self.client_id}-specific findings: {len(rev_specific_findings)}")
+            logger.info(f"   {self.client_id}-specific findings: {len(client_specific_findings)}")
             logger.info(f"   Market trend findings: {len(market_trend_findings)}")
             logger.info(f"   Unclassified findings: {len(unclassified_findings)}")
             
-            # Prioritize Rev-specific findings first, then market trends, then unclassified
-            prioritized_findings.extend(rev_specific_findings)
+            # Prioritize client-specific findings first, then market trends, then unclassified
+            prioritized_findings.extend(client_specific_findings)
             prioritized_findings.extend(market_trend_findings)
             prioritized_findings.extend(unclassified_findings)
             
@@ -1418,7 +1418,10 @@ def main():
     """Main function to run comprehensive Stage 4 theme analysis"""
     import sys
     
-    client_id = sys.argv[1] if len(sys.argv) > 1 else "Rev"
+    if len(sys.argv) < 2:
+        print("Usage: python stage4_theme_generator.py <client_id>")
+        sys.exit(1)
+    client_id = sys.argv[1]
     
     analyzer = EnhancedThemeGeneratorScalable(client_id=client_id)
     success = analyzer.process_themes()

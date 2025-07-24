@@ -15,7 +15,7 @@ def main():
     
     # Initialize analyzer
     try:
-        analyzer = ResearchDrivenStage4Analyzer(client_id="Rev")
+        analyzer = ResearchDrivenStage4Analyzer(client_id="Supio")
         print("✅ Analyzer initialized successfully")
     except Exception as e:
         print(f"❌ Error initializing analyzer: {e}")
