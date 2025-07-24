@@ -369,15 +369,15 @@ def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
 
 Remember: This is their private customer interview data. Provide insights that are both strategic and actionable, always backed by specific evidence from their data with full traceability to source materials."""
 
-def process_research_query(user_message: str, client_data: Dict[str, Any]) -> str:
+def process_research_query(user_message: str, client_data: Dict[str, Any], client_id: str = None) -> str:
     """Process research queries with RAG-enhanced context and best-in-class evidence requirements."""
     
     # Use RAG search to get relevant context if available
     rag_context = ""
-    if RAG_AVAILABLE:
+    if RAG_AVAILABLE and client_id:
         try:
             # Get relevant context from Pinecone
-            relevant_records = pinecone_rag_search(user_message, top_k=5)
+            relevant_records = pinecone_rag_search(user_message, client_id, top_k=5)
             if relevant_records:
                 rag_context = build_rag_context(relevant_records)
                 st.sidebar.success(f"🔍 RAG: Found {len(relevant_records)} relevant records")
@@ -567,7 +567,7 @@ def main():
             if prompt := st.chat_input("Ask a research question about your customer insights..."):
                 st.session_state.messages.append({"role": "user", "content": prompt})
                 with st.spinner("Analyzing research data..."):
-                    response = process_research_query(prompt, st.session_state.client_data)
+                    response = process_research_query(prompt, st.session_state.client_data, client_id)
                 st.session_state.messages.append({"role": "assistant", "content": response})
             
             # Display chat messages in chronological order (oldest at the top)
