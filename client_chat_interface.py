@@ -10,6 +10,14 @@ from dotenv import load_dotenv
 # Load environment variables from .env file (fallback)
 load_dotenv()
 
+# Import RAG search utilities
+try:
+    from rag_search import pinecone_rag_search, build_rag_context
+    RAG_AVAILABLE = True
+except ImportError:
+    RAG_AVAILABLE = False
+    st.warning("RAG search utilities not available. Using standard search.")
+
 # Configuration - Use Streamlit secrets if available, otherwise fall back to environment variables
 SUPABASE_URL = st.secrets.get("SUPABASE_URL", os.getenv('SUPABASE_URL'))
 SUPABASE_KEY = st.secrets.get("SUPABASE_ANON_KEY", os.getenv('SUPABASE_ANON_KEY'))
@@ -362,14 +370,32 @@ def create_best_in_class_system_prompt(client_data: Dict[str, Any]) -> str:
 Remember: This is their private customer interview data. Provide insights that are both strategic and actionable, always backed by specific evidence from their data with full traceability to source materials."""
 
 def process_research_query(user_message: str, client_data: Dict[str, Any]) -> str:
-    """Process research queries with best-in-class evidence and citation requirements."""
+    """Process research queries with RAG-enhanced context and best-in-class evidence requirements."""
+    
+    # Use RAG search to get relevant context if available
+    rag_context = ""
+    if RAG_AVAILABLE:
+        try:
+            # Get relevant context from Pinecone
+            relevant_records = pinecone_rag_search(user_message, top_k=5)
+            if relevant_records:
+                rag_context = build_rag_context(relevant_records)
+                st.sidebar.success(f"🔍 RAG: Found {len(relevant_records)} relevant records")
+            else:
+                st.sidebar.info("🔍 RAG: No relevant records found, using standard context")
+        except Exception as e:
+            st.sidebar.warning(f"🔍 RAG search failed: {str(e)[:50]}...")
+            rag_context = ""
     
     # Create comprehensive system prompt
     system_prompt = create_best_in_class_system_prompt(client_data)
     
-    # Enhanced user message with citation requirements
+    # Enhanced user message with RAG context and citation requirements
     enhanced_user_message = f"""
 RESEARCH QUERY: {user_message}
+
+{'RAG-ENHANCED CONTEXT:' if rag_context else ''}
+{rag_context}
 
 REQUIRED RESPONSE ELEMENTS:
 1. Executive summary with key metrics
@@ -383,6 +409,7 @@ CITATION REQUIREMENTS:
 - Include confidence scores and impact metrics
 - Provide full attribution for all quotes
 - Connect insights to broader business implications
+- If RAG context is provided, prioritize and reference that information
 """
     
     try:
@@ -501,6 +528,14 @@ def main():
     
     st.title("🔬 Research-Grade Customer Insights")
     st.markdown("Ask questions about your customer interview data and get evidence-driven, executive-ready insights with full citations.")
+    
+    # Show RAG status
+    if RAG_AVAILABLE:
+        st.sidebar.success("🔍 RAG Search: Enabled")
+        st.sidebar.info("Enhanced search with semantic similarity")
+    else:
+        st.sidebar.warning("🔍 RAG Search: Disabled")
+        st.sidebar.info("Using standard search")
     
     # Client ID input (in production, this would be authenticated)
     client_id = st.sidebar.text_input("Client ID", value="demo_client")
