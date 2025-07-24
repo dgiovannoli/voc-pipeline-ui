@@ -1,14 +1,14 @@
 
 # ENHANCED COMPETITIVE INTELLIGENCE RESEARCH PROMPT
-## Comprehensive Market Analysis for Legal Transcription Industry
+## Comprehensive Market Analysis for [CLIENT_NAME] Industry
 
 ### CONTEXT
-Based on integrated Voice of Customer (VOC) insights and market research, conduct a comprehensive competitive intelligence analysis for Rev in the legal transcription market.
+Based on integrated Voice of Customer (VOC) insights and market research, conduct a comprehensive competitive intelligence analysis for [CLIENT_NAME] in the [INDUSTRY] market.
 
 ### VOC INSIGHTS SUMMARY
-- Customer Satisfaction: Market challenger with strong customer satisfaction
-- Key Differentiators: Superior customer experience, Advanced AI technology
-- Areas for Improvement: Market awareness, Pricing strategy
+- Customer Satisfaction: [SATISFACTION_LEVEL] with [KEY_DIFFERENTIATORS]
+- Key Differentiators: [PRIMARY_DIFFERENTIATORS]
+- Areas for Improvement: [IMPROVEMENT_AREAS]
 
 ### RESEARCH OBJECTIVES
 1. **Market Landscape Analysis**
@@ -27,7 +27,7 @@ Based on integrated Voice of Customer (VOC) insights and market research, conduc
    - Feature preferences and requirements
 
 4. **Technology Trends**
-   - AI/ML adoption in legal transcription
+   - AI/ML adoption in [INDUSTRY]
    - Integration and workflow optimization trends
    - Innovation opportunities and threats
 
@@ -39,9 +39,9 @@ Based on integrated Voice of Customer (VOC) insights and market research, conduc
 ### SPECIFIC RESEARCH QUESTIONS
 
 #### Market Analysis
-- What is the current size and growth rate of the legal transcription market?
+- What is the current size and growth rate of the [INDUSTRY] market?
 - What are the key drivers of market growth and adoption?
-- How is the market segmented (by firm size, geography, use case)?
+- How is the market segmented (by company size, geography, use case)?
 
 #### Competitive Analysis
 - Who are the primary competitors and what are their market positions?
@@ -50,13 +50,13 @@ Based on integrated Voice of Customer (VOC) insights and market research, conduc
 - What are the strengths and weaknesses of each major competitor?
 
 #### Customer Insights
-- What are the primary decision criteria for legal transcription solutions?
+- What are the primary decision criteria for [INDUSTRY] solutions?
 - How do customers evaluate and compare different solutions?
 - What are the pain points and unmet needs in the market?
-- How do customer preferences vary by firm size and practice area?
+- How do customer preferences vary by company size and industry segment?
 
 #### Technology Assessment
-- What are the emerging technology trends in legal transcription?
+- What are the emerging technology trends in [INDUSTRY]?
 - How is AI/ML being adopted and what are the implications?
 - What integration and workflow capabilities are most valued?
 - What are the innovation opportunities and competitive threats?

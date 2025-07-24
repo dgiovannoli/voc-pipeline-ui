@@ -70,7 +70,7 @@ class EnhancedCompetitiveIntelligenceIntegration:
             Integrated competitive intelligence analysis
         """
         try:
-            # Get VOC pipeline data
+            # Get VOC pipeline data for the specific client
             voc_insights = self._get_voc_competitive_insights()
             
             # Parse external report (placeholder for PDF parsing)
@@ -94,28 +94,39 @@ class EnhancedCompetitiveIntelligenceIntegration:
             return {}
     
     def _get_voc_competitive_insights(self) -> Dict[str, Any]:
-        """Extract competitive insights from VOC pipeline data"""
+        """Extract competitive insights from VOC pipeline data for the specific client"""
         try:
-            # Get Stage 2 response labeling data
+            # Get Stage 2 response labeling data for the specific client
             stage2_data = self.db.get_stage2_response_labeling(self.client_id)
             
-            # Get themes and findings
-            themes = self.db.get_stage4_themes(self.client_id)
+            # Get themes for the specific client
+            themes = self.db.get_themes(self.client_id)
+            
+            # Get findings for the specific client
             findings = self.db.get_stage3_findings(self.client_id)
             
-            competitive_insights = {
-                "competitor_mentions": self._extract_competitor_mentions(stage2_data),
-                "pricing_insights": self._extract_pricing_insights(stage2_data),
-                "feature_comparisons": self._extract_feature_comparisons(stage2_data),
-                "decision_factors": self._extract_decision_factors(stage2_data),
-                "satisfaction_metrics": self._calculate_satisfaction_metrics(stage2_data),
-                "competitive_themes": self._extract_competitive_themes(themes)
+            # Extract competitive insights
+            competitor_mentions = self._extract_competitor_mentions(stage2_data)
+            pricing_insights = self._extract_pricing_insights(stage2_data)
+            feature_comparisons = self._extract_feature_comparisons(stage2_data)
+            decision_factors = self._extract_decision_factors(stage2_data)
+            satisfaction_metrics = self._calculate_satisfaction_metrics(stage2_data)
+            competitive_themes = self._extract_competitive_themes(themes)
+            
+            return {
+                "competitor_mentions": competitor_mentions,
+                "pricing_insights": pricing_insights,
+                "feature_comparisons": feature_comparisons,
+                "decision_factors": decision_factors,
+                "satisfaction_metrics": satisfaction_metrics,
+                "competitive_themes": competitive_themes,
+                "total_quotes": len(stage2_data) if not stage2_data.empty else 0,
+                "total_themes": len(themes) if not themes.empty else 0,
+                "total_findings": len(findings) if not findings.empty else 0
             }
             
-            return competitive_insights
-            
         except Exception as e:
-            st.error(f"Error getting VOC insights: {e}")
+            st.error(f"Error extracting VOC insights for {self.client_id}: {e}")
             return {}
     
     def _parse_external_report(self, report_path: str) -> Dict[str, Any]:

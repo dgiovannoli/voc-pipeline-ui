@@ -13,7 +13,7 @@ from official_scripts.enhanced_theme_story_scorecard import EnhancedThemeStorySc
 from official_scripts.core_analytics.interview_weighted_base import InterviewWeightedBase
 from official_scripts.database.supabase_database import SupabaseDatabase
 
-def generate_enhanced_analyst_toolkit(client_id='Rev'):
+def generate_enhanced_analyst_toolkit(client_id):
     """Generate simplified analyst toolkit with draft report and curated quotes"""
     
     print(f"🎯 Generating Simplified Analyst Toolkit for {client_id}")
