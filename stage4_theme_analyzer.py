@@ -16,7 +16,6 @@ class Stage4ThemeAnalyzer:
     """Stage 4 Theme Analyzer that wraps EnhancedThemeGeneratorScalable"""
     
     def __init__(self, client_id: str):
-        print(f"🔍 DEBUG: Stage4ThemeAnalyzer initialized with client_id={client_id}")
         self.client_id = client_id
         self.generator = EnhancedThemeGeneratorScalable(client_id=client_id)
     
