@@ -35,6 +35,9 @@ def get_client_id():
 def run_stage4_analysis():
     """Run Stage 4 theme analysis with JSON-based process"""
     try:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         from stage4_theme_analyzer import Stage4ThemeAnalyzer
         client_id = get_client_id()
         
