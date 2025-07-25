@@ -106,194 +106,92 @@ def get_stage4_summary():
         }
 
 def show_stage4_themes():
-    """Display Stage 4 themes and strategic alerts analysis"""
-    st.subheader("🎯 Stage 4: Theme & Strategic Alert Generation")
-    
-    # Get summary
-    summary = get_stage4_summary()
-    
-    # Summary metrics
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Total Themes", summary.get('total_themes', 0))
-    
-    with col2:
-        st.metric("Strategic Alerts", summary.get('total_strategic_alerts', 0))
-    
-    with col3:
-        st.metric("Competitive", summary.get('competitive_themes', 0))
-    
-    with col4:
-        st.metric("Companies", summary.get('companies_covered', 0))
-    
-    # Run analysis button
-    if st.button("🔄 Run Stage 4 Analysis", type="primary"):
-        run_stage4_analysis()
-    
-    # Show current themes status
-    themes_summary = get_stage4_summary()
-    total_items = themes_summary.get('total_themes', 0) + themes_summary.get('total_strategic_alerts', 0)
-    
-    if total_items > 0:
-        st.success(f"✅ Generated {themes_summary.get('total_themes', 0)} themes and {themes_summary.get('total_strategic_alerts', 0)} strategic alerts")
-        # CTA button to go to Stage 5
-        if st.button("📈 Continue to Stage 5: Executive Summary", type="primary"):
-            st.session_state.current_step = 5
-            st.rerun()
-    else:
-        st.info("📊 No themes or strategic alerts available yet. Run the analysis to generate them.")
-    
-    # Get themes data
-    client_id = get_client_id()
-    themes_df = db.get_themes(client_id=client_id)
-    
-    # Display themes and alerts in a table
-    if not themes_df.empty:
-        # Create display dataframe with proper field mapping
-        display_data = []
-        for _, row in themes_df.iterrows():
-            if row['theme_type'] == 'strategic_alert':
-                # Use alert fields for strategic alerts
-                display_data.append({
-                    'Type': 'Strategic Alert',
-                    'Title': row.get('alert_title', 'No title'),
-                    'Statement': row.get('alert_statement', 'No description'),
-                    'Classification': row.get('alert_classification', 'No classification'),
-                    'Deal Context': 'N/A',  # Alerts don't have deal context
-                    'Competitive': 'No',  # Alerts are not competitive
-                    'Primary Quote': row.get('primary_alert_quote', 'No quote'),
-                    'Strategic Implications': row.get('strategic_implications', 'No implications'),
-                    'Supporting Findings': row.get('supporting_alert_finding_ids', 'No findings'),
-                    'Companies': row.get('alert_company_ids', 'No companies'),
-                    'Created': row.get('created_at', 'Unknown')
-                })
-            else:
-                # Use theme fields for themes
-                display_data.append({
-                    'Type': 'Theme',
-                    'Title': row.get('theme_title', 'No title'),
-                    'Statement': row.get('theme_statement', 'No description'),
-                    'Classification': row.get('classification', 'No classification'),
-                    'Deal Context': row.get('deal_context', 'No context'),
-                    'Competitive': 'Yes' if row.get('competitive_flag') else 'No',
-                    'Primary Quote': row.get('primary_quote', 'No quote'),
-                    'Strategic Implications': row.get('metadata_insights', 'No insights'),
-                    'Supporting Findings': row.get('supporting_finding_ids', 'No findings'),
-                    'Companies': row.get('company_ids', 'No companies'),
-                    'Created': row.get('created_at', 'Unknown')
-                })
+    """Display Stage 4 themes and strategic alerts"""
+    try:
+        client_id = get_client_id()
+        db = SupabaseDatabase()
         
-        display_df = pd.DataFrame(display_data)
+        # Get themes and strategic alerts
+        themes_data = db.get_themes(client_id=client_id)
         
-        # Display the table
-        st.dataframe(
-            display_df,
-            use_container_width=True,
-            hide_index=True
-        )
-    
-    # Show detailed theme and strategic alert information in expandable sections
-    if not themes_df.empty:
-        st.markdown("---")
-        st.subheader("🔍 Detailed Theme & Strategic Alert Information")
+        if themes_data.empty:
+            st.info("📊 No themes or strategic alerts found for this client.")
+            return
         
-        for idx, item in themes_df.iterrows():
-            item_type = item.get('theme_type', 'theme')
+        # Separate themes and strategic alerts
+        themes = themes_data[themes_data['theme_type'] == 'theme']
+        strategic_alerts = themes_data[themes_data['theme_type'] == 'strategic_alert']
+        
+        # Display themes
+        if not themes.empty:
+            st.subheader("🎯 Strategic Themes")
+            for _, theme in themes.iterrows():
+                with st.expander(f"**{theme['theme_statement']}**"):
+                    st.write(f"**Theme Statement:** {theme['theme_statement']}")
+                    st.write(f"**Strategic Impact:** {theme['strategic_impact']}")
+                    st.write(f"**Evidence Count:** {theme['evidence_count']}")
+                    st.write(f"**Competitive Flag:** {'Yes' if theme['competitive_flag'] else 'No'}")
+                    if theme['company_ids']:
+                        st.write(f"**Companies:** {theme['company_ids']}")
+                    if theme['verbatim_quotes']:
+                        st.write(f"**Key Quotes:** {theme['verbatim_quotes']}")
+        
+        # Display strategic alerts
+        if not strategic_alerts.empty:
+            st.subheader("🚨 Strategic Alerts")
+            for _, alert in strategic_alerts.iterrows():
+                with st.expander(f"**{alert['theme_statement']}**"):
+                    st.write(f"**Alert Statement:** {alert['theme_statement']}")
+                    st.write(f"**Strategic Impact:** {alert['strategic_impact']}")
+                    st.write(f"**Evidence Count:** {alert['evidence_count']}")
+                    st.write(f"**Competitive Flag:** {'Yes' if alert['competitive_flag'] else 'No'}")
+                    if alert['company_ids']:
+                        st.write(f"**Companies:** {alert['company_ids']}")
+                    if alert['verbatim_quotes']:
+                        st.write(f"**Key Quotes:** {alert['verbatim_quotes']}")
+        
+        # Display summary statistics
+        summary = get_stage4_summary()
+        st.subheader("📊 Summary Statistics")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Themes", summary['total_themes'])
+        with col2:
+            st.metric("Strategic Alerts", summary['total_strategic_alerts'])
+        with col3:
+            st.metric("Competitive Themes", summary['competitive_themes'])
+        with col4:
+            st.metric("Companies Covered", summary['companies_covered'])
             
-            # Handle None values safely
-            if item_type == 'strategic_alert':
-                title = item.get('alert_title', 'No title')
-                statement = item.get('alert_statement', 'No description')
-                classification = item.get('alert_classification', 'No classification')
-                implications = item.get('strategic_implications', 'No implications')
-                primary_quote = item.get('primary_alert_quote', 'No quote')
-                secondary_quote = item.get('secondary_alert_quote', 'No quote')
-                supporting_findings = item.get('supporting_alert_finding_ids', 'No findings')
-                companies = item.get('alert_company_ids', 'No companies')
-            else:
-                title = item.get('theme_title', 'No title')
-                statement = item.get('theme_statement', 'No description')
-                classification = item.get('classification', 'No classification')
-                implications = item.get('metadata_insights', 'No insights')
-                primary_quote = item.get('primary_quote', 'No quote')
-                secondary_quote = item.get('secondary_quote', 'No quote')
-                supporting_findings = item.get('supporting_finding_ids', 'No findings')
-                companies = item.get('company_ids', 'No companies')
-            
-            if title is None:
-                title = 'No title'
-            if statement is None:
-                statement = 'No description'
-            
-            # Create safe display title
-            display_title = title[:50] + "..." if len(str(title)) > 50 else str(title)
-            
-            with st.expander(f"{item_type.title()} {idx + 1}: {display_title}"):
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.write(f"**Type:** {item_type.title()}")
-                    st.write(f"**Title:** {title}")
-                    st.write(f"**Statement:** {statement}")
-                    st.write(f"**Classification:** {classification}")
-                    if item_type == 'theme':
-                        st.write(f"**Deal Context:** {item.get('deal_context', 'No context')}")
-                        st.write(f"**Competitive:** {'Yes' if item.get('competitive_flag') else 'No'}")
-                    else:
-                        st.write(f"**Strategic Implications:** {implications}")
-                
-                with col2:
-                    st.write(f"**Companies:** {companies}")
-                    st.write(f"**Supporting Findings:** {supporting_findings}")
-                    st.write(f"**Primary Quote:** {primary_quote}")
-                    st.write(f"**Secondary Quote:** {secondary_quote}")
-                    st.write(f"**Created:** {item.get('created_at', 'Unknown')}")
-                
-                # Show quotes if available
-                if primary_quote or secondary_quote:
-                    st.markdown("---")
-                    st.subheader("📝 Supporting Quotes")
-                    
-                    if primary_quote:
-                        st.write("**Primary Quote:**")
-                        st.write(f"*{primary_quote}*")
-                    
-                    if secondary_quote:
-                        st.write("**Secondary Quote:**")
-                        st.write(f"*{secondary_quote}*")
-                
-                # Show strategic implications for strategic alerts
-                if item_type == 'strategic_alert':
-                    if implications and implications != 'No implications':
-                        st.markdown("---")
-                        st.subheader("⚠️ Strategic Implications")
-                        st.write(implications) 
+    except Exception as e:
+        st.error(f"Failed to display Stage 4 themes: {e}")
 
-# Main entry point for Streamlit
-if __name__ == "__main__":
-    st.set_page_config(
-        page_title="Stage 4: Theme & Strategic Alert Generation",
-        page_icon="🎯",
-        layout="wide"
-    )
+def main():
+    """Main Stage 4 UI"""
+    st.header("🎯 Stage 4: Strategic Theme Generation")
     
-    st.title("🎯 Stage 4: Theme & Strategic Alert Generation")
-    st.markdown("---")
+    if not SUPABASE_AVAILABLE:
+        st.error("❌ Cannot connect to database. Please check your configuration.")
+        return
     
-    # Add client ID input in sidebar
-    with st.sidebar:
-        st.header("🔧 Configuration")
-        client_id = st.text_input(
-            "Client ID",
-            value=st.session_state.get('client_id', ''),
-            help="Enter your client ID to filter data"
-        )
-        if client_id:
-            st.session_state.client_id = client_id
-            st.success(f"✅ Client ID set to: {client_id}")
+    # Client ID validation
+    client_id = get_client_id()
+    
+    # Stage 4 Analysis Section
+    st.subheader("🔄 Run Stage 4 Analysis")
+    st.write("Generate strategic themes and alerts from Stage 3 findings.")
+    
+    if st.button("🚀 Run Stage 4 Analysis", type="primary"):
+        result = run_stage4_analysis()
+        if result:
+            st.success("✅ Stage 4 analysis completed!")
         else:
-            st.warning("⚠️ Please enter a Client ID")
+            st.error("❌ Stage 4 analysis failed. Check the logs for details.")
     
-    # Show the main content
-    show_stage4_themes() 
+    # Display existing themes
+    st.subheader("📊 Current Themes & Alerts")
+    show_stage4_themes()
+
+if __name__ == "__main__":
+    main() 
