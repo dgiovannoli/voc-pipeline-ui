@@ -109,7 +109,7 @@ def generate_simplified_toolkit(scorecard, client_id, interview_metrics):
     
     # Strategic overview
     report_lines.append("🎯 STRATEGIC OVERVIEW:")
-    report_lines.append(f"Rev demonstrates {overall_satisfaction:.1f}% customer satisfaction across {len(high_weight_criteria)} key performance areas, ")
+    report_lines.append(f"{client_id} demonstrates {overall_satisfaction:.1f}% customer satisfaction across {len(high_weight_criteria)} key performance areas, ")
     report_lines.append(f"serving {interview_metrics.get('total_customers', 0)} clients with {interview_metrics['total_quotes']} customer insights.")
     report_lines.append("")
     
@@ -121,7 +121,7 @@ def generate_simplified_toolkit(scorecard, client_id, interview_metrics):
     
     # Customer voice synthesis - strategic insights
     report_lines.append("🎯 CUSTOMER VOICE SYNTHESIS:")
-    report_lines.append("What Rev customers are actually saying:")
+    report_lines.append(f"What {client_id} customers are actually saying:")
     report_lines.append("")
     
     # Get representative quotes for synthesis
@@ -139,7 +139,7 @@ def generate_simplified_toolkit(scorecard, client_id, interview_metrics):
     
     # Show improvement opportunities from themes
     report_lines.append("⚠️ IMPROVEMENT OPPORTUNITIES:")
-    report_lines.append("Customers want Rev to address:")
+    report_lines.append(f"Customers want {client_id} to address:")
     report_lines.append("• Pricing transparency and small firm affordability")
     report_lines.append("• Integration with legal software platforms (Clio, MyCase)")
     report_lines.append("• Feature discovery and user onboarding")
@@ -148,7 +148,7 @@ def generate_simplified_toolkit(scorecard, client_id, interview_metrics):
     
     # Strategic insights
     report_lines.append("🔍 STRATEGIC INSIGHTS:")
-    report_lines.append("1. Rev's speed advantage over traditional court reporters is a major differentiator")
+    report_lines.append(f"1. {client_id}'s speed advantage over traditional court reporters is a major differentiator")
     report_lines.append("2. Small law firms are price-sensitive and need transparent pricing models")
     report_lines.append("3. Integration with existing legal workflows is a key adoption driver")
     report_lines.append("")
@@ -237,7 +237,7 @@ def generate_simplified_toolkit(scorecard, client_id, interview_metrics):
             
             # Competitive benchmark (generated from customer feedback)
             report_lines.append("COMPETITIVE BENCHMARK:")
-            competitive_benchmark = generate_competitive_benchmark(framework['title'], all_themes, theme_evidence)
+            competitive_benchmark = generate_competitive_benchmark(framework['title'], all_themes, theme_evidence, client_id)
             report_lines.append(competitive_benchmark)
             report_lines.append("")
             
@@ -484,13 +484,13 @@ def generate_simplified_toolkit(scorecard, client_id, interview_metrics):
             report_lines.append("• Main Competitors: [List 2-3 key competitors in this area]")
             report_lines.append("• Competitor A: [Name] - [Key differentiators, pricing, satisfaction rates]")
             report_lines.append("• Competitor B: [Name] - [Key differentiators, pricing, satisfaction rates]")
-            report_lines.append("• Market Position: [Where does Rev stand vs competitors?]")
+            report_lines.append(f"• Market Position: [Where does {client_id} stand vs competitors?]")
             report_lines.append("")
             report_lines.append("COMPETITIVE BENCHMARKING:")
-            report_lines.append(f"• Rev Performance: {criterion_satisfaction:.1f}% customer satisfaction")
+            report_lines.append(f"• {client_id} Performance: {criterion_satisfaction:.1f}% customer satisfaction")
             report_lines.append("• Competitor A Performance: [RESEARCH NEEDED]")
             report_lines.append("• Competitor B Performance: [RESEARCH NEEDED]")
-            report_lines.append("• Competitive Advantage: [What does Rev do better?]")
+            report_lines.append(f"• Competitive Advantage: [What does {client_id} do better?]")
             report_lines.append("• Competitive Threat: [What do competitors do better?]")
             report_lines.append("")
             
@@ -499,7 +499,7 @@ def generate_simplified_toolkit(scorecard, client_id, interview_metrics):
             report_lines.append("[ANALYST TO COMPLETE FOR PRESENTATION]:")
             report_lines.append("")
             report_lines.append("ONE-SENTENCE SUMMARY:")
-            report_lines.append(f"Rev customers are {criterion_satisfaction:.1f}% satisfied with {framework['title'].lower()}, with {strength_count} key strengths and {weakness_count} areas for improvement.")
+            report_lines.append(f"{client_id} customers are {criterion_satisfaction:.1f}% satisfied with {framework['title'].lower()}, with {strength_count} key strengths and {weakness_count} areas for improvement.")
             report_lines.append("")
             report_lines.append("TOP 3 CUSTOMER QUOTES:")
             report_lines.append("1. [SELECT BEST COMPARATIVE QUOTE]")
@@ -751,20 +751,20 @@ def calculate_criterion_satisfaction(criterion_title, all_themes, theme_evidence
     
     return final_satisfaction
 
-def generate_competitive_benchmark(criterion_title, all_themes, theme_evidence):
+def generate_competitive_benchmark(criterion_title, all_themes, theme_evidence, client_id='Rev'):
     """Generate competitive benchmark based on customer feedback"""
     if not all_themes:
         return "Competitive benchmark data will be available after external research."
     
     # Calculate criterion-specific satisfaction rate
-    satisfaction_rate = calculate_criterion_satisfaction(criterion_title, all_themes, theme_evidence, 'Rev')
+    satisfaction_rate = calculate_criterion_satisfaction(criterion_title, all_themes, theme_evidence, client_id)
     
     if satisfaction_rate >= 80:
-        return f"Rev appears to outperform competitors in {criterion_title.lower()} with {satisfaction_rate:.0f}% customer satisfaction."
+        return f"{client_id} appears to outperform competitors in {criterion_title.lower()} with {satisfaction_rate:.0f}% customer satisfaction."
     elif satisfaction_rate >= 60:
-        return f"Rev shows competitive parity in {criterion_title.lower()} with {satisfaction_rate:.0f}% customer satisfaction."
+        return f"{client_id} shows competitive parity in {criterion_title.lower()} with {satisfaction_rate:.0f}% customer satisfaction."
     else:
-        return f"Rev may be underperforming competitors in {criterion_title.lower()} with {satisfaction_rate:.0f}% customer satisfaction."
+        return f"{client_id} may be underperforming competitors in {criterion_title.lower()} with {satisfaction_rate:.0f}% customer satisfaction."
 
 def calculate_quote_quality_score(quote_text, quote_type):
     """Calculate quality score for quotes to help analysts select the best ones"""
