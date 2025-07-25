@@ -1,0 +1,107 @@
+{
+  "client_id": "Supio",
+  "generated_date": "2025-07-23T20:08:02.400318",
+  "executive_summary": {
+    "client_id": "Supio",
+    "positioning": "Market challenger with improvement opportunities",
+    "overall_satisfaction": 0,
+    "data_summary": {
+      "total_responses": 0,
+      "total_findings": 41,
+      "total_themes": 10
+    },
+    "key_insights": [
+      "Customer satisfaction: 0.0/10",
+      "Strength areas: 0 identified",
+      "Improvement areas: 1 identified",
+      "Competitive mentions: 0 found"
+    ]
+  },
+  "competitive_analysis": {
+    "satisfaction_analysis": {
+      "overall_satisfaction": 0,
+      "satisfaction_distribution": {},
+      "criteria_analysis": {
+        "product_capability": {
+          "avg_score": NaN,
+          "count": 150,
+          "satisfaction": 0
+        }
+      }
+    },
+    "competitive_mentions": [],
+    "decision_factors": {},
+    "positioning_summary": {
+      "positioning": "Market challenger with improvement opportunities",
+      "overall_satisfaction": 0,
+      "competitive_mentions_count": 0,
+      "unique_competitors_mentioned": 0,
+      "strength_areas": [],
+      "improvement_areas": [
+        "product_capability"
+      ]
+    }
+  },
+  "market_insights": {
+    "theme_analysis": {
+      "total_themes": 10,
+      "theme_categories": {},
+      "top_themes": []
+    },
+    "finding_analysis": {
+      "total_findings": 41,
+      "finding_categories": {
+        "Standard Finding": 26,
+        "Priority Finding": 13,
+        "Critical Finding": 2
+      },
+      "top_findings": [
+        {
+          "finding_statement": "Cost per case significantly influences vendor selection, favoring Even Up due to lower pricing compared to Subio.",
+          "enhanced_confidence": 9.0
+        },
+        {
+          "finding_statement": "Client billing transparency significantly improves financial recovery due to the ability to allocate costs directly to specific clients.",
+          "enhanced_confidence": 9.0
+        },
+        {
+          "finding_statement": "Document handling efficiency significantly enhances operational capabilities due to superior integration features compared to competitors.",
+          "enhanced_confidence": 8.0
+        },
+        {
+          "finding_statement": "Revenue potential diminishes significantly when commitment to AI software usage is hindered by high initial costs and low user adoption rates.",
+          "enhanced_confidence": 8.0
+        },
+        {
+          "finding_statement": "Software adoption risks increase significantly due to data ownership concerns affecting long-term operational efficiency.",
+          "enhanced_confidence": 8.0
+        }
+      ]
+    },
+    "market_trends": [
+      "Market trend: emerging market dynamics"
+    ]
+  },
+  "strategic_recommendations": [
+    {
+      "priority": "High",
+      "category": "Address Weaknesses",
+      "recommendation": "Improve performance in product_capability",
+      "rationale": "Low satisfaction in these areas creates competitive vulnerability",
+      "timeline": "6-12 months",
+      "impact": "High"
+    }
+  ],
+  "data_summary": {
+    "data_sources": {
+      "stage1_responses": 0,
+      "stage2_labeled": 150,
+      "stage3_findings": 41,
+      "stage4_themes": 10
+    },
+    "data_quality": {
+      "completeness": "Low",
+      "diversity": "Low"
+    }
+  }
+}
