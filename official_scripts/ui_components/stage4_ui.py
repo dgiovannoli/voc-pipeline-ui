@@ -39,7 +39,7 @@ def run_stage4_analysis():
         client_id = get_client_id()
         
         with st.spinner("🔄 Running Stage 4 Analysis..."):
-            analyzer = Stage4ThemeAnalyzer()
+            analyzer = Stage4ThemeAnalyzer(client_id=client_id)
             result = analyzer.process_themes(client_id=client_id)
             
             if result:

@@ -175,8 +175,8 @@ def test_stage4_analyzer():
     try:
         from stage4_theme_analyzer import Stage4ThemeAnalyzer
         
-        # Test analyzer initialization
-        analyzer = Stage4ThemeAnalyzer()
+        # Test analyzer initialization with a test client_id
+        analyzer = Stage4ThemeAnalyzer(client_id="test_client")
         print("✅ Stage 4 analyzer initialized")
         
         return True
