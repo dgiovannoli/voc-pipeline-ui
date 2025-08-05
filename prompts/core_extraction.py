@@ -109,14 +109,22 @@ VALIDATION RULES:
 - Log a warning if you cannot find a valid question.
 - **Include complex questions with multiple clauses or embedded statements.**
 
+CRITICAL COVERAGE REQUIREMENT:
+- **CHRONOLOGICAL PROCESSING**: Process Q&A pairs in order from beginning to end of chunk
+- **COMPLETE COVERAGE**: Extract ALL question-response pairs, regardless of length or perceived quality
+- **NO SKIPPING**: Do not skip Q&A pairs at the beginning, middle, or end of chunks
+- **Include Short Responses**: Brief responses often contain crucial insights - do not filter them out
+- **Header Tolerance**: Skip only document headers, titles, and metadata - not actual Q&A content
+
 IMPORTANT: Capture ALL question-response pairs, including:
 - Questions with multiple clauses or statements
 - Questions embedded in longer explanations
 - Follow-up questions within the same exchange
 - Questions that reference previous context
 - Brief but important responses
+- Short responses that might seem less "substantial" but contain key insights
 
-Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pairs. Return ONLY a JSON array containing the most valuable responses (quantity varies by content quality):
+Analyze the provided interview chunk and extract COMPLETE Q&A pairs in CHRONOLOGICAL ORDER. Return ONLY a JSON array containing ALL question-response pairs found in the chunk:
 
 [
   {{
@@ -142,18 +150,17 @@ Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pair
 ]
 
 Guidelines:
-- **Let Content Guide Quantity**: Extract 1-8 responses based on the richness of the content
-- **Focus on Complete Context**: Prioritize responses that provide full background and reasoning
+- **Chronological Order**: Process Q&A pairs from beginning to end - maintain transcript sequence
+- **Complete Coverage**: Extract ALL Q&A pairs found in the chunk, regardless of length
 - **Preserve Conversation Flow**: Include related follow-up questions and clarifications
 - **Subject Categories**: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
 - **Question Format**: Must be an actual question (interrogative format), not a description
-- **Quality Threshold**: Only extract responses with substantial, actionable content
 - **Context Preservation**: Ensure each response captures the complete thought process
-- **Natural Grouping**: Group related Q&A pairs that form complete scenarios
-- **Skip Low-Quality**: Skip chunks with only acknowledgments, thank yous, or insufficient context
-- **Variable Output**: Some chunks may produce 2 responses, others 8 - this is expected and correct
+- **No Selective Filtering**: Do not skip responses based on perceived quality or length
+- **Include All Types**: Extract both detailed responses AND brief but important responses
+- **Variable Output**: Chunks may produce 2-15 responses depending on actual Q&A content - this is expected
 - **Capture Complex Questions**: Include questions with multiple clauses, embedded statements, or complex structures
-- **Include Brief Responses**: Don't skip responses just because they're short if they contain important insights
+- **Equal Treatment**: Give equal consideration to all Q&A pairs regardless of response length
 
 Interview chunk to analyze:
 {chunk_text}
