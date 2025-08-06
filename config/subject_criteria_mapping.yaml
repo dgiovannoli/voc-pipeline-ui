@@ -55,6 +55,11 @@ subject_to_criteria_mapping:
   "Decision Making": "vendor_stability"    # Decision process reliability
   "Workflow Optimization": "product_capability"
   "Future Considerations": "vendor_stability"
+  
+  # Additional Found Subjects
+  "Product Evaluation": "product_capability"
+  "Business Strategy": "vendor_stability"
+  "Switching Considerations": "implementation_onboarding"
 
 # Subject Quality Scoring
 # Higher scores = more reliable and specific categorization
@@ -82,6 +87,11 @@ subject_quality_weights:
   # Generic/Catch-all (0.7)
   "General Feedback": 0.7
   "Other": 0.7
+  
+  # Additional Found Subjects (0.8)
+  "Product Evaluation": 0.8
+  "Business Strategy": 0.8
+  "Switching Considerations": 0.8
 
 # Enhanced Subject Categories for Stage 1
 # These will be added to the Stage 1 prompt guidelines

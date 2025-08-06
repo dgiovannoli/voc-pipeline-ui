@@ -399,7 +399,7 @@ def main():
     if result.get('success'):
         print(f"\n✅ Subject-driven analysis completed!")
         print(f"📊 Processed: {result['processed']}")
-        print(f"📊 Total found: {result['total_found']}")
+        print(f"📊 Total found: {result.get('total_found', 0)}")
         
         mapping_stats = result.get('mapping_stats', {})
         if mapping_stats:
