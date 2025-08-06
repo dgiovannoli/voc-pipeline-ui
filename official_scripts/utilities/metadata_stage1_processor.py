@@ -2,6 +2,7 @@
 """
 Production Metadata Stage 1 Processor
 Processes Stage 1 data extraction from metadata CSV files for any client.
+Now includes automatic LLM harmonization of subjects.
 """
 
 import pandas as pd
@@ -13,29 +14,41 @@ from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 
 # Add the project root to the path
-project_root = Path(__file__).parent
+project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from voc_pipeline.modular_processor import ModularProcessor
-from supabase_database import SupabaseDatabase
+from ..database.supabase_database import SupabaseDatabase
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class MetadataStage1Processor:
-    """Process Stage 1 data extraction from metadata CSV files."""
+    """Process Stage 1 data extraction from metadata CSV files with automatic harmonization."""
     
     def __init__(self):
         self.processor = ModularProcessor()
         self.db = SupabaseDatabase()
+        
+        # Initialize harmonizer
+        try:
+            from fixed_llm_harmonizer import FixedLLMHarmonizer
+            self.harmonizer = FixedLLMHarmonizer()
+            logger.info("✅ LLM Harmonizer initialized for auto-harmonization")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not initialize harmonizer: {e}")
+            self.harmonizer = None
     
     def process_metadata_csv(self, csv_file_path: str, client_id: str, 
                            transcript_column: str = 'Raw Transcript',
                            max_interviews: Optional[int] = None,
                            dry_run: bool = False) -> Dict[str, any]:
         """
-        Process Stage 1 extraction from metadata CSV file.
+        Process Stage 1 extraction from metadata CSV file with automatic harmonization.
         
         Args:
             csv_file_path: Path to metadata CSV file
@@ -45,9 +58,9 @@ class MetadataStage1Processor:
             dry_run: If True, don't save to database, just return results
             
         Returns:
-            Dictionary with processing results
+            Dictionary with processing results including harmonization stats
         """
-        logger.info(f"🎯 Starting metadata Stage 1 processing for client: {client_id}")
+        logger.info(f"🎯 Starting metadata Stage 1 processing with auto-harmonization for client: {client_id}")
         logger.info(f"📁 Processing CSV: {csv_file_path}")
         
         # Read metadata CSV
@@ -157,6 +170,32 @@ class MetadataStage1Processor:
                         response['industry'] = industry
                         response['audio_video_link'] = audio_video_link
                         response['contact_website'] = contact_website
+                    
+                    # Harmonize subjects if harmonizer is available
+                    if self.harmonizer:
+                        harmonized_count = 0
+                        for response in extracted_data:
+                            try:
+                                subject = response.get('subject', '')
+                                verbatim_response = response.get('verbatim_response', '')
+                                
+                                if subject:
+                                    harmonization_result = self.harmonizer.harmonize_subject(subject, verbatim_response)
+                                    
+                                    # Add harmonization data to response
+                                    response['harmonized_subject'] = harmonization_result.get('harmonized_subject')
+                                    response['harmonization_confidence'] = harmonization_result.get('confidence')
+                                    response['harmonization_method'] = harmonization_result.get('mapping_method')
+                                    response['harmonization_reasoning'] = harmonization_result.get('reasoning')
+                                    response['suggested_new_category'] = harmonization_result.get('new_category_suggestion')
+                                    response['harmonized_at'] = harmonization_result.get('mapped_at')
+                                    
+                                    harmonized_count += 1
+                            except Exception as e:
+                                logger.warning(f"⚠️ Failed to harmonize subject '{response.get('subject', '')}': {e}")
+                                # Continue processing even if harmonization fails
+                        
+                        logger.info(f"✅ Auto-harmonized {harmonized_count}/{len(extracted_data)} responses from {interview_id}")
                     
                     # Save to database if not dry run
                     if not dry_run:

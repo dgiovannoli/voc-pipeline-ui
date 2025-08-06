@@ -94,6 +94,7 @@ def show_stage1_data_responses():
     """Stage 1: Data Response Table - Process metadata CSV to extract quotes"""
     st.title("📊 Stage 1: Data Response Table")
     st.markdown("Extract customer quotes and insights from interview transcripts using metadata CSV files.")
+    st.info("✨ **Enhanced with Auto-Harmonization**: Subjects are now automatically harmonized using LLM for consistent cross-interview analysis!")
     
     # Get client ID first
     client_id = get_client_id()
@@ -221,6 +222,7 @@ def show_stage1_data_responses():
         
         # Processing options in a cleaner layout
         st.subheader("⚙️ Processing Options")
+        st.info("🎯 **Auto-Harmonization**: Subject harmonization will run automatically during processing to standardize customer language into business categories.")
         
         col1, col2 = st.columns(2)
         with col1:
@@ -238,7 +240,7 @@ def show_stage1_data_responses():
         
         # Process button with better styling
         if st.button("🚀 Process Interviews", type="primary", use_container_width=True):
-            with st.spinner("Processing interviews..."):
+            with st.spinner("Processing interviews with auto-harmonization..."):
                 result = process_metadata_csv(
                     uploaded_csv, 
                     client_id, 
@@ -256,7 +258,7 @@ def show_stage1_data_responses():
                 
                 # Results in a clean card layout
                 st.subheader("📊 Processing Results")
-                col1, col2, col3, col4 = st.columns(4)
+                col1, col2, col3, col4, col5 = st.columns(5)
                 with col1:
                     st.metric("Interviews", result.get('processed', 0))
                 with col2:
@@ -265,11 +267,18 @@ def show_stage1_data_responses():
                     st.metric("Failed", result.get('failed', 0))
                 with col4:
                     st.metric("Responses", result.get('total_responses', 0))
+                with col5:
+                    harmonized = result.get('total_harmonized', 0)
+                    total_responses = result.get('total_responses', 0)
+                    rate = result.get('harmonization_rate', 0)
+                    st.metric("🎯 Harmonized", f"{harmonized} ({rate:.0f}%)")
                 
                 if dry_run:
                     st.info("🔍 Dry run completed - no data was saved")
                 else:
-                    st.success(f"💾 {result.get('total_responses', 0)} responses saved to database")
+                    total_responses = result.get('total_responses', 0)
+                    total_harmonized = result.get('total_harmonized', 0)
+                    st.success(f"✅ {total_responses} responses saved to database with {total_harmonized} auto-harmonized")
                     
                     # Auto-refresh the page to show updated status
                     st.rerun()
