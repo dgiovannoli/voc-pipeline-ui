@@ -153,7 +153,7 @@ Guidelines:
 - **Chronological Order**: Process Q&A pairs from beginning to end - maintain transcript sequence
 - **Complete Coverage**: Extract ALL Q&A pairs found in the chunk, regardless of length
 - **Preserve Conversation Flow**: Include related follow-up questions and clarifications
-- **Subject Categories**: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
+- **Subject Categories**: Product Features, Integration Challenges, Implementation Process, Adoption Challenges, Pricing and Cost, Competitive Analysis, Support and Service, Security and Compliance, Vendor Reliability, Sales Experience, Performance and Speed, Business Impact, Decision Making, Workflow Optimization, Future Considerations
 - **Question Format**: Must be an actual question (interrogative format), not a description
 - **Context Preservation**: Ensure each response captures the complete thought process
 - **No Selective Filtering**: Do not skip responses based on perceived quality or length

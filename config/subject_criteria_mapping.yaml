@@ -1,0 +1,128 @@
+# Subject-to-Criteria Mapping Configuration
+# Maps Stage 1 subjects to business evaluation criteria for targeted analysis
+
+# Direct Subject-to-Criteria Mapping
+# Each subject maps to its primary business criterion for focused analysis
+subject_to_criteria_mapping:
+  # Product and Feature Related
+  "Product Features": "product_capability"
+  "Product Confidence": "vendor_stability"
+  "Product Performance": "product_capability"
+  
+  # Integration and Technical
+  "Integration Challenges": "integration_technical_fit"
+  "Integration Issues": "integration_technical_fit"
+  "Technical Requirements": "integration_technical_fit"
+  
+  # Implementation and Onboarding
+  "Implementation Process": "implementation_onboarding"
+  "Adoption Challenges": "implementation_onboarding"
+  "Onboarding Experience": "implementation_onboarding"
+  
+  # Pricing and Commercial
+  "Pricing and Cost": "commercial_terms"
+  "Commercial Terms": "commercial_terms"
+  "Pricing Strategy": "commercial_terms"
+  "Cost Concerns": "commercial_terms"
+  
+  # Competitive and Market
+  "Competitive Analysis": "market_position_reputation"
+  "Market Position": "market_position_reputation"
+  "Vendor Comparison": "market_position_reputation"
+  
+  # Support and Service
+  "Support and Service": "support_service_quality"
+  "Customer Support": "support_service_quality"
+  "Service Quality": "support_service_quality"
+  
+  # Security and Compliance
+  "Security and Compliance": "security_compliance"
+  "Data Security": "security_compliance"
+  "Compliance Requirements": "security_compliance"
+  
+  # Vendor and Relationship
+  "Vendor Reliability": "vendor_stability"
+  "Sales Experience": "sales_experience_partnership"
+  "Partnership Experience": "sales_experience_partnership"
+  
+  # Performance and Speed
+  "Performance and Speed": "speed_responsiveness"
+  "Speed Responsiveness": "speed_responsiveness"
+  "System Performance": "speed_responsiveness"
+  
+  # Business Impact and Decision Making
+  "Business Impact": "product_capability"  # Primary mapping
+  "Decision Making": "vendor_stability"    # Decision process reliability
+  "Workflow Optimization": "product_capability"
+  "Future Considerations": "vendor_stability"
+
+# Subject Quality Scoring
+# Higher scores = more reliable and specific categorization
+subject_quality_weights:
+  # Highly Specific Subjects (1.0)
+  "Product Features": 1.0
+  "Integration Challenges": 1.0
+  "Pricing and Cost": 1.0
+  "Support and Service": 1.0
+  "Security and Compliance": 1.0
+  "Implementation Process": 1.0
+  
+  # Moderately Specific (0.9)
+  "Adoption Challenges": 0.9
+  "Competitive Analysis": 0.9
+  "Performance and Speed": 0.9
+  "Product Confidence": 0.9
+  
+  # Broader Categories (0.8)
+  "Business Impact": 0.8
+  "Decision Making": 0.8
+  "Workflow Optimization": 0.8
+  "Future Considerations": 0.8
+  
+  # Generic/Catch-all (0.7)
+  "General Feedback": 0.7
+  "Other": 0.7
+
+# Enhanced Subject Categories for Stage 1
+# These will be added to the Stage 1 prompt guidelines
+enhanced_subject_categories:
+  - "Product Features"           # Specific product capabilities
+  - "Integration Challenges"     # Technical integration issues
+  - "Implementation Process"     # Onboarding and setup
+  - "Adoption Challenges"        # User adoption barriers
+  - "Pricing and Cost"          # Commercial terms and pricing
+  - "Competitive Analysis"       # Market positioning
+  - "Support and Service"        # Customer service quality
+  - "Security and Compliance"    # Security requirements
+  - "Vendor Reliability"        # Vendor stability concerns
+  - "Sales Experience"          # Sales process feedback
+  - "Performance and Speed"     # System performance
+  - "Business Impact"           # ROI and business outcomes
+  - "Decision Making"           # Decision process insights
+  - "Workflow Optimization"     # Process improvements
+  - "Future Considerations"     # Forward-looking insights
+
+# Analysis Configuration
+analysis_config:
+  # Use subject for targeted criterion analysis
+  subject_driven_routing: true
+  
+  # Apply quality weighting to scores
+  apply_quality_weighting: true
+  
+  # Default criterion for unmapped subjects
+  default_criterion: "product_capability"
+  
+  # Minimum quality threshold for high-confidence analysis
+  min_quality_threshold: 0.8
+  
+  # Flag responses that might benefit from multi-criteria analysis
+  # (for future implementation)
+  flag_multi_criteria_candidates: true
+  multi_criteria_indicators:
+    - "and also"
+    - "in addition"
+    - "furthermore"
+    - "both"
+    - "not only"
+    - "while also" 
