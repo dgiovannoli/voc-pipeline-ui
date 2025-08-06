@@ -74,10 +74,10 @@ def run_stage2_analysis():
         # Monitor progress
         while analysis_thread.is_alive():
             with stage2_progress_lock:
-                if stage2_progress_data["total_batches"] > 0:
-                    progress = stage2_progress_data["completed_batches"] / stage2_progress_data["total_batches"]
+                if stage2_progress_data["total_responses"] > 0:
+                    progress = stage2_progress_data["completed_responses"] / stage2_progress_data["total_responses"]
                     progress_bar.progress(progress)
-                    status_text.text(f"Processing batch {stage2_progress_data['completed_batches']}/{stage2_progress_data['total_batches']}")
+                    status_text.text(f"Processing {stage2_progress_data['completed_responses']}/{stage2_progress_data['total_responses']} responses")
                 else:
                     status_text.text("Initializing enhanced analysis...")
             time.sleep(0.1)
@@ -432,7 +432,7 @@ def show_stage2_response_labeling():
             with st.spinner("Labeling quotes against criteria..."):
                 
                 # Enhanced system info
-                st.info("🎯 **Enhanced Subject-Driven Analysis**: This system intelligently routes responses to relevant criteria based on Stage 1 subjects, providing more targeted and accurate analysis than generic approaches.")
+                st.info("🎯 **Enhanced Single-Table Analysis**: This system provides simplified sentiment and impact analysis directly in the Stage 1 table for streamlined workflow.")
                 
                 # Add processing mode selection
                 processing_mode = st.radio(

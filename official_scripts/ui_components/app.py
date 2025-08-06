@@ -5,7 +5,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from official_scripts.ui_components.stage1_ui import show_stage1_data_responses
-from official_scripts.ui_components.stage2_ui import show_stage2_response_labeling
+from official_scripts.ui_components.stage2_ui import show_stage2_analysis
 from official_scripts.ui_components.stage3_ui import show_stage3_findings
 from official_scripts.ui_components.stage4_ui import show_stage4_themes
 from official_scripts.ui_components.admin_ui import show_admin_utilities, show_admin_panel
@@ -87,7 +87,7 @@ def main():
     if page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
     elif page == "Stage 2: Response Labeling":
-        show_stage2_response_labeling()
+        show_stage2_analysis()
     elif page == "Stage 3: Findings":
         show_stage3_findings()
     elif page == "Stage 4: Themes":

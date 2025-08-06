@@ -2,7 +2,7 @@ import streamlit as st
 import re
 from datetime import datetime
 from stage1_ui import show_stage1_data_responses
-from stage2_ui import show_stage2_response_labeling
+from stage2_ui import show_stage2_analysis
 from stage3_ui import show_stage3_findings
 from stage4_ui import show_stage4_themes
 from admin_ui import show_admin_utilities, show_admin_panel
@@ -231,7 +231,7 @@ def main():
     if page == "Stage 1: Data Response Table":
         show_stage1_data_responses()
     elif page == "Stage 2: Response Labeling":
-        show_stage2_response_labeling()
+        show_stage2_analysis()
     elif page == "Stage 3: Findings":
         show_stage3_findings()
     elif page == "Stage 4: Themes":
