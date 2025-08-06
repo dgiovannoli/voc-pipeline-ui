@@ -85,7 +85,7 @@ Respond with only this JSON:
                 llm_result = self._parse_fallback(result_text, natural_subject)
             
             # Convert to standard format
-            return self._standardize_result(natural_subject, llm_result)
+            return self._standardize_result(natural_subject, llm_result, verbatim_response)
             
         except Exception as e:
             logger.error(f"❌ LLM harmonization failed for '{natural_subject}': {e}")
@@ -154,6 +154,22 @@ Respond with only this JSON:
         elif "product" in subject_lower or "features" in subject_lower:
             category = "Product Capabilities"
             confidence = 0.7
+        elif "business impact" in subject_lower or "business value" in subject_lower:
+            category = "Product Capabilities"
+            confidence = 0.8
+            return {
+                'natural_subject': subject,
+                'harmonized_subject': category,
+                'confidence': confidence,
+                'mapping_method': 'smart_fallback_business_impact',
+                'reasoning': f"Smart fallback mapped '{subject}' to 'Product Capabilities' - business impact typically relates to product operational benefits and value",
+                'new_category_suggestion': None,
+                'context_clues': ['business impact', 'operational benefits'],
+                'mapping_quality': 'high',
+                'is_high_confidence': confidence >= 0.7,
+                'requires_review': False,
+                'mapped_at': datetime.now().isoformat()
+            }
         elif "implementation" in subject_lower:
             category = "Implementation Process"
             confidence = 0.7
@@ -175,8 +191,8 @@ Respond with only this JSON:
             'mapped_at': datetime.now().isoformat()
         }
     
-    def _standardize_result(self, natural_subject: str, llm_result: Dict) -> Dict:
-        """Convert LLM result to standard format"""
+    def _standardize_result(self, natural_subject: str, llm_result: Dict, verbatim_response: str = "") -> Dict:
+        """Convert LLM result to standard format with smart fallback for null categories"""
         category = llm_result.get('category')
         confidence = float(llm_result.get('confidence', 0.6))
         reasoning = llm_result.get('reasoning', 'LLM mapping')
@@ -186,6 +202,13 @@ Respond with only this JSON:
         if category and category not in self.categories:
             logger.warning(f"⚠️ Invalid category '{category}' from LLM, setting to null")
             category = None
+        
+        # If LLM returned null/no category, try smart fallback
+        if category is None:
+            logger.info(f"🔄 LLM returned null category for '{natural_subject}', trying smart fallback")
+            fallback_result = self._smart_fallback(natural_subject, verbatim_response)
+            if fallback_result.get('harmonized_subject'):
+                return fallback_result
         
         method = 'llm_high_confidence' if confidence >= 0.7 else 'llm_medium_confidence'
         if new_category:
