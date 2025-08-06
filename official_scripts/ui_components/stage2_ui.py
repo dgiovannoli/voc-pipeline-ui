@@ -34,17 +34,17 @@ def get_client_id():
     return client_id
 
 def run_stage2_analysis():
-    """Run Stage 2 analysis using database with progress tracking"""
+    """Run Stage 2 analysis using enhanced subject-driven analyzer with progress tracking"""
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return None
     
     try:
-        from enhanced_stage2_analyzer import SupabaseStage2Analyzer, stage2_progress_data, stage2_progress_lock
+        from enhanced_subject_driven_stage2 import SubjectDrivenStage2Analyzer, stage2_progress_data, stage2_progress_lock
         client_id = get_client_id()
         
-        # Create analyzer with conservative parallel processing
-        analyzer = SupabaseStage2Analyzer(batch_size=50, max_workers=2)
+        # Create enhanced analyzer with conservative parallel processing
+        analyzer = SubjectDrivenStage2Analyzer(batch_size=50, max_workers=2)
         
         # Create progress tracking
         progress_bar = st.progress(0)
@@ -68,7 +68,7 @@ def run_stage2_analysis():
                 progress = completed / total if total > 0 else 0
             
             progress_bar.progress(progress)
-            status_text.text(f"Processing batches... {completed}/{total} completed")
+            status_text.text(f"Processing batches with enhanced subject routing... {completed}/{total} completed")
             
             # Update every 1 second
             time.sleep(1)
@@ -78,12 +78,12 @@ def run_stage2_analysis():
         
         # Final progress update
         progress_bar.progress(1.0)
-        status_text.text("Analysis complete!")
+        status_text.text("Enhanced subject-driven analysis complete!")
         
         return result
         
     except Exception as e:
-        st.error(f"❌ Stage 2 analysis failed: {e}")
+        st.error(f"❌ Enhanced Stage 2 analysis failed: {e}")
         return None
 
 def get_stage2_summary():
@@ -223,6 +223,10 @@ def show_stage2_response_labeling():
         # Run analysis button
         if st.button("🔄 Label Quotes", type="primary", help="Label quotes against 10 evaluation criteria"):
             with st.spinner("Labeling quotes against criteria..."):
+                
+                # Enhanced system info
+                st.info("🎯 **Enhanced Subject-Driven Analysis**: This system intelligently routes responses to relevant criteria based on Stage 1 subjects, providing more targeted and accurate analysis than generic approaches.")
+                
                 # Add processing mode selection
                 processing_mode = st.radio(
                     "Processing Mode",
@@ -235,13 +239,47 @@ def show_stage2_response_labeling():
                     result = run_stage2_analysis()
                 else:
                     # Use sequential processing
-                    from enhanced_stage2_analyzer import SupabaseStage2Analyzer
+                    from enhanced_subject_driven_stage2 import SubjectDrivenStage2Analyzer
                     client_id = get_client_id()
-                    analyzer = SupabaseStage2Analyzer(batch_size=50, max_workers=1)  # Sequential
+                    analyzer = SubjectDrivenStage2Analyzer(batch_size=50, max_workers=1)  # Sequential
                     result = analyzer.process_incremental(client_id=client_id)
                 
                 if result:
                     st.success("✅ Quote labeling complete!")
+                    
+                    # Show enhancement information if available
+                    enhancement_info = result.get('enhancement_info', {})
+                    mapping_stats = result.get('mapping_stats', {})
+                    
+                    if enhancement_info.get('subject_driven_routing'):
+                        st.success("🎯 **Enhanced Analysis Complete!**")
+                        
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Responses Processed", result.get('processed', 0))
+                        with col2:
+                            st.metric("Subject Mappings Used", enhancement_info.get('mappings_used', 0))
+                        with col3:
+                            quality_enabled = "✅ Enabled" if enhancement_info.get('quality_weighting') else "❌ Disabled"
+                            st.metric("Quality Weighting", quality_enabled)
+                        
+                        # Show criterion distribution
+                        if mapping_stats.get('criterion_distribution'):
+                            st.subheader("📊 Subject-to-Criteria Distribution")
+                            criterion_dist = mapping_stats['criterion_distribution']
+                            
+                            # Create a simple bar chart of criteria distribution
+                            import pandas as pd
+                            dist_df = pd.DataFrame(list(criterion_dist.items()), columns=['Criterion', 'Count'])
+                            st.bar_chart(dist_df.set_index('Criterion'))
+                            
+                            # Show high-confidence routing
+                            high_conf = mapping_stats.get('high_confidence_responses', 0)
+                            total_responses = result.get('processed', 0)
+                            if total_responses > 0:
+                                conf_percentage = (high_conf / total_responses) * 100
+                                st.info(f"🎯 **Routing Quality**: {high_conf}/{total_responses} responses ({conf_percentage:.1f}%) had high-confidence subject mapping")
+                    
                     st.rerun()
                 else:
                     st.error("❌ Quote labeling failed")

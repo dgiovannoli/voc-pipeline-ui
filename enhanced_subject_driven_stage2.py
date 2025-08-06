@@ -12,6 +12,8 @@ from datetime import datetime
 from pathlib import Path
 import os
 import sys
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Add project root to path
 project_root = Path(__file__).parent
@@ -21,13 +23,21 @@ from supabase_database import SupabaseDatabase
 
 logger = logging.getLogger(__name__)
 
+# Progress tracking for UI compatibility
+stage2_progress_data = {"completed_batches": 0, "total_batches": 0, "results": [], "errors": []}
+stage2_progress_lock = threading.Lock()
+
 class SubjectDrivenStage2Analyzer:
     """Enhanced Stage 2 analyzer with subject-driven criteria routing and quality weighting"""
     
-    def __init__(self, config_path: str = "config/subject_criteria_mapping.yaml"):
+    def __init__(self, config_path: str = "config/subject_criteria_mapping.yaml", batch_size: int = 50, max_workers: int = 4):
         self.config_path = config_path
         self.config = self._load_config()
         self.db = SupabaseDatabase()
+        
+        # Batch processing configuration for UI compatibility
+        self.batch_size = batch_size
+        self.max_workers = max_workers
         
         # Extract mapping configurations
         self.subject_to_criteria = self.config.get('subject_to_criteria_mapping', {})
@@ -267,10 +277,10 @@ class SubjectDrivenStage2Analyzer:
         found_keywords = [word for word in words if word in criterion_keywords]
         return ', '.join(found_keywords[:5])  # Limit to 5 keywords
     
-    def process_responses(self, client_id: str, max_responses: Optional[int] = None) -> Dict:
-        """Process responses for a client using subject-driven routing"""
+    def process_incremental(self, client_id: str = "default") -> Dict:
+        """Process responses for a client using subject-driven routing with batch processing for UI compatibility"""
         try:
-            logger.info(f"🚀 Starting subject-driven Stage 2 analysis for client: {client_id}")
+            logger.info(f"🚀 Starting enhanced subject-driven Stage 2 analysis for client: {client_id}")
             
             # Get unanalyzed responses
             responses_df = self.db.get_unanalyzed_quotes(client_id)
@@ -279,21 +289,91 @@ class SubjectDrivenStage2Analyzer:
                 logger.info("📭 No unanalyzed responses found")
                 return {"success": True, "processed": 0, "message": "No responses to analyze"}
             
-            if max_responses:
-                responses_df = responses_df.head(max_responses)
+            logger.info(f"📊 Processing {len(responses_df)} responses with enhanced subject-driven routing")
             
-            logger.info(f"📊 Processing {len(responses_df)} responses with subject-driven routing")
+            # Initialize progress tracking for UI
+            global stage2_progress_data
+            with stage2_progress_lock:
+                stage2_progress_data = {
+                    "completed_batches": 0,
+                    "total_batches": (len(responses_df) + self.batch_size - 1) // self.batch_size,
+                    "results": [],
+                    "errors": []
+                }
             
-            # Process each response
+            # Create batches
+            batches = []
+            for i in range(0, len(responses_df), self.batch_size):
+                batch = responses_df.iloc[i:i + self.batch_size]
+                batch_num = i // self.batch_size + 1
+                batches.append((batch_num, batch, client_id))
+            
+            # Process batches with subject-driven analysis
+            total_processed = 0
+            all_results = []
+            
+            logger.info(f"🔄 Processing {len(batches)} batches with {self.max_workers} workers")
+            
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                # Submit all batch jobs
+                future_to_batch = {executor.submit(self._process_batch_with_subjects, batch_num, batch, client_id): batch_num 
+                                 for batch_num, batch, client_id in batches}
+                
+                # Collect results as they complete
+                for future in as_completed(future_to_batch):
+                    batch_num = future_to_batch[future]
+                    try:
+                        batch_result = future.result()
+                        if batch_result:
+                            processed_count = batch_result.get('processed', 0)
+                            total_processed += processed_count
+                            all_results.extend(batch_result.get('results', []))
+                            
+                            logger.info(f"✅ Batch {batch_num} completed: {processed_count} responses processed")
+                        
+                        # Update progress
+                        with stage2_progress_lock:
+                            stage2_progress_data["completed_batches"] += 1
+                            stage2_progress_data["results"].extend(batch_result.get('results', []))
+                    
+                    except Exception as e:
+                        logger.error(f"❌ Batch {batch_num} failed: {e}")
+                        with stage2_progress_lock:
+                            stage2_progress_data["errors"].append(f"Batch {batch_num}: {str(e)}")
+            
+            logger.info(f"✅ Enhanced subject-driven analysis complete: {total_processed} responses processed")
+            
+            return {
+                "success": True,
+                "processed": total_processed,
+                "total_found": len(responses_df),
+                "results": all_results,
+                "mapping_stats": self._get_mapping_stats(all_results),
+                "enhancement_info": {
+                    "subject_driven_routing": True,
+                    "quality_weighting": self.analysis_config.get('apply_quality_weighting', True),
+                    "mappings_used": len(self.subject_to_criteria)
+                }
+            }
+            
+        except Exception as e:
+            logger.error(f"❌ Failed to process responses: {e}")
+            return {"success": False, "error": str(e)}
+    
+    def _process_batch_with_subjects(self, batch_num: int, batch_df: pd.DataFrame, client_id: str) -> Dict:
+        """Process a batch of responses with enhanced subject-driven routing"""
+        try:
+            logger.info(f"🔄 Processing batch {batch_num} with {len(batch_df)} responses")
+            
             processed_count = 0
-            results = []
+            batch_results = []
             
-            for idx, row in responses_df.iterrows():
+            for idx, row in batch_df.iterrows():
                 try:
                     # Convert row to dict
                     response_data = row.to_dict()
                     
-                    # Analyze with subject-driven routing
+                    # Analyze with enhanced subject-driven routing
                     analysis_result = self.analyze_response(response_data)
                     
                     if analysis_result:
@@ -302,25 +382,24 @@ class SubjectDrivenStage2Analyzer:
                         
                         if success:
                             processed_count += 1
-                            results.append(analysis_result)
+                            batch_results.append(analysis_result)
                         
                 except Exception as e:
-                    logger.error(f"❌ Failed to process response {row.get('response_id', 'unknown')}: {e}")
+                    logger.error(f"❌ Failed to process response {row.get('response_id', 'unknown')} in batch {batch_num}: {e}")
                     continue
             
-            logger.info(f"✅ Completed subject-driven analysis: {processed_count} responses processed")
+            logger.info(f"✅ Batch {batch_num} complete: {processed_count}/{len(batch_df)} responses processed")
             
             return {
-                "success": True,
+                "batch_num": batch_num,
                 "processed": processed_count,
-                "total_found": len(responses_df),
-                "results": results,
-                "mapping_stats": self._get_mapping_stats(results)
+                "total_in_batch": len(batch_df),
+                "results": batch_results
             }
             
         except Exception as e:
-            logger.error(f"❌ Failed to process responses: {e}")
-            return {"success": False, "error": str(e)}
+            logger.error(f"❌ Failed to process batch {batch_num}: {e}")
+            return {"batch_num": batch_num, "processed": 0, "total_in_batch": len(batch_df), "results": [], "error": str(e)}
     
     def _save_analysis_result(self, analysis_result: Dict, client_id: str) -> bool:
         """Save analysis result to database"""
@@ -373,6 +452,19 @@ class SubjectDrivenStage2Analyzer:
             'avg_routing_confidence': sum(confidence_scores) / len(confidence_scores),
             'high_confidence_responses': sum(1 for conf in confidence_scores if conf >= 0.9)
         }
+    
+    def process_responses(self, client_id: str, max_responses: Optional[int] = None) -> Dict:
+        """Legacy method for command line compatibility - calls process_incremental"""
+        result = self.process_incremental(client_id)
+        
+        # Add max_responses filtering if specified
+        if max_responses and result.get('success') and result.get('results'):
+            results = result['results'][:max_responses]
+            result['results'] = results
+            result['processed'] = len(results)
+            result['mapping_stats'] = self._get_mapping_stats(results)
+        
+        return result
 
 def main():
     """Command line interface for subject-driven Stage 2 analysis"""
