@@ -72,7 +72,7 @@ class SupabaseDatabase:
             return False
     
     def save_core_response(self, response_data: Dict[str, Any]) -> bool:
-        """Save a core response to Supabase"""
+        """Save a core response to Supabase with optional harmonized subject fields"""
         try:
             # Prepare data for Supabase
             data = {
@@ -91,6 +91,17 @@ class SupabaseDatabase:
                 'client_id': response_data.get('client_id', 'default'),
                 'created_at': datetime.now().isoformat()
             }
+            
+            # Add harmonized subject fields if present
+            if response_data.get('harmonized_subject') is not None:
+                data.update({
+                    'harmonized_subject': response_data.get('harmonized_subject'),
+                    'harmonization_confidence': response_data.get('harmonization_confidence'),
+                    'harmonization_method': response_data.get('harmonization_method'),
+                    'harmonization_reasoning': response_data.get('harmonization_reasoning'),
+                    'suggested_new_category': response_data.get('suggested_new_category'),
+                    'harmonized_at': response_data.get('harmonized_at', datetime.now().isoformat())
+                })
             
             # Remove None values
             data = {k: v for k, v in data.items() if v is not None}

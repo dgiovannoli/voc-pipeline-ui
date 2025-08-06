@@ -34,17 +34,23 @@ def get_client_id():
     return client_id
 
 def run_stage2_analysis():
-    """Run Stage 2 analysis using enhanced subject-driven analyzer with progress tracking"""
+    """Run Stage 2 analysis using enhanced single-table analyzer with progress tracking"""
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return None
     
     try:
-        from enhanced_subject_driven_stage2 import SubjectDrivenStage2Analyzer, stage2_progress_data, stage2_progress_lock
+        # Import from the parent directory (go up two levels from official_scripts/ui_components/)
+        import sys
+        import os
+        parent_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+        sys.path.insert(0, parent_dir)
+        
+        from enhanced_single_table_stage2 import EnhancedSingleTableStage2, stage2_progress_data, stage2_progress_lock
         client_id = get_client_id()
         
         # Create enhanced analyzer with conservative parallel processing
-        analyzer = SubjectDrivenStage2Analyzer(batch_size=50, max_workers=2)
+        analyzer = EnhancedSingleTableStage2(batch_size=50, max_workers=2)
         
         # Create progress tracking
         progress_bar = st.progress(0)
@@ -52,9 +58,14 @@ def run_stage2_analysis():
         
         # Start the analysis in a separate thread to allow progress updates
         import threading
+        result_container = {"result": None, "error": None}
         
         def run_analysis():
-            return analyzer.process_incremental(client_id=client_id)
+            try:
+                result = analyzer.process_incremental(client_id=client_id)
+                result_container["result"] = result
+            except Exception as e:
+                result_container["error"] = str(e)
         
         # Start analysis thread
         analysis_thread = threading.Thread(target=run_analysis)
@@ -63,27 +74,33 @@ def run_stage2_analysis():
         # Monitor progress
         while analysis_thread.is_alive():
             with stage2_progress_lock:
-                completed = stage2_progress_data.get("completed_batches", 0)
-                total = stage2_progress_data.get("total_batches", 0)
-                progress = completed / total if total > 0 else 0
-            
-            progress_bar.progress(progress)
-            status_text.text(f"Processing batches with enhanced subject routing... {completed}/{total} completed")
-            
-            # Update every 1 second
-            time.sleep(1)
+                if stage2_progress_data["total_batches"] > 0:
+                    progress = stage2_progress_data["completed_batches"] / stage2_progress_data["total_batches"]
+                    progress_bar.progress(progress)
+                    status_text.text(f"Processing batch {stage2_progress_data['completed_batches']}/{stage2_progress_data['total_batches']}")
+                else:
+                    status_text.text("Initializing enhanced analysis...")
+            time.sleep(0.1)
         
-        # Get final result
-        result = run_analysis()  # This will be the actual result
+        # Wait for completion
+        analysis_thread.join()
         
         # Final progress update
         progress_bar.progress(1.0)
-        status_text.text("Enhanced subject-driven analysis complete!")
+        status_text.text("✅ Enhanced analysis complete!")
         
-        return result
+        # Check for errors
+        if result_container["error"]:
+            st.error(f"❌ Analysis failed: {result_container['error']}")
+            return None
+            
+        return result_container["result"]
         
+    except ImportError as e:
+        st.error(f"❌ Failed to import enhanced analyzer: {e}")
+        return None
     except Exception as e:
-        st.error(f"❌ Enhanced Stage 2 analysis failed: {e}")
+        st.error(f"❌ Analysis failed: {e}")
         return None
 
 def get_stage2_summary():
@@ -166,6 +183,196 @@ def show_labeled_quotes():
         key="download_labeled_quotes"
     )
 
+def show_stage2_overview():
+    """Show Stage 2 overview with enhanced single-table approach"""
+    st.title("📊 Stage 2: Enhanced Sentiment & Impact Analysis")
+    
+    # Enhanced description
+    st.markdown("""
+    **🎯 Simplified Single-Table Analysis**
+    
+    Stage 2 now uses a **unified approach** that enhances your Stage 1 data directly:
+    
+    **✨ Key Features:**
+    - **🎭 Sentiment Analysis**: Positive, negative, neutral, or mixed customer emotions
+    - **📈 Impact Scoring**: 1-5 scale rating of business decision influence  
+    - **🎯 Harmonized Categories**: Uses Stage 1 harmonized subjects as natural criteria
+    - **⚡ Single Table**: All data stored in enhanced `stage1_data_responses` table
+    
+    **📋 What This Replaces:**
+    - ❌ Complex business criteria mapping
+    - ❌ Separate Stage 2 labeling table
+    - ❌ Manual relevance scoring
+    - ❌ Multiple impact metrics
+    
+    **🎉 Benefits:**
+    - ✅ **Simpler workflow** - one table, cleaner data flow
+    - ✅ **Voice-of-customer driven** - uses actual customer language patterns  
+    - ✅ **Higher quality** - LLM focuses on sentiment + impact only
+    - ✅ **Better performance** - eliminates complex joins and mappings
+    """)
+
+def show_stage2_analysis():
+    """Main Stage 2 analysis interface with enhanced single-table approach"""
+    client_id = get_client_id()
+    
+    if not SUPABASE_AVAILABLE:
+        st.error("❌ Database not available")
+        return
+    
+    # Header with enhanced branding
+    st.header("🚀 Enhanced Stage 2 Analysis")
+    st.markdown(f"**Client:** `{client_id}` | **Approach:** Single-Table Sentiment & Impact")
+    
+    try:
+        # Get Stage 1 data to check readiness
+        stage1_df = db.get_stage1_data_responses(client_id=client_id)
+        
+        if stage1_df.empty:
+            st.warning("⚠️ **No Stage 1 Data Found**")
+            st.info("📋 Please complete Stage 1 processing first.")
+            st.info("🔄 Go to **Stage 1** tab to upload and process interview transcripts.")
+            return
+        
+        # Check harmonization status
+        harmonized_count = stage1_df[stage1_df['harmonized_subject'].notna()].shape[0] if 'harmonized_subject' in stage1_df.columns else 0
+        total_responses = len(stage1_df)
+        
+        # Status metrics
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("📄 Total Responses", total_responses)
+        
+        with col2:
+            st.metric("🎯 Harmonized", harmonized_count)
+        
+        with col3:
+            # Check if Stage 2 analysis has been run
+            stage2_analyzed = stage1_df[stage1_df['sentiment'].notna()].shape[0] if 'sentiment' in stage1_df.columns else 0
+            st.metric("📊 Analyzed", stage2_analyzed)
+        
+        with col4:
+            coverage = (stage2_analyzed / total_responses * 100) if total_responses > 0 else 0
+            st.metric("📈 Coverage", f"{coverage:.1f}%")
+        
+        # Harmonization status
+        if harmonized_count == 0:
+            st.warning("⚠️ **Harmonization Recommended**")
+            st.info("🎯 While not required, **harmonized subjects** provide better insights for Stage 2 analysis.")
+            st.info("📍 Go to **Stage 1** → **Enhanced Subject Analysis** to run harmonization.")
+        elif harmonized_count < total_responses:
+            st.info(f"📊 **Partial Harmonization**: {harmonized_count}/{total_responses} responses harmonized")
+        else:
+            st.success("✅ **Full Harmonization Complete!**")
+        
+        # Analysis status and action
+        if stage2_analyzed == 0:
+            st.info("🚀 **Ready for Enhanced Stage 2 Analysis**")
+            st.markdown("**This will add:**")
+            st.markdown("- 🎭 **Sentiment scores** (positive/negative/neutral/mixed)")
+            st.markdown("- 📈 **Impact ratings** (1-5 scale for business decision influence)")
+            st.markdown("- 🧠 **LLM reasoning** for transparency")
+            
+            if st.button("🚀 Run Enhanced Stage 2 Analysis", type="primary"):
+                with st.spinner("Running enhanced sentiment & impact analysis..."):
+                    result = run_stage2_analysis()
+                    
+                    if result:
+                        st.success("✅ **Enhanced Stage 2 Analysis Complete!**")
+                        
+                        # Show summary results
+                        st.subheader("📊 Analysis Summary")
+                        col1, col2, col3 = st.columns(3)
+                        
+                        with col1:
+                            st.metric("✅ Successful", result.get('successful_analyses', 0))
+                        with col2:
+                            st.metric("❌ Failed", result.get('failed_analyses', 0))
+                        with col3:
+                            avg_impact = result.get('average_impact_score', 0)
+                            st.metric("📊 Avg Impact", f"{avg_impact:.1f}/5")
+                        
+                        if result.get('sentiment_distribution'):
+                            st.subheader("🎭 Sentiment Distribution")
+                            sentiment_data = result['sentiment_distribution']
+                            sentiment_df = pd.DataFrame(list(sentiment_data.items()), columns=['Sentiment', 'Count'])
+                            st.dataframe(sentiment_df, use_container_width=True)
+                        
+                        st.rerun()
+                    else:
+                        st.error("❌ Analysis failed. Check logs for details.")
+        
+        elif stage2_analyzed < total_responses:
+            st.warning(f"⚠️ **Partial Analysis**: {stage2_analyzed}/{total_responses} responses analyzed")
+            
+            if st.button("🔄 Complete Analysis", type="secondary"):
+                with st.spinner("Completing enhanced analysis..."):
+                    result = run_stage2_analysis()
+                    if result:
+                        st.success("✅ Analysis completed!")
+                        st.rerun()
+        
+        else:
+            st.success("✅ **Enhanced Stage 2 Analysis Complete!**")
+            
+            # Show enhanced analysis results
+            st.subheader("📊 Enhanced Analysis Results")
+            
+            # Refresh data to get latest analysis
+            enhanced_df = db.get_stage1_data_responses(client_id=client_id)
+            
+            if 'sentiment' in enhanced_df.columns and 'impact_score' in enhanced_df.columns:
+                # Sentiment distribution
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write("**🎭 Sentiment Distribution**")
+                    sentiment_counts = enhanced_df['sentiment'].value_counts()
+                    st.dataframe(sentiment_counts.reset_index().rename(columns={'index': 'Sentiment', 'sentiment': 'Count'}), use_container_width=True)
+                
+                with col2:
+                    st.write("**📈 Impact Score Distribution**")
+                    impact_counts = enhanced_df['impact_score'].value_counts().sort_index()
+                    st.dataframe(impact_counts.reset_index().rename(columns={'index': 'Impact Score', 'impact_score': 'Count'}), use_container_width=True)
+                
+                # High-impact insights
+                st.subheader("🚨 High-Impact Insights")
+                high_impact = enhanced_df[enhanced_df['impact_score'] >= 4]
+                
+                if not high_impact.empty:
+                    st.write(f"**Found {len(high_impact)} high-impact responses (score ≥4):**")
+                    
+                    display_cols = ['subject', 'sentiment', 'impact_score']
+                    if 'harmonized_subject' in high_impact.columns:
+                        display_cols.insert(1, 'harmonized_subject')
+                    
+                    display_cols.extend(['verbatim_response'])
+                    available_cols = [col for col in display_cols if col in high_impact.columns]
+                    
+                    display_df = high_impact[available_cols].copy()
+                    if 'verbatim_response' in display_df.columns:
+                        display_df['verbatim_response'] = display_df['verbatim_response'].str[:150] + '...'
+                    
+                    st.dataframe(display_df, use_container_width=True)
+                else:
+                    st.info("No high-impact responses found (score ≥4)")
+                
+                # Download enhanced data
+                st.subheader("📥 Download Enhanced Data")
+                enhanced_csv = enhanced_df.to_csv(index=False)
+                st.download_button(
+                    label="📄 Download Enhanced Stage 1+2 Data",
+                    data=enhanced_csv,
+                    file_name=f"enhanced_stage1_stage2_{client_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+                    mime="text/csv"
+                )
+        
+    except Exception as e:
+        st.error(f"❌ Error in Stage 2 analysis: {e}")
+        import traceback
+        st.text(traceback.format_exc())
+
 def show_stage2_response_labeling():
     """Stage 2: Response Labeling - Score quotes against 10 evaluation criteria"""
     st.title("🎯 Stage 2: Response Labeling")
@@ -239,9 +446,9 @@ def show_stage2_response_labeling():
                     result = run_stage2_analysis()
                 else:
                     # Use sequential processing
-                    from enhanced_subject_driven_stage2 import SubjectDrivenStage2Analyzer
+                    from enhanced_single_table_stage2 import EnhancedSingleTableStage2
                     client_id = get_client_id()
-                    analyzer = SubjectDrivenStage2Analyzer(batch_size=50, max_workers=1)  # Sequential
+                    analyzer = EnhancedSingleTableStage2(batch_size=50, max_workers=1)  # Sequential
                     result = analyzer.process_incremental(client_id=client_id)
                 
                 if result:

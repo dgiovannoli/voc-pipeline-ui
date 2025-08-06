@@ -1,0 +1,135 @@
+# Smart Pattern Matching Subject Harmonization
+# Maps natural customer language subjects to standardized win-loss analysis categories
+
+# Win-Loss Focused Harmonization Patterns
+# Each pattern uses keyword matching to group related natural subjects
+harmonization_patterns:
+  
+  # Product and Feature Capabilities
+  "Product Capabilities":
+    keywords: ["product", "feature", "features", "capability", "functionality", "quality", "performance", "solution", "tool", "software", "platform", "application", "evaluation", "pain points"]
+    description: "Core product features, capabilities, and performance"
+    win_loss_focus: "Primary differentiator in competitive evaluations"
+    
+  # Pricing and Commercial Terms  
+  "Pricing and Commercial":
+    keywords: ["price", "cost", "budget", "commercial", "pricing", "expensive", "affordable", "roi", "value", "investment", "financial", "money", "fee", "cost considerations"]
+    description: "Pricing, costs, budget considerations, and commercial terms"
+    win_loss_focus: "Critical factor in purchase decisions and deal closure"
+    
+  # Implementation and Onboarding
+  "Implementation Process":
+    keywords: ["implementation", "setup", "onboarding", "deployment", "installation", "configuration", "getting started", "rollout", "launch", "go-live", "process", "adoption"]
+    description: "Implementation timeline, setup complexity, and onboarding experience"
+    win_loss_focus: "Time-to-value and implementation risk assessment"
+    
+  # Integration and Technical Fit
+  "Integration Technical":
+    keywords: ["integration", "api", "technical", "connect", "compatibility", "architecture", "system", "data", "sync", "interface", "workflow"]
+    description: "Technical integration capabilities and system compatibility"
+    win_loss_focus: "Technical feasibility and existing system compatibility"
+    
+  # Support and Service Quality
+  "Support and Service":
+    keywords: ["support", "service", "help", "assistance", "response", "customer service", "training", "documentation", "guidance", "expertise"]
+    description: "Customer support quality, responsiveness, and service experience"
+    win_loss_focus: "Post-purchase experience and relationship quality"
+    
+  # Competitive Analysis and Positioning
+  "Competitive Dynamics":
+    keywords: ["competitive", "competitor", "comparison", "alternative", "versus", "against", "compared", "market", "leader", "choice", "option"]
+    description: "Competitive comparisons and market positioning"
+    win_loss_focus: "Competitive differentiation and positioning strategy"
+    
+  # Vendor Stability and Trust
+  "Vendor Stability":
+    keywords: ["vendor", "company", "stability", "trust", "reliable", "reputation", "confidence", "track record", "viability", "partnership", "relationship"]
+    description: "Vendor reliability, company stability, and trustworthiness"
+    win_loss_focus: "Long-term partnership viability and vendor risk"
+    
+  # Sales Process and Experience
+  "Sales Experience":
+    keywords: ["sales", "selling", "demo", "presentation", "proposal", "buying", "procurement", "evaluation", "discovery", "sales team", "account", "relationship", "vendor discovery", "industry events"]
+    description: "Sales process quality and buying experience"
+    win_loss_focus: "Sales effectiveness and customer experience during evaluation"
+    
+  # User Experience and Adoption
+  "User Experience":
+    keywords: ["user", "usability", "interface", "experience", "adoption", "training", "learning", "ease", "intuitive", "user-friendly", "ux", "ui"]
+    description: "User interface, usability, and adoption challenges"
+    win_loss_focus: "End-user acceptance and adoption risk"
+    
+  # Security and Compliance
+  "Security Compliance":
+    keywords: ["security", "compliance", "privacy", "data protection", "gdpr", "hipaa", "regulatory", "audit", "certification", "risk", "governance"]
+    description: "Security features, compliance requirements, and data protection"
+    win_loss_focus: "Regulatory compliance and security risk management"
+
+# Harmonization Configuration
+harmonization_config:
+  # Matching strategy
+  matching_strategy: "keyword_overlap"  # Options: keyword_overlap, semantic_similarity, hybrid
+  
+  # Minimum keyword overlap required for mapping (0.0 to 1.0)
+  min_keyword_overlap: 0.1
+  
+  # Default category for unmapped subjects
+  default_category: "Product Capabilities"
+  
+  # Whether to allow multiple category mappings
+  allow_multiple_categories: false
+  
+  # Confidence scoring
+  confidence_scoring: true
+  min_confidence_threshold: 0.3
+  
+  # Learning and adaptation
+  enable_pattern_learning: true
+  learn_from_manual_corrections: true
+  
+  # Case sensitivity for keyword matching
+  case_sensitive: false
+  
+  # Word stemming for better matching
+  use_word_stemming: true
+
+# Quality Control
+quality_control:
+  # Flag subjects that don't map well for review
+  flag_low_confidence: true
+  low_confidence_threshold: 0.5
+  
+  # Track mapping statistics
+  track_mapping_stats: true
+  
+  # Log unmapped subjects for pattern improvement
+  log_unmapped_subjects: true
+  
+  # Review frequency for pattern updates
+  review_frequency_days: 30
+
+# Reporting Configuration
+reporting_config:
+  # Standard win-loss categories for cross-interview analysis
+  primary_categories:
+    - "Product Capabilities"
+    - "Pricing and Commercial" 
+    - "Implementation Process"
+    - "Integration Technical"
+    - "Support and Service"
+    - "Competitive Dynamics"
+    
+  # Secondary categories for detailed analysis
+  secondary_categories:
+    - "Vendor Stability"
+    - "Sales Experience"
+    - "User Experience"
+    - "Security Compliance"
+    
+  # Aggregation settings
+  enable_cross_interview_aggregation: true
+  min_interviews_for_trend: 3
+  
+  # Win-loss specific metrics
+  track_win_loss_correlation: true
+  calculate_category_impact_scores: true 

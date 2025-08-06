@@ -56,10 +56,15 @@ subject_to_criteria_mapping:
   "Workflow Optimization": "product_capability"
   "Future Considerations": "vendor_stability"
   
-  # Additional Found Subjects
+  # Additional Found Subjects  
   "Product Evaluation": "product_capability"
   "Business Strategy": "vendor_stability"
   "Switching Considerations": "implementation_onboarding"
+  "Software Evaluation": "product_capability"
+  "Cost Considerations": "commercial_terms"
+  "Pain Points": "product_capability"
+  "Industry Events": "market_position_reputation"
+  "Vendor Discovery": "sales_experience_partnership"
 
 # Subject Quality Scoring
 # Higher scores = more reliable and specific categorization
