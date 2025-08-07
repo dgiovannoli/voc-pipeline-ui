@@ -7,6 +7,164 @@ from stage3_ui import show_stage3_findings
 from stage4_ui import show_stage4_themes
 from admin_ui import show_admin_utilities, show_admin_panel
 
+def show_excel_generation():
+    """Excel Workbook Generation - Create comprehensive Excel workbooks for analyst curation"""
+    
+    st.title("📊 Excel Workbook Generation")
+    st.markdown("**Generate comprehensive Excel workbooks with cross-section theme handling**")
+    st.markdown("---")
+    
+    # Get client ID from session state
+    client_id = st.session_state.get('client_id', '')
+    
+    if not client_id:
+        st.warning("⚠️ Please set a Client ID in the sidebar first")
+        st.info("💡 Enter a unique identifier for this client's data (e.g., 'Supio', 'Rev')")
+        return
+    
+    # Display client info
+    st.subheader(f"🏢 Client: {client_id}")
+    
+    # Information about the Excel workbook
+    st.markdown("""
+    ### 📋 What's Included in the Excel Workbook:
+    
+    **🔄 Cross-Section Themes Tab**
+    - Identifies themes that appear in multiple sections
+    - Shows primary vs. secondary sections for each theme
+    - Tracks processing status to avoid duplicate work
+    
+    **📊 Section Validation Tabs**
+    - **Win Drivers**: Why customers choose your solution
+    - **Loss Factors**: Why customers choose competitors  
+    - **Competitive Intelligence**: Market dynamics and competitive landscape
+    - **Implementation Insights**: Deployment challenges and success factors
+    
+    **📈 Analysis & Planning Tabs**
+    - Executive summary with key metrics
+    - Quote curation interface
+    - Theme validation tools
+    - Research question alignment
+    """)
+    
+    st.markdown("---")
+    
+    # Generation options
+    st.subheader("⚙️ Generation Options")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Custom filename option
+        use_custom_filename = st.checkbox("Use custom filename", value=False)
+        custom_filename = None
+        if use_custom_filename:
+            custom_filename = st.text_input(
+                "Custom filename:",
+                value=f"Win_Loss_Analyst_Workbook_{client_id}_{datetime.now().strftime('%Y%m%d')}.xlsx",
+                help="Enter the desired filename for the Excel workbook"
+            )
+    
+    with col2:
+        # Quality gate options
+        st.markdown("**Quality Settings:**")
+        st.info("""
+        - **Cross-Company**: Minimum 2 companies per theme
+        - **Evidence**: Minimum 3 quotes per theme  
+        - **Impact**: Adaptive threshold based on data quality
+        - **Coherence**: Sentiment consistency check
+        """)
+    
+    st.markdown("---")
+    
+    # Generate button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    
+    with col2:
+        if st.button("🚀 Generate Excel Workbook", type="primary", use_container_width=True):
+            
+            # Progress tracking
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            try:
+                # Import required modules
+                status_text.text("📦 Loading modules...")
+                progress_bar.progress(10)
+                
+                from win_loss_report_generator import WinLossReportGenerator
+                from excel_win_loss_exporter import ExcelWinLossExporter
+                
+                # Step 1: Generate themes
+                status_text.text("📊 Generating themes and analysis...")
+                progress_bar.progress(30)
+                
+                generator = WinLossReportGenerator(client_id)
+                themes_data = generator.generate_analyst_report()
+                
+                if not themes_data["success"]:
+                    st.error(f"❌ Theme generation failed: {themes_data.get('error')}")
+                    return
+                
+                progress_bar.progress(60)
+                status_text.text(f"✅ Generated {len(themes_data['themes'])} themes")
+                
+                # Step 2: Create Excel workbook
+                status_text.text("📋 Creating Excel workbook...")
+                progress_bar.progress(80)
+                
+                exporter = ExcelWinLossExporter()
+                
+                if custom_filename:
+                    output_path = exporter.export_analyst_workbook(themes_data, custom_filename)
+                else:
+                    output_path = exporter.export_analyst_workbook(themes_data)
+                
+                # Verify file was created
+                import os
+                if os.path.exists(output_path):
+                    file_size = os.path.getsize(output_path)
+                    progress_bar.progress(100)
+                    status_text.text("✅ Excel workbook created successfully!")
+                    
+                    st.success(f"🎉 Excel workbook generated successfully!")
+                    
+                    # Display file info
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("File Size", f"{file_size:,} bytes")
+                    with col2:
+                        st.metric("Themes", len(themes_data['themes']))
+                    with col3:
+                        st.metric("Cross-Section Themes", len([t for t in themes_data['themes'] if len(t.get('sections', [])) > 1]))
+                    
+                    # Download button
+                    with open(output_path, 'rb') as f:
+                        st.download_button(
+                            label="📥 Download Excel Workbook",
+                            data=f.read(),
+                            file_name=os.path.basename(output_path),
+                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        )
+                    
+                    # Success message with next steps
+                    st.info("""
+                    **📋 Next Steps:**
+                    1. **Open the Excel workbook**
+                    2. **Start with the '🔄 Cross-Section Themes' tab**
+                    3. **Process themes in their primary sections**
+                    4. **Mark processing status as you complete each theme**
+                    5. **Use the curated themes in your final report**
+                    """)
+                    
+                else:
+                    st.error("❌ Excel file was not created")
+                    
+            except Exception as e:
+                st.error(f"❌ Error generating workbook: {str(e)}")
+                import traceback
+                st.code(traceback.format_exc())
+
 def show_stage4_analyst_report():
     """Stage 5: Generate Analyst Report - Simple interface for generating executive-ready reports"""
     
@@ -224,6 +382,7 @@ def main():
             "Stage 3: Findings",
             "Stage 4: Themes",
             "Stage 5: Generate Analyst Report",
+            "📊 Excel Workbook Generation",
             "Admin / Utilities"
         ]
     )
@@ -238,6 +397,8 @@ def main():
         show_stage4_themes()
     elif page == "Stage 5: Generate Analyst Report":
         show_stage4_analyst_report()
+    elif page == "📊 Excel Workbook Generation":
+        show_excel_generation()
     elif page == "Admin / Utilities":
         show_admin_panel()
 

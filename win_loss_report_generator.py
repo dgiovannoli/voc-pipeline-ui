@@ -210,6 +210,11 @@ class WinLossReportGenerator:
             
             logger.info(f"📈 Found {len(analyzed_df)} analyzed quotes out of {len(df)} total quotes")
             
+            # Parse research question alignment data
+            if 'research_question_alignment' in analyzed_df.columns:
+                analyzed_df = self._parse_research_question_alignment(analyzed_df)
+                logger.info(f"🔍 Parsed research question alignment for {len(analyzed_df)} quotes")
+            
             # Apply data quality filtering
             cleaned_df = self._apply_data_quality_filtering(analyzed_df)
             
@@ -220,6 +225,85 @@ class WinLossReportGenerator:
         except Exception as e:
             logger.error(f"❌ Error loading enhanced data: {e}")
             return pd.DataFrame()
+    
+    def _parse_research_question_alignment(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Parse the research_question_alignment JSON data into usable format.
+        
+        Args:
+            df: DataFrame with research_question_alignment column
+            
+        Returns:
+            DataFrame with parsed research question data
+        """
+        import json
+        
+        def parse_alignment(alignment_str):
+            if pd.isna(alignment_str) or alignment_str == '':
+                return []
+            try:
+                if isinstance(alignment_str, str):
+                    return json.loads(alignment_str)
+                return alignment_str
+            except (json.JSONDecodeError, TypeError):
+                return []
+        
+        # Parse research question alignment
+        df['parsed_research_alignment'] = df['research_question_alignment'].apply(parse_alignment)
+        
+        # Extract primary research question for each quote
+        df['primary_research_question'] = df['parsed_research_alignment'].apply(
+            lambda x: x[0]['question_text'] if x and len(x) > 0 else "No research question aligned"
+        )
+        
+        # Extract research question indices
+        df['research_question_indices'] = df['parsed_research_alignment'].apply(
+            lambda x: [item['question_index'] for item in x] if x else []
+        )
+        
+        return df
+    
+    def _analyze_theme_research_alignment(self, quotes: pd.DataFrame) -> Dict[str, Any]:
+        """
+        Analyze research question alignment patterns within a theme.
+        
+        Args:
+            quotes: DataFrame of quotes for a theme
+            
+        Returns:
+            Dictionary with research alignment analysis
+        """
+        if 'primary_research_question' not in quotes.columns:
+            return {
+                'primary_question': "No research question data available",
+                'question_coverage': [],
+                'alignment_confidence': 0.0
+            }
+        
+        # Get unique research questions for this theme
+        research_questions = quotes['primary_research_question'].value_counts()
+        
+        if research_questions.empty:
+            return {
+                'primary_question': "No research question data available",
+                'question_coverage': [],
+                'alignment_confidence': 0.0
+            }
+        
+        # Primary research question (most common)
+        primary_question = research_questions.index[0]
+        
+        # Calculate alignment confidence (percentage of quotes with the primary question)
+        alignment_confidence = (research_questions.iloc[0] / len(quotes)) * 100
+        
+        # Get all research questions covered
+        question_coverage = research_questions.to_dict()
+        
+        return {
+            'primary_question': primary_question,
+            'question_coverage': question_coverage,
+            'alignment_confidence': alignment_confidence
+        }
     
     def _group_by_harmonized_subjects(self, quotes_data: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         """
@@ -616,6 +700,7 @@ class WinLossReportGenerator:
     def _generate_theme_statements(self, validated_themes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Generate executive-ready theme statements for validated themes.
+        Now research-question-driven to ensure alignment with original research intent.
         
         Args:
             validated_themes: List of themes that passed quality gates
@@ -630,42 +715,422 @@ class WinLossReportGenerator:
             theme_type = theme["theme_type"]
             subject = theme["harmonized_subject"]
             
-            # Generate theme statement (placeholder - will implement LLM later)
-            theme_statement = self._generate_theme_statement_fallback(theme)
+            # Generate theme ID
+            theme_id = f"theme_{i:03d}_{theme_type}"
             
-            # Select best supporting quotes
-            supporting_quotes = self._select_supporting_quotes(quotes, theme_type)
+            # Analyze research question alignment for this theme
+            research_alignment = self._analyze_theme_research_alignment(quotes)
             
+            # Generate theme statement based on research question alignment
+            theme_statement = self._generate_research_driven_theme_statement(
+                quotes, theme_type, subject, research_alignment
+            )
+            
+            # Generate theme title based on research question
+            theme_title = self._generate_research_driven_theme_title(
+                research_alignment, theme_type, subject
+            )
+            
+            # Calculate quality metrics
+            quality_score = theme["validation_metrics"].get("quality_score", theme["validation_metrics"].get("confidence_score", 0.0))
+            company_distribution = self._calculate_company_distribution(quotes)
+            
+            # Determine report section and win-loss category
+            win_loss_category = self._determine_win_loss_category(theme)
+            report_section = self._determine_report_section(win_loss_category)
+            
+            # Prepare supporting quotes (top 3 by impact score)
+            supporting_quotes = quotes.nlargest(3, 'impact_score')[['verbatim_response', 'company', 'interviewee_name', 'sentiment', 'impact_score']].to_dict('records')
+            
+            # Create final theme object
             final_theme = {
-                "theme_id": f"WL{i:03d}",
+                "theme_id": theme_id,
+                "theme_title": theme_title,
                 "theme_statement": theme_statement,
                 "theme_type": theme_type,
                 "harmonized_subject": subject,
-                "supporting_quotes": supporting_quotes,
+                "report_section": report_section,
+                "win_loss_category": win_loss_category,
+                "quality_score": quality_score,
+                "company_distribution": company_distribution,
+                "research_alignment": research_alignment,
                 "all_quotes": quotes.to_dict('records'),
-                "validation_metrics": theme["validation_metrics"],
-                "competitive_flag": self._check_competitive_relevance(quotes),
-                "generated_at": datetime.now().isoformat()
+                "supporting_quotes": supporting_quotes,
+                "pattern_summary": theme.get("pattern_summary", ""),
+                "competitive_flag": theme.get("competitive_flag", False),
+                "validation_metrics": theme["validation_metrics"]
             }
             
             final_themes.append(final_theme)
         
         return final_themes
     
-    def _generate_theme_statement_fallback(self, theme: Dict[str, Any]) -> str:
-        """Generate a fallback theme statement without LLM"""
+    def _generate_enhanced_theme_title(self, theme: Dict[str, Any], supporting_quotes: List[Dict]) -> str:
+        """Generate enhanced theme title using Stage 4 specificity methodology"""
+        quotes = theme["quotes"]
+        theme_type = theme["theme_type"]
+        subject = theme["harmonized_subject"]
+        
+        # Use LLM if available for title generation
+        if self.openai_api_key:
+            return self._generate_llm_theme_title(theme, supporting_quotes)
+        else:
+            return self._generate_enhanced_template_title(theme, supporting_quotes)
+    
+    def _generate_llm_theme_title(self, theme: Dict[str, Any], supporting_quotes: List[Dict]) -> str:
+        """Generate specific theme title using LLM with Stage 4 methodology"""
+        quotes = theme["quotes"]
+        theme_type = theme["theme_type"]
+        subject = theme["harmonized_subject"]
+        
+        # Extract customer terminology and specific issues
+        quote_analysis = self._analyze_customer_quotes(quotes)
+        
+        # Create Stage 4-style title generation prompt
+        prompt = self._create_theme_title_prompt(theme, quote_analysis, supporting_quotes)
+        
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=self.openai_api_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert B2B SaaS competitive intelligence analyst specializing in creating specific, actionable theme titles that executives can immediately understand. Use exact customer terminology and specific business impacts."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2,
+                max_tokens=100
+            )
+            
+            title = response.choices[0].message.content.strip()
+            
+            # Remove quotes if LLM added them
+            title = title.replace('"', '').replace("'", "")
+            
+            # Ensure title is not too long (max 100 characters)
+            if len(title) > 100:
+                title = title[:97] + "..."
+            
+            return title
+                
+        except Exception as e:
+            logger.warning(f"LLM theme title generation failed: {e}, using enhanced template")
+            return self._generate_enhanced_template_title(theme, supporting_quotes)
+    
+    def _create_theme_title_prompt(self, theme: Dict[str, Any], quote_analysis: Dict[str, Any], supporting_quotes: List[Dict]) -> str:
+        """Create Stage 4-style prompt for theme title generation"""
+        quotes = theme["quotes"]
+        theme_type = theme["theme_type"]
+        subject = theme["harmonized_subject"]
+        
+        # Get most representative quote
+        top_quote = supporting_quotes[0]['quote_text'] if supporting_quotes else ""
+        
+        prompt = f"""
+⚠️ CRITICAL: Generate a SPECIFIC theme title following Stage 4 methodology EXACTLY.
+
+THEME CONTEXT:
+- Subject Area: {subject}
+- Theme Type: {theme_type}
+- Customer Pain Points: {', '.join(quote_analysis['pain_points'][:2])}
+- Business Impacts: {', '.join(quote_analysis['business_impacts'][:2])}
+- Top Customer Quote: "{top_quote}"
+
+TITLE REQUIREMENTS (CRITICAL - MUST FOLLOW EXACTLY):
+- Titles MUST clearly identify the SPECIFIC problem using exact customer terminology
+- Use concrete, evidence-based language from actual quotes - NO generic terms
+- NO generic titles like "efficiency declines", "quality issues", "user satisfaction"
+- MUST use specific terminology from quotes
+- Include specific context when available
+- Titles MUST be specific enough that the client immediately understands the exact issue
+- Highlight business impact or consequence using evidence from quotes
+- Maximum 15 words
+
+EXAMPLES OF GOOD TITLES:
+- "Credit-based pricing model confusion leads prospects to request flat-rate alternatives"
+- "Document organization limitations force manual filing workarounds for case materials"
+- "Multi-user access restrictions prevent team collaboration during evaluation process"
+
+EXAMPLES OF BAD TITLES (DO NOT USE):
+- "Pricing issues disrupt user satisfaction" (too generic)
+- "Workflow efficiency declines due to unclear processes" (too vague)
+- "Quality issues hinder preparation efficiency" (not specific enough)
+
+Generate ONE specific title that identifies the exact problem using customer terminology:
+"""
+        return prompt
+    
+    def _generate_enhanced_template_title(self, theme: Dict[str, Any], supporting_quotes: List[Dict]) -> str:
+        """Generate enhanced template-based title when LLM is not available"""
+        quotes = theme["quotes"]
+        theme_type = theme["theme_type"]
+        subject = theme["harmonized_subject"]
+        
+        # Analyze quotes for specific terminology
+        quote_analysis = self._analyze_customer_quotes(quotes)
+        
+        # Try to extract specific issues from quotes
+        specific_issue = self._extract_specific_issue(quotes, quote_analysis)
+        business_impact = self._extract_business_impact(quotes, quote_analysis)
+        
+        # Create more specific titles based on extracted information
+        if specific_issue and business_impact:
+            return f"{specific_issue} {business_impact}"
+        elif specific_issue:
+            return f"{specific_issue} affects {subject.lower()} adoption"
+        elif business_impact:
+            return f"{subject} limitations {business_impact}"
+        else:
+            # Fallback to enhanced but generic titles
+            if theme_type == "strength":
+                return f"{subject} capabilities drive positive evaluation outcomes"
+            elif theme_type == "weakness":
+                return f"{subject} limitations create adoption barriers for prospects"
+            else:
+                return f"{subject} performance varies across different customer use cases"
+    
+    def _extract_specific_issue(self, quotes: pd.DataFrame, quote_analysis: Dict[str, Any]) -> str:
+        """Extract specific issue terminology from customer quotes"""
+        # Look for specific problems mentioned by customers
+        issue_patterns = [
+            'pricing model', 'credit system', 'user interface', 'document management', 
+            'file organization', 'search functionality', 'integration capabilities',
+            'reporting features', 'user access', 'training requirements', 'setup process'
+        ]
+        
+        text_combined = ' '.join(quotes['verbatim_response'].astype(str).str.lower())
+        
+        for pattern in issue_patterns:
+            if pattern in text_combined:
+                return pattern.title()
+        
+        # If no specific pattern, use the most common pain point
+        if quote_analysis['pain_points']:
+            pain = quote_analysis['pain_points'][0]
+            # Clean up the pain point to make it title-worthy
+            words = pain.split()[:4]  # Take first 4 words
+            return ' '.join(words).title()
+        
+        return ""
+    
+    def _extract_business_impact(self, quotes: pd.DataFrame, quote_analysis: Dict[str, Any]) -> str:
+        """Extract business impact terminology from customer quotes"""
+        # Look for specific business consequences
+        impact_patterns = [
+            'delays evaluation', 'requires workarounds', 'prevents adoption', 
+            'forces manual processes', 'creates confusion', 'extends timelines',
+            'increases costs', 'reduces efficiency', 'complicates workflow'
+        ]
+        
+        text_combined = ' '.join(quotes['verbatim_response'].astype(str).str.lower())
+        
+        for pattern in impact_patterns:
+            if pattern in text_combined:
+                return pattern
+        
+        # If no specific pattern, use the most common business impact
+        if quote_analysis['business_impacts']:
+            impact = quote_analysis['business_impacts'][0]
+            # Clean up the impact to make it title-worthy
+            words = impact.split()[:4]  # Take first 4 words
+            return ' '.join(words).lower()
+        
+        return ""
+    
+    def _generate_enhanced_theme_statement(self, theme: Dict[str, Any]) -> str:
+        """Generate enhanced theme statement using Stage 4 methodology with LLM"""
+        quotes = theme["quotes"]
+        theme_type = theme["theme_type"]
+        subject = theme["harmonized_subject"]
+        
+        # Use LLM if available, otherwise fallback to enhanced template
+        if self.openai_api_key:
+            return self._generate_llm_theme_statement(theme)
+        else:
+            return self._generate_enhanced_template_statement(theme)
+    
+    def _generate_llm_theme_statement(self, theme: Dict[str, Any]) -> str:
+        """Generate theme statement using LLM with Stage 4 executive framework"""
+        quotes = theme["quotes"]
+        theme_type = theme["theme_type"]
+        subject = theme["harmonized_subject"]
+        
+        # Extract customer terminology and pain points
+        quote_analysis = self._analyze_customer_quotes(quotes)
+        
+        # Create Stage 4-style prompt
+        prompt = self._create_theme_statement_prompt(theme, quote_analysis)
+        
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=self.openai_api_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert B2B SaaS competitive intelligence analyst specializing in executive communication. Generate theme statements that are board-deck ready with specific customer terminology."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.3,
+                max_tokens=200
+            )
+            
+            statement = response.choices[0].message.content.strip()
+            
+            # Validate two-sentence format
+            sentences = statement.split('.')
+            if len(sentences) >= 2:
+                # Take first two sentences and ensure proper format
+                sentence1 = sentences[0].strip() + '.'
+                sentence2 = sentences[1].strip() + '.'
+                return f"{sentence1} {sentence2}"
+            else:
+                return statement
+                
+        except Exception as e:
+            logger.warning(f"LLM theme statement generation failed: {e}, using enhanced template")
+            return self._generate_enhanced_template_statement(theme)
+    
+    def _analyze_customer_quotes(self, quotes: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze quotes to extract customer terminology and pain points"""
+        analysis = {
+            "specific_terms": [],
+            "pain_points": [],
+            "business_impacts": [],
+            "customer_behaviors": [],
+            "timeframes": [],
+            "quantifiable_impacts": []
+        }
+        
+        # Keywords to identify different types of customer feedback
+        pain_keywords = ['problem', 'issue', 'difficult', 'frustrating', 'annoying', 'slow', 'error', 'fail', 'broken', 'confusing']
+        impact_keywords = ['takes', 'requires', 'forces', 'prevents', 'delays', 'costs', 'waste', 'manual', 'workaround']
+        behavior_keywords = ['switch', 'choose', 'evaluate', 'compare', 'consider', 'decide', 'prefer', 'avoid']
+        time_keywords = ['minutes', 'hours', 'days', 'weeks', 'time', 'fast', 'slow', 'quick', 'immediately']
+        
+        for _, quote in quotes.iterrows():
+            text = str(quote['verbatim_response']).lower()
+            
+            # Extract specific product/feature terms (capitalize words that appear frequently)
+            words = text.split()
+            for word in words:
+                if len(word) > 4 and word.isalpha():
+                    analysis["specific_terms"].append(word)
+            
+            # Extract pain points
+            for keyword in pain_keywords:
+                if keyword in text:
+                    # Extract surrounding context
+                    context = self._extract_context_around_keyword(text, keyword)
+                    analysis["pain_points"].append(context)
+            
+            # Extract business impacts
+            for keyword in impact_keywords:
+                if keyword in text:
+                    context = self._extract_context_around_keyword(text, keyword)
+                    analysis["business_impacts"].append(context)
+            
+            # Extract customer behaviors
+            for keyword in behavior_keywords:
+                if keyword in text:
+                    context = self._extract_context_around_keyword(text, keyword)
+                    analysis["customer_behaviors"].append(context)
+            
+            # Extract timeframes
+            for keyword in time_keywords:
+                if keyword in text:
+                    context = self._extract_context_around_keyword(text, keyword)
+                    analysis["timeframes"].append(context)
+        
+        # Clean and deduplicate
+        for key in analysis:
+            analysis[key] = list(set(analysis[key]))[:5]  # Top 5 unique items
+        
+        return analysis
+    
+    def _extract_context_around_keyword(self, text: str, keyword: str, window: int = 10) -> str:
+        """Extract context around a keyword"""
+        words = text.split()
+        try:
+            keyword_index = words.index(keyword)
+            start = max(0, keyword_index - window)
+            end = min(len(words), keyword_index + window + 1)
+            return ' '.join(words[start:end])
+        except ValueError:
+            return ""
+    
+    def _create_theme_statement_prompt(self, theme: Dict[str, Any], quote_analysis: Dict[str, Any]) -> str:
+        """Create Stage 4-style prompt for theme statement generation"""
         quotes = theme["quotes"]
         theme_type = theme["theme_type"]
         subject = theme["harmonized_subject"]
         company_col = 'company' if 'company' in quotes.columns else 'company_name'
         companies_count = quotes[company_col].nunique()
         
+        # Get sample quotes for context
+        sample_quotes = quotes['verbatim_response'].head(3).tolist()
+        
+        prompt = f"""
+⚠️ CRITICAL: Generate an executive-ready theme statement following Stage 4 methodology EXACTLY.
+
+THEME CONTEXT:
+- Subject Area: {subject}
+- Theme Type: {theme_type}
+- Companies: {companies_count}
+- Customer Pain Points: {', '.join(quote_analysis['pain_points'][:3])}
+- Business Impacts: {', '.join(quote_analysis['business_impacts'][:3])}
+- Customer Behaviors: {', '.join(quote_analysis['customer_behaviors'][:3])}
+
+SAMPLE CUSTOMER QUOTES:
+{chr(10).join([f"- {quote}" for quote in sample_quotes])}
+
+CRITICAL REQUIREMENTS:
+1. EXACTLY two sentences - NO MORE, NO LESS
+2. Sentence 1: Decision behavior or specific problem with consequence (25-35 words max)
+3. Sentence 2: Most common customer pain point or reaction (25-35 words max)
+4. NO direct quotes in the statement
+5. NO solutioning language ("indicating a need for", "suggesting", "recommending")
+6. Use SPECIFIC customer terminology from quotes
+7. Focus on specific product problems causing customer pain
+8. Use universal business language - NO industry-specific terms
+
+EXAMPLES OF GOOD STATEMENTS:
+- "Credit-based pricing model confusion leads prospects to request flat-rate alternatives during evaluation. Multiple customers report difficulty understanding usage forecasting which creates budget approval delays."
+- "Document organization limitations force users to implement manual filing workarounds for case materials. Legal teams consistently mention time-consuming searches that impact workflow efficiency and case preparation timelines."
+
+Generate a theme statement that follows this exact format and specificity level:
+"""
+        return prompt
+    
+    def _generate_enhanced_template_statement(self, theme: Dict[str, Any]) -> str:
+        """Generate enhanced template-based statement when LLM is not available"""
+        quotes = theme["quotes"]
+        theme_type = theme["theme_type"]
+        subject = theme["harmonized_subject"]
+        company_col = 'company' if 'company' in quotes.columns else 'company_name'
+        companies_count = quotes[company_col].nunique()
+        
+        # Analyze quotes for better terminology
+        quote_analysis = self._analyze_customer_quotes(quotes)
+        
+        # Create more specific statements based on theme type
         if theme_type == "strength":
-            return f"Customers consistently praise {subject.lower()} as a key differentiator, with {companies_count} companies highlighting its positive impact on their decision."
+            if quote_analysis["customer_behaviors"]:
+                behavior = quote_analysis["customer_behaviors"][0]
+                return f"Customers consistently {behavior} due to {subject.lower()} capabilities that differentiate from competitors. {companies_count} organizations report positive decision impact and recommend the solution based on this strength."
+            else:
+                return f"Customers consistently praise {subject.lower()} as a key differentiator during vendor evaluation. {companies_count} companies highlight its positive impact on their purchasing decision and implementation success."
+                
         elif theme_type == "weakness":
-            return f"Multiple customers cite concerns about {subject.lower()}, with {companies_count} companies identifying this as a barrier to adoption."
-        else:
-            return f"Mixed feedback about {subject.lower()} across {companies_count} companies suggests this area requires deeper analysis."
+            if quote_analysis["pain_points"]:
+                pain = quote_analysis["pain_points"][0]
+                return f"Multiple customers cite {pain} related to {subject.lower()} as a barrier to adoption. {companies_count} companies identify this issue as requiring workarounds or additional vendor evaluation."
+            else:
+                return f"Multiple customers express concerns about {subject.lower()} limitations during evaluation process. {companies_count} companies identify this as a barrier requiring additional consideration or alternative solutions."
+                
+        else:  # mixed/investigation_needed
+            return f"Mixed customer feedback about {subject.lower()} reveals varying experiences across different use cases. {companies_count} companies provide divergent perspectives that suggest context-dependent performance requiring deeper analysis."
     
     def _select_supporting_quotes(self, quotes: pd.DataFrame, theme_type: str, max_quotes: int = 5) -> List[Dict]:
         """Select the best supporting quotes for the theme"""
@@ -734,11 +1199,11 @@ class WinLossReportGenerator:
                 "Theme Statement": theme["theme_statement"],
                 "Theme Type": theme["theme_type"].title(),
                 "Harmonized Subject": theme["harmonized_subject"],
-                "Total Quotes": metrics["quotes_count"],
-                "Companies": metrics["companies_count"],
+                "Total Quotes": metrics.get("quotes_count", 0),
+                "Companies": metrics.get("companies_count", 0),
                 "Avg Impact Score": f"{metrics['avg_impact_score']:.1f}",
-                "Quality Score": metrics["quality_score"],
-                "Competitive Flag": "Yes" if theme["competitive_flag"] else "No",
+                "Quality Score": f"{metrics['quality_score']:.1f}",
+                "Competitive Flag": "Yes" if theme.get("competitive_flag", False) else "No",
                 "Deal Status Breakdown": self._get_deal_breakdown(theme["all_quotes"]),
                 "Sentiment Breakdown": self._get_sentiment_breakdown(theme["all_quotes"])
             })
@@ -851,6 +1316,321 @@ class WinLossReportGenerator:
             competitive_terms.append('Alternative solution')
         
         return ", ".join(competitive_terms) if competitive_terms else "No specific competitors mentioned"
+
+    def _determine_win_loss_category(self, theme: Dict[str, Any]) -> str:
+        """
+        Determine the win-loss category for a theme based on its type and characteristics.
+        
+        Args:
+            theme: Theme dictionary with type and characteristics
+            
+        Returns:
+            String indicating win-loss category
+        """
+        theme_type = theme.get('theme_type', '')
+        subject = theme.get('harmonized_subject', '').lower()
+        
+        # Map theme types to win-loss categories
+        if theme_type == 'strength':
+            return 'win_driver'
+        elif theme_type == 'weakness':
+            return 'loss_factor'
+        elif theme_type == 'opportunity':
+            return 'opportunity'
+        elif theme_type == 'concern':
+            return 'risk'
+        elif theme_type == 'investigation_needed':
+            # For investigation themes, determine based on subject
+            if 'competitive' in subject or 'competitor' in subject:
+                return 'competitive_intelligence'
+            elif 'implementation' in subject or 'deployment' in subject:
+                return 'implementation_insight'
+            else:
+                return 'investigation_needed'
+        else:
+            return 'other'
+    
+    def _determine_report_section(self, win_loss_category: str) -> str:
+        """
+        Determine the report section for a win-loss category.
+        
+        Args:
+            win_loss_category: The win-loss category
+            
+        Returns:
+            String indicating report section
+        """
+        section_mapping = {
+            'win_driver': 'Win Drivers',
+            'loss_factor': 'Loss Factors', 
+            'competitive_intelligence': 'Competitive Intelligence',
+            'implementation_insight': 'Implementation Insights',
+            'opportunity': 'Opportunities',
+            'risk': 'Risk Areas',
+            'investigation_needed': 'Areas for Investigation',
+            'other': 'Other Insights'
+        }
+        
+        return section_mapping.get(win_loss_category, 'Other Insights')
+    
+    def _calculate_sentiment_coherence(self, quotes: pd.DataFrame) -> float:
+        """
+        Calculate sentiment coherence percentage for a set of quotes.
+        
+        Args:
+            quotes: DataFrame of quotes
+            
+        Returns:
+            Float representing coherence percentage
+        """
+        if len(quotes) == 0:
+            return 0.0
+        
+        sentiment_counts = quotes['sentiment'].value_counts()
+        dominant_sentiment_count = sentiment_counts.iloc[0] if not sentiment_counts.empty else 0
+        
+        return (dominant_sentiment_count / len(quotes)) * 100
+
+    def _call_openai_api(self, prompt: str, max_tokens: int = 150, temperature: float = 0.7) -> str:
+        """
+        Call OpenAI API for text generation.
+        
+        Args:
+            prompt: The prompt to send to the API
+            max_tokens: Maximum tokens to generate
+            temperature: Creativity level (0.0-1.0)
+            
+        Returns:
+            Generated text response
+        """
+        try:
+            from openai import OpenAI
+            client = OpenAI(api_key=self.openai_api_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert business analyst specializing in customer feedback analysis and win-loss reporting."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=max_tokens,
+                temperature=temperature
+            )
+            
+            return response.choices[0].message.content.strip()
+            
+        except Exception as e:
+            logger.warning(f"OpenAI API call failed: {e}")
+            return ""
+    
+    def _generate_research_driven_theme_statement(self, quotes: pd.DataFrame, theme_type: str, subject: str, research_alignment: Dict) -> str:
+        """
+        Generate theme statement based on research question alignment rather than just harmonized subject.
+        
+        Args:
+            quotes: DataFrame of quotes for this theme
+            theme_type: Type of theme (strength, weakness, etc.)
+            subject: Harmonized subject
+            research_alignment: Research alignment analysis
+            
+        Returns:
+            Research-driven theme statement
+        """
+        primary_question = research_alignment.get('primary_question', '')
+        
+        if not primary_question:
+            # Fallback to original method if no research alignment
+            return self._generate_enhanced_template_statement({
+                'theme_type': theme_type,
+                'harmonized_subject': subject,
+                'quotes': quotes
+            })
+        
+        # Extract key insights from quotes that align with the research question
+        aligned_quotes = quotes[quotes['research_question_alignment'].notna()]
+        
+        if len(aligned_quotes) == 0:
+            # Fallback if no aligned quotes
+            return self._generate_enhanced_template_statement({
+                'theme_type': theme_type,
+                'harmonized_subject': subject,
+                'quotes': quotes
+            })
+        
+        # Generate statement based on research question and aligned quotes
+        if self.openai_api_key:
+            return self._generate_llm_research_driven_statement(
+                primary_question, aligned_quotes, theme_type, subject
+            )
+        else:
+            return self._generate_template_research_driven_statement(
+                primary_question, aligned_quotes, theme_type, subject
+            )
+    
+    def _generate_research_driven_theme_title(self, research_alignment: Dict, theme_type: str, subject: str) -> str:
+        """
+        Generate theme title based on research question alignment.
+        
+        Args:
+            research_alignment: Research alignment analysis
+            theme_type: Type of theme
+            subject: Harmonized subject
+            
+        Returns:
+            Research-driven theme title
+        """
+        primary_question = research_alignment.get('primary_question', '')
+        
+        if not primary_question:
+            # Fallback to subject-based title
+            return f"{subject.title()} {theme_type.title()}"
+        
+        # Extract key concept from research question
+        question_keywords = research_alignment.get('question_keywords', [])
+        if question_keywords:
+            key_concept = question_keywords[0].title()
+        else:
+            # Extract from question text
+            key_concept = primary_question.split()[0].title()
+        
+        return f"{key_concept} {theme_type.title()}"
+    
+    def _generate_llm_research_driven_statement(self, primary_question: str, aligned_quotes: pd.DataFrame, theme_type: str, subject: str) -> str:
+        """
+        Generate LLM-based theme statement that directly addresses the research question.
+        """
+        try:
+            # Prepare context for LLM
+            quote_texts = aligned_quotes['verbatim_response'].tolist()[:5]  # Top 5 aligned quotes
+            quote_context = "\n".join([f"- {quote}" for quote in quote_texts])
+            
+            prompt = f"""
+            Based on the research question and aligned customer quotes, generate a concise theme statement.
+            
+            RESEARCH QUESTION: {primary_question}
+            THEME TYPE: {theme_type}
+            SUBJECT AREA: {subject}
+            
+            ALIGNED QUOTES:
+            {quote_context}
+            
+            Generate a 1-2 sentence theme statement that:
+            1. Directly addresses the research question
+            2. Captures the key insight from the aligned quotes
+            3. Uses executive-level language
+            4. Reflects the {theme_type} nature of the theme
+            
+            Theme Statement:"""
+            
+            response = self._call_openai_api(prompt, max_tokens=150, temperature=0.7)
+            return response.strip()
+            
+        except Exception as e:
+            logger.warning(f"LLM theme generation failed: {e}")
+            return self._generate_template_research_driven_statement(primary_question, aligned_quotes, theme_type, subject)
+    
+    def _generate_template_research_driven_statement(self, primary_question: str, aligned_quotes: pd.DataFrame, theme_type: str, subject: str) -> str:
+        """
+        Generate template-based theme statement that addresses the research question.
+        """
+        # Extract key patterns from aligned quotes
+        sentiment_dist = aligned_quotes['sentiment'].value_counts()
+        avg_impact = aligned_quotes['impact_score'].mean()
+        
+        # Determine the main insight based on research question
+        if "evaluate" in primary_question.lower():
+            insight = "evaluation criteria and decision factors"
+        elif "choose" in primary_question.lower():
+            insight = "selection drivers and competitive advantages"
+        elif "strengths" in primary_question.lower():
+            insight = "key strengths and positive differentiators"
+        elif "weaknesses" in primary_question.lower():
+            insight = "areas of concern and improvement opportunities"
+        elif "implementation" in primary_question.lower():
+            insight = "implementation experience and process effectiveness"
+        else:
+            insight = subject.lower()
+        
+        # Generate statement based on theme type
+        if theme_type == 'strength':
+            return f"Customers consistently highlight {insight} as key drivers in their decision-making process, with {len(aligned_quotes)} responses showing strong positive sentiment."
+        elif theme_type == 'weakness':
+            return f"Multiple customers express concerns about {insight}, with {len(aligned_quotes)} responses indicating areas requiring attention and improvement."
+        else:
+            return f"Analysis reveals patterns in {insight} across {len(aligned_quotes)} customer responses, with an average impact score of {avg_impact:.1f}."
+    
+    def _analyze_theme_research_alignment(self, quotes: pd.DataFrame) -> Dict:
+        """
+        Analyze research question alignment for a theme's quotes.
+        
+        Args:
+            quotes: DataFrame of quotes for this theme
+            
+        Returns:
+            Dictionary with research alignment analysis
+        """
+        # Get all research question alignments from quotes
+        question_counts = {}
+        total_quotes = len(quotes)
+        aligned_quotes = 0
+        
+        for _, quote in quotes.iterrows():
+            if pd.notna(quote.get('research_question_alignment')):
+                aligned_quotes += 1
+                try:
+                    alignment_data = json.loads(quote['research_question_alignment'])
+                    if isinstance(alignment_data, list):
+                        for alignment in alignment_data:
+                            if isinstance(alignment, dict):
+                                question_text = alignment.get('question_text', '')
+                                if question_text:
+                                    question_counts[question_text] = question_counts.get(question_text, 0) + 1
+                    elif isinstance(alignment_data, dict):
+                        question_text = alignment_data.get('question_text', '')
+                        if question_text:
+                            question_counts[question_text] = question_counts.get(question_text, 0) + 1
+                except (json.JSONDecodeError, TypeError, AttributeError):
+                    continue
+        
+        if not question_counts:
+            return {
+                'primary_question': '',
+                'question_coverage': {},
+                'alignment_confidence': 0.0
+            }
+        
+        # Get primary question (most frequent)
+        primary_question = max(question_counts.items(), key=lambda x: x[1])[0]
+        
+        # Calculate coverage and confidence
+        alignment_confidence = (aligned_quotes / total_quotes) * 100 if total_quotes > 0 else 0
+        
+        return {
+            'primary_question': primary_question,
+            'question_coverage': question_counts,
+            'alignment_confidence': alignment_confidence
+        }
+
+    def _calculate_company_distribution(self, quotes: pd.DataFrame) -> Dict:
+        """
+        Calculate company distribution for quotes.
+        
+        Args:
+            quotes: DataFrame of quotes
+            
+        Returns:
+            Dictionary with company distribution analysis
+        """
+        company_counts = quotes['company'].value_counts()
+        total_companies = len(company_counts)
+        total_quotes = len(quotes)
+        
+        return {
+            'companies': company_counts.to_dict(),
+            'company_count': total_companies,
+            'quote_count': total_quotes,
+            'avg_quotes_per_company': total_quotes / total_companies if total_companies > 0 else 0
+        }
 
 # Test function for development
 def test_win_loss_generator():
