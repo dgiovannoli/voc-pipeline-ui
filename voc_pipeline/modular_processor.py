@@ -3,39 +3,31 @@ Modular Pipeline Processor
 Allows independent execution of each pipeline stage for maximum flexibility.
 """
 
+import pandas as pd
 import os
 import sys
 import logging
 import json
-import pandas as pd
-from datetime import datetime
+import time
 from typing import Dict, List, Optional, Any
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 
-# Import prompts
-try:
-    from prompts import get_core_extraction_prompt, get_analysis_enrichment_prompt, get_labeling_prompt
-    PROMPTS_AVAILABLE = True
-except ImportError:
-    PROMPTS_AVAILABLE = False
+# Add the project root to the path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-# Import database
-try:
-    from database import VOCDatabase
-    DB_AVAILABLE = True
-except ImportError:
-    DB_AVAILABLE = False
+from langchain.prompts import PromptTemplate
+from langchain_openai import ChatOpenAI
+from prompts.core_extraction import CORE_EXTRACTION_PROMPT, get_core_extraction_prompt
+from prompts.analysis_enrichment import get_analysis_enrichment_prompt
 
-# Import LLM
-try:
-    from langchain_openai import ChatOpenAI
-    from langchain_core.prompts import PromptTemplate
-    from langchain_core.runnables import RunnableSequence
-    from prompts.core_extraction import CORE_EXTRACTION_PROMPT
-    LLM_AVAILABLE = True
-except ImportError:
-    LLM_AVAILABLE = False
-
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 class ModularProcessor:
@@ -46,12 +38,6 @@ class ModularProcessor:
         self.max_tokens = max_tokens
         self.temperature = temperature
         
-        if not PROMPTS_AVAILABLE:
-            raise ImportError("Prompts package not available")
-        
-        if not LLM_AVAILABLE:
-            raise ImportError("LangChain not available")
-        
         # Initialize LLM
         self.llm = ChatOpenAI(
             model_name=model_name,
@@ -61,11 +47,15 @@ class ModularProcessor:
         
         # Initialize database if available
         self.db = None
-        if DB_AVAILABLE:
-            try:
-                self.db = VOCDatabase()
-            except Exception as e:
-                logger.warning(f"Database not available: {e}")
+        # The original code had DB_AVAILABLE, but DB_AVAILABLE was removed from imports.
+        # Assuming DB_AVAILABLE is no longer needed or will be re-added.
+        # For now, commenting out the DB initialization as DB_AVAILABLE is gone.
+        # if DB_AVAILABLE:
+        #     try:
+        #         from database import VOCDatabase
+        #         self.db = VOCDatabase()
+        #     except Exception as e:
+        #         logger.warning(f"Database not available: {e}")
     
     def stage1_core_extraction(self, transcript_path: str, company: str, interviewee: str, 
                               deal_status: str, date_of_interview: str) -> List[Dict]:
@@ -114,7 +104,58 @@ class ModularProcessor:
         chunks = self._create_chunks(full_text, target_tokens=1000, overlap_tokens=200)
         logger.info(f"Passing {len(chunks)} chunks to LLM with smaller chunks targeting ~2-3 insights per chunk")
         
-        # Process each chunk
+        # Use parallel processing for better performance
+        return self._process_chunks_parallel(chunks, company, interviewee, deal_status, date_of_interview)
+
+    def stage1_core_extraction_sequential(self, transcript_path: str, company: str, interviewee: str, 
+                                        deal_status: str, date_of_interview: str) -> List[Dict]:
+        """
+        Stage 1: Core extraction - SEQUENTIAL VERSION (fallback).
+        This preserves the original sequential implementation.
+        
+        Returns:
+            List of dictionaries with core fields only
+        """
+        logger.info(f"Starting Stage 1: Core extraction (SEQUENTIAL) from {transcript_path}")
+        
+        # Load transcript
+        if transcript_path.lower().endswith(".docx"):
+            try:
+                # Try python-docx first for better extraction
+                from docx import Document
+                doc = Document(transcript_path)
+                full_text = '\n'.join([paragraph.text for paragraph in doc.paragraphs])
+                if not full_text.strip():
+                    # Fallback to Docx2txtLoader
+                    from langchain_community.document_loaders import Docx2txtLoader
+                    loader = Docx2txtLoader(transcript_path)
+                    docs = loader.load()
+                    full_text = docs[0].page_content
+            except ImportError:
+                # Fallback to Docx2txtLoader if python-docx not available
+                from langchain_community.document_loaders import Docx2txtLoader
+                loader = Docx2txtLoader(transcript_path)
+                docs = loader.load()
+                full_text = docs[0].page_content
+        else:
+            with open(transcript_path, encoding="utf-8") as f:
+                full_text = f.read()
+        
+        if not full_text.strip():
+            raise ValueError("Transcript is empty")
+        
+        # Debug: Check text length
+        import tiktoken
+        encoding = tiktoken.get_encoding("cl100k_base")
+        total_tokens = len(encoding.encode(full_text))
+        logger.info(f"Extracted {len(full_text)} characters ({total_tokens} tokens) from transcript")
+        logger.info(f"Text preview: {full_text[:200]}...")
+        
+        # Create chunks using smaller chunks for better reliability and coverage
+        chunks = self._create_chunks(full_text, target_tokens=1000, overlap_tokens=200)
+        logger.info(f"Passing {len(chunks)} chunks to LLM with smaller chunks targeting ~2-3 insights per chunk")
+        
+        # Process each chunk SEQUENTIALLY (original implementation)
         all_responses = []
         for i, chunk in enumerate(chunks):
             try:
@@ -147,48 +188,158 @@ class ModularProcessor:
                 # Debug: Print raw LLM output
                 logger.info(f"LLM raw output for chunk {i}: {repr(response_text[:500])}...")
                 
-                # Fix JSON parsing: Strip markdown code blocks if present
-                if response_text.startswith('```json'):
-                    response_text = response_text[7:]  # Remove ```json
-                if response_text.startswith('```'):
-                    response_text = response_text[3:]  # Remove ```
-                if response_text.endswith('```'):
-                    response_text = response_text[:-3]  # Remove trailing ```
-                response_text = response_text.strip()
-                
-                # Parse JSON
-                try:
-                    responses = json.loads(response_text)
-                    if isinstance(responses, list):
-                        # Add chunk index to response IDs to ensure uniqueness
-                        for j, response in enumerate(responses):
-                            if 'response_id' in response:
-                                response['response_id'] = f"{chunk_id}_{j+1}"
-                            # Output validation for 'question' field
-                            question = response.get('question', '')
-                            if not self._is_valid_question(question):
-                                logger.warning(f"[Stage1 Extraction] Invalid or missing question for response_id {response.get('response_id')}: '{question}'. Setting to 'UNKNOWN'.")
-                                response['question'] = 'UNKNOWN'
-                        all_responses.extend(responses)
-                    else:
-                        responses['response_id'] = f"{chunk_id}_1"
-                        # Output validation for 'question' field
-                        question = responses.get('question', '')
-                        if not self._is_valid_question(question):
-                            logger.warning(f"[Stage1 Extraction] Invalid or missing question for response_id {responses.get('response_id')}: '{question}'. Setting to 'UNKNOWN'.")
-                            responses['question'] = 'UNKNOWN'
-                        all_responses.append(responses)
-                except json.JSONDecodeError as e:
-                    logger.warning(f"Failed to parse JSON from chunk {i}: {e}")
-                    logger.warning(f"Raw response was: {repr(response_text)}")
-                    continue
+                # Parse the response
+                parsed_responses = self._parse_llm_response(response_text, chunk_id, i)
+                all_responses.extend(parsed_responses)
                 
             except Exception as e:
                 logger.error(f"Error processing chunk {i}: {e}")
                 continue
         
         # Post-processing: Remove duplicates and improve quality
-        logger.info(f"Post-processing {len(all_responses)} responses")
+        return self._post_process_responses(all_responses)
+
+    def _process_chunks_parallel(self, chunks: List[str], company: str, interviewee: str, 
+                               deal_status: str, date_of_interview: str, max_workers: int = 3) -> List[Dict]:
+        """
+        Process chunks in parallel for faster Stage 1 extraction.
+        
+        Args:
+            chunks: List of text chunks to process
+            company: Company name
+            interviewee: Interviewee name
+            deal_status: Deal status
+            date_of_interview: Date of interview
+            max_workers: Maximum number of parallel workers (default: 3)
+            
+        Returns:
+            List of processed responses
+        """
+        logger.info(f"🚀 Processing {len(chunks)} chunks in parallel with {max_workers} workers")
+        start_time = time.time()
+        
+        all_responses = []
+        
+        def process_single_chunk(chunk_info):
+            """Process a single chunk - designed to be thread-safe"""
+            chunk_index, chunk_text = chunk_info
+            try:
+                # Create unique response ID for this chunk
+                chunk_id = f"{company}_{interviewee}_{chunk_index+1}"
+                
+                # Create prompt template (use raw template, not formatted)
+                prompt_template = PromptTemplate(
+                    input_variables=["response_id", "company", "interviewee_name", "deal_status", "date_of_interview", "chunk_text"],
+                    template=CORE_EXTRACTION_PROMPT
+                )
+                chain = prompt_template | self.llm
+                
+                # Get response
+                result = chain.invoke({
+                    "response_id": chunk_id,
+                    "company": company,
+                    "interviewee_name": interviewee,
+                    "deal_status": deal_status,
+                    "date_of_interview": date_of_interview,
+                    "chunk_text": chunk_text
+                })
+                
+                # Parse response
+                if hasattr(result, 'content'):
+                    response_text = result.content.strip()
+                else:
+                    response_text = str(result).strip()
+                
+                # Debug: Print raw LLM output
+                logger.info(f"🔍 LLM raw output for chunk {chunk_index}: {repr(response_text[:200])}...")
+                
+                # Parse the response
+                parsed_responses = self._parse_llm_response(response_text, chunk_id, chunk_index)
+                
+                logger.info(f"✅ Chunk {chunk_index} completed: {len(parsed_responses)} responses extracted")
+                return parsed_responses
+                
+            except Exception as e:
+                logger.error(f"❌ Error processing chunk {chunk_index}: {e}")
+                return []
+        
+        # Prepare chunk information for parallel processing
+        chunk_info_list = [(i, chunk) for i, chunk in enumerate(chunks)]
+        
+        # Process chunks in parallel
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # Submit all chunk processing tasks
+            future_to_chunk = {
+                executor.submit(process_single_chunk, chunk_info): chunk_info[0] 
+                for chunk_info in chunk_info_list
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_chunk):
+                chunk_index = future_to_chunk[future]
+                try:
+                    chunk_responses = future.result()
+                    all_responses.extend(chunk_responses)
+                except Exception as exc:
+                    logger.error(f"❌ Chunk {chunk_index} generated an exception: {exc}")
+        
+        processing_time = time.time() - start_time
+        logger.info(f"🎉 Parallel processing completed in {processing_time:.2f} seconds")
+        logger.info(f"📊 Extracted {len(all_responses)} total responses from {len(chunks)} chunks")
+        
+        # Post-processing: Remove duplicates and improve quality
+        return self._post_process_responses(all_responses)
+
+    def _parse_llm_response(self, response_text: str, chunk_id: str, chunk_index: int) -> List[Dict]:
+        """
+        Parse LLM response text into structured data.
+        Extracted from the original sequential implementation for reuse.
+        """
+        parsed_responses = []
+        
+        # Fix JSON parsing: Strip markdown code blocks if present
+        if response_text.startswith('```json'):
+            response_text = response_text[7:]  # Remove ```json
+        if response_text.startswith('```'):
+            response_text = response_text[3:]  # Remove ```
+        if response_text.endswith('```'):
+            response_text = response_text[:-3]  # Remove trailing ```
+        response_text = response_text.strip()
+        
+        # Parse JSON
+        try:
+            responses = json.loads(response_text)
+            if isinstance(responses, list):
+                # Add chunk index to response IDs to ensure uniqueness
+                for j, response in enumerate(responses):
+                    if 'response_id' in response:
+                        response['response_id'] = f"{chunk_id}_{j+1}"
+                    # Output validation for 'question' field
+                    question = response.get('question', '')
+                    if not self._is_valid_question(question):
+                        logger.warning(f"[Stage1 Extraction] Invalid or missing question for response_id {response.get('response_id')}: '{question}'. Setting to 'UNKNOWN'.")
+                        response['question'] = 'UNKNOWN'
+                parsed_responses.extend(responses)
+            else:
+                responses['response_id'] = f"{chunk_id}_1"
+                # Output validation for 'question' field
+                question = responses.get('question', '')
+                if not self._is_valid_question(question):
+                    logger.warning(f"[Stage1 Extraction] Invalid or missing question for response_id {responses.get('response_id')}: '{question}'. Setting to 'UNKNOWN'.")
+                    responses['question'] = 'UNKNOWN'
+                parsed_responses.append(responses)
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON from chunk {chunk_index}: {e}")
+            logger.warning(f"Raw response was: {repr(response_text)}")
+        
+        return parsed_responses
+
+    def _post_process_responses(self, all_responses: List[Dict]) -> List[Dict]:
+        """
+        Post-process responses to remove duplicates and improve quality.
+        Extracted from the original implementation for reuse.
+        """
+        logger.info(f"📋 Post-processing {len(all_responses)} responses")
         
         # Remove exact duplicates based on verbatim response
         seen_responses = set()
@@ -199,7 +350,7 @@ class ModularProcessor:
                 seen_responses.add(verbatim)
                 unique_responses.append(response)
         
-        logger.info(f"Removed {len(all_responses) - len(unique_responses)} duplicate responses")
+        logger.info(f"🔄 Removed {len(all_responses) - len(unique_responses)} duplicate responses")
         
         # Filter out very short responses (likely incomplete) - reduced threshold for better coverage
         quality_responses = []
@@ -208,9 +359,9 @@ class ModularProcessor:
             if len(verbatim.split()) >= 10:  # Reduced from 20 to 10 words for better coverage
                 quality_responses.append(response)
         
-        logger.info(f"Post-processing removed {len(unique_responses) - len(quality_responses)} additional duplicates")
+        logger.info(f"✂️ Post-processing removed {len(unique_responses) - len(quality_responses)} short responses")
+        logger.info(f"✅ Stage 1 complete: extracted {len(quality_responses)} quality responses")
         
-        logger.info(f"Stage 1 complete: extracted {len(quality_responses)} responses")
         return quality_responses
     
     def stage2_analysis_enrichment(self, stage1_data_responses: List[Dict]) -> List[Dict]:

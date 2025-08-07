@@ -46,7 +46,9 @@ class MetadataStage1Processor:
     def process_metadata_csv(self, csv_file_path: str, client_id: str, 
                            transcript_column: str = 'Raw Transcript',
                            max_interviews: Optional[int] = None,
-                           dry_run: bool = False) -> Dict[str, any]:
+                           dry_run: bool = False,
+                           processing_mode: str = "parallel",
+                           max_workers: int = 3) -> Dict[str, any]:
         """
         Process Stage 1 extraction from metadata CSV file with automatic harmonization.
         
@@ -56,12 +58,15 @@ class MetadataStage1Processor:
             transcript_column: Name of column containing transcript text
             max_interviews: Maximum number of interviews to process (None for all)
             dry_run: If True, don't save to database, just return results
+            processing_mode: "parallel" or "sequential" processing mode
+            max_workers: Number of parallel workers (only used in parallel mode)
             
         Returns:
             Dictionary with processing results including harmonization stats
         """
         logger.info(f"🎯 Starting metadata Stage 1 processing with auto-harmonization for client: {client_id}")
         logger.info(f"📁 Processing CSV: {csv_file_path}")
+        logger.info(f"⚡ Processing mode: {processing_mode.upper()}" + (f" ({max_workers} workers)" if processing_mode == "parallel" else ""))
         
         # Read metadata CSV
         try:
@@ -273,14 +278,24 @@ class MetadataStage1Processor:
                 with open(temp_file, 'w', encoding='utf-8') as f:
                     f.write(transcript)
                 
-                # Run Stage 1 extraction
-                extracted_data = self.processor.stage1_core_extraction(
-                    transcript_path=temp_file,
-                    company=company,
-                    interviewee=interviewee_name,
-                    deal_status=deal_status,
-                    date_of_interview=date_of_interview
-                )
+                # Run Stage 1 extraction with specified processing mode
+                if processing_mode == "parallel":
+                    extracted_data = self.processor.stage1_core_extraction(
+                        transcript_path=temp_file,
+                        company=company,
+                        interviewee=interviewee_name,
+                        deal_status=deal_status,
+                        date_of_interview=date_of_interview
+                    )
+                else:
+                    # Use sequential processing
+                    extracted_data = self.processor.stage1_core_extraction_sequential(
+                        transcript_path=temp_file,
+                        company=company,
+                        interviewee=interviewee_name,
+                        deal_status=deal_status,
+                        date_of_interview=date_of_interview
+                    )
                 
                 if extracted_data:
                     logger.info(f"✅ Successfully extracted {len(extracted_data)} responses from {interview_id}")

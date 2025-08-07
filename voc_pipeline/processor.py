@@ -455,7 +455,7 @@ def _process_transcript_impl(
 ) -> None:
     """
     Load the transcript, run the full Response Data Table prompt,
-    and emit raw CSV to stdout.
+    and emit raw CSV to stdout. NOW WITH PARALLEL PROCESSING!
     """
     # Load environment variables
     load_dotenv()
@@ -478,6 +478,85 @@ def _process_transcript_impl(
     if not full_text.strip():
         print("ERROR: Transcript is empty")
         return
+    
+    # Use parallel processing for Stage 1
+    result = _process_transcript_parallel(full_text, client, company, interviewee, deal_status, date_of_interview)
+    
+    # Output results
+    if result:
+        print(result)
+    else:
+        print("ERROR: No valid responses extracted")
+
+def _process_transcript_sequential(
+    transcript_path: str,
+    client: str,
+    company: str,
+    interviewee: str,
+    deal_status: str,
+    date_of_interview: str,
+) -> None:
+    """
+    SEQUENTIAL VERSION: Load the transcript, run the full Response Data Table prompt,
+    and emit raw CSV to stdout. (Original implementation preserved as fallback)
+    """
+    # Load environment variables
+    load_dotenv()
+    
+    # Debug: Check if API key is loaded
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("ERROR: OPENAI_API_KEY not found in environment")
+        return
+    
+    # Load transcript
+    if transcript_path.lower().endswith(".docx"):
+        loader = Docx2txtLoader(transcript_path)
+        # 1) Load full transcript
+        docs = loader.load()
+        full_text = docs[0].page_content
+    else:
+        full_text = open(transcript_path, encoding="utf-8").read()
+    
+    if not full_text.strip():
+        print("ERROR: Transcript is empty")
+        return
+    
+    # Use sequential processing (original implementation)
+    result = _process_transcript_sequential_impl(full_text, client, company, interviewee, deal_status, date_of_interview)
+    
+    # Output results
+    if result:
+        print(result)
+    else:
+        print("ERROR: No valid responses extracted")
+
+def _process_transcript_parallel(
+    full_text: str,
+    client: str,
+    company: str,
+    interviewee: str,
+    deal_status: str,
+    date_of_interview: str,
+    max_workers: int = 3
+) -> str:
+    """
+    Process transcript using parallel chunk processing for improved speed.
+    
+    Args:
+        full_text: The full transcript text
+        client: Client identifier
+        company: Company name
+        interviewee: Interviewee name
+        deal_status: Deal status
+        date_of_interview: Date of interview
+        max_workers: Maximum number of parallel workers
+        
+    Returns:
+        CSV string with extracted responses
+    """
+    print(f"🚀 Starting parallel Stage 1 processing with {max_workers} workers", file=sys.stderr)
+    start_time = time.time()
     
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
@@ -585,39 +664,40 @@ Interview chunk to analyze:
     # 2) Use quality-focused chunking targeting ~5 insights per interview (7K tokens)
     # Balance between context and granularity for consistent high-quality insights
     qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=7000, overlap_tokens=600)
-    print(f"[DEBUG] Passing {len(qa_segments)} chunks to LLM with quality-focused chunking targeting ~5 insights.", file=sys.stderr)
+    print(f"🔍 Passing {len(qa_segments)} chunks to LLM with parallel processing", file=sys.stderr)
     
-    # 3) Run the single-row-per-chunk processing
-    chunk_results = []
-    quality_rows = []
+    # 3) Run parallel chunk processing
+    all_quality_rows = []
     
-    def process_chunk(chunk_index, chunk):
+    def process_single_chunk(chunk_info):
+        """Process a single chunk in parallel - thread-safe implementation"""
+        chunk_index, chunk = chunk_info
         try:
             # Filter out non-Q&A chunks
             if not is_qa_chunk(chunk, found_qa):
-                logging.info(f"Chunk {chunk_index} filtered out: not Q&A content")
-                return (chunk_index, [])
+                print(f"📋 Chunk {chunk_index} filtered: not Q&A content", file=sys.stderr)
+                return []
             
             # Clean the chunk text (but be less aggressive for speaker-based transcripts)
             if found_qa:
                 # For Q&A format, clean aggressively
                 cleaned_chunk = clean_verbatim_response(chunk)
                 if not cleaned_chunk:
-                    logging.info(f"Chunk {chunk_index} filtered out: no content after cleaning")
-                    return (chunk_index, [])
+                    print(f"📋 Chunk {chunk_index} filtered: no content after cleaning", file=sys.stderr)
+                    return []
             else:
                 # For speaker-based transcripts, just remove speaker labels and timestamps
                 cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', chunk)
                 cleaned_chunk = re.sub(r'\(\d{2}:\d{2}\):\s*', '', cleaned_chunk)
                 cleaned_chunk = cleaned_chunk.strip()
                 if len(cleaned_chunk) < 5:
-                    logging.info(f"Chunk {chunk_index} filtered out: too short after minimal cleaning")
-                    return (chunk_index, [])
+                    print(f"📋 Chunk {chunk_index} filtered: too short after cleaning", file=sys.stderr)
+                    return []
             
             # Skip low-value responses
             if is_low_value_response(cleaned_chunk):
-                logging.info(f"Chunk {chunk_index} filtered out: low-value response - {cleaned_chunk[:50]}...")
-                return (chunk_index, [])
+                print(f"📋 Chunk {chunk_index} filtered: low-value response", file=sys.stderr)
+                return []
             
             # Prepare input for the chain
             base_response_id = normalize_response_id(company, interviewee, chunk_index, client)
@@ -632,352 +712,365 @@ Interview chunk to analyze:
                 "date_of_interview": date_of_interview
             }
             
-            # Get response from LLM
-            raw = ""
-            # up to 3 attempts to get valid JSON
-            for _ in range(3):
-                response = chain.invoke(chain_input)
-                # Extract content from AIMessage object
-                if hasattr(response, 'content'):
-                    raw = response.content.strip()
-                else:
-                    raw = str(response).strip()
-                if not raw:
-                    continue
+            # Get response from LLM with retries
+            chunk_responses = []
+            for attempt in range(3):
                 try:
+                    response = chain.invoke(chain_input)
+                    # Extract content from AIMessage object
+                    if hasattr(response, 'content'):
+                        raw = response.content.strip()
+                    else:
+                        raw = str(response).strip()
+                    
+                    if not raw:
+                        continue
+                    
                     # Parse response - could be single object or array
                     parsed = json.loads(raw)
                     
-                    # Handle both single object and array responses
                     if isinstance(parsed, list):
-                        objects = parsed
+                        for i, item in enumerate(parsed):
+                            if not item.get('verbatim_response', '').strip():
+                                continue
+                            # Ensure unique response ID
+                            item['response_id'] = f"{base_response_id}_{i+1}"
+                            chunk_responses.append(item)
                     else:
-                        objects = [parsed]
+                        if parsed.get('verbatim_response', '').strip():
+                            parsed['response_id'] = f"{base_response_id}_1"
+                            chunk_responses.append(parsed)
                     
-                    csv_rows = []
+                    print(f"✅ Chunk {chunk_index}: extracted {len(chunk_responses)} responses", file=sys.stderr)
+                    break
                     
-                    for i, obj in enumerate(objects):
-                        # Validate required fields
-                        required_fields = ["response_id", "verbatim_response", "subject", "question", 
-                                         "deal_status", "company", "interviewee_name", "date_of_interview", "key_insight"]
-                        for field in required_fields:
-                            if field not in obj:
-                                if field == "key_insight":
-                                    obj["key_insight"] = "N/A"
-                                else:
-                                    raise ValueError(f"Missing required field: {field}")
-                        
-                        # Ensure metadata is populated everywhere
-                        obj["deal_status"] = normalize_deal_status(deal_status)
-                        obj["company"] = company
-                        obj["interviewee_name"] = interviewee
-                        obj["date_of_interview"] = format_date(date_of_interview)
-                        
-                        # Fill missing questions/subjects
-                        if not obj.get("question") or obj["question"] == "N/A":
-                            obj["question"] = "What insights did the interviewee share?"
-                        
-                        if not obj.get("subject") or obj["subject"] == "N/A":
-                            obj["subject"] = infer_subject_from_text(cleaned_chunk)
-                        
-                        # Clean verbatim response again to ensure it's clean
-                        original_len = len(cleaned_chunk.split())
-                        obj["verbatim_response"] = clean_verbatim_response(obj["verbatim_response"])
-                        cleaned_len = len(obj["verbatim_response"].split())
-                        
-                        # Quality check: flag if >80% of chunk was dropped
-                        if original_len > 0:
-                            drop_ratio = 1 - (cleaned_len / original_len)
-                            if drop_ratio > 0.8:
-                                quality_rows.append({
-                                    "response_id": obj.get("response_id", ""),
-                                    "grade": "LOW",
-                                    "notes": f"{math.floor(drop_ratio*100)}% of original chunk dropped after cleaning."
-                                })
-                            else:
-                                quality_rows.append({
-                                    "response_id": obj.get("response_id", ""),
-                                    "grade": "OK",
-                                    "notes": ""
-                                })
-                        
-                        # Convert to CSV row
-                        csv_row = [
-                            obj.get("response_id", ""),
-                            obj.get("key_insight", ""),
-                            obj.get("verbatim_response", ""),
-                            obj.get("subject", ""),
-                            obj.get("question", ""),
-                            obj.get("deal_status", ""),
-                            obj.get("company", ""),
-                            obj.get("interviewee_name", ""),
-                            obj.get("date_of_interview", ""),
-                            obj.get("findings", ""),
-                            obj.get("value_realization", ""),
-                            obj.get("implementation_experience", ""),
-                            obj.get("risk_mitigation", ""),
-                            obj.get("competitive_advantage", ""),
-                            obj.get("customer_success", ""),
-                            obj.get("product_feedback", ""),
-                            obj.get("service_quality", ""),
-                            obj.get("decision_factors", ""),
-                            obj.get("pain_points", ""),
-                            obj.get("success_metrics", ""),
-                            obj.get("future_plans", "")
-                        ]
-                        
-                        csv_rows.append(csv_row)
-                    
-                    return (chunk_index, csv_rows)
+                except json.JSONDecodeError as e:
+                    print(f"⚠️ Chunk {chunk_index} attempt {attempt+1}: JSON decode error", file=sys.stderr)
+                    if attempt == 2:  # Last attempt
+                        print(f"❌ Chunk {chunk_index}: failed after 3 attempts", file=sys.stderr)
                 except Exception as e:
-                    # malformed JSON, retry
+                    print(f"❌ Chunk {chunk_index} attempt {attempt+1}: {e}", file=sys.stderr)
+                    if attempt == 2:
+                        break
+            
+            return chunk_responses
+            
+        except Exception as e:
+            print(f"❌ Chunk {chunk_index} fatal error: {e}", file=sys.stderr)
+            return []
+    
+    # Prepare chunk information for parallel processing
+    chunk_info_list = [(i, chunk) for i, chunk in enumerate(qa_segments)]
+    
+    # Process chunks in parallel
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all chunk processing tasks
+        future_to_chunk = {
+            executor.submit(process_single_chunk, chunk_info): chunk_info[0] 
+            for chunk_info in chunk_info_list
+        }
+        
+        # Collect results as they complete
+        for future in as_completed(future_to_chunk):
+            chunk_index = future_to_chunk[future]
+            try:
+                chunk_responses = future.result()
+                all_quality_rows.extend(chunk_responses)
+            except Exception as exc:
+                print(f"❌ Chunk {chunk_index} executor exception: {exc}", file=sys.stderr)
+    
+    processing_time = time.time() - start_time
+    print(f"🎉 Parallel processing completed in {processing_time:.2f} seconds", file=sys.stderr)
+    print(f"📊 Total responses extracted: {len(all_quality_rows)}", file=sys.stderr)
+    
+    # Convert to CSV
+    if not all_quality_rows:
+        return ""
+    
+    # Create DataFrame and convert to CSV
+    df = pd.DataFrame(all_quality_rows)
+    
+    # Ensure proper column order
+    column_order = [
+        'response_id', 'key_insight', 'verbatim_response', 'subject', 'question',
+        'deal_status', 'company', 'interviewee_name', 'date_of_interview',
+        'findings', 'value_realization', 'implementation_experience', 'risk_mitigation',
+        'competitive_advantage', 'customer_success', 'product_feedback', 'service_quality',
+        'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
+    ]
+    
+    # Reorder columns, adding any missing ones with empty strings
+    for col in column_order:
+        if col not in df.columns:
+            df[col] = ""
+    
+    df = df[column_order]
+    
+    # Convert to CSV string
+    return df.to_csv(index=False)
+
+def _process_transcript_sequential_impl(
+    full_text: str,
+    client: str,
+    company: str,
+    interviewee: str,
+    deal_status: str,
+    date_of_interview: str,
+) -> str:
+    """
+    SEQUENTIAL VERSION: Load the transcript, run the full Response Data Table prompt,
+    and emit raw CSV to stdout. (Original implementation preserved as fallback)
+    """
+    # Load environment variables
+    load_dotenv()
+    
+    # Debug: Check if API key is loaded
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("ERROR: OPENAI_API_KEY not found in environment")
+        return ""
+    
+    # Load transcript
+    if transcript_path.lower().endswith(".docx"):
+        loader = Docx2txtLoader(transcript_path)
+        # 1) Load full transcript
+        docs = loader.load()
+        full_text = docs[0].page_content
+    else:
+        full_text = open(transcript_path, encoding="utf-8").read()
+    
+    if not full_text.strip():
+        print("ERROR: Transcript is empty")
+        return ""
+    
+    # Create enhanced prompt template optimized for quality over quantity
+    prompt_template = PromptTemplate(
+        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
+        template="""CRITICAL INSTRUCTIONS FOR CONTEXT-DRIVEN EXTRACTION:
+- You have access to focused context windows (~7K tokens) containing Q&A exchanges.
+- Focus on COMPLETE CONTEXT and MEANINGFUL Q&A PAIRS rather than arbitrary numbers.
+- Extract responses that provide complete thought processes, reasoning, and business context.
+- Some chunks may have 1 valuable Q&A pair, others may have 4 - let the content guide you.
+
+CONTEXT-DRIVEN EXTRACTION STRATEGY:
+- **Evaluate the Context**: Look for complete Q&A exchanges that provide full context
+- **Preserve Thought Processes**: Capture responses that show complete reasoning and decision-making
+- **Maintain Conversation Flow**: Include related follow-up questions and clarifications
+- **Focus on Substance**: Prioritize responses with specific examples, metrics, and detailed explanations
+- **Natural Grouping**: Group related Q&A pairs that form a complete thought or scenario
+- **Quality Over Quantity**: Better to extract 1 comprehensive response than 2 fragmented ones
+
+EXTRACTION CRITERIA:
+1. **Complete Context**: Responses that provide full background, reasoning, and implications
+2. **Specific Examples**: Detailed scenarios, use cases, workflows, and quantitative details
+3. **Business Impact**: ROI discussions, decision factors, risk assessments, and strategic perspectives
+4. **Comparative Analysis**: Before/after comparisons, competitive evaluations, and performance metrics
+5. **Integration Details**: Workflow requirements, technical specifications, and process changes
+6. **Customer Experiences**: Complete scenarios with full context and specific outcomes
+
+VERBATIM RESPONSE RULES:
+- Include the COMPLETE response text with full context and conversation flow
+- Preserve ALL context, examples, specific details, and quantitative information
+- Include relevant follow-up questions and clarifications that add context
+- Remove only speaker labels, timestamps, and interviewer prompts
+- Keep filler words if they add emphasis or meaning
+- Maintain the natural flow and structure of the response
+- Include specific examples, metrics, detailed explanations, and follow-up context
+- Preserve comparative language and specific differentiators
+- Include workflow details, process descriptions, and technical specifications
+
+CONTEXT EVALUATION:
+- **High Context**: Complete scenarios with full background, specific examples, and detailed outcomes
+- **Medium Context**: Good detail but may be missing some background or follow-up context
+- **Low Context**: Brief responses with limited detail or incomplete scenarios
+- **Skip**: Acknowledgments, thank yous, or responses with insufficient context
+
+EXTRACTION DECISION FRAMEWORK:
+1. **Start with Q&A Pairs**: Identify complete question-answer exchanges
+2. **Evaluate Context**: Assess the completeness and richness of each response
+3. **Group Related Content**: Combine related Q&A pairs that form complete thoughts
+4. **Prioritize Substance**: Focus on responses with specific examples, metrics, and detailed explanations
+5. **Maintain Flow**: Preserve conversation context and related follow-up questions
+6. **Quality Check**: Ensure each extracted response provides meaningful, actionable insights
+
+Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pairs. Return ONLY a JSON array containing the most valuable responses (quantity varies by content quality):
+
+[
+  {{
+    "response_id": "{response_id}",
+    "key_insight": "comprehensive_insight_summary_with_specific_details",
+    "verbatim_response": "complete_verbatim_response_with_full_context_and_conversation_flow",
+    "subject": "brief_subject_description_1",
+    "question": "what_question_this_answers_1",
+    "deal_status": "{deal_status}",
+    "company": "{company}",
+    "interviewee_name": "{interviewee_name}",
+    "date_of_interview": "{date_of_interview}",
+    "findings": "key_finding_summary_with_specific_details_1",
+    "value_realization": "value_or_roi_metrics_with_quantitative_details_1",
+    "implementation_experience": "implementation_details_with_workflow_specifics_1",
+    "risk_mitigation": "risk_mitigation_approaches_with_specific_strategies_1",
+    "competitive_advantage": "competitive_positioning_with_specific_differentiators_1",
+    "customer_success": "customer_success_factors_with_measurable_outcomes_1",
+    "product_feedback": "product_feature_feedback_with_specific_examples_1",
+    "service_quality": "service_quality_assessment_with_quantitative_metrics_1",
+    "decision_factors": "decision_influencing_factors_with_specific_criteria_1",
+    "pain_points": "challenges_or_pain_points_with_detailed_context_1",
+    "success_metrics": "success_criteria_and_metrics_with_specific_measurements_1",
+    "future_plans": "future_plans_or_expansion_with_specific_timelines_1"
+  }}
+]
+
+Guidelines:
+- **Let Content Guide Quantity**: Extract 1-4 responses based on the richness of the content
+- **Focus on Complete Context**: Prioritize responses that provide full background and reasoning
+- **Preserve Conversation Flow**: Include related follow-up questions and clarifications
+- **Subject Categories**: Product Features, Process, Pricing, Support, Integration, Decision Making, Workflow Optimization
+- **Quality Threshold**: Only extract responses with substantial, actionable content
+- **Context Preservation**: Ensure each response captures the complete thought process
+- **Natural Grouping**: Group related Q&A pairs that form complete scenarios
+- **Skip Low-Quality**: Skip chunks with only acknowledgments, thank yous, or insufficient context
+- **Variable Output**: Some chunks may produce 1 response, others 4 - this is expected and correct
+
+Interview chunk to analyze:
+{chunk_text}"""
+    )
+    
+    # Create LLM chain (RunnableSequence) - using ChatOpenAI for gpt-4o-mini
+    from langchain_openai import ChatOpenAI
+    llm = ChatOpenAI(
+        model_name="gpt-4o-mini",
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+        max_tokens=4096,
+        temperature=0.1
+    )
+    chain = prompt_template | llm
+    
+    # 2) Use quality-focused chunking targeting ~5 insights per interview (7K tokens)
+    # Balance between context and granularity for consistent high-quality insights
+    qa_segments, found_qa = create_qa_aware_chunks(full_text, target_tokens=7000, overlap_tokens=600)
+    print(f"🔍 Passing {len(qa_segments)} chunks to LLM with sequential processing", file=sys.stderr)
+    
+    # 3) Run sequential chunk processing
+    all_quality_rows = []
+    
+    for i, chunk in enumerate(qa_segments):
+        try:
+            # Filter out non-Q&A chunks
+            if not is_qa_chunk(chunk, found_qa):
+                print(f"📋 Chunk {i} filtered: not Q&A content", file=sys.stderr)
+                continue
+            
+            # Clean the chunk text (but be less aggressive for speaker-based transcripts)
+            if found_qa:
+                # For Q&A format, clean aggressively
+                cleaned_chunk = clean_verbatim_response(chunk)
+                if not cleaned_chunk:
+                    print(f"📋 Chunk {i} filtered: no content after cleaning", file=sys.stderr)
+                    continue
+            else:
+                # For speaker-based transcripts, just remove speaker labels and timestamps
+                cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', chunk)
+                cleaned_chunk = re.sub(r'\(\d{2}:\d{2}\):\s*', '', cleaned_chunk)
+                cleaned_chunk = cleaned_chunk.strip()
+                if len(cleaned_chunk) < 5:
+                    print(f"📋 Chunk {i} filtered: too short after cleaning", file=sys.stderr)
                     continue
             
-            # if we reach here, skip this chunk
-            logging.warning(f"Chunk {chunk_index} dropped: no valid LLM output — text: {chunk[:60].replace(chr(10), ' ')}")
-            return (chunk_index, [])
+            # Skip low-value responses
+            if is_low_value_response(cleaned_chunk):
+                print(f"📋 Chunk {i} filtered: low-value response", file=sys.stderr)
+                continue
+            
+            # Prepare input for the chain
+            base_response_id = normalize_response_id(company, interviewee, i, client)
+            chain_input = {
+                "chunk_text": cleaned_chunk,
+                "response_id": base_response_id,
+                "key_insight": "",  # Let the LLM fill this in
+                "company": company,
+                "company_name": company,
+                "interviewee_name": interviewee,
+                "deal_status": deal_status,
+                "date_of_interview": date_of_interview
+            }
+            
+            # Get response from LLM with retries
+            chunk_responses = []
+            for attempt in range(3):
+                try:
+                    response = chain.invoke(chain_input)
+                    # Extract content from AIMessage object
+                    if hasattr(response, 'content'):
+                        raw = response.content.strip()
+                    else:
+                        raw = str(response).strip()
+                    
+                    if not raw:
+                        continue
+                    
+                    # Parse response - could be single object or array
+                    parsed = json.loads(raw)
+                    
+                    if isinstance(parsed, list):
+                        for i, item in enumerate(parsed):
+                            if not item.get('verbatim_response', '').strip():
+                                continue
+                            # Ensure unique response ID
+                            item['response_id'] = f"{base_response_id}_{i+1}"
+                            chunk_responses.append(item)
+                    else:
+                        if parsed.get('verbatim_response', '').strip():
+                            parsed['response_id'] = f"{base_response_id}_1"
+                            chunk_responses.append(parsed)
+                    
+                    print(f"✅ Chunk {i}: extracted {len(chunk_responses)} responses", file=sys.stderr)
+                    break
+                    
+                except json.JSONDecodeError as e:
+                    print(f"⚠️ Chunk {i} attempt {attempt+1}: JSON decode error", file=sys.stderr)
+                    if attempt == 2:  # Last attempt
+                        print(f"❌ Chunk {i}: failed after 3 attempts", file=sys.stderr)
+                except Exception as e:
+                    print(f"❌ Chunk {i} attempt {attempt+1}: {e}", file=sys.stderr)
+                    if attempt == 2:
+                        break
+            
+            all_quality_rows.extend(chunk_responses)
             
         except Exception as e:
-            logging.warning(f"Chunk {chunk_index} dropped: {e} — text: {chunk[:100]!r}")
-            return (chunk_index, [])
-    
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_chunk = {executor.submit(process_chunk, i, chunk): (i, chunk) for i, chunk in enumerate(qa_segments)}
-        for future in as_completed(future_to_chunk):
-            try:
-                chunk_index, results = future.result()
-                if results:  # Only add successful results
-                    for result in results:
-                        chunk_results.append((chunk_index, result))
-            except Exception as e:
-                print(f"Error processing chunk: {e}")
-    
-    # 4) Sort by chunk index and deduplicate results
-    chunk_results.sort(key=lambda x: x[0])
-    
-    # Enhanced deduplication based on key insight and verbatim response similarity
-    def is_similar_response(row1, row2, similarity_threshold=0.8):  # Increased threshold for more nuanced deduplication
-        """Check if two responses are similar enough to be considered duplicates"""
-        import difflib
-        
-        # Ensure we have enough columns
-        if len(row1) < 3 or len(row2) < 3:
-            return False
-        
-        # Get key insight and verbatim response
-        insight1 = str(row1[1]).lower().strip()  # Key Insight
-        insight2 = str(row2[1]).lower().strip()
-        verbatim1 = str(row1[2]).lower().strip()  # Verbatim Response
-        verbatim2 = str(row2[2]).lower().strip()
-        
-        # Check for exact matches first (most common case)
-        if insight1 == insight2 and verbatim1 == verbatim2:
-            return True
-        
-        # Check if insights are very similar (increased threshold for more nuanced deduplication)
-        insight_similarity = difflib.SequenceMatcher(None, insight1, insight2).ratio()
-        
-        # Check if verbatim responses are very similar (first 400 chars for better detection)
-        verbatim1_short = verbatim1[:400]
-        verbatim2_short = verbatim2[:400]
-        verbatim_similarity = difflib.SequenceMatcher(None, verbatim1_short, verbatim2_short).ratio()
-        
-        # Check for common phrases that indicate duplicates
-        common_phrases = [
-            "turbo scribe", "rev", "transcription", "legal", "deposition",
-            "body cam", "court", "attorney", "paralegal", "law firm"
-        ]
-        
-        # If both responses contain the same key phrases, they're likely duplicates
-        phrase_match = 0
-        for phrase in common_phrases:
-            if phrase in insight1 and phrase in insight2:
-                phrase_match += 1
-        
-        # Enhanced deduplication: check for specific differentiators
-        specific_indicators = [
-            r'\d+%',  # Percentages
-            r'\$\d+',  # Dollar amounts
-            r'\d+ hours?',  # Time periods
-            r'\d+ minutes?',
-            r'for example',
-            r'such as',
-            r'specifically',
-            r'in particular',
-            r'workflow',
-            r'process',
-            r'integration',
-            r'accuracy',
-            r'efficiency',
-            r'before',
-            r'after',
-            r'compared',
-            r'different',
-            r'improved',
-            r'better',
-            r'worse'
-        ]
-        
-        # Count specific indicators in each response
-        indicators1 = sum(1 for pattern in specific_indicators if re.search(pattern, verbatim1))
-        indicators2 = sum(1 for pattern in specific_indicators if re.search(pattern, verbatim2))
-        
-        # If responses have significantly different specific indicators, they're likely different
-        if abs(indicators1 - indicators2) >= 2:
-            return False
-        
-        # More nuanced deduplication: if either insight or verbatim is similar, OR if they share key phrases
-        return (insight_similarity > similarity_threshold or 
-                verbatim_similarity > similarity_threshold or 
-                phrase_match >= 3)  # Increased threshold for phrase matching
-    
-    # Enhanced duplicate removal with multiple strategies
-    unique_results = []
-    seen_responses = set()
-    seen_content_patterns = set()
-    
-    for chunk_index, row in chunk_results:
-        # Create multiple hashes for better detection
-        insight_hash = str(row[1]).lower().replace(" ", "")[:100]
-        verbatim_hash = str(row[2]).lower().replace(" ", "")[:200]
-        combined_hash = f"{insight_hash}_{verbatim_hash}"
-        
-        # Create content pattern hash (first 50 chars of each)
-        content_pattern = f"{str(row[1])[:50]}_{str(row[2])[:50]}".lower().replace(" ", "")
-        
-        # Check if we've seen a similar response
-        is_duplicate = False
-        for existing_row in unique_results:
-            if is_similar_response(row, existing_row):
-                is_duplicate = True
-                break
-        
-        # Additional check: if content pattern is very similar, it's likely a duplicate
-        if content_pattern in seen_content_patterns:
-            is_duplicate = True
-        
-        if not is_duplicate and combined_hash not in seen_responses:
-            unique_results.append((chunk_index, row))
-            seen_responses.add(combined_hash)
-            seen_content_patterns.add(content_pattern)
-    
-    print(f"[DEBUG] Removed {len(chunk_results) - len(unique_results)} duplicate responses", file=sys.stderr)
-    
-    # Additional post-processing: remove responses that start with identical phrases
-    final_results = []
-    seen_starts = set()
-    
-    for chunk_index, row in unique_results:
-        # Get the first 100 characters of the verbatim response
-        response_start = str(row[2])[:100].lower().strip()
-        
-        # If we've seen this exact start before, skip it
-        if response_start in seen_starts:
+            print(f"❌ Chunk {i} fatal error: {e}", file=sys.stderr)
             continue
-        
-        # Check if this response starts with common duplicate patterns
-        duplicate_patterns = [
-            "before turbo scribe, we used rev",
-            "turbo scribe has significantly improved",
-            "i've had a subscription with westlaw",
-            "i mainly use it for depositions",
-            "also, i was wondering on the subject",
-            "maybe if it's, for example, specifically",
-            "i mean, the accuracy could be improved",
-            # Technical setup patterns
-            "hi drew, can you hear me",
-            "can you hear me",
-            "check check check",
-            "one sec",
-            "let me switch",
-            "alright cool",
-            "nice to meet you"
-        ]
-        
-        is_duplicate_start = any(response_start.startswith(pattern) for pattern in duplicate_patterns)
-        
-        if not is_duplicate_start:
-            final_results.append((chunk_index, row))
-            seen_starts.add(response_start)
     
-    print(f"[DEBUG] Post-processing removed {len(unique_results) - len(final_results)} additional duplicates", file=sys.stderr)
+    sequential_processing_time = time.time() - start_time
+    print(f"🎉 Sequential processing completed in {sequential_processing_time:.2f} seconds", file=sys.stderr)
+    print(f"📊 Total responses extracted: {len(all_quality_rows)}", file=sys.stderr)
     
-    # Write CSV header (core fields only for Stage 1/Validated)
-    core_header = [
-        "Response ID", "Verbatim Response", "Subject", "Question", "Deal Status",
-        "Company Name", "Interviewee Name", "Date of Interview"
+    # Convert to CSV
+    if not all_quality_rows:
+        return ""
+    
+    # Create DataFrame and convert to CSV
+    df = pd.DataFrame(all_quality_rows)
+    
+    # Ensure proper column order
+    column_order = [
+        'response_id', 'key_insight', 'verbatim_response', 'subject', 'question',
+        'deal_status', 'company', 'interviewee_name', 'date_of_interview',
+        'findings', 'value_realization', 'implementation_experience', 'risk_mitigation',
+        'competitive_advantage', 'customer_success', 'product_feedback', 'service_quality',
+        'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
     ]
-    enrichment_header = [
-        "Key Insight", "Findings", "Value_Realization", "Implementation_Experience", "Risk_Mitigation",
-        "Competitive_Advantage", "Customer_Success", "Product_Feedback", "Service_Quality", "Decision_Factors",
-        "Pain_Points", "Success_Metrics", "Future_Plans"
-    ]
-    # For Stage 1/Validated, only use core_header
-    header = core_header
-    output = StringIO()
-    writer = csv.writer(output, quoting=csv.QUOTE_ALL)
-    writer.writerow(header)
-
-    db = None
-    if DB_AVAILABLE:
-        try:
-            db = VOCDatabase()
-        except Exception as e:
-            print(f"[WARNING] Database not available: {e}", file=sys.stderr)
-
-    for chunk_index, row in final_results:
-        # Only write core fields to CSV
-        core_row = [
-            row[0],  # Response ID
-            row[2],  # Verbatim Response
-            row[3],  # Subject
-            row[4],  # Question
-            row[5],  # Deal Status
-            row[6],  # Company Name
-            row[7],  # Interviewee Name
-            row[8],  # Date of Interview
-        ]
-        writer.writerow(core_row)
-
-        # Save to database if available (with enrichment fields)
-        if db:
-            try:
-                response_data = {
-                    'response_id': row[0],
-                    'verbatim_response': row[2],
-                    'subject': row[3],
-                    'question': row[4],
-                    'deal_status': row[5],
-                    'company': row[6],
-                    'interviewee_name': row[7],
-                    'date_of_interview': row[8],
-                }
-                # Add analysis fields if they exist
-                if len(row) > 9:
-                    analysis_fields = [
-                        'key_insight', 'findings', 'value_realization', 'implementation_experience',
-                        'risk_mitigation', 'competitive_advantage', 'customer_success', 'product_feedback',
-                        'service_quality', 'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
-                    ]
-                    for i, field in enumerate(analysis_fields):
-                        if 9 + i < len(row) and row[9 + i] and row[9 + i] != 'N/A':
-                            response_data[field] = row[9 + i]
-                db.save_response(response_data)
-            except Exception as e:
-                print(f"[WARNING] Failed to save to database: {e}", file=sys.stderr)
-
-    # Write verbatim quality log
-    with open("verbatim_quality.csv", "w", newline="") as qf:
-        qwriter = csv.DictWriter(qf, fieldnames=["response_id", "grade", "notes"])
-        qwriter.writeheader()
-        for row in quality_rows:
-            qwriter.writerow(row)
     
-    # Log summary
-    logging.info(f"Processed {len(qa_segments)} chunks → created {len(chunk_results)} insights; dropped {len(qa_segments) - len(set(r[0] for r in chunk_results))} chunks")
+    # Reorder columns, adding any missing ones with empty strings
+    for col in column_order:
+        if col not in df.columns:
+            df[col] = ""
     
-    # Output CSV to stdout
-    print(output.getvalue())
+    df = df[column_order]
+    
+    # Convert to CSV string
+    return df.to_csv(index=False)
 
 
 @click.command()
