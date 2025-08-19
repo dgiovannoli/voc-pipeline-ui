@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
 import re
+import requests
 
 # Add the project root to the path
 project_root = Path(__file__).parent
@@ -204,9 +205,12 @@ class MetadataStage1Processor:
         # Auto-detect which column contains actual transcript content
         transcript_columns_to_check = [
             'Raw Transcript',
-            'Raw Transcript File', 
+            'Raw Transcript File',
             'Transcript Link',
-            'Moderator Responses'
+            'Moderator Responses',
+            'Transcript',
+            'Full Transcript',
+            'Raw Transcript (Cleaned)'
         ]
         
         actual_transcript_column = None
@@ -271,6 +275,41 @@ class MetadataStage1Processor:
         for idx, row in target_data.iterrows():
             interview_id = row['Interview ID']
             transcript = row[actual_transcript_column]  # Use the detected column
+            # If transcript is a link or file reference, attempt to fetch the actual content
+            try:
+                if isinstance(transcript, str) and len(transcript) < 50 and actual_transcript_column in ['Transcript Link', 'Raw Transcript File']:
+                    source_ref = transcript.strip()
+                    if source_ref.startswith('http'):
+                        try:
+                            resp = requests.get(source_ref, timeout=15)
+                            if resp.ok and resp.text:
+                                transcript = resp.text
+                                logger.info(f"🌐 Fetched transcript from URL for {interview_id} ({len(transcript)} chars)")
+                            else:
+                                logger.warning(f"⚠️ Could not fetch transcript text from URL for {interview_id}: status={resp.status_code}")
+                        except Exception as fetch_err:
+                            logger.warning(f"⚠️ Fetch error for transcript URL in {interview_id}: {fetch_err}")
+                    elif os.path.exists(source_ref):
+                        try:
+                            with open(source_ref, 'r', encoding='utf-8') as f:
+                                transcript = f.read()
+                            logger.info(f"📄 Loaded transcript from file for {interview_id} ({len(transcript)} chars)")
+                        except Exception as file_err:
+                            logger.warning(f"⚠️ Could not read transcript file for {interview_id}: {file_err}")
+            except Exception as e:
+                logger.warning(f"⚠️ Error resolving transcript source for {interview_id}: {e}")
+            # Guard: skip if still empty/very short
+            if not isinstance(transcript, str) or len(transcript.strip()) < 5:
+                logger.warning(f"⚠️ Transcript empty or too short for {interview_id}; skipping extraction")
+                results.append({
+                    'interview_id': interview_id,
+                    'status': 'no_data',
+                    'responses_extracted': 0,
+                    'responses_saved': 0,
+                    'interviewee': row['Interview Contact Full Name'],
+                    'company': row['Interview Contact Company Name']
+                })
+                continue
             interviewee_name = row['Interview Contact Full Name']
             company = row['Interview Contact Company Name']
             deal_status = row['Deal Status']
