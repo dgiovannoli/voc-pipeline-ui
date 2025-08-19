@@ -215,6 +215,8 @@ class SupioHarmonizedWorkbookGenerator:
                 return
 
             themes = response.data
+            # Filter out merged children
+            themes = [t for t in themes if not str(t.get('section', '')).startswith('MERGED_INTO:')]
             logger.info(f"📊 Found {len(themes)} research themes in database")
 
             # Get quotes for these themes
@@ -349,6 +351,8 @@ class SupioHarmonizedWorkbookGenerator:
                 return
 
             themes = response.data
+            # Filter out merged children
+            themes = [t for t in themes if not str(t.get('section', '')).startswith('MERGED_INTO:')]
             logger.info(f"📊 Found {len(themes)} discovered themes in database")
 
             # Get quotes for these themes
@@ -645,7 +649,7 @@ class SupioHarmonizedWorkbookGenerator:
                 logger.warning("⚠️ No themes found in database")
                 return
 
-            themes = themes_response.data
+            themes = [t for t in themes_response.data if not str(t.get('section', '')).startswith('MERGED_INTO:')]
             current_row = 5
 
             # Research Themes Group
