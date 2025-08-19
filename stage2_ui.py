@@ -4,6 +4,7 @@ from datetime import datetime
 from supabase_database import SupabaseDatabase
 from dotenv import load_dotenv
 import time
+from guiding_story_analyzer import build_guiding_story_payload, to_overview_table, generate_narrative_llm
 
 # Load environment variables
 load_dotenv()
@@ -125,6 +126,36 @@ def show_stage2_overview():
     - ✅ **Evidence-centered** - same validation framework for both approaches
     """)
 
+def render_guiding_story_panel(db, client_id: str):
+    st.markdown("### Guiding Story (Interview-weighted)")
+    if st.button("Compute Guiding Story (fast)", key="guiding_story_compute_stage2"):
+        with st.spinner("Computing…"):
+            payload = build_guiding_story_payload(client_id=client_id, db=db)
+            st.session_state.setdefault("guiding_story_payload", {})[client_id] = payload
+
+    payload = st.session_state.get("guiding_story_payload", {}).get(client_id)
+    if payload:
+        overview_df = to_overview_table(payload)
+        st.dataframe(overview_df, use_container_width=True)
+        for seg, qlist in (payload.get("quotes") or {}).items():
+            if not qlist:
+                continue
+            st.markdown(f"**{seg} — evidence quotes**")
+            st.table([{k: q[k] for k in ["response_id","company","interviewee_name","excerpt"] if k in q} for q in qlist])
+
+    with st.expander("Generate narrative (LLM) — optional", expanded=False):
+        enable = st.checkbox("Enable LLM narrative", value=False, key="guiding_story_llm_enable_stage2")
+        if enable and st.button("Generate narrative (LLM)", key="guiding_story_llm_btn_stage2"):
+            payload = st.session_state.get("guiding_story_payload", {}).get(client_id)
+            if not payload:
+                st.warning("Compute Guiding Story first.")
+            else:
+                narrative = generate_narrative_llm(payload, llm=None)
+                if narrative:
+                    st.markdown(narrative)
+                else:
+                    st.info("LLM not configured. Supply an llm client to enable this.")
+
 def show_stage2_analysis():
     """Main Stage 2 analysis interface with enhanced single-table approach"""
     client_id = get_client_id()
@@ -133,10 +164,12 @@ def show_stage2_analysis():
         st.error("❌ Database not available")
         return
     
-    # Header with enhanced branding
     st.header("🚀 Stage 2 — Scoring & Harmonization")
     st.markdown(f"**Client:** `{client_id}` | **Approach:** Single-Table Sentiment & Impact")
-    
+
+    # Guiding Story panel (fast, cached)
+    render_guiding_story_panel(db, client_id)
+
     # Optional: Run Step 2 Harmonization first
     with st.expander("🧩 Optional: Run Harmonization (Step 2) before analysis", expanded=False):
         st.info("Runs subject harmonization over saved Stage 1 responses for better grouping.")

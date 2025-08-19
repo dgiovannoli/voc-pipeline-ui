@@ -1842,6 +1842,20 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed upsert_research_themes_return: {e}")
             return []
 
+    def fetch_stage1_responses(self, client_id: str) -> pd.DataFrame:
+        """Wrapper: return Stage 1 responses for client (alias for get_stage1_data_responses)."""
+        try:
+            return self.get_stage1_data_responses(client_id=client_id)
+        except Exception:
+            return pd.DataFrame()
+
+    def fetch_interview_metadata(self, client_id: str) -> pd.DataFrame:
+        """Wrapper: return interview_metadata for client (alias for get_interview_metadata)."""
+        try:
+            return self.get_interview_metadata(client_id)
+        except Exception:
+            return pd.DataFrame()
+
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""
     return SupabaseDatabase() 

@@ -18,6 +18,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
+from guiding_story_analyzer import build_guiding_story_payload, to_overview_table  # NEW
 
 
 # Add project root to path
@@ -73,6 +74,10 @@ class SupioHarmonizedWorkbookGenerator:
             # Step 2: Add Summary tab
             logger.info("📋 Step 2: Adding Summary tab...")
             self._add_summary_tab()
+
+            # Step 2b: Add Guiding Story tab (interview-weighted overview)  # NEW
+            logger.info("🧭 Step 2b: Adding Guiding Story tab (interview-weighted)...")  # NEW
+            self._add_guiding_story_tab()  # NEW
 
             # Step 3: Add Research Themes tab
             logger.info("🔬 Step 3: Adding Research Themes tab...")
@@ -327,6 +332,76 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("✅ Grouped Quotes tab added")
         except Exception as e:
             logger.warning(f"⚠️ Grouped Quotes tab failed: {e}")
+
+    def _add_guiding_story_tab(self):  # NEW
+        """Add Guiding Story tab with overview table and representative quotes."""
+        try:
+            wb = load_workbook(self.workbook_path)
+            ws = wb.create_sheet("Guiding Story")
+
+            # Build payload
+            try:
+                payload = build_guiding_story_payload(client_id=self.client_id, db=self.db)
+            except Exception as e:
+                logger.warning(f"⚠️ Guiding Story payload failed: {e}")
+                payload = {"segments": {}, "quotes": {}, "notes": str(e)}
+
+            # Overview table
+            try:
+                df = to_overview_table(payload)
+                from openpyxl.utils.dataframe import dataframe_to_rows
+                start_row = 1
+                # Header
+                ws['A1'] = f"Guiding Story Overview — {self.client_id}"
+                ws['A1'].font = Font(bold=True, size=14)
+                start_row = 3
+                if not df.empty:
+                    for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), start=start_row):
+                        for c_idx, value in enumerate(row, start=1):
+                            ws.cell(row=r_idx, column=c_idx, value=value)
+                    start_row = r_idx + 2
+                else:
+                    ws['A3'] = "No overview data available"
+                    start_row = 5
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to write overview table: {e}")
+                start_row = 5
+
+            # Quotes table
+            try:
+                quotes_rows: List[Dict[str, Any]] = []
+                for seg, qlist in (payload.get("quotes") or {}).items():
+                    for q in qlist:
+                        quotes_rows.append({
+                            "segment": seg,
+                            "response_id": q.get("response_id"),
+                            "interview_id": q.get("interview_id"),
+                            "company": q.get("company"),
+                            "interviewee_name": q.get("interviewee_name"),
+                            "excerpt": q.get("excerpt"),
+                        })
+                if quotes_rows:
+                    qdf = pd.DataFrame(quotes_rows)
+                    from openpyxl.utils.dataframe import dataframe_to_rows
+                    for r_idx, row in enumerate(dataframe_to_rows(qdf, index=False, header=True), start=start_row):
+                        for c_idx, value in enumerate(row, start=1):
+                            ws.cell(row=r_idx, column=c_idx, value=value)
+                    start_row = r_idx + 2
+                else:
+                    ws.cell(row=start_row, column=1, value="No representative quotes selected")
+                    start_row += 2
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to write quotes table: {e}")
+
+            # Notes
+            notes = payload.get("notes")
+            if notes:
+                ws.cell(row=start_row, column=1, value=f"Notes: {notes}")
+
+            wb.save(self.workbook_path)
+            logger.info("✅ Guiding Story tab added")
+        except Exception as e:
+            logger.warning(f"⚠️ Guiding Story tab failed: {e}")
 
     def _add_research_themes_tab(self):
         """

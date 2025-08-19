@@ -16,6 +16,45 @@ sys.path.append(str(Path(__file__).parent))
 
 from stage3_theme_processor import Stage3ThemeProcessor
 from supio_harmonized_workbook_generator import SupioHarmonizedWorkbookGenerator
+from supabase_database import SupabaseDatabase
+from guiding_story_analyzer import build_guiding_story_payload, to_overview_table, generate_narrative_llm
+
+# Initialize DB for this module
+try:
+    _GUIDE_DB = SupabaseDatabase()
+except Exception:
+    _GUIDE_DB = None
+
+def _render_guiding_story_panel_stage3(client_id: str):
+    st.markdown("### Guiding Story (Interview-weighted)")
+    if _GUIDE_DB is None:
+        st.info("Database not available for Guiding Story.")
+        return
+    if st.button("Compute Guiding Story (fast)", key="guiding_story_compute_stage3"):
+        with st.spinner("Computing…"):
+            payload = build_guiding_story_payload(client_id=client_id, db=_GUIDE_DB)
+            st.session_state.setdefault("guiding_story_payload", {})[client_id] = payload
+    payload = st.session_state.get("guiding_story_payload", {}).get(client_id)
+    if payload:
+        overview_df = to_overview_table(payload)
+        st.dataframe(overview_df, use_container_width=True)
+        for seg, qlist in (payload.get("quotes") or {}).items():
+            if not qlist:
+                continue
+            st.markdown(f"**{seg} — evidence quotes**")
+            st.table([{k: q[k] for k in ["response_id","company","interviewee_name","excerpt"] if k in q} for q in qlist])
+    with st.expander("Generate narrative (LLM) — optional", expanded=False):
+        enable = st.checkbox("Enable LLM narrative", value=False, key="guiding_story_llm_enable_stage3")
+        if enable and st.button("Generate narrative (LLM)", key="guiding_story_llm_btn_stage3"):
+            payload = st.session_state.get("guiding_story_payload", {}).get(client_id)
+            if not payload:
+                st.warning("Compute Guiding Story first.")
+            else:
+                narrative = generate_narrative_llm(payload, llm=None)
+                if narrative:
+                    st.markdown(narrative)
+                else:
+                    st.info("LLM not configured. Supply an llm client to enable this.")
 
 def show_stage3_processing_page():
     """
@@ -238,7 +277,6 @@ def show_stage3_findings():
     st.title("🔍 Stage 3 — Generate Themes")
     st.markdown("Creates research-seeded and discovered themes from Stage 2 analysis; use the processing screen if not yet generated.")
     
-    # Get client ID from session state
     client_id = st.session_state.get('client_id', '')
     
     if not client_id:
@@ -246,9 +284,11 @@ def show_stage3_findings():
         st.info("💡 Enter a unique identifier for this client's data (e.g., 'Supio', 'Rev')")
         return
     
-    # Display client info
     st.subheader(f"🏢 Client: {client_id}")
-    
+
+    # Guiding Story panel at top
+    _render_guiding_story_panel_stage3(client_id)
+
     # Check if Stage 3 themes exist
     try:
         from stage3_theme_processor import Stage3ThemeProcessor
