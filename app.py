@@ -96,34 +96,21 @@ def show_excel_generation():
                 status_text.text("📦 Loading modules...")
                 progress_bar.progress(10)
                 
-                from win_loss_report_generator import WinLossReportGenerator
-                from excel_win_loss_exporter import ExcelWinLossExporter
-                
-                # Step 1: Generate themes
-                status_text.text("📊 Generating themes and analysis...")
-                progress_bar.progress(30)
-                
-                # Always include research-seeded themes; toggle removed for clarity
-                generator = WinLossReportGenerator(client_id, include_research_themes=True, research_alignment_min=research_alignment_min)
-                themes_data = generator.generate_analyst_report()
-                
-                if not themes_data["success"]:
-                    st.error(f"❌ Theme generation failed: {themes_data.get('error')}")
-                    return
-                
-                progress_bar.progress(60)
-                status_text.text(f"✅ Generated {len(themes_data['themes'])} themes")
-                
-                # Step 2: Create Excel workbook
-                status_text.text("📋 Creating Excel workbook...")
+                # Use the new Supio Harmonized generator which pulls Stage 3 themes and adds grouped tabs
+                status_text.text("📋 Creating Excel workbook (Supio Harmonized)...")
                 progress_bar.progress(80)
-                
-                exporter = ExcelWinLossExporter()
-                
+                from supio_harmonized_workbook_generator import SupioHarmonizedWorkbookGenerator
+                shg = SupioHarmonizedWorkbookGenerator(client_id)
+                output_path = shg.generate_workbook()
+                # If a custom filename was requested, rename the generated file
                 if custom_filename:
-                    output_path = exporter.export_analyst_workbook(themes_data, custom_filename)
-                else:
-                    output_path = exporter.export_analyst_workbook(themes_data)
+                    import os
+                    try:
+                        if os.path.exists(output_path):
+                            os.replace(output_path, custom_filename)
+                            output_path = custom_filename
+                    except Exception:
+                        pass
                 
                 # Verify file was created
                 import os
@@ -138,10 +125,7 @@ def show_excel_generation():
                     col1, col2, col3 = st.columns(3)
                     with col1:
                         st.metric("File Size", f"{file_size:,} bytes")
-                    with col2:
-                        st.metric("Themes", len(themes_data['themes']))
-                    with col3:
-                        st.metric("Cross-Section Themes", len([t for t in themes_data['themes'] if len(t.get('sections', [])) > 1]))
+                    # Additional metrics removed for compatibility with SupioHarmonizedWorkbookGenerator
                     
                     # Download button
                     with open(output_path, 'rb') as f:
