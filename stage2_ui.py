@@ -137,6 +137,55 @@ def show_stage2_analysis():
     st.header("🚀 Enhanced Stage 2 Analysis")
     st.markdown(f"**Client:** `{client_id}` | **Approach:** Single-Table Sentiment & Impact")
     
+    # Optional: Run Step 2 Harmonization first
+    with st.expander("🧩 Optional: Run Harmonization (Step 2) before analysis", expanded=False):
+        st.info("Runs subject harmonization over saved Stage 1 responses for better grouping.")
+        limit = st.number_input("Limit (0 = all)", min_value=0, value=0, step=50)
+        if st.button("🧩 Run Harmonization Now", key="run_harmonization"):
+            with st.spinner("Harmonizing subjects..."):
+                try:
+                    from scripts.run_stage2_harmonization import main as run_h
+                except Exception:
+                    # Fallback to simple inline runner
+                    from fixed_llm_harmonizer import FixedLLMHarmonizer
+                    harmonizer = FixedLLMHarmonizer()
+                    core_df = db.get_stage1_data_responses(client_id=client_id)
+                    if limit and len(core_df) > limit:
+                        core_df = core_df.head(limit)
+                    updated = 0
+                    for _, row in core_df.iterrows():
+                        subject = row.get('subject')
+                        text = row.get('verbatim_response') or ''
+                        if not subject:
+                            continue
+                        try:
+                            res = harmonizer.harmonize_subject(subject, text)
+                            update_data = {
+                                'harmonized_subject': res.get('harmonized_subject'),
+                                'harmonization_confidence': res.get('confidence'),
+                                'harmonization_method': res.get('mapping_method'),
+                                'harmonization_reasoning': res.get('reasoning'),
+                                'suggested_new_category': res.get('new_category_suggestion'),
+                                'harmonized_at': res.get('mapped_at'),
+                            }
+                            db.supabase.table('stage1_data_responses').update(update_data).eq('response_id', row.get('response_id')).execute()
+                            updated += 1
+                        except Exception as e:
+                            st.warning(f"Harmonization failed for {row.get('response_id')}: {e}")
+                    st.success(f"✅ Harmonization updated {updated} rows")
+                else:
+                    # Use CLI entry by importing main
+                    import sys
+                    sys.argv = ["run_stage2_harmonization.py", "--client", client_id]
+                    if limit:
+                        sys.argv += ["--limit", str(limit)]
+                    rc = run_h()
+                    if rc == 0:
+                        st.success("✅ Harmonization complete")
+                    else:
+                        st.error("❌ Harmonization failed")
+            st.experimental_rerun()
+
     try:
         # Get Stage 1 data to check readiness
         stage1_df = db.get_stage1_data_responses(client_id=client_id)
