@@ -626,6 +626,48 @@ CRITICAL: Generate themes that follow this exact format and specificity level. N
             # Get findings from database
             findings = self.supabase.get_stage3_findings_list(self.client_id)
             
+            # Fallback: synthesize findings from research_themes when Stage 3 findings are absent
+            if not findings:
+                logger.warning(f"No findings found for client {self.client_id}; falling back to research_themes")
+                try:
+                    themes_df = self.supabase.supabase.table('research_themes').select('*').eq('client_id', self.client_id).execute()
+                    themes_data = themes_df.data or []
+                except Exception as e:
+                    logger.error(f"Failed to load research_themes for fallback: {e}")
+                    themes_data = []
+                if not themes_data:
+                    logger.warning("No research_themes available; cannot build fallback findings")
+                    return ""
+                # Build minimal findings-like records from research themes
+                fallback_findings = []
+                for row in themes_data:
+                    subj = (row.get('harmonized_subject') or '').replace('DISCOVERED:', '').strip()
+                    stmt = row.get('theme_statement') or row.get('theme_title') or subj or 'Theme'
+                    supporting = row.get('supporting_quotes') or row.get('supporting_response_ids') or []
+                    if isinstance(supporting, str):
+                        supporting_ids = []
+                    else:
+                        supporting_ids = supporting
+                    fallback_findings.append({
+                        'finding_id': row.get('theme_id') or f"RT_{len(fallback_findings)+1}",
+                        'finding_statement': stmt,
+                        'company': row.get('company') or '',
+                        'date': row.get('created_at') or '',
+                        'deal_status': '',
+                        'interviewee_name': '',
+                        'supporting_response_ids': supporting_ids,
+                        'evidence_strength': row.get('evidence_strength') or 0,
+                        'finding_category': subj or 'Theme',
+                        'criteria_met': 0,
+                        'priority_level': 'standard',
+                        'primary_quote': '',
+                        'secondary_quote': '',
+                        'quote_attributions': '',
+                        'classification': 'research_theme',
+                        'classification_reasoning': 'Auto-generated from research_themes fallback'
+                    })
+                findings = fallback_findings
+            
             if not findings:
                 logger.warning(f"No findings found for client {self.client_id}")
                 return ""
