@@ -12,6 +12,7 @@ import logging
 from dotenv import load_dotenv
 import json
 import traceback
+import math
 
 # Supabase imports
 try:
@@ -102,6 +103,14 @@ class SupabaseDatabase:
                     'suggested_new_category': response_data.get('suggested_new_category'),
                     'harmonized_at': response_data.get('harmonized_at', datetime.now().isoformat())
                 })
+            
+            # Sanitize NaN/inf to None
+            try:
+                for k, v in list(data.items()):
+                    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                        data[k] = None
+            except Exception:
+                pass
             
             # Remove None values
             data = {k: v for k, v in data.items() if v is not None}
@@ -1362,6 +1371,13 @@ class SupabaseDatabase:
                 'contact_website': contact_website,
                 'metadata_updated_at': datetime.now().isoformat()
             }
+            # Sanitize NaN/inf to None
+            try:
+                for k, v in list(data.items()):
+                    if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                        data[k] = None
+            except Exception:
+                pass
             # Remove None values
             data = {k: v for k, v in data.items() if v is not None}
             result = self.supabase.table('interview_metadata').upsert(data).execute()

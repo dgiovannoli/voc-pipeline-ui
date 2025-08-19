@@ -38,7 +38,7 @@ def get_client_id():
     st.stop()
     return None
 
-def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False, processing_mode="parallel", max_workers=3):
+def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False, processing_mode="parallel", max_workers=3, harmonize=True):
     """Process Stage 1 data from metadata CSV file with parallel processing options"""
     try:
         processor = MetadataStage1Processor()
@@ -73,7 +73,8 @@ def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False
                 max_interviews=max_interviews,
                 dry_run=dry_run,
                 processing_mode=processing_mode,
-                max_workers=max_workers
+                max_workers=max_workers,
+                harmonize=harmonize
             )
             
             progress_bar.progress(100, text="Processing completed!")
@@ -359,7 +360,8 @@ def show_stage1_data_responses():
                     max_interviews if max_interviews > 0 else None,
                     dry_run,
                     processing_mode,
-                    max_workers if processing_mode == "parallel" else 1
+                    max_workers if processing_mode == "parallel" else 1,
+                    harmonize=False
                 )
                 
                 # Store result for performance tracking

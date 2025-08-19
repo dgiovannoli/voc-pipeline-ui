@@ -50,7 +50,8 @@ class MetadataStage1Processor:
                            max_interviews: Optional[int] = None,
                            dry_run: bool = False,
                            processing_mode: str = "parallel",
-                           max_workers: int = 3) -> Dict[str, any]:
+                           max_workers: int = 3,
+                           harmonize: bool = False) -> Dict[str, any]:
         """
         Process Stage 1 extraction from metadata CSV file with automatic harmonization.
         
@@ -411,8 +412,8 @@ class MetadataStage1Processor:
                         response['audio_video_link'] = audio_video_link
                         response['contact_website'] = contact_website
                     
-                    # Harmonize subjects if harmonizer is available
-                    if self.harmonizer:
+                    # Harmonize subjects (Step 2). Skip in Step 1 unless explicitly enabled.
+                    if harmonize and self.harmonizer:
                         harmonized_count = 0
                         for response in extracted_data:
                             try:
@@ -436,6 +437,8 @@ class MetadataStage1Processor:
                                 # Continue processing even if harmonization fails
                         
                         logger.info(f"✅ Auto-harmonized {harmonized_count}/{len(extracted_data)} responses from {interview_id}")
+                    elif not harmonize:
+                        logger.info(f"⏭️ Skipping harmonization in Step 1 for {interview_id}")
                     
                     # Save to database if not dry run
                     if not dry_run:

@@ -54,7 +54,8 @@ def process_metadata_csv(csv_file, client_id, max_interviews=None, dry_run=False
             csv_file_path=temp_csv_path,
             client_id=client_id,
             max_interviews=max_interviews,
-            dry_run=dry_run
+            dry_run=dry_run,
+            harmonize=False
         )
         
         # Clean up temp file
