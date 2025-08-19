@@ -1856,6 +1856,94 @@ class SupabaseDatabase:
         except Exception:
             return pd.DataFrame()
 
+    def upsert_interview_transcript(self,
+                                    client_id: str,
+                                    interview_id: str,
+                                    company: str,
+                                    interviewee_name: str,
+                                    full_transcript: str) -> bool:
+        """Upsert a full transcript into interview_transcripts (preferred). Fallback to interview_metadata.full_transcript if table missing."""
+        try:
+            data = {
+                'client_id': client_id,
+                'interview_id': interview_id,
+                'company': company,
+                'interviewee_name': interviewee_name,
+                'full_transcript': full_transcript,
+                'created_at': datetime.now().isoformat(),
+            }
+            # Try dedicated table first
+            try:
+                self.supabase.table('interview_transcripts').upsert(data).execute()
+                logger.info(f"✅ Upserted full transcript for {interview_id} into interview_transcripts")
+                return True
+            except Exception as e:
+                logger.warning(f"⚠️ interview_transcripts missing or upsert failed; trying interview_metadata.full_transcript: {e}")
+                # Fallback: store on interview_metadata if column exists
+                try:
+                    self.supabase.table('interview_metadata').update({'full_transcript': full_transcript}).eq('client_id', client_id).eq('interview_id', interview_id).execute()
+                    logger.info(f"✅ Stored full transcript for {interview_id} in interview_metadata.full_transcript")
+                    return True
+                except Exception as e2:
+                    logger.error(f"❌ Failed to store full transcript for {interview_id}: {e2}")
+                    return False
+        except Exception as e:
+            logger.error(f"❌ upsert_interview_transcript exception: {e}")
+            return False
+
+    def fetch_interview_transcripts(self, client_id: str) -> pd.DataFrame:
+        """Fetch full transcripts from interview_transcripts; if table missing, try interview_metadata.full_transcript."""
+        try:
+            try:
+                res = self.supabase.table('interview_transcripts').select('*').eq('client_id', client_id).execute()
+                df = pd.DataFrame(res.data or [])
+                if not df.empty:
+                    return df
+            except Exception:
+                pass
+            # Fallback
+            try:
+                res2 = self.supabase.table('interview_metadata').select('client_id,interview_id,company,interviewee_name,full_transcript').eq('client_id', client_id).execute()
+                return pd.DataFrame(res2.data or [])
+            except Exception:
+                return pd.DataFrame()
+        except Exception:
+            return pd.DataFrame()
+
+    def upsert_interview_level_theme(self,
+                                     client_id: str,
+                                     interview_id: str,
+                                     theme_statement: str,
+                                     subject: str = '',
+                                     sentiment: Optional[str] = None,
+                                     impact_score: Optional[float] = None,
+                                     notes: str = '') -> bool:
+        """Upsert a per-interview theme into interview_level_themes."""
+        try:
+            data = {
+                'client_id': client_id,
+                'interview_id': interview_id,
+                'theme_statement': theme_statement,
+                'subject': subject,
+                'sentiment': sentiment,
+                'impact_score': impact_score,
+                'notes': notes,
+                'created_at': datetime.now().isoformat(),
+            }
+            self.supabase.table('interview_level_themes').upsert(data).execute()
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️ upsert_interview_level_theme failed (table may not exist): {e}")
+            return False
+
+    def fetch_interview_level_themes(self, client_id: str) -> pd.DataFrame:
+        """Fetch per-interview themes if present."""
+        try:
+            res = self.supabase.table('interview_level_themes').select('*').eq('client_id', client_id).execute()
+            return pd.DataFrame(res.data or [])
+        except Exception:
+            return pd.DataFrame()
+
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""
     return SupabaseDatabase() 

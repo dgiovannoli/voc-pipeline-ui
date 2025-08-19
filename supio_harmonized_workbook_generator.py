@@ -79,6 +79,10 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("🧭 Step 2b: Adding Guiding Story tab (interview-weighted)...")  # NEW
             self._add_guiding_story_tab()  # NEW
 
+            # Step 2c: Add Interview Themes tab (if present)  # NEW
+            logger.info("🧩 Step 2c: Adding Interview Themes tab (if available)...")  # NEW
+            self._add_interview_themes_tab()  # NEW
+
             # Step 3: Add Research Themes tab
             logger.info("🔬 Step 3: Adding Research Themes tab...")
             self._add_research_themes_tab()
@@ -402,6 +406,36 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("✅ Guiding Story tab added")
         except Exception as e:
             logger.warning(f"⚠️ Guiding Story tab failed: {e}")
+
+    def _add_interview_themes_tab(self):  # NEW
+        """Add Interview Themes tab from interview_level_themes if the table exists."""
+        try:
+            wb = load_workbook(self.workbook_path)
+            ws = wb.create_sheet("Interview Themes")
+            try:
+                res = self.db.supabase.table('interview_level_themes').select(
+                    'interview_id,theme_statement,subject,sentiment,impact_score,notes'
+                ).eq('client_id', self.client_id).execute()
+                rows = res.data or []
+            except Exception as e:
+                logger.info(f"ℹ️ interview_level_themes not available: {e}")
+                rows = []
+            if not rows:
+                ws['A1'] = "No per-interview themes available"
+                wb.save(self.workbook_path)
+                return
+            df = pd.DataFrame(rows)
+            from openpyxl.utils.dataframe import dataframe_to_rows
+            ws['A1'] = "Themes per interview (from full transcripts)"
+            ws['A1'].font = Font(bold=True, size=14)
+            start_row = 3
+            for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), start=start_row):
+                for c_idx, value in enumerate(row, start=1):
+                    ws.cell(row=r_idx, column=c_idx, value=value)
+            wb.save(self.workbook_path)
+            logger.info("✅ Interview Themes tab added")
+        except Exception as e:
+            logger.warning(f"⚠️ Interview Themes tab failed: {e}")
 
     def _add_research_themes_tab(self):
         """

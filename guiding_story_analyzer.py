@@ -213,7 +213,9 @@ def select_representative_quotes(
 	kw = keywords or DEFAULT_KEYWORDS
 	pats = _compile_patterns(kw)
 	seg_map = interview_level_df.set_index("interview_id")["assigned_channel"].to_dict()
-	r = responses_df[responses_df["interview_id"].isin(seg_map.keys())].copy()
+	# Use the same grouping key column for mapping
+	key_col = "__group_key__" if "__group_key__" in responses_df.columns else "interview_id"
+	r = responses_df[responses_df[key_col].isin(seg_map.keys())].copy()
 	text_series = (r.get("question", pd.Series(dtype=str)).fillna("").astype(str) + " " +
 				   r.get("verbatim_response", pd.Series(dtype=str)).fillna("").astype(str))
 	has_anchor = text_series.apply(lambda t: _any_match(t, pats["direct_api"]) or _any_match(t, pats["via_3pl_wms"]) or _any_match(t, pats["price_efficiency"]))
@@ -222,14 +224,14 @@ def select_representative_quotes(
 
 	quotes_by_seg: Dict[str, List[Dict[str, Any]]] = {"direct_api": [], "via_3pl_wms": [], "uncertain": []}
 	for seg in ["direct_api", "via_3pl_wms", "uncertain"]:
-		sub = r[[seg_map.get(iid) == seg for iid in r["interview_id"]]].copy()
+		sub = r[[seg_map.get(k) == seg for k in r[key_col]]].copy()
 		if sub.empty:
 			continue
 		sub = sub.sort_values(by=["__has_anchor__", "__impact__"], ascending=[False, False])
 		picked_interviews: Set[Any] = set()
 		rows: List[Dict[str, Any]] = []
 		for _, row in sub.iterrows():
-			iid = row["interview_id"]
+			iid = row.get(key_col)
 			if iid in picked_interviews:
 				continue
 			excerpt = str(row.get("verbatim_response", "") or "")
@@ -258,6 +260,7 @@ def build_guiding_story_payload(
 	# Fetch
 	responses_df = None
 	meta_df = None
+	transcripts_df = None  # NEW
 	try:
 		if hasattr(db, "fetch_stage1_responses"):
 			responses_df = db.fetch_stage1_responses(client_id)
@@ -272,6 +275,12 @@ def build_guiding_story_payload(
 			meta_df = db.get_interview_metadata(client_id)
 	except Exception:
 		meta_df = None
+	# Fetch transcripts if available  # NEW
+	try:
+		if hasattr(db, "fetch_interview_transcripts"):
+			transcripts_df = db.fetch_interview_transcripts(client_id)
+	except Exception:
+		transcripts_df = None
 
 	if responses_df is None or len(responses_df) == 0:
 		return {"client_id": client_id, "generated_at": datetime.now(timezone.utc).isoformat(), "segments": {}, "interviews": [], "quotes": {}, "notes": "No responses found."}
@@ -280,6 +289,9 @@ def build_guiding_story_payload(
 
 	responses_df = pd.DataFrame(responses_df).copy()
 	meta_df = pd.DataFrame(meta_df).copy()
+	if transcripts_df is not None:
+		transcripts_df = pd.DataFrame(transcripts_df).copy()
+
 	for col in ["response_id","interview_id","company","interviewee_name","question","verbatim_response","sentiment","impact_score","harmonized_subject","deal_status","client_id"]:
 		if col not in responses_df.columns:
 			responses_df[col] = None
@@ -292,14 +304,52 @@ def build_guiding_story_payload(
 		on="interview_id", how="left", suffixes=("","_meta")
 	)
 
+	# Determine grouping key: prefer interview_id if present; else company|interviewee_name
+	use_interview_id = "interview_id" in responses_df.columns and responses_df["interview_id"].notna().any()
+	if use_interview_id:
+		responses_df["__group_key__"] = responses_df["interview_id"].astype(str)
+	else:
+		responses_df["__group_key__"] = (
+			responses_df.get("company", pd.Series(dtype=str)).fillna("").astype(str) + "|" +
+			responses_df.get("interviewee_name", pd.Series(dtype=str)).fillna("").astype(str)
+		)
+	meta_df["__group_key__"] = (
+		meta_df.get("company", pd.Series(dtype=str)).fillna("").astype(str) + "|" +
+		meta_df.get("interviewee_name", pd.Series(dtype=str)).fillna("").astype(str)
+	)
+	if transcripts_df is not None and not transcripts_df.empty:
+		# Normalize transcript key
+		if "interview_id" in transcripts_df.columns and transcripts_df["interview_id"].notna().any():
+			transcripts_df["__group_key__"] = transcripts_df["interview_id"].astype(str)
+		else:
+			transcripts_df["__group_key__"] = (
+				transcripts_df.get("company", pd.Series(dtype=str)).fillna("").astype(str) + "|" +
+				transcripts_df.get("interviewee_name", pd.Series(dtype=str)).fillna("").astype(str)
+			)
+
 	interview_rows: List[Dict[str, Any]] = []
 	kw = keywords or DEFAULT_KEYWORDS
-	for iid, g in responses_df.groupby("interview_id"):
-		md_row = meta_df[meta_df["interview_id"] == iid].iloc[0] if (meta_df["interview_id"] == iid).any() else pd.Series(dtype=object)
-		signals = compute_interview_signals(g, kw)
+	for key, g in responses_df.groupby("__group_key__"):
+		if use_interview_id:
+			md_row = meta_df[meta_df["interview_id"] == g["interview_id"].dropna().astype(str).iloc[0]].iloc[0] if g["interview_id"].notna().any() and (meta_df["interview_id"] == g["interview_id"].dropna().astype(str).iloc[0]).any() else pd.Series(dtype=object)
+		else:
+			md_row = meta_df[meta_df["__group_key__"] == key].iloc[0] if (meta_df["__group_key__"] == key).any() else pd.Series(dtype=object)
+		# Prefer full transcript text for signals if available
+		if transcripts_df is not None and not transcripts_df.empty and (transcripts_df["__group_key__"] == key).any():
+			full_text = transcripts_df[transcripts_df["__group_key__"] == key].iloc[0].get("full_transcript", "") or ""
+			temp_df = pd.DataFrame({
+				"question": [""],
+				"verbatim_response": [full_text],
+				"sentiment": [None],
+				"impact_score": [None],
+				"harmonized_subject": [None],
+			})
+			signals = compute_interview_signals(temp_df, kw)
+		else:
+			signals = compute_interview_signals(g, kw)
 		seg = assign_channel_for_interview(g, md_row, kw)
 		interview_rows.append({
-			"interview_id": iid,
+			"interview_id": key,
 			"company": (md_row.get("company") if md_row is not None else None) or g["company"].dropna().iloc[0] if "company" in g and not g["company"].dropna().empty else None,
 			"company_size": (md_row.get("company_size") if md_row is not None else None),
 			"known_channel": (md_row.get("known_channel") if md_row is not None else None),

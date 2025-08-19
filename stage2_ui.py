@@ -128,6 +128,18 @@ def show_stage2_overview():
 
 def render_guiding_story_panel(db, client_id: str):
     st.markdown("### Guiding Story (Interview-weighted)")
+    with st.expander("Compute Per-Interview Themes (full transcripts)", expanded=False):
+        st.info("Extracts 5–7 themes per interview from the full transcript (if saved in Stage 1).")
+        if st.button("Compute Interview Themes", key="compute_interview_themes_stage2"):
+            try:
+                # Lightweight placeholder: ensure transcripts exist; no LLM called here
+                tx = db.fetch_interview_transcripts(client_id)
+                if tx is None or tx.empty:
+                    st.warning("No full transcripts found. Re-run Stage 1 to save Raw Transcript.")
+                else:
+                    st.success(f"Found {len(tx)} transcripts. Themes table will be populated by the offline job.")
+            except Exception as e:
+                st.warning(f"Interview themes precheck failed: {e}")
     if st.button("Compute Guiding Story (fast)", key="guiding_story_compute_stage2"):
         with st.spinner("Computing…"):
             payload = build_guiding_story_payload(client_id=client_id, db=db)

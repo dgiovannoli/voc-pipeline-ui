@@ -234,6 +234,7 @@ class MetadataStage1Processor:
         try:
             all_client_rows = df[df['__client_name_norm__'] == normalized_client_id].copy()
             meta_upserts = 0
+            transcript_upserts = 0  # NEW
             for _, mrow in all_client_rows.iterrows():
                 self.db.upsert_interview_metadata(
                     client_id=client_id,
@@ -249,7 +250,22 @@ class MetadataStage1Processor:
                     contact_website=mrow.get('Interview Contact Website', '')
                 )
                 meta_upserts += 1
+                # Save full transcript when available  # NEW
+                try:
+                    raw_text = str(mrow.get(transcript_column, '') or '').strip()
+                    if raw_text:
+                        self.db.upsert_interview_transcript(
+                            client_id=client_id,
+                            interview_id=str(mrow.get('Interview ID', '')),
+                            company=str(mrow.get('Interview Contact Company Name', '')),
+                            interviewee_name=str(mrow.get('Interview Contact Full Name', '')),
+                            full_transcript=raw_text,
+                        )
+                        transcript_upserts += 1
+                except Exception:
+                    pass
             logger.info(f"💾 Upserted interview_metadata for {meta_upserts} {client_id} rows from CSV")
+            logger.info(f"📝 Stored full transcripts for {transcript_upserts} {client_id} rows")  # NEW
         except Exception as e:
             logger.warning(f"⚠️ Could not upsert interview_metadata for all client rows: {e}")
 
