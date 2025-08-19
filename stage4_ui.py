@@ -101,6 +101,8 @@ def get_stage4_summary():
 def show_stage4_themes():
     """Display Stage 4 themes and strategic alerts analysis"""
     st.subheader("🎯 Stage 4 — Consolidated Themes & Strategic Alerts")
+    # Ensure client_id is available for all controls below
+    client_id = get_client_id()
     
     # Get summary
     summary = get_stage4_summary()
@@ -162,7 +164,6 @@ def show_stage4_themes():
                         st.error(f"Dedup write failed: {e}")
 
     # Get themes data
-    client_id = get_client_id()
     themes_df = db.get_themes(client_id=client_id)
     
     # Display themes and alerts in a table

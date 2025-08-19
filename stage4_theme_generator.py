@@ -1338,8 +1338,17 @@ Return ONLY the JSON object (no explanations or extra text).
             findings = self.supabase.get_stage3_findings_list(self.client_id)
             
             if not findings:
-                logger.warning(f"No Stage 3 findings found for client {self.client_id}")
-                return False
+                logger.warning(f"No Stage 3 findings found for client {self.client_id}; attempting research_themes fallback")
+                # Reuse the logic in _get_findings_json() which already builds fallback
+                findings_json = self._get_findings_json()
+                if not findings_json:
+                    return False
+                try:
+                    import json as _json
+                    findings = _json.loads(findings_json)
+                except Exception:
+                    # If JSON is not a list, abort
+                    return False
             
             logger.info(f"📊 Found {len(findings)} findings to analyze")
             
