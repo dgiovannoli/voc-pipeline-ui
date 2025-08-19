@@ -1371,7 +1371,10 @@ Return ONLY the JSON object (no explanations or extra text).
             
             if not real_patterns:
                 logger.warning("No real cross-company patterns found in findings")
-                return False
+                # In fallback mode (no company data), allow proceeding to LLM generation
+                if getattr(self, 'require_company_data', True) is True:
+                    return False
+                logger.info("Proceeding without company constraints (fallback mode)")
             
             # Generate themes from findings
             themes = self._generate_themes_from_findings(findings)
