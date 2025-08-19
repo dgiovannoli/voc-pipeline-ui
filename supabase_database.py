@@ -1332,6 +1332,45 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to get interview metadata: {e}")
             return pd.DataFrame()
 
+    def upsert_interview_metadata(self,
+                                  client_id: str,
+                                  interview_id: str,
+                                  interviewee_name: str,
+                                  company: str = '',
+                                  deal_status: str = '',
+                                  date_of_interview: Optional[str] = None,
+                                  industry: str = '',
+                                  interviewee_role: str = '',
+                                  firm_size: str = '',
+                                  audio_video_link: str = '',
+                                  contact_website: str = '') -> bool:
+        """Create or update a minimal interview_metadata record so UI can surface interviews.
+        Uses (client_id, interview_id) as the natural key.
+        """
+        try:
+            data = {
+                'client_id': client_id,
+                'interview_id': interview_id,
+                'interviewee_name': interviewee_name,
+                'company': company,
+                'deal_status': deal_status,
+                'date_of_interview': date_of_interview,
+                'industry': industry,
+                'interviewee_role': interviewee_role,
+                'firm_size': firm_size,
+                'audio_video_link': audio_video_link,
+                'contact_website': contact_website,
+                'metadata_updated_at': datetime.now().isoformat()
+            }
+            # Remove None values
+            data = {k: v for k, v in data.items() if v is not None}
+            result = self.supabase.table('interview_metadata').upsert(data).execute()
+            logger.info(f"✅ Upserted interview_metadata for {interview_id} ({client_id})")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed to upsert interview_metadata for {interview_id} ({client_id}): {e}")
+            return False
+
     def merge_client_data(self, from_client_id: str, to_client_id: str) -> bool:
         """Merge data from one client_id to another"""
         try:

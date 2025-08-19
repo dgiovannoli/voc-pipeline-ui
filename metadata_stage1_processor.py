@@ -320,6 +320,19 @@ class MetadataStage1Processor:
             
             logger.info(f"📝 Processing interview {interview_id}: {interviewee_name} from {company}")
             
+            # Ensure a minimal interview_metadata record exists for this interview
+            try:
+                self.db.upsert_interview_metadata(
+                    client_id=client_id,
+                    interview_id=interview_id,
+                    interviewee_name=interviewee_name,
+                    company=company,
+                    deal_status=deal_status,
+                    date_of_interview=str(date_of_interview)
+                )
+            except Exception as e:
+                logger.warning(f"⚠️ Could not upsert interview_metadata for {interview_id}: {e}")
+
             try:
                 # Create temporary file with transcript
                 temp_file = f"temp_{interview_id}_{client_id}.txt"
