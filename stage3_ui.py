@@ -270,12 +270,40 @@ def show_stage3_findings():
             st.info("🎯 Stage 3 themes have been processed. You can now generate workbooks.")
         else:
             st.info("📊 No Stage 3 themes found yet. Process themes first to generate findings.")
-        
-        # Link to theme processing
-        if st.button("🚀 Go to Stage 3 Theme Processing", type="primary"):
-            st.session_state.current_step = 3
-            st.rerun()
             
+        # Inline processing controls
+        st.markdown("---")
+        st.subheader("🚀 Generate Themes Now")
+        with st.expander("Advanced options", expanded=False):
+            clear_first = st.checkbox(
+                "🧹 Clear existing themes before processing",
+                value=not status.get("has_themes", False),
+                help="Deletes existing themes for this client, then regenerates"
+            )
+            preserve_stage4_style = st.checkbox(
+                "✅ Preserve Stage 4 two-sentence statements (skip headline tightening)",
+                value=True,
+                help="Skips extra tightening so Stage 4-style statements remain intact"
+            )
+        if st.button("🚀 Process Stage 3 Themes", type="primary"):
+            with st.spinner("Processing Stage 3 themes..."):
+                try:
+                    if preserve_stage4_style:
+                        os.environ['STAGE3_TIGHTEN_HEADLINES'] = 'false'
+                    proc = Stage3ThemeProcessor(client_id)
+                    if clear_first:
+                        deleted = proc.clear_existing_themes()
+                        st.info(f"🧹 Cleared {deleted} existing themes for {client_id}")
+                    result = proc.process_stage3_themes()
+                    if result.get("success"):
+                        st.success("✅ Stage 3 processing completed!")
+                        st.json(result)
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Stage 3 processing failed: {result.get('error', 'Unknown error')}")
+                except Exception as e:
+                    st.error(f"❌ Error during Stage 3 processing: {e}")
+     
     except Exception as e:
         st.error(f"❌ Error checking Stage 3 status: {e}")
         st.info("📊 Please ensure Stage 3 theme processing is completed first")
