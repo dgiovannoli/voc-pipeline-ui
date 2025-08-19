@@ -333,6 +333,26 @@ class MetadataStage1Processor:
                             logger.info(f"📄 Loaded transcript from file for {interview_id} ({len(transcript)} chars)")
                         except Exception as file_err:
                             logger.warning(f"⚠️ Could not read transcript file for {interview_id}: {file_err}")
+                    # Fallback: extract transcript from 'Interview Guides' column content
+                    if (not isinstance(transcript, str)) or len(transcript.strip()) < 5:
+                        try:
+                            guides = row.get('Interview Guides', '')
+                            guides_str = str(guides) if guides is not None else ''
+                            if guides_str.strip():
+                                import re as _re
+                                m = _re.search(r"Raw\s*Transcript\s*:?(.*)$", guides_str, flags=_re.IGNORECASE | _re.DOTALL)
+                                if m:
+                                    extracted = m.group(1).strip()
+                                    if len(extracted) > 20:
+                                        transcript = extracted
+                                        logger.info(f"🧩 Extracted transcript from 'Interview Guides' for {interview_id} ({len(transcript)} chars)")
+                                else:
+                                    # As a last resort, use the entire guides text
+                                    if len(guides_str.strip()) > 50:
+                                        transcript = guides_str.strip()
+                                        logger.info(f"🧩 Using entire 'Interview Guides' content as transcript for {interview_id} ({len(transcript)} chars)")
+                        except Exception as exg:
+                            logger.warning(f"⚠️ Failed to extract from 'Interview Guides' for {interview_id}: {exg}")
             except Exception as e:
                 logger.warning(f"⚠️ Error resolving transcript source for {interview_id}: {e}")
             # Guard: skip if still empty/very short
