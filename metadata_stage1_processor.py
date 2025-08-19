@@ -229,6 +229,29 @@ class MetadataStage1Processor:
                         logger.info(f"✅ Found transcripts in column: '{col}'")
                         break
         
+        # Upsert interview_metadata for ALL rows that belong to this client (regardless of transcript presence)
+        try:
+            all_client_rows = df[df['__client_name_norm__'] == normalized_client_id].copy()
+            meta_upserts = 0
+            for _, mrow in all_client_rows.iterrows():
+                self.db.upsert_interview_metadata(
+                    client_id=client_id,
+                    interview_id=mrow.get('Interview ID', ''),
+                    interviewee_name=mrow.get('Interview Contact Full Name', ''),
+                    company=mrow.get('Interview Contact Company Name', ''),
+                    deal_status=mrow.get('Deal Status', ''),
+                    date_of_interview=str(mrow.get('Completion Date', '')),
+                    industry=mrow.get('Industry', ''),
+                    interviewee_role=mrow.get('Interviewee Role', ''),
+                    firm_size=str(mrow.get('Firm Size', '')),
+                    audio_video_link=mrow.get('Audio/Video Link', ''),
+                    contact_website=mrow.get('Interview Contact Website', '')
+                )
+                meta_upserts += 1
+            logger.info(f"💾 Upserted interview_metadata for {meta_upserts} {client_id} rows from CSV")
+        except Exception as e:
+            logger.warning(f"⚠️ Could not upsert interview_metadata for all client rows: {e}")
+
         if actual_transcript_column is None:
             logger.warning(f"⚠️ No transcript content found in any column")
             return {
