@@ -82,6 +82,14 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("🔍 Step 4: Adding Discovered Themes tab...")
             self._add_discovered_themes_tab()
 
+            # Step 4b: Add Grouped Themes (non-destructive parent/children) tab
+            logger.info("🗂️ Step 4b: Adding Grouped Themes tab (non-destructive)...")
+            self._add_grouped_themes_tab()
+
+            # Step 4c: Add Grouped Quotes (all quotes under parent) tab
+            logger.info("🧾 Step 4c: Adding Grouped Quotes tab (all original quotes)...")
+            self._add_grouped_quotes_tab()
+
             # Step 5: Add Mapping QA tab
             logger.info("✅ Step 5: Adding Mapping QA tab...")
             self._add_mapping_qa_tab()
@@ -196,6 +204,129 @@ class SupioHarmonizedWorkbookGenerator:
 
         except Exception as e:
             logger.warning(f"⚠️ Summary tab failed: {e}")
+
+    def _fetch_stage3_research_themes(self) -> pd.DataFrame:
+        """Fetch Stage 3 research themes (excluding discovered and merged children) as DataFrame."""
+        response = self.db.supabase.table('research_themes').select(
+            'theme_id,theme_statement,question_text,harmonized_subject,supporting_quotes,company_coverage,impact_score,evidence_strength,section'
+        ).eq('client_id', self.client_id).eq('origin', 'research').not_.like('harmonized_subject', 'DISCOVERED:%').execute()
+        data = response.data or []
+        # Filter out merged children
+        data = [t for t in data if not str(t.get('section', '')).startswith('MERGED_INTO:')]
+        return pd.DataFrame(data)
+
+    def _fetch_quotes_df(self) -> pd.DataFrame:
+        """Fetch Stage 1 responses for quote lookups."""
+        quotes_response = self.db.supabase.table('stage1_data_responses').select(
+            'response_id,company,interviewee_name,verbatim_response,sentiment,deal_status'
+        ).eq('client_id', self.client_id).execute()
+        return pd.DataFrame(quotes_response.data or [])
+
+    def _add_grouped_themes_tab(self):
+        """Add a non-destructive grouped view: parents = harmonized_subject; children = original themes."""
+        try:
+            wb = load_workbook(self.workbook_path)
+            df = self._fetch_stage3_research_themes()
+            if df.empty:
+                logger.warning("⚠️ No research themes to group")
+                return
+            # Normalize fields
+            df['company_coverage'] = pd.to_numeric(df.get('company_coverage'), errors='coerce').fillna(0).astype(int)
+            df['evidence_strength'] = pd.to_numeric(df.get('evidence_strength'), errors='coerce').fillna(0)
+            def _qcount(x):
+                if isinstance(x, list):
+                    return len(x)
+                return 0
+            df['quotes_count'] = df['supporting_quotes'].apply(_qcount)
+            # Select parent per subject
+            parents = []
+            for subject, g in df.groupby('harmonized_subject'):
+                g_sorted = g.sort_values(['company_coverage','quotes_count','evidence_strength'], ascending=False)
+                parent_row = g_sorted.iloc[0]
+                parents.append({
+                    'parent_subject': subject or 'Unspecified',
+                    'parent_theme_id': parent_row['theme_id'],
+                    'parent_statement': parent_row['theme_statement'],
+                    'children_count': len(g),
+                    'total_quotes': int(g['quotes_count'].sum()),
+                    'max_company_coverage': int(g['company_coverage'].max())
+                })
+            ws = wb.create_sheet("Grouped Themes")
+            ws['A1'] = "Grouped Themes (by Harmonized Subject) — Parent with Children (no merging)"
+            ws['A1'].font = Font(bold=True, size=14)
+            headers = ["Parent Subject","Parent Theme ID","Parent Statement","Children","Total Quotes","Max Companies"]
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=3, column=col, value=h)
+                cell.font = Font(bold=True)
+            row = 4
+            for p in parents:
+                ws.cell(row=row, column=1, value=p['parent_subject'])
+                ws.cell(row=row, column=2, value=p['parent_theme_id'])
+                ws.cell(row=row, column=3, value=p['parent_statement'])
+                ws.cell(row=row, column=4, value=p['children_count'])
+                ws.cell(row=row, column=5, value=p['total_quotes'])
+                ws.cell(row=row, column=6, value=p['max_company_coverage'])
+                row += 1
+                # Child header
+                ch_headers = ["Child Theme ID","Child Statement","Quotes","Companies"]
+                for c, h in enumerate(ch_headers, 1):
+                    ws.cell(row=row, column=c+1, value=h).font = Font(bold=True, size=10)
+                row += 1
+                g = df[df['harmonized_subject'] == p['parent_subject']]
+                for _, r in g.iterrows():
+                    ws.cell(row=row, column=2, value=r['theme_id'])
+                    ws.cell(row=row, column=3, value=r['theme_statement'])
+                    ws.cell(row=row, column=4, value=int(r['quotes_count']))
+                    ws.cell(row=row, column=5, value=int(r['company_coverage']))
+                    row += 1
+                row += 1
+            wb.save(self.workbook_path)
+            logger.info("✅ Grouped Themes tab added")
+        except Exception as e:
+            logger.warning(f"⚠️ Grouped Themes tab failed: {e}")
+
+    def _add_grouped_quotes_tab(self):
+        """Add a tab with all original quotes under each parent subject and child theme."""
+        try:
+            wb = load_workbook(self.workbook_path)
+            df = self._fetch_stage3_research_themes()
+            if df.empty:
+                logger.warning("⚠️ No research themes for grouped quotes")
+                return
+            quotes_df = self._fetch_quotes_df()
+            if quotes_df.empty:
+                logger.warning("⚠️ No stage1 quotes available for grouped quotes")
+                return
+            # Build mapping for quick lookup
+            qmap = quotes_df.set_index('response_id').to_dict(orient='index')
+            ws = wb.create_sheet("Grouped Quotes")
+            ws['A1'] = "All Quotes grouped by Parent Subject and Child Theme"
+            ws['A1'].font = Font(bold=True, size=14)
+            headers = ["Parent Subject","Child Theme ID","Child Statement","Response ID","Company","Interviewee","Sentiment","Deal Status","Verbatim"]
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=3, column=col, value=h)
+                cell.font = Font(bold=True)
+            row = 4
+            for subject, g in df.groupby('harmonized_subject'):
+                for _, r in g.iterrows():
+                    sq = r.get('supporting_quotes')
+                    ids = sq if isinstance(sq, list) else []
+                    for rid in ids:
+                        meta = qmap.get(rid, {})
+                        ws.cell(row=row, column=1, value=subject or 'Unspecified')
+                        ws.cell(row=row, column=2, value=r['theme_id'])
+                        ws.cell(row=row, column=3, value=r['theme_statement'])
+                        ws.cell(row=row, column=4, value=rid)
+                        ws.cell(row=row, column=5, value=meta.get('company',''))
+                        ws.cell(row=row, column=6, value=meta.get('interviewee_name',''))
+                        ws.cell(row=row, column=7, value=meta.get('sentiment',''))
+                        ws.cell(row=row, column=8, value=meta.get('deal_status',''))
+                        ws.cell(row=row, column=9, value=meta.get('verbatim_response',''))
+                        row += 1
+            wb.save(self.workbook_path)
+            logger.info("✅ Grouped Quotes tab added")
+        except Exception as e:
+            logger.warning(f"⚠️ Grouped Quotes tab failed: {e}")
 
     def _add_research_themes_tab(self):
         """
