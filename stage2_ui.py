@@ -134,7 +134,7 @@ def show_stage2_analysis():
         return
     
     # Header with enhanced branding
-    st.header("🚀 Enhanced Stage 2 Analysis")
+    st.header("🚀 Stage 2 — Scoring & Harmonization")
     st.markdown(f"**Client:** `{client_id}` | **Approach:** Single-Table Sentiment & Impact")
     
     # Optional: Run Step 2 Harmonization first
@@ -184,7 +184,7 @@ def show_stage2_analysis():
                         st.success("✅ Harmonization complete")
                     else:
                         st.error("❌ Harmonization failed")
-            st.experimental_rerun()
+            st.rerun()
 
     try:
         # Get Stage 1 data to check readiness

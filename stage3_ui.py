@@ -21,7 +21,7 @@ def show_stage3_processing_page():
     """
     Stage 3 Theme Processing and Workbook Generation Page
     """
-    st.title("🎯 Stage 3 Theme Processing")
+    st.title("🎯 Stage 3 — Generate Research & Discovered Themes")
     st.markdown("Create high-quality themes and generate Supio HARMONIZED workbooks")
 
     # Client selection
@@ -235,8 +235,8 @@ def show_stage3_findings():
     Stage 3: Findings - Identify key findings and insights from labeled quotes
     This is the original Stage 3 findings function that the main app expects
     """
-    st.title("🔍 Stage 3: Findings")
-    st.markdown("**Identify key findings and insights from labeled quotes**")
+    st.title("🔍 Stage 3 — Generate Themes")
+    st.markdown("Creates research-seeded and discovered themes from Stage 2 analysis; use the processing screen if not yet generated.")
     
     # Get client ID from session state
     client_id = st.session_state.get('client_id', '')

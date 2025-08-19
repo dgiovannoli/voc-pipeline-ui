@@ -580,7 +580,7 @@ def main():
     
     # Client ID management
     st.sidebar.markdown("---")
-    st.sidebar.subheader("🏢 Client Settings")
+    st.sidebar.subheader("🏢 Client")
     
     # Check if client_id is properly set
     current_client_id = st.session_state.get('client_id', '')
@@ -591,9 +591,9 @@ def main():
     
     # Client ID input with validation
     new_client_id = st.sidebar.text_input(
-        "Client ID:",
+        "Client:",
         value=current_client_id,
-        help="Enter a unique identifier for this client's data"
+        help="Sets which client's data is read/written (must match CSV and DB)"
     )
     
     # Validate client ID format
@@ -615,32 +615,31 @@ def main():
     page = st.sidebar.radio(
         "Go to:",
         [
-            "Stage 1: Data Response Table",
-            "Stage 2: Response Labeling",
-            "Stage 3: Findings",
-            "Stage 4: Themes",
-            "Stage 5: Generate Analyst Report",
-            "📊 Excel Workbook Generation",
+            "Stage 1 · Upload & Parse",
+            "Stage 2 · Score & Harmonize",
+            "Stage 3 · Generate Themes",
+            "Stage 4 · Consolidate & Strategy",
+            "Workbook · Export",
             "📋 Decision Tracking",
-            "Admin / Utilities"
+            "Admin · Data Explorer"
         ]
     )
 
-    if page == "Stage 1: Data Response Table":
+    if page == "Stage 1 · Upload & Parse":
         show_stage1_data_responses()
-    elif page == "Stage 2: Response Labeling":
+    elif page == "Stage 2 · Score & Harmonize":
         show_stage2_analysis()
-    elif page == "Stage 3: Findings":
+    elif page == "Stage 3 · Generate Themes":
         show_stage3_findings()
-    elif page == "Stage 4: Themes":
+    elif page == "Stage 4 · Consolidate & Strategy":
         show_stage4_themes()
     elif page == "Stage 5: Generate Analyst Report":
         show_stage4_analyst_report()
-    elif page == "📊 Excel Workbook Generation":
+    elif page == "Workbook · Export":
         show_excel_generation()
     elif page == "📋 Decision Tracking":
         show_decision_tracking()
-    elif page == "Admin / Utilities":
+    elif page == "Admin · Data Explorer":
         show_admin_panel()
 
 if __name__ == "__main__":

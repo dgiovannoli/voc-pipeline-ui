@@ -176,10 +176,10 @@ def show_performance_comparison():
                 st.metric("Speed", f"{responses_per_sec:.1f} resp/s")
 
 def show_stage1_data_responses():
-    """Stage 1: Data Response Table - Process metadata CSV to extract quotes"""
-    st.title("📊 Stage 1: Data Response Table")
-    st.markdown("Extract customer quotes and insights from interview transcripts using metadata CSV files.")
-    st.info("✨ **Enhanced with Auto-Harmonization & Parallel Processing**: Subjects are automatically harmonized and processing is 3-5x faster!")
+    """Stage 1 · Upload & Parse — saves interview metadata and extracts responses from Raw Transcript"""
+    st.title("📥 Stage 1 — Upload & Parse Interviews")
+    st.markdown("Saves interview metadata and extracts responses from `Raw Transcript` (text or fetchable txt link).")
+    st.info("Tip: Client must match CSV ‘Client Name’. Source of truth is `Raw Transcript`.")
     
     # Get client ID first
     client_id = get_client_id()
@@ -305,7 +305,7 @@ def show_stage1_data_responses():
         
         # Processing options in a cleaner layout
         st.subheader("⚙️ Processing Options")
-        st.info("🎯 **Auto-Harmonization**: Subject harmonization will run automatically during processing to standardize customer language into business categories.")
+        st.info("Phase 1 parses and saves only. Harmonization runs in Stage 2 (optional).")
         
         # Processing configuration
         col1, col2, col3 = st.columns(3)

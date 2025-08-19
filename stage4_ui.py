@@ -100,7 +100,7 @@ def get_stage4_summary():
 
 def show_stage4_themes():
     """Display Stage 4 themes and strategic alerts analysis"""
-    st.subheader("🎯 Stage 4: Theme & Strategic Alert Generation")
+    st.subheader("🎯 Stage 4 — Consolidated Themes & Strategic Alerts")
     
     # Get summary
     summary = get_stage4_summary()
@@ -137,6 +137,30 @@ def show_stage4_themes():
     else:
         st.info("📊 No themes or strategic alerts available yet. Run the analysis to generate them.")
     
+    # Deduplication control (post-generation)
+    with st.expander("🧹 Deduplicate & Merge Themes (post-generation)", expanded=False):
+        st.info("Detects near-duplicate themes across research/discovered, merges evidence, and marks merged children.")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button("🔍 Dry Run (no changes)"):
+                with st.spinner("Analyzing duplicates..."):
+                    try:
+                        from scripts.deduplicate_themes import dedup_client
+                        result = dedup_client(db, client_id, dry_run=True)
+                        st.success(f"Groups: {result.get('groups')} | Canonicals: {result.get('canonicals')} | Merged pairs (simulated): {result.get('merged_pairs')}")
+                    except Exception as e:
+                        st.error(f"Dedup dry run failed: {e}")
+        with col_b:
+            if st.button("✅ Apply Merge (write)"):
+                with st.spinner("Merging duplicates..."):
+                    try:
+                        from scripts.deduplicate_themes import dedup_client
+                        result = dedup_client(db, client_id, dry_run=False)
+                        st.success(f"Merged pairs applied: {result.get('merged_pairs')} across {result.get('groups')} groups")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Dedup write failed: {e}")
+
     # Get themes data
     client_id = get_client_id()
     themes_df = db.get_themes(client_id=client_id)
@@ -263,29 +287,7 @@ def show_stage4_themes():
                         st.subheader("⚠️ Strategic Implications")
                         st.write(implications) 
 
-# Deduplication control
-with st.expander("🧹 Deduplicate & Merge Themes (post-generation)", expanded=False):
-	st.info("Detects near-duplicate themes across research/discovered, merges evidence, and marks merged children.")
-	col_a, col_b = st.columns(2)
-	with col_a:
-		if st.button("🔍 Dry Run (no changes)"):
-			with st.spinner("Analyzing duplicates..."):
-				try:
-					from scripts.deduplicate_themes import dedup_client
-					result = dedup_client(db, client_id, dry_run=True)
-					st.success(f"Groups: {result.get('groups')} | Canonicals: {result.get('canonicals')} | Merged pairs (simulated): {result.get('merged_pairs')}")
-				except Exception as e:
-					st.error(f"Dedup dry run failed: {e}")
-	with col_b:
-		if st.button("✅ Apply Merge (write)"):
-			with st.spinner("Merging duplicates..."):
-				try:
-					from scripts.deduplicate_themes import dedup_client
-					result = dedup_client(db, client_id, dry_run=False)
-					st.success(f"Merged pairs applied: {result.get('merged_pairs')} across {result.get('groups')} groups")
-					st.rerun()
-				except Exception as e:
-					st.error(f"Dedup write failed: {e}")
+# (moved deduplication UI into show_stage4_themes)
 
 # Main entry point for Streamlit
 if __name__ == "__main__":
