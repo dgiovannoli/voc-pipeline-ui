@@ -88,10 +88,6 @@ reports/*.txt
 reports/*.csv
 !reports/README.md
 
-# Excel files (generated workbooks)
-*.xlsx
-*.xls
-
 # Uploads (keep only sample files)
 uploads/*.docx
 uploads/*.pdf

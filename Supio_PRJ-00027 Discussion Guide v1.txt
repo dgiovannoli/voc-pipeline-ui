@@ -1,0 +1,302 @@
+﻿Objectives:
+To provide insights to Supio about:
+1. Understand customer buying criteria and decision-making processes during vendor selection.
+2. Uncover reasons for winning & losing deals, including gaps in product features, pricing strategies, or sales execution.
+3. Evaluate the effectiveness of current sales presentations in communicating value and addressing client needs.
+4. Analyze competitor strengths and customer perceptions of Supio's brand relative to competitors to inform competitive positioning and refine marketing strategies.
+Hi [participant name], thanks for joining me today! This interview is being conducted to help us learn more about your technology needs and experience with Supio. With your permission, we will be recording the conversation.
+
+
+The recording, along with a transcript of the interview, will be used to create a report that will be shared with our client, Supio. All of these materials (recording, transcript, report) will be shared with Supio to help them gain valuable insights from consumers like yourself.
+
+
+Any questions?
+   1. Information will only be shared with our client
+   2. If participant is concerned about anonymity -> We can remove mentions of their name & company name.
+   3. If participant still does not want to be recorded -> Can conduct interview w/o recording  and just take notes
+
+
+Background & Evaluation (8 minutes)
+Objective: Understand customer buying criteria and decision-making processes during vendor selection
+
+
+1. To start, could you briefly introduce yourself, describe your role, and your firm?
+
+
+
+
+2. What prompted you to evaluate solutions like Supio?
+
+
+
+
+3. What were the key criteria you used to evaluate providers?
+
+
+
+
+4. Who else was involved in the evaluation process and what was their role and focus?
+   1. PROBE: Role of Paralegals, Operations or Technology team members, Partners
+
+
+CONTEXT: Client Background & Assumptions on Key Stakeholders:
+* Paralegals: Primary end users
+* Technology/COO: Often champion
+* Partners: Focus on profitability
+
+
+
+
+Win/Loss Outcome (4 minutes)
+Objective: To uncover reasons why Supio is winning/losing deals
+
+
+5. Which vendors did you evaluate?
+
+
+
+
+6. IF NOT ALREADY MENTIONED: Who did you ultimately select?
+
+
+
+
+7. WIN: Why did you ultimately choose Supio over other vendors / LOSS: Why did you ultimately choose [COMPETITOR] over Supio?
+
+
+
+
+
+
+Supio Perceptions vs Competitors (15 minutes)
+Objective: To learn how Supio is perceived vs competitors
+
+
+CONTEXT: 
+
+
+Client Background & Assumptions on Competitors
+* Supio: Tech company purpose-built for legal (85% tech/15% human validation)
+* Competitors
+   * Eve: Speed-focused (98% tech/2% human validation), targets smaller firms
+   * EvenUp: Legal company using tech (50/50 human validation)
+   * FileVine entering the space with lighter offering
+Client Background & Assumptions on Strengths & Weaknesses
+* Company alignment, Functionality, Technology
+* Areas for improvement: Implementation messaging, Price positioning (typically higher)
+
+
+8. What do you perceive as Supio’s strengths versus other companies?
+   1. PROBE TO CAPTURE OTHER COMPANY NAMES
+
+
+
+
+9. What do you perceive as Supio’s weaknesses versus other companies?
+   1. PROBE TO CAPTURE OTHER COMPANY NAMES
+
+
+
+
+10. Next, I’d like to launch a quick poll. Please rate your agreement with the following statements about Supio, using a scale from 1 to 5, where 1=Strongly Disagree and 5=Strongly Agree.
+LAUNCH SUPIO EVALUATION POLL
+   1. PROBE ON REASONS BEHIND RATINGS, EXAMPLES:
+   1. “I see you rated Pricing a #, can you elaborate on what’s driving that rating? 
+   2. How does Supio’s pricing compare to that of [competitor]? 
+   3. IF LOW RATING: What could Supio do to get it to a 4 or 5?
+
+
+
+
+	Strongly Disagree
+ (1)
+	Disagree
+ (2)
+	Neutral
+ (3)
+	Agree
+ (4)
+	Strongly Agree
+  (5)
+	[PRICE] Supio's pricing was competitive and aligned with the value offered
+	
+
+	
+
+	
+
+	
+
+	
+
+	[COMPANY ALIGNMENT]  Supio's company values, culture, and overall approach were a good fit for our organization
+	
+
+	
+
+	
+
+	
+
+	
+
+	[FUNCTIONALITY] Supio's product/service offered the key features and capabilities we needed to meet our requirements
+	
+
+	
+
+	
+
+	
+
+	
+
+	[IMPLEMENTATION] The Supio sales team effectively communicated the implementation process and their ability to deliver a smooth onboarding experience
+	
+
+	
+
+	
+
+	
+
+	
+
+	[TECHNOLOGY] Supio's technology platform and infrastructure appeared robust, reliable, and aligned with our technical requirements
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+
+
+   11. FOLLOW UP ON FEATURES: Were there any features that competitors offered that Supio lacked, and how did that influence your decision?
+
+
+   12. FOLLOW UP ON IMPLEMENTATION: What was your impression of the implementation process?
+   1. LISTEN FOR: Unclear, complicated
+
+
+
+
+
+
+Sales Performance (10 minutes)
+Objective: Dive deeper on where sales team effectiveness and performance
+
+
+CONTEXT: Client Background & Assumptions on Sales
+   * Need to better articulate value proposition to avoid commoditization
+   * Implementation messaging needs improvement
+   * New sales team still learning (most reps recently hired)
+   * Market segmentation:
+   * Strong fit for 1,000 large plaintiff firms
+   * Good fit for 6,000 mid-size firms (10-50 employees)
+   * Need new model for 40,000 small firms (<10 employees)
+
+
+Next, I’d like to focus on your experience with the Supio sales team.
+
+
+   13. What did the sales team do well? 
+
+
+
+
+   14. What could they improve?
+
+
+
+
+   15. I have one last quick poll to capture feedback on Supio’s sales team. Please rate the sales team on each of the following criteria, using a scale from 1 to 5, where 1=Poor and 5=Excellent.
+LAUNCH SUPIO SALES EXPERIENCE POLL
+      1. PROBE ON REASONS BEHIND RATINGS, EXAMPLES:
+      1. “I see you rated Understanding of Business needs a #, can you elaborate on what’s driving that rating? 
+      2. IF LOW RATING: What could Supio do to get it to a 4 or 5?
+
+
+
+
+	Poor
+ (1)
+	Below Average
+ (2)
+	Average
+ (3)
+	Good
+ (4)
+	Excellent
+  (5)
+	Understanding of your business needs and pain points
+	
+
+	
+
+	
+
+	
+
+	
+
+	Knowledge of Supio’s product and capabilities
+	
+
+	
+
+	
+
+	
+
+	
+
+	Effective communication of Supio’s value proposition
+	
+
+	
+
+	
+
+	
+
+	
+
+	Quality of product demonstrations and presentations
+	
+
+	
+
+	
+
+	
+
+	
+
+	Responsiveness and timeliness in follow-up
+	
+
+	
+
+	
+
+	
+
+	
+
+	
+
+Wrap Up (1 minute)
+
+
+      16. Thinking back on our conversation today, what is the single most important thing you think Supio should focus on to improve their offerings or sales process?
+
+
+
+
+Those are all of my questions. Thank you for your time today.

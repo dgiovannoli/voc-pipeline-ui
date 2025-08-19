@@ -30,17 +30,17 @@ def get_client_id():
     return client_id
 
 def run_stage2_analysis():
-    """Run Stage 2 analysis using enhanced single-table analyzer with progress tracking"""
+    """Run Stage 2 analysis using enhanced analyzer with research question alignment"""
     if not SUPABASE_AVAILABLE:
         st.error("❌ Database not available")
         return None
     
     try:
-        from enhanced_single_table_stage2 import EnhancedSingleTableStage2, stage2_progress_data, stage2_progress_lock
+        from enhanced_stage2_with_research_questions import EnhancedStage2WithResearchQuestions, stage2_progress_data, stage2_progress_lock
         client_id = get_client_id()
         
-        # Create enhanced analyzer with conservative parallel processing
-        analyzer = EnhancedSingleTableStage2(batch_size=50, max_workers=2)
+        # Create enhanced analyzer with research question alignment
+        analyzer = EnhancedStage2WithResearchQuestions(batch_size=50, max_workers=2)
         
         # Create progress tracking
         progress_bar = st.progress(0)
@@ -67,9 +67,9 @@ def run_stage2_analysis():
                 if stage2_progress_data["total_responses"] > 0:
                     progress = stage2_progress_data["completed_responses"] / stage2_progress_data["total_responses"]
                     progress_bar.progress(progress)
-                    status_text.text(f"Processing {stage2_progress_data['completed_responses']}/{stage2_progress_data['total_responses']} responses")
+                    status_text.text(f"Processing {stage2_progress_data['completed_responses']}/{stage2_progress_data['total_responses']} responses with research question alignment...")
                 else:
-                    status_text.text("Initializing enhanced analysis...")
+                    status_text.text("Initializing enhanced analysis with research questions...")
             time.sleep(0.1)
         
         # Wait for completion
@@ -77,7 +77,7 @@ def run_stage2_analysis():
         
         # Final progress update
         progress_bar.progress(1.0)
-        status_text.text("✅ Enhanced analysis complete!")
+        status_text.text("✅ Enhanced analysis with research questions complete!")
         
         # Check for errors
         if result_container["error"]:
@@ -94,32 +94,35 @@ def run_stage2_analysis():
         return None
 
 def show_stage2_overview():
-    """Show Stage 2 overview with enhanced single-table approach"""
-    st.title("📊 Stage 2: Enhanced Sentiment & Impact Analysis")
+    """Show Stage 2 overview with research question alignment"""
+    st.title("📊 Stage 2: Enhanced Sentiment, Impact & Research Question Analysis")
     
     # Enhanced description
     st.markdown("""
-    **🎯 Simplified Single-Table Analysis**
+    **🎯 Enhanced Analysis with Research Question Alignment**
     
-    Stage 2 now uses a **unified approach** that enhances your Stage 1 data directly:
+    Stage 2 now analyzes responses for sentiment, impact, AND research question alignment:
     
     **✨ Key Features:**
     - **🎭 Sentiment Analysis**: Positive, negative, neutral, or mixed customer emotions
     - **📈 Impact Scoring**: 1-5 scale rating of business decision influence  
-    - **🎯 Harmonized Categories**: Uses Stage 1 harmonized subjects as natural criteria
+    - **📋 Research Question Alignment**: Maps responses to original research questions
+    - **🎯 Coverage Priority**: High/medium/low priority based on question importance
     - **⚡ Single Table**: All data stored in enhanced `stage1_data_responses` table
     
-    **📋 What This Replaces:**
-    - ❌ Complex business criteria mapping
-    - ❌ Separate Stage 2 labeling table
-    - ❌ Manual relevance scoring
-    - ❌ Multiple impact metrics
+    **📋 New Analysis Fields:**
+    - `research_question_alignment`: JSON array of aligned questions
+    - `total_questions_addressed`: Number of research questions addressed
+    - `coverage_summary`: Brief summary of research question coverage
+    - `alignment_score`: 1-5 score for each research question alignment
+    - `coverage_priority`: High/medium/low priority for each alignment
     
     **🎉 Benefits:**
-    - ✅ **Simpler workflow** - one table, cleaner data flow
-    - ✅ **Voice-of-customer driven** - uses actual customer language patterns  
-    - ✅ **Higher quality** - LLM focuses on sentiment + impact only
-    - ✅ **Better performance** - eliminates complex joins and mappings
+    - ✅ **Research-driven insights** - responses mapped to original questions
+    - ✅ **Coverage tracking** - see how well responses address research objectives
+    - ✅ **Better theme generation** - Stage 4 can prioritize question-addressing responses
+    - ✅ **Analyst visibility** - clear view of research question coverage
+    - ✅ **Evidence-centered** - same validation framework for both approaches
     """)
 
 def show_stage2_analysis():

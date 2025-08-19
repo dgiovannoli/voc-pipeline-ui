@@ -29,7 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-def generate_workbook(client_id: str, output_path: str = None) -> str:
+def generate_workbook(client_id: str, output_path: str = None, unified: bool = True) -> str:
     """
     Generate Excel workbook for specified client
     
@@ -60,10 +60,10 @@ def generate_workbook(client_id: str, output_path: str = None) -> str:
         
         if output_path:
             # Use custom output path
-            final_output_path = exporter.export_analyst_workbook(themes_data, output_path)
+            final_output_path = exporter.export_analyst_workbook(themes_data, output_path, unified=unified)
         else:
             # Use default naming
-            final_output_path = exporter.export_analyst_workbook(themes_data)
+            final_output_path = exporter.export_analyst_workbook(themes_data, unified=unified)
         
         # Verify file was created
         if os.path.exists(final_output_path):
@@ -104,11 +104,19 @@ Examples:
         '--output',
         help='Custom output filename (optional)'
     )
+    # Default to unified Themes sheet; use --legacy to switch to multi-tab
+    parser.set_defaults(unified=True)
+    parser.add_argument(
+        '--legacy',
+        dest='unified',
+        action='store_false',
+        help='Generate legacy multi-tab workbook (Win Drivers, Loss Factors, etc.) instead of unified Themes tab'
+    )
     
     args = parser.parse_args()
     
     # Generate workbook
-    output_path = generate_workbook(args.client, args.output)
+    output_path = generate_workbook(args.client, args.output, unified=args.unified)
     
     if output_path:
         print(f"\n🎉 SUCCESS: Excel workbook generated!")

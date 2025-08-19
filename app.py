@@ -64,6 +64,14 @@ def show_excel_generation():
                 value=f"Win_Loss_Analyst_Workbook_{client_id}_{datetime.now().strftime('%Y%m%d')}.xlsx",
                 help="Enter the desired filename for the Excel workbook"
             )
+        
+        # Hybrid research/discovered themes toggle
+        include_research_themes = st.checkbox("Include Research-Seeded Themes (from discussion guide alignment)", value=True,
+                                             help="Adds themes seeded by discussion-guide questions alongside harmonized-subject themes, then deduplicates and quality-gates them together.")
+        
+        # Alignment threshold
+        research_alignment_min = st.slider("Min Research Alignment (fraction of quotes aligned in a group)", 0.0, 0.5, 0.15, 0.05,
+                                           help="Only generate research-seeded themes when at least this fraction of quotes in a group explicitly align to the primary research question.")
     
     with col2:
         # Quality gate options
@@ -99,7 +107,7 @@ def show_excel_generation():
                 status_text.text("📊 Generating themes and analysis...")
                 progress_bar.progress(30)
                 
-                generator = WinLossReportGenerator(client_id)
+                generator = WinLossReportGenerator(client_id, include_research_themes=include_research_themes, research_alignment_min=research_alignment_min)
                 themes_data = generator.generate_analyst_report()
                 
                 if not themes_data["success"]:
@@ -313,6 +321,234 @@ def show_stage4_analyst_report():
                     mime="text/plain"
                 )
 
+def show_decision_tracking():
+    """Decision Tracking and Workbook Regeneration - Make validation decisions and regenerate workbooks"""
+    
+    st.title("📋 Decision Tracking & Workbook Regeneration")
+    st.markdown("**Make validation decisions and regenerate workbooks with your choices applied**")
+    st.markdown("---")
+    
+    # Get client ID from session state
+    client_id = st.session_state.get('client_id', '')
+    
+    if not client_id:
+        st.warning("⚠️ Please set a Client ID in the sidebar first")
+        st.info("💡 Enter a unique identifier for this client's data (e.g., 'Supio', 'Rev')")
+        return
+    
+    # Display client info
+    st.subheader(f"🏢 Client: {client_id}")
+    
+    # Information about the decision tracking process
+    st.markdown("""
+    ### 🔄 How Decision Tracking Works:
+    
+    **1. Review Themes**: First, generate a workbook to see all available themes
+    **2. Make Decisions**: Use this interface to mark themes as VALIDATED, REJECTED, etc.
+    **3. Regenerate**: Create a new workbook with your decisions applied
+    **4. View Results**: Check the Report Outline Generator to see your validated themes
+    
+    **📊 Decision Options:**
+    - **VALIDATED**: Include in final report
+    - **FEATURED**: Highlight in executive summary  
+    - **REJECTED**: Exclude from report
+    - **NEEDS REVISION**: Requires changes before inclusion
+    - **PENDING**: Not yet reviewed
+    """)
+    
+    st.markdown("---")
+    
+    # Step 1: Generate initial workbook
+    st.subheader("📊 Step 1: Generate Initial Workbook")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        initial_filename = st.text_input(
+            "Initial workbook filename:",
+            value=f"Initial_Workbook_{client_id}_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            help="Filename for the initial workbook with all themes"
+        )
+    
+    with col2:
+        if st.button("🚀 Generate Initial Workbook", type="primary"):
+            try:
+                # Import required modules
+                with st.spinner("📦 Loading modules..."):
+                    from win_loss_report_generator import WinLossReportGenerator
+                    from excel_win_loss_exporter import ExcelWinLossExporter
+                
+                # Generate themes and workbook
+                with st.spinner("📊 Generating themes and analysis..."):
+                    generator = WinLossReportGenerator(client_id)
+                    themes_data = generator.generate_win_loss_report()
+                
+                with st.spinner("📋 Creating Excel workbook..."):
+                    exporter = ExcelWinLossExporter()
+                    output_path = exporter.export_analyst_workbook(themes_data, initial_filename)
+                
+                st.success(f"✅ Initial workbook created successfully!")
+                st.info(f"📁 File: {output_path}")
+                st.info("💡 Download the file and review themes in the 'Decision Tracking' tab")
+                
+                # Store themes data in session state for decision tracking
+                st.session_state['themes_data'] = themes_data
+                st.session_state['initial_workbook_path'] = output_path
+                
+            except Exception as e:
+                st.error(f"❌ Error generating initial workbook: {str(e)}")
+    
+    st.markdown("---")
+    
+    # Step 2: Decision tracking interface
+    st.subheader("📋 Step 2: Make Validation Decisions")
+    
+    if 'themes_data' not in st.session_state:
+        st.info("💡 Generate an initial workbook first to see available themes")
+        return
+    
+    themes_data = st.session_state['themes_data']
+    themes = themes_data.get('themes', [])
+    
+    if not themes:
+        st.warning("⚠️ No themes available. Please generate an initial workbook first.")
+        return
+    
+    # Initialize decisions in session state if not exists
+    if 'theme_decisions' not in st.session_state:
+        st.session_state['theme_decisions'] = {}
+    
+    # Display themes for decision making
+    st.markdown(f"**Found {len(themes)} themes to review:**")
+    
+    # Create decision interface
+    decisions_made = 0
+    for i, theme in enumerate(themes):
+        theme_id = theme.get('theme_id', f'theme_{i}')
+        theme_statement = theme.get('theme_statement', 'No statement')
+        quality_score = theme.get('validation_metrics', {}).get('quality_score', 0)
+        section = theme.get('win_loss_category', 'unknown')
+        
+        # Create expander for each theme
+        with st.expander(f"🎯 {theme_id} ({section}) - Quality: {quality_score:.1f}"):
+            col1, col2, col3 = st.columns([2, 1, 1])
+            
+            with col1:
+                st.markdown(f"**Statement:** {theme_statement[:100]}...")
+                st.markdown(f"**Section:** {section}")
+                st.markdown(f"**Quality Score:** {quality_score:.1f}")
+            
+            with col2:
+                # Decision dropdown
+                decision_key = f"decision_{theme_id}"
+                current_decision = st.session_state['theme_decisions'].get(decision_key, 'PENDING')
+                
+                decision = st.selectbox(
+                    "Decision:",
+                    options=['PENDING', 'VALIDATED', 'FEATURED', 'REJECTED', 'NEEDS REVISION'],
+                    index=['PENDING', 'VALIDATED', 'FEATURED', 'REJECTED', 'NEEDS REVISION'].index(current_decision),
+                    key=f"select_{theme_id}"
+                )
+                
+                # Update session state
+                st.session_state['theme_decisions'][decision_key] = decision
+                if decision != 'PENDING':
+                    decisions_made += 1
+            
+            with col3:
+                # Notes field
+                notes_key = f"notes_{theme_id}"
+                notes = st.text_area(
+                    "Notes:",
+                    value=st.session_state.get(notes_key, ""),
+                    key=f"notes_{theme_id}",
+                    height=100
+                )
+                st.session_state[notes_key] = notes
+    
+    # Decision summary
+    st.markdown("---")
+    st.subheader("📊 Decision Summary")
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+    
+    validated_count = sum(1 for v in st.session_state['theme_decisions'].values() if v == 'VALIDATED')
+    featured_count = sum(1 for v in st.session_state['theme_decisions'].values() if v == 'FEATURED')
+    rejected_count = sum(1 for v in st.session_state['theme_decisions'].values() if v == 'REJECTED')
+    revision_count = sum(1 for v in st.session_state['theme_decisions'].values() if v == 'NEEDS REVISION')
+    pending_count = len(themes) - validated_count - featured_count - rejected_count - revision_count
+    
+    with col1:
+        st.metric("Validated", validated_count)
+    with col2:
+        st.metric("Featured", featured_count)
+    with col3:
+        st.metric("Rejected", rejected_count)
+    with col4:
+        st.metric("Needs Revision", revision_count)
+    with col5:
+        st.metric("Pending", pending_count)
+    
+    st.markdown("---")
+    
+    # Step 3: Regenerate workbook with decisions
+    st.subheader("🔄 Step 3: Regenerate Workbook with Decisions")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        final_filename = st.text_input(
+            "Final workbook filename:",
+            value=f"Validated_Workbook_{client_id}_{datetime.now().strftime('%Y%m%d')}.xlsx",
+            help="Filename for the workbook with your decisions applied"
+        )
+    
+    with col2:
+        if st.button("🚀 Regenerate with Decisions", type="primary", disabled=decisions_made == 0):
+            try:
+                # Apply decisions to themes data
+                with st.spinner("📊 Applying your decisions..."):
+                    # Create a copy of themes data with decisions applied
+                    validated_themes = []
+                    for theme in themes:
+                        theme_id = theme.get('theme_id')
+                        decision_key = f"decision_{theme_id}"
+                        decision = st.session_state['theme_decisions'].get(decision_key, 'PENDING')
+                        
+                        if decision in ['VALIDATED', 'FEATURED']:
+                            # Add decision info to theme
+                            theme['analyst_decision'] = decision
+                            validated_themes.append(theme)
+                    
+                    # Update themes data
+                    updated_themes_data = themes_data.copy()
+                    updated_themes_data['themes'] = validated_themes
+                
+                with st.spinner("📋 Creating final workbook..."):
+                    from excel_win_loss_exporter import ExcelWinLossExporter
+                    exporter = ExcelWinLossExporter()
+                    output_path = exporter.export_analyst_workbook(updated_themes_data, final_filename)
+                
+                st.success(f"✅ Final workbook created with your decisions!")
+                st.info(f"📁 File: {output_path}")
+                st.info(f"📊 Applied {validated_count + featured_count} validated themes")
+                st.info("💡 Check the 'Report Outline Generator' tab to see your validated themes")
+                
+            except Exception as e:
+                st.error(f"❌ Error regenerating workbook: {str(e)}")
+    
+    # Instructions for next steps
+    st.markdown("---")
+    st.subheader("📋 Next Steps")
+    
+    st.markdown("""
+    1. **Download the final workbook** and open it in Excel
+    2. **Go to 'Report Outline Generator' tab** to see your validated themes
+    3. **Review the structure** - it will show only themes you marked as VALIDATED
+    4. **Copy the outline** to share with your design team
+    5. **Use the page counts and specifications** for design planning
+    """)
+
 def main():
     st.set_page_config(page_title="VOC Pipeline", layout="wide")
     
@@ -383,6 +619,7 @@ def main():
             "Stage 4: Themes",
             "Stage 5: Generate Analyst Report",
             "📊 Excel Workbook Generation",
+            "📋 Decision Tracking",
             "Admin / Utilities"
         ]
     )
@@ -399,6 +636,8 @@ def main():
         show_stage4_analyst_report()
     elif page == "📊 Excel Workbook Generation":
         show_excel_generation()
+    elif page == "📋 Decision Tracking":
+        show_decision_tracking()
     elif page == "Admin / Utilities":
         show_admin_panel()
 

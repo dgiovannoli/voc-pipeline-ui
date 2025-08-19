@@ -148,6 +148,34 @@ class SupabaseDatabase:
             logger.error(f"❌ Failed to save quote analysis: {e}")
             return False
     
+    def update_stage2_analysis(self, response_id: str, analysis_data: Dict[str, Any]) -> bool:
+        """Update Stage 2 analysis in the stage1_data_responses table"""
+        try:
+            # Prepare update data
+            update_data = {
+                'sentiment': analysis_data.get('sentiment'),
+                'impact_score': analysis_data.get('impact_score'),
+                'reasoning': analysis_data.get('reasoning', ''),
+                'research_question_alignment': analysis_data.get('research_question_alignment', ''),
+                'total_questions_addressed': analysis_data.get('total_questions_addressed', 0),
+                'coverage_summary': analysis_data.get('coverage_summary', ''),
+                'stage2_analysis_timestamp': analysis_data.get('stage2_analysis_timestamp', datetime.now().isoformat())
+            }
+            
+            # Update the response in stage1_data_responses table
+            result = self.supabase.table('stage1_data_responses').update(update_data).eq('response_id', response_id).execute()
+            
+            if result.data:
+                logger.info(f"✅ Updated Stage 2 analysis for response: {response_id}")
+                return True
+            else:
+                logger.error(f"❌ Failed to update Stage 2 analysis for response: {response_id}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to update Stage 2 analysis: {e}")
+            return False
+    
     def get_stage1_data_responses(self, filters: Optional[Dict] = None, client_id: Optional[str] = None) -> pd.DataFrame:
         """Get core responses from Supabase, filtered by client_id for data siloing"""
         try:
@@ -276,7 +304,7 @@ class SupabaseDatabase:
             
         except Exception as e:
             logger.error(f"❌ Failed to get summary statistics: {e}")
-            return {"error": str(e)}
+            return {}
     
     def save_processing_metadata(self, metadata: Dict[str, Any]) -> bool:
         """Save processing metadata to Supabase"""
@@ -1701,6 +1729,63 @@ class SupabaseDatabase:
         except Exception as e:
             logger.error(f"❌ Failed to export JSON themes: {e}")
             return ""
+
+    # ==========================
+    # Minimal writes for new tables
+    # ==========================
+    def upsert_quote_question_map(self, rows: List[Dict[str, Any]]) -> bool:
+        """Bulk upsert rows into quote_question_map."""
+        try:
+            if not rows:
+                return True
+            # Remove None values per row
+            payload = [{k: v for k, v in r.items() if v is not None} for r in rows]
+            self.supabase.table('quote_question_map').upsert(payload).execute()
+            logger.info(f"✅ Upserted {len(rows)} rows into quote_question_map")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed upsert_quote_question_map: {e}")
+            return False
+
+    def upsert_research_themes(self, rows: List[Dict[str, Any]]) -> bool:
+        """Bulk upsert rows into research_themes."""
+        try:
+            if not rows:
+                return True
+            payload = [{k: v for k, v in r.items() if v is not None} for r in rows]
+            self.supabase.table('research_themes').upsert(payload).execute()
+            logger.info(f"✅ Upserted {len(rows)} rows into research_themes")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed upsert_research_themes: {e}")
+            return False
+
+    def upsert_research_theme_evidence(self, rows: List[Dict[str, Any]]) -> bool:
+        """Bulk upsert rows into research_theme_evidence."""
+        try:
+            if not rows:
+                return True
+            payload = [{k: v for k, v in r.items() if v is not None} for r in rows]
+            self.supabase.table('research_theme_evidence').upsert(payload).execute()
+            logger.info(f"✅ Upserted {len(rows)} rows into research_theme_evidence")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Failed upsert_research_theme_evidence: {e}")
+            return False
+
+    def upsert_research_themes_return(self, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Upsert research_themes and return inserted/updated rows (including theme_id)."""
+        try:
+            if not rows:
+                return []
+            payload = [{k: v for k, v in r.items() if v is not None} for r in rows]
+            result = self.supabase.table('research_themes').upsert(payload).execute()
+            data = result.data or []
+            logger.info(f"✅ Upserted {len(data)} rows into research_themes (returning theme_id)")
+            return data
+        except Exception as e:
+            logger.error(f"❌ Failed upsert_research_themes_return: {e}")
+            return []
 
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""

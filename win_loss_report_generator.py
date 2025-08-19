@@ -45,13 +45,13 @@ class WinLossReportGenerator:
     - Generates multi-tab Excel reports for comprehensive analysis
     """
     
-    def __init__(self, client_id: str = "default"):
+    def __init__(self, client_id: str = "default", include_research_themes: bool = True, research_alignment_min: float = 0.15):
         self.client_id = client_id
         self.db = SupabaseDatabase()
         
         # Base Quality Gates (will be adjusted dynamically)
         self.base_min_companies_per_theme = 2
-        self.base_min_quotes_per_theme = 3     
+        self.base_min_quotes_per_theme = 2     
         self.base_min_impact_threshold = 3
         self.coherence_threshold = 0.7    # Minimum percentage for narrative coherence (e.g., 70% positive sentiment for strength)
         
@@ -68,6 +68,11 @@ class WinLossReportGenerator:
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         if not self.openai_api_key:
             logger.warning("OPENAI_API_KEY not found - theme statement generation will use fallback method")
+        
+        # Hybrid theme generation flags
+        self.include_research_themes = include_research_themes
+        # Minimum fraction (0-1) of quotes in a group that should align to the primary research question
+        self.research_alignment_min = research_alignment_min
         
         logger.info(f"✅ WinLossReportGenerator initialized for client: {client_id}")
     
@@ -93,8 +98,8 @@ class WinLossReportGenerator:
         
         # Adaptive quotes threshold
         if avg_quotes_per_company < 3:
-            self.min_quotes_per_theme = max(2, int(avg_quotes_per_company))
-            logger.info(f"📊 Adaptive Mode: Low quote density - requiring {self.min_quotes_per_theme}+ quotes per theme")
+            self.min_quotes_per_theme = 2
+            logger.info(f"📊 Adaptive Mode: Low quote density - requiring {self.min_quotes_per_theme}+ quotes per theme (fixed minimum)")
         else:
             self.min_quotes_per_theme = self.base_min_quotes_per_theme
         
@@ -146,6 +151,13 @@ class WinLossReportGenerator:
             # Step 3: Identify potential theme clusters
             self._update_progress(3, "Identifying potential theme clusters...")
             theme_clusters = self._identify_theme_clusters(subject_groups)
+            
+            # Optionally add research-seeded clusters and deduplicate
+            if self.include_research_themes:
+                self._update_progress(3, "Generating research-seeded theme candidates...")
+                research_clusters = self._generate_research_seeded_clusters(quotes_data)
+                theme_clusters.extend(research_clusters)
+                theme_clusters = self._merge_and_dedupe_theme_clusters(theme_clusters)
             
             # Step 4: Apply Stage 4 quality gates
             self._update_progress(4, "Applying quality gates for high-quality themes...")
@@ -250,17 +262,24 @@ class WinLossReportGenerator:
         
         # Parse research question alignment
         df['parsed_research_alignment'] = df['research_question_alignment'].apply(parse_alignment)
-        
-        # Extract primary research question for each quote
-        df['primary_research_question'] = df['parsed_research_alignment'].apply(
-            lambda x: x[0]['question_text'] if x and len(x) > 0 else "No research question aligned"
+
+        # Use DB question as source of truth when available
+        db_question_col = 'question' if 'question' in df.columns else None
+        def choose_primary(alignment_list, db_q):
+            if isinstance(db_q, str) and db_q.strip():
+                return db_q
+            return alignment_list[0]['question_text'] if alignment_list and len(alignment_list) > 0 else "No research question aligned"
+        df['primary_research_question'] = df.apply(
+            lambda row: choose_primary(row['parsed_research_alignment'], row[db_question_col]) if db_question_col else (
+                row['parsed_research_alignment'][0]['question_text'] if row['parsed_research_alignment'] else "No research question aligned"
+            ), axis=1
         )
-        
+
         # Extract research question indices
         df['research_question_indices'] = df['parsed_research_alignment'].apply(
             lambda x: [item['question_index'] for item in x] if x else []
         )
-        
+
         return df
     
     def _analyze_theme_research_alignment(self, quotes: pd.DataFrame) -> Dict[str, Any]:
@@ -389,8 +408,11 @@ class WinLossReportGenerator:
                 logger.info(f"   ✅ Gate 1 PASSED: Cross-company validation")
             
             # Quality Gate 2: Evidence Significance
-            logger.info(f"   📝 Quote count: {len(quotes)} (need {self.min_quotes_per_theme})")
-            if len(quotes) < self.min_quotes_per_theme:
+            # Count at most one quote per company (diminishing returns)
+            quotes_dedup = quotes.drop_duplicates(subset=[company_col], keep='first')
+            effective_quote_count = len(quotes_dedup)
+            logger.info(f"   📝 Effective quotes (1/company): {effective_quote_count} (need {self.min_quotes_per_theme})")
+            if effective_quote_count < self.min_quotes_per_theme:
                 logger.info(f"   ❌ Gate 2 FAILED: Evidence significance")
                 continue
             else:
@@ -421,12 +443,12 @@ class WinLossReportGenerator:
                 logger.info(f"   ⏭️  Gate 4 SKIPPED: Mixed signal theme")
             
             # Passed all gates - add validation metrics
-            quality_score = self._calculate_quality_score(quotes, theme_type)
+            quality_score = self._calculate_quality_score(quotes_dedup, theme_type)
             company_distribution = self._analyze_company_distribution(quotes)
             
             cluster["validation_metrics"] = {
                 "companies_count": unique_companies,
-                "quotes_count": len(quotes),
+                "quotes_count": effective_quote_count,
                 "avg_impact_score": avg_impact,
                 "sentiment_coherence": sentiment_coherence,
                 "quality_score": quality_score,
@@ -443,10 +465,10 @@ class WinLossReportGenerator:
         """
         Calculate enhanced quality score using Stage 4 methodology.
         
-        Weighting (aligned with Stage 4 _calculate_cluster_confidence):
-        - Company Coverage: 40% (highest priority)
-        - Evidence Quality: 30% 
-        - Quote Volume: 20% (reduced priority)
+        Updated weighting:
+        - Company Coverage: 45%
+        - Evidence Quality (avg impact): 25% 
+        - Quote Volume (1/company): 20% (reduced priority)
         - Theme Coherence: 10%
         """
         score = 0.0
@@ -455,16 +477,17 @@ class WinLossReportGenerator:
         company_col = 'company' if 'company' in quotes.columns else 'company_name'
         unique_companies = quotes[company_col].nunique()
         
-        # Stage 4 formula: min(companies / 4.0, 0.4) * 10 = 0-4 points (40%)
-        company_score = min(unique_companies / 4.0, 1.0) * 4.0
+        # Company score upweighted to 4.5/10
+        company_score = min(unique_companies / 4.0, 1.0) * 4.5
         score += company_score
         
         # 2. Evidence Quality (30% weight)
         avg_impact = quotes['impact_score'].mean()
-        evidence_score = (avg_impact / 5.0) * 3.0  # 0-3 points (30%)
+        evidence_score = (avg_impact / 5.0) * 2.5  # 0-2.5 points (25%)
         score += evidence_score
         
         # 3. Quote Volume (20% weight) - reduced priority
+        # Count quotes effectively as 1 per company (input already deduped upstream)
         quote_count = len(quotes)
         volume_score = min(quote_count / 10.0, 1.0) * 2.0  # 0-2 points (20%)
         score += volume_score
@@ -481,7 +504,6 @@ class WinLossReportGenerator:
             coherence_score = min(sentiment_variety / 3.0, 1.0) * 1.0
         
         score += coherence_score
-        
         return round(score, 2)
     
     def _analyze_company_distribution(self, quotes: pd.DataFrame) -> Dict[str, Any]:
@@ -624,33 +646,67 @@ class WinLossReportGenerator:
         # 1. STRENGTH: Positive sentiment + Won deals (or predominantly positive with no deal data)
         strength_quotes = quotes[quotes['sentiment'] == 'positive']
         if has_deal_data:
-            strength_quotes = strength_quotes[
+            # Prioritize won deals for strength themes
+            won_quotes = strength_quotes[
                 strength_quotes['deal_status'].str.contains('won', case=False, na=False)
             ]
+            other_quotes = strength_quotes[
+                ~strength_quotes['deal_status'].str.contains('won', case=False, na=False)
+            ]
+            
+            # Use won deals if available, otherwise fall back to other positive quotes
+            if len(won_quotes) >= self.min_quotes_per_theme:
+                strength_quotes = won_quotes
+                deal_context = " from won deals"
+            elif len(strength_quotes) >= self.min_quotes_per_theme:
+                deal_context = " (mixed deal outcomes)"
+            else:
+                strength_quotes = pd.DataFrame()  # Not enough quotes
+                deal_context = ""
+        else:
+            deal_context = ""
         
-        if len(strength_quotes) > 0:
+        if len(strength_quotes) >= self.min_quotes_per_theme:
             clusters.append({
                 "theme_type": "strength",
                 "harmonized_subject": subject,
                 "quotes": strength_quotes,
-                "pattern_summary": f"Positive customer feedback about {subject}" + 
-                                 (f" from won deals" if has_deal_data else "")
+                "pattern_summary": f"Positive customer feedback about {subject}{deal_context}",
+                "deal_outcome_focus": "won" if has_deal_data and "won" in deal_context else "mixed",
+                "theme_origin": "discovered"
             })
         
         # 2. WEAKNESS: Negative sentiment + Lost deals (or predominantly negative)
         weakness_quotes = quotes[quotes['sentiment'] == 'negative']
         if has_deal_data:
-            weakness_quotes = weakness_quotes[
+            # Prioritize lost deals for weakness themes
+            lost_quotes = weakness_quotes[
                 weakness_quotes['deal_status'].str.contains('lost', case=False, na=False)
             ]
+            other_quotes = weakness_quotes[
+                ~weakness_quotes['deal_status'].str.contains('lost', case=False, na=False)
+            ]
+            
+            # Use lost deals if available, otherwise fall back to other negative quotes
+            if len(lost_quotes) >= self.min_quotes_per_theme:
+                weakness_quotes = lost_quotes
+                deal_context = " from lost deals"
+            elif len(weakness_quotes) >= self.min_quotes_per_theme:
+                deal_context = " (mixed deal outcomes)"
+            else:
+                weakness_quotes = pd.DataFrame()  # Not enough quotes
+                deal_context = ""
+        else:
+            deal_context = ""
         
-        if len(weakness_quotes) > 0:
+        if len(weakness_quotes) >= self.min_quotes_per_theme:
             clusters.append({
                 "theme_type": "weakness",
                 "harmonized_subject": subject,
                 "quotes": weakness_quotes,
-                "pattern_summary": f"Negative customer feedback about {subject}" +
-                                 (f" from lost deals" if has_deal_data else "")
+                "pattern_summary": f"Negative customer feedback about {subject}{deal_context}",
+                "deal_outcome_focus": "lost" if has_deal_data and "lost" in deal_context else "mixed",
+                "theme_origin": "discovered"
             })
         
         # 3. OPPORTUNITY: Positive sentiment + Lost deals (unmet potential)
@@ -665,7 +721,8 @@ class WinLossReportGenerator:
                     "theme_type": "opportunity",
                     "harmonized_subject": subject,
                     "quotes": opportunity_quotes,
-                    "pattern_summary": f"Positive feedback about {subject} from lost deals - unmet market opportunity"
+                    "pattern_summary": f"Positive feedback about {subject} from lost deals - unmet market opportunity",
+                    "theme_origin": "discovered"
                 })
         
         # 4. CONCERN: Negative sentiment + Won deals (risk area)
@@ -680,7 +737,8 @@ class WinLossReportGenerator:
                     "theme_type": "concern",
                     "harmonized_subject": subject,
                     "quotes": concern_quotes,
-                    "pattern_summary": f"Negative feedback about {subject} from won deals - potential risk area"
+                    "pattern_summary": f"Negative feedback about {subject} from won deals - potential risk area",
+                    "theme_origin": "discovered"
                 })
         
         # 5. INVESTIGATION NEEDED: Mixed/neutral sentiment or conflicting patterns
@@ -692,7 +750,8 @@ class WinLossReportGenerator:
                 "theme_type": "investigation_needed",
                 "harmonized_subject": subject,
                 "quotes": mixed_quotes if len(mixed_quotes) > 0 else quotes,
-                "pattern_summary": f"Mixed or unclear customer sentiment about {subject} requiring deeper analysis"
+                "pattern_summary": f"Mixed or unclear customer sentiment about {subject} requiring deeper analysis",
+                "theme_origin": "discovered"
             })
         
         return clusters
@@ -721,9 +780,12 @@ class WinLossReportGenerator:
             # Analyze research question alignment for this theme
             research_alignment = self._analyze_theme_research_alignment(quotes)
             
-            # Generate theme statement based on research question alignment
+            # Analyze deal status distribution for context
+            deal_status_distribution = self._analyze_deal_status_distribution(quotes)
+            
+            # Generate theme statement based on research question alignment with deal status
             theme_statement = self._generate_research_driven_theme_statement(
-                quotes, theme_type, subject, research_alignment
+                quotes, theme_type, subject, research_alignment, deal_status_distribution
             )
             
             # Generate theme title based on research question
@@ -758,12 +820,67 @@ class WinLossReportGenerator:
                 "supporting_quotes": supporting_quotes,
                 "pattern_summary": theme.get("pattern_summary", ""),
                 "competitive_flag": theme.get("competitive_flag", False),
-                "validation_metrics": theme["validation_metrics"]
+                "validation_metrics": theme["validation_metrics"],
+                "deal_outcome_focus": theme.get("deal_outcome_focus", "mixed"),
+                "theme_origin": theme.get("theme_origin", "discovered"),
+                "research_primary_question": research_alignment.get('primary_question', ''),
+                "research_alignment_score": research_alignment.get('alignment_confidence', 0.0)
             }
             
             final_themes.append(final_theme)
         
         return final_themes
+    
+    def _generate_enhanced_theme_statement(self, quotes: List[Dict], theme_type: str, harmonized_subject: str) -> str:
+        """Generate enhanced theme statement with company context and competitive references"""
+        
+        # Extract company context and competitive references
+        companies = list(set([q.get('company', q.get('company_name', 'Unknown')) for q in quotes]))
+        competitors_mentioned = []
+        competitive_context = ""
+        
+        for quote in quotes:
+            quote_text = quote.get('verbatim_response', '').lower()
+            # Look for competitor mentions
+            competitors = ['eve', 'evenup', 'parrot', 'filevine', 'competitor', 'competition']
+            for comp in competitors:
+                if comp in quote_text:
+                    if comp not in ['competitor', 'competition']:
+                        competitors_mentioned.append(comp.title())
+                    competitive_context = "competitive positioning"
+        
+        # Create context-rich prompt
+        context_info = f"Subject: {harmonized_subject}, Companies: {', '.join(companies[:3])}"
+        if competitors_mentioned:
+            context_info += f", Competitors: {', '.join(competitors_mentioned)}"
+        if competitive_context:
+            context_info += f", Context: {competitive_context}"
+        
+        prompt = f"""
+        Generate an executive-ready theme statement for a {theme_type} theme in the {harmonized_subject} category.
+        
+        Context: {context_info}
+        
+        Requirements:
+        1. Include specific company context when relevant
+        2. Reference competitive positioning if mentioned
+        3. Highlight quantifiable impact or outcomes
+        4. Use B2B SaaS expert copywriter voice
+        5. Make it actionable and specific
+        6. Focus on customer pain points or wins
+        7. Include competitive differentiators if applicable
+        
+        Example style: "Companies like [Company] struggle with [specific pain] when [situation], leading to [impact]. Supio addresses this by [solution], resulting in [outcome] compared to competitors like [competitor]."
+        
+        Generate a clear, specific theme statement that captures the key insight from these customer quotes.
+        """
+        
+        try:
+            response = self._call_openai_api(prompt, max_tokens=150)
+            return response.strip()
+        except Exception as e:
+            self.logger.error(f"Error generating enhanced theme statement: {e}")
+            return f"Enhanced {theme_type} theme in {harmonized_subject} category"
     
     def _generate_enhanced_theme_title(self, theme: Dict[str, Any], supporting_quotes: List[Dict]) -> str:
         """Generate enhanced theme title using Stage 4 specificity methodology"""
@@ -1423,49 +1540,19 @@ Generate a theme statement that follows this exact format and specificity level:
             logger.warning(f"OpenAI API call failed: {e}")
             return ""
     
-    def _generate_research_driven_theme_statement(self, quotes: pd.DataFrame, theme_type: str, subject: str, research_alignment: Dict) -> str:
+    def _generate_research_driven_theme_statement(self, quotes: pd.DataFrame, theme_type: str, subject: str, research_alignment: Dict, deal_status_distribution: Dict[str, Any] = None) -> str:
         """
-        Generate theme statement based on research question alignment rather than just harmonized subject.
-        
-        Args:
-            quotes: DataFrame of quotes for this theme
-            theme_type: Type of theme (strength, weakness, etc.)
-            subject: Harmonized subject
-            research_alignment: Research alignment analysis
-            
-        Returns:
-            Research-driven theme statement
+        Generate theme statement based on research question alignment with deal status context.
         """
+        # Get primary research question
         primary_question = research_alignment.get('primary_question', '')
         
-        if not primary_question:
-            # Fallback to original method if no research alignment
-            return self._generate_enhanced_template_statement({
-                'theme_type': theme_type,
-                'harmonized_subject': subject,
-                'quotes': quotes
-            })
-        
-        # Extract key insights from quotes that align with the research question
-        aligned_quotes = quotes[quotes['research_question_alignment'].notna()]
-        
-        if len(aligned_quotes) == 0:
-            # Fallback if no aligned quotes
-            return self._generate_enhanced_template_statement({
-                'theme_type': theme_type,
-                'harmonized_subject': subject,
-                'quotes': quotes
-            })
-        
-        # Generate statement based on research question and aligned quotes
-        if self.openai_api_key:
-            return self._generate_llm_research_driven_statement(
-                primary_question, aligned_quotes, theme_type, subject
-            )
+        if primary_question:
+            # Generate LLM-driven statement with research context and deal status
+            return self._generate_llm_research_driven_statement(primary_question, quotes, theme_type, subject, deal_status_distribution)
         else:
-            return self._generate_template_research_driven_statement(
-                primary_question, aligned_quotes, theme_type, subject
-            )
+            # Fallback to template-based statement with deal status
+            return self._generate_template_research_driven_statement("", quotes, theme_type, subject, deal_status_distribution)
     
     def _generate_research_driven_theme_title(self, research_alignment: Dict, theme_type: str, subject: str) -> str:
         """
@@ -1495,69 +1582,145 @@ Generate a theme statement that follows this exact format and specificity level:
         
         return f"{key_concept} {theme_type.title()}"
     
-    def _generate_llm_research_driven_statement(self, primary_question: str, aligned_quotes: pd.DataFrame, theme_type: str, subject: str) -> str:
+    def _analyze_deal_status_distribution(self, quotes: pd.DataFrame) -> Dict[str, Any]:
         """
-        Generate LLM-based theme statement that directly addresses the research question.
+        Analyze deal status distribution for theme context.
+        """
+        if 'deal_status' not in quotes.columns:
+            return {"has_deal_data": False, "won_count": 0, "lost_count": 0, "other_count": 0}
+        
+        deal_counts = quotes['deal_status'].value_counts()
+        won_count = deal_counts.get('closed won', 0) + deal_counts.get('won', 0)
+        lost_count = deal_counts.get('closed lost', 0) + deal_counts.get('lost', 0)
+        other_count = len(quotes) - won_count - lost_count
+        
+        return {
+            "has_deal_data": True,
+            "won_count": won_count,
+            "lost_count": lost_count,
+            "other_count": other_count,
+            "total_count": len(quotes),
+            "won_percentage": (won_count / len(quotes) * 100) if len(quotes) > 0 else 0,
+            "lost_percentage": (lost_count / len(quotes) * 100) if len(quotes) > 0 else 0
+        }
+    
+    def _generate_llm_research_driven_statement(self, primary_question: str, aligned_quotes: pd.DataFrame, theme_type: str, subject: str, deal_status_distribution: Dict[str, Any] = None) -> str:
+        """
+        Generate enhanced LLM-based theme statement with company context, competitive references, and deal status.
         """
         try:
+            # Extract company context and competitive references
+            companies = list(set(aligned_quotes['company'].tolist()))
+            if 'company_name' in aligned_quotes.columns:
+                companies.extend(aligned_quotes['company_name'].tolist())
+            companies = [c for c in companies if c and c != 'Unknown']
+            competitors_mentioned = []
+            competitive_context = ""
+            
+            for quote in aligned_quotes.to_dict('records'):
+                quote_text = quote.get('verbatim_response', '').lower()
+                # Look for competitor mentions
+                competitors = ['eve', 'evenup', 'parrot', 'filevine', 'competitor', 'competition']
+                for comp in competitors:
+                    if comp in quote_text:
+                        if comp not in ['competitor', 'competition']:
+                            competitors_mentioned.append(comp.title())
+                        competitive_context = "competitive positioning"
+            
             # Prepare context for LLM
             quote_texts = aligned_quotes['verbatim_response'].tolist()[:5]  # Top 5 aligned quotes
             quote_context = "\n".join([f"- {quote}" for quote in quote_texts])
             
-            prompt = f"""
-            Based on the research question and aligned customer quotes, generate a concise theme statement.
+            # Create context-rich prompt with deal status
+            context_info = f"Companies: {', '.join(companies[:3])}"
+            if competitors_mentioned:
+                context_info += f", Competitors: {', '.join(competitors_mentioned)}"
+            if competitive_context:
+                context_info += f", Context: {competitive_context}"
             
+            # Add deal status context
+            deal_context = ""
+            if deal_status_distribution and deal_status_distribution.get("has_deal_data"):
+                won_pct = deal_status_distribution.get("won_percentage", 0)
+                lost_pct = deal_status_distribution.get("lost_percentage", 0)
+                if won_pct > 50:
+                    deal_context = f" (primarily from won deals - {won_pct:.0f}%)"
+                elif lost_pct > 50:
+                    deal_context = f" (primarily from lost deals - {lost_pct:.0f}%)"
+                else:
+                    deal_context = f" (mixed deal outcomes - {won_pct:.0f}% won, {lost_pct:.0f}% lost)"
+            
+            prompt = f"""
+            Based on the research question and aligned customer quotes, generate a SINGLE-LINE HEADLINE (not prose) that is specific to Supio and the buyer context.
+
             RESEARCH QUESTION: {primary_question}
             THEME TYPE: {theme_type}
             SUBJECT AREA: {subject}
-            
+            CONTEXT: {context_info}
+            DEAL OUTCOME: {deal_context}
+
             ALIGNED QUOTES:
             {quote_context}
+
+            HEADLINE REQUIREMENTS (CRITICAL – FOLLOW EXACTLY):
+            - Output ONE concise headline only (no bullets, no paragraphs, no trailing period)
+            - ≤95 characters; active voice; 1 idea; no generic buzzwords
+            - Be specific to Supio and the buyer's situation/stage (e.g., evaluation, onboarding)
+            - Prefer customer terminology from quotes; paraphrase is fine; avoid vendor adjectives
+            - Ground in evidence: reflect what ≥2 companies/quotes say; if thinner, hedge with "Some buyers"
+            - Avoid competitor name-drops unless clearly supported in quotes
+
+            GOOD EXAMPLES:
+            - Clear onboarding/training from Supio reduces perceived risk during pre‑litigation
+            - Credit-based pricing confusion pushes buyers to request flat-rate options
+            - Slow document ingestion delays evaluations compared to buyer expectations
+
+            Produce the HEADLINE now (no prefix, no quotes):"""
             
-            Generate a 1-2 sentence theme statement that:
-            1. Directly addresses the research question
-            2. Captures the key insight from the aligned quotes
-            3. Uses executive-level language
-            4. Reflects the {theme_type} nature of the theme
-            
-            Theme Statement:"""
-            
-            response = self._call_openai_api(prompt, max_tokens=150, temperature=0.7)
+            response = self._call_openai_api(prompt, max_tokens=60, temperature=0.2)
             return response.strip()
             
         except Exception as e:
             logger.warning(f"LLM theme generation failed: {e}")
             return self._generate_template_research_driven_statement(primary_question, aligned_quotes, theme_type, subject)
     
-    def _generate_template_research_driven_statement(self, primary_question: str, aligned_quotes: pd.DataFrame, theme_type: str, subject: str) -> str:
+    def _generate_template_research_driven_statement(self, primary_question: str, aligned_quotes: pd.DataFrame, theme_type: str, subject: str, deal_status_distribution: Dict[str, Any] = None) -> str:
         """
-        Generate template-based theme statement that addresses the research question.
+        Generate template-based theme statement that addresses the research question with deal status context.
         """
         # Extract key patterns from aligned quotes
         sentiment_dist = aligned_quotes['sentiment'].value_counts()
         avg_impact = aligned_quotes['impact_score'].mean()
         
+        # Add deal status context
+        deal_context = ""
+        if deal_status_distribution and deal_status_distribution.get("has_deal_data"):
+            won_pct = deal_status_distribution.get("won_percentage", 0)
+            lost_pct = deal_status_distribution.get("lost_percentage", 0)
+            if won_pct > 50:
+                deal_context = f" from customers who chose us ({won_pct:.0f}% of quotes)"
+            elif lost_pct > 50:
+                deal_context = f" from customers who chose competitors ({lost_pct:.0f}% of quotes)"
+            else:
+                deal_context = f" from mixed deal outcomes ({won_pct:.0f}% won, {lost_pct:.0f}% lost)"
+        
         # Determine the main insight based on research question
         if "evaluate" in primary_question.lower():
             insight = "evaluation criteria and decision factors"
-        elif "choose" in primary_question.lower():
-            insight = "selection drivers and competitive advantages"
-        elif "strengths" in primary_question.lower():
-            insight = "key strengths and positive differentiators"
-        elif "weaknesses" in primary_question.lower():
-            insight = "areas of concern and improvement opportunities"
-        elif "implementation" in primary_question.lower():
-            insight = "implementation experience and process effectiveness"
+        elif "pricing" in primary_question.lower():
+            insight = "pricing considerations and value perception"
+        elif "competitive" in primary_question.lower():
+            insight = "competitive positioning and differentiation"
         else:
-            insight = subject.lower()
+            insight = "customer experience and satisfaction"
         
-        # Generate statement based on theme type
-        if theme_type == 'strength':
-            return f"Customers consistently highlight {insight} as key drivers in their decision-making process, with {len(aligned_quotes)} responses showing strong positive sentiment."
-        elif theme_type == 'weakness':
-            return f"Multiple customers express concerns about {insight}, with {len(aligned_quotes)} responses indicating areas requiring attention and improvement."
+        # Generate context-appropriate statement
+        if theme_type == "strength":
+            return f"Customers{deal_context} consistently highlight {subject} as a key strength, with {sentiment_dist.get('positive', 0)} positive mentions and average impact score of {avg_impact:.1f}. This addresses {insight} identified in the research."
+        elif theme_type == "weakness":
+            return f"Customers{deal_context} frequently mention {subject} as an area of concern, with {sentiment_dist.get('negative', 0)} negative mentions and average impact score of {avg_impact:.1f}. This impacts {insight} and requires attention."
         else:
-            return f"Analysis reveals patterns in {insight} across {len(aligned_quotes)} customer responses, with an average impact score of {avg_impact:.1f}."
+            return f"Analysis of {subject}{deal_context} reveals {insight} with {len(aligned_quotes)} relevant quotes and average impact score of {avg_impact:.1f}. This provides insights into customer decision-making factors."
     
     def _analyze_theme_research_alignment(self, quotes: pd.DataFrame) -> Dict:
         """
@@ -1631,6 +1794,80 @@ Generate a theme statement that follows this exact format and specificity level:
             'quote_count': total_quotes,
             'avg_quotes_per_company': total_quotes / total_companies if total_companies > 0 else 0
         }
+
+    def _generate_research_seeded_clusters(self, quotes_data: pd.DataFrame) -> List[Dict[str, Any]]:
+        """Generate potential theme clusters seeded by discussion-guide research questions."""
+        clusters: List[Dict[str, Any]] = []
+        if 'primary_research_question' not in quotes_data.columns:
+            return clusters
+        
+        # Import generator utility
+        try:
+            from research_theme_generator import generate_research_clusters_for_question
+        except Exception as e:
+            logger.warning(f"Research theme generator unavailable: {e}")
+            return clusters
+        
+        # Iterate by mapped DB question (Final)
+        for question, group in quotes_data.groupby('primary_research_question', dropna=True):
+            if not isinstance(question, str) or not question.strip() or question.strip() == 'No research question aligned':
+                continue
+            q_clusters = generate_research_clusters_for_question(
+                question_text=question.strip(),
+                quotes_for_question=group.copy(),
+                min_companies=self.min_companies_per_theme,
+                min_quotes=self.min_quotes_per_theme,
+                min_avg_impact=self.min_impact_threshold,
+            )
+            clusters.extend(q_clusters)
+        
+        logger.info(f"🧪 Research-seeded clusters generated: {len(clusters)}")
+        return clusters
+
+    def _merge_and_dedupe_theme_clusters(self, clusters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Merge near-duplicate clusters based on quote overlap and tag hybrids."""
+        merged: List[Dict[str, Any]] = []
+        used = [False] * len(clusters)
+        
+        def quote_id_set(df: pd.DataFrame) -> set:
+            return set(df.get('response_id', pd.Series(dtype=object)).tolist()) if not df.empty else set()
+        
+        for i, c1 in enumerate(clusters):
+            if used[i]:
+                continue
+            ids1 = quote_id_set(c1['quotes'])
+            base = c1
+            for j in range(i + 1, len(clusters)):
+                if used[j]:
+                    continue
+                c2 = clusters[j]
+                # Only consider merge across different origins or same subject/theme type
+                ids2 = quote_id_set(c2['quotes'])
+                if not ids1 or not ids2:
+                    continue
+                intersection = len(ids1 & ids2)
+                union = len(ids1 | ids2)
+                jaccard = (intersection / union) if union > 0 else 0.0
+                if jaccard >= 0.6:
+                    # Merge: union quotes, prefer more populous quotes set's type
+                    union_quotes = pd.concat([base['quotes'], c2['quotes']], ignore_index=True).drop_duplicates(subset=['response_id'])
+                    preferred = base if len(base['quotes']) >= len(c2['quotes']) else c2
+                    base = {
+                        "theme_type": preferred['theme_type'],
+                        "harmonized_subject": preferred.get('harmonized_subject', base.get('harmonized_subject', '')),
+                        "quotes": union_quotes,
+                        "pattern_summary": preferred.get('pattern_summary', base.get('pattern_summary', '')),
+                        "deal_outcome_focus": preferred.get('deal_outcome_focus', base.get('deal_outcome_focus', 'mixed')),
+                        "theme_origin": "hybrid" if c1.get('theme_origin') != c2.get('theme_origin') else c1.get('theme_origin', 'discovered'),
+                        "research_primary_question_seed": c1.get('research_primary_question_seed') or c2.get('research_primary_question_seed')
+                    }
+                    ids1 = quote_id_set(base['quotes'])
+                    used[j] = True
+            merged.append(base)
+            used[i] = True
+        
+        logger.info(f"🧹 Deduplicated clusters: {len(clusters)} → {len(merged)}")
+        return merged
 
 # Test function for development
 def test_win_loss_generator():
