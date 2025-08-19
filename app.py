@@ -598,13 +598,15 @@ def main():
     
     # Validate client ID format
     if new_client_id:
-        if re.match(r'^[a-zA-Z0-9_-]+$', new_client_id):
-            if new_client_id != current_client_id:
-                st.session_state.client_id = new_client_id
-                st.sidebar.success(f"✅ Client ID set to: {new_client_id}")
+        # Allow letters, numbers, spaces, underscores, and hyphens; normalize to strip leading/trailing spaces
+        if re.match(r'^[a-zA-Z0-9 _-]+$', new_client_id):
+            normalized = new_client_id.strip()
+            if normalized != current_client_id:
+                st.session_state.client_id = normalized
+                st.sidebar.success(f"✅ Client ID set to: {normalized}")
                 st.rerun()
         else:
-            st.sidebar.error("❌ Client ID can only contain letters, numbers, underscores, and hyphens")
+            st.sidebar.error("❌ Client ID can only contain letters, numbers, spaces, underscores, and hyphens")
     
     # Navigation
     st.sidebar.markdown("---")

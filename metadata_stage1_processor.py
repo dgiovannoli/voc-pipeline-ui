@@ -12,6 +12,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from datetime import datetime
+import re
 
 # Add the project root to the path
 project_root = Path(__file__).parent
@@ -229,12 +230,20 @@ class MetadataStage1Processor:
         
         # Filter for target client and completed interviews with transcripts
         # More robust filtering that handles various empty/whitespace cases
+        def _normalize_client(s: str) -> str:
+            """Normalize client strings by lowercasing and removing non-alphanumerics."""
+            return re.sub(r'[^a-z0-9]', '', str(s).lower())
+        
+        normalized_client_id = _normalize_client(client_id)
+        df['__client_name_norm__'] = df['Client Name'].apply(_normalize_client)
+        
         target_data = df[
-            (df['Client Name'] == client_id) & 
+            (df['__client_name_norm__'] == normalized_client_id) & 
             (df['Interview Status'] == 'Completed') &
             (df[actual_transcript_column].notna()) &
             (df[actual_transcript_column].astype(str).str.strip().str.len() > 0)
         ].copy()
+        logger.info(f"🎯 Normalized client filter: input='{client_id}' → norm='{normalized_client_id}'. Matches found: {len(target_data)}")
         
         logger.info(f"🎯 Using transcript column: '{actual_transcript_column}'")
         
