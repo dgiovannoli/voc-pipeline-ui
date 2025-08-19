@@ -44,6 +44,13 @@ class Stage4ThemeAnalyzer:
                 return True
             else:
                 logger.error(f"❌ Stage 4 theme analysis failed for {self.client_id}")
+                # Emit structured error if present
+                try:
+                    err = getattr(self.generator, 'last_error', {}) or {}
+                    if err:
+                        logger.error(f"🧩 Error Code: {err.get('code')} | Message: {err.get('message')}")
+                except Exception:
+                    pass
                 return False
                 
         except Exception as e:

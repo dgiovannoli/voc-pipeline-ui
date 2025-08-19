@@ -131,7 +131,18 @@ def show_stage4_themes():
         except Exception as e:
             st.warning(f"Dedup step skipped/failed: {e}")
         # Step 2: Run Stage 4 analysis
-        run_stage4_analysis()
+        result = run_stage4_analysis()
+        if not result:
+            try:
+                from stage4_theme_generator import EnhancedThemeGeneratorScalable
+                gen = EnhancedThemeGeneratorScalable(client_id=client_id)
+                err = getattr(gen, 'last_error', {}) or {}
+            except Exception:
+                err = {}
+            if err:
+                st.error(f"❌ Stage 4 failed — {err.get('code', 'UNKNOWN')}: {err.get('message', 'No details')}")
+            else:
+                st.error("❌ Stage 4 failed (no error details available)")
     
     # Show current themes status
     themes_summary = get_stage4_summary()

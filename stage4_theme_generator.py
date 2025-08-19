@@ -48,6 +48,7 @@ class EnhancedThemeGeneratorScalable:
         # Quality control parameters
         self.allow_single_company_themes = False  # Whether to allow single-company themes
         self.require_company_data = False  # Whether to require company data (temporarily disabled for testing)
+        self.last_error: Dict[str, Any] = {}
         
     def _load_comprehensive_theme_prompt(self) -> str:
         """Load the comprehensive theme generation prompt"""
@@ -1333,6 +1334,7 @@ Return ONLY the JSON object (no explanations or extra text).
             
         except Exception as e:
             logger.error(f"❌ Error saving themes to database: {str(e)}")
+            self.last_error = {"code": "UNHANDLED_EXCEPTION", "message": str(e), "client_id": self.client_id}
             return False
     
     def analyze_themes(self) -> bool:
@@ -1348,11 +1350,13 @@ Return ONLY the JSON object (no explanations or extra text).
                 # Reuse the logic in _get_findings_json() which already builds fallback
                 findings_json = self._get_findings_json()
                 if not findings_json:
+                    self.last_error = {"code": "NO_INPUT_DATA", "message": "No stage3_findings and no usable research_themes for fallback", "client_id": self.client_id}
                     return False
                 try:
                     import json as _json
                     findings = _json.loads(findings_json)
                 except Exception:
+                    self.last_error = {"code": "JSON_PARSE_FAIL", "message": "Could not parse fallback findings JSON", "client_id": self.client_id}
                     # If JSON is not a list, abort
                     return False
             
@@ -1373,6 +1377,7 @@ Return ONLY the JSON object (no explanations or extra text).
                 logger.warning("No real cross-company patterns found in findings")
                 # In fallback mode (no company data), allow proceeding to LLM generation
                 if getattr(self, 'require_company_data', True) is True:
+                    self.last_error = {"code": "NO_CROSS_COMPANY_PATTERNS", "message": "Insufficient companies to form patterns", "client_id": self.client_id}
                     return False
                 logger.info("Proceeding without company constraints (fallback mode)")
             
@@ -1381,6 +1386,7 @@ Return ONLY the JSON object (no explanations or extra text).
             
             if not themes:
                 logger.warning("No themes generated from findings")
+                self.last_error = {"code": "NO_THEMES_GENERATED", "message": "LLM returned zero usable themes", "client_id": self.client_id}
                 return False
             
             # Filter out themes with invalid IDs (unknown, empty, or missing)
@@ -1392,36 +1398,19 @@ Return ONLY the JSON object (no explanations or extra text).
                 if theme_id and theme_id.strip() and theme_id != 'unknown' and theme_title and theme_title.strip():
                     valid_themes.append(theme)
                 else:
-                    logger.warning(f"⚠️ Filtering out invalid theme: id='{theme_id}', title='{theme_title[:50]}...'")
+                    logger.warning(f"⚠️ Filtering out invalid theme: id='{theme_id}', title='{theme_title[:10]}...'")
             
             if not valid_themes:
-                logger.warning("No valid themes after filtering")
-                return False
-            
-            logger.info(f"📊 Generated {len(themes)} themes, {len(valid_themes)} valid after filtering")
-            themes = valid_themes
-            
-            # Apply quality thresholds
-            quality_themes = self.apply_quality_thresholds(themes, findings)
-            
-            if not quality_themes:
                 logger.warning("No themes passed quality thresholds")
+                self.last_error = {"code": "ALL_THEMES_REJECTED", "message": "Themes failed quality/evidence filters", "client_id": self.client_id}
                 return False
             
-            logger.info(f"✅ {len(quality_themes)} themes passed quality validation")
-            
-            # Save themes to database
-            success = self._save_themes_to_database(quality_themes)
-            
-            if success:
-                logger.info(f"✅ Comprehensive Stage 4 theme analysis completed successfully for client {self.client_id}")
-            else:
-                logger.error(f"❌ Failed to save themes to database for client {self.client_id}")
-            
-            return success
-                
+            # Save to database
+            return self._save_themes_to_database(valid_themes)
+        
         except Exception as e:
             logger.error(f"Error in comprehensive theme analysis: {e}")
+            self.last_error = {"code": "UNHANDLED_EXCEPTION", "message": str(e), "client_id": self.client_id}
             return False
     
     def _generate_themes_from_findings(self, findings: List[Dict]) -> List[Dict]:
@@ -1490,6 +1479,10 @@ def main():
         print(f"✅ Comprehensive Stage 4 theme analysis completed successfully for client: {client_id}")
     else:
         print(f"❌ Comprehensive Stage 4 theme analysis failed for client: {client_id}")
+        if analyzer.last_error:
+            print(f"Error Code: {analyzer.last_error.get('code', 'N/A')}")
+            print(f"Error Message: {analyzer.last_error.get('message', 'N/A')}")
+            print(f"Client ID: {analyzer.last_error.get('client_id', 'N/A')}")
     
     return success
 
