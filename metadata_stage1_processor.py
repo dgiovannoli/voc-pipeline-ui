@@ -202,26 +202,32 @@ class MetadataStage1Processor:
             logger.info(f"  Non-null count: {len(link_values)}")
             logger.info(f"  Sample values: {link_values.head(3).tolist()}")
         
-        # Auto-detect which column contains actual transcript content
+        # Prefer 'Raw Transcript' when present; else auto-detect from known candidates
         transcript_columns_to_check = [
             'Raw Transcript',
-            'Raw Transcript File',
-            'Transcript Link',
-            'Moderator Responses',
+            'Raw Transcript (Cleaned)',
             'Transcript',
             'Full Transcript',
-            'Raw Transcript (Cleaned)'
+            'Moderator Responses',
+            'Raw Transcript File',
+            'Transcript Link'
         ]
         
         actual_transcript_column = None
-        for col in transcript_columns_to_check:
-            if col in df.columns:
-                non_empty_count = df[col].dropna().astype(str).str.strip().str.len().gt(0).sum()
-                logger.info(f"🔍 Column '{col}' has {non_empty_count} non-empty values")
-                if non_empty_count > 0:
-                    actual_transcript_column = col
-                    logger.info(f"✅ Found transcripts in column: '{col}'")
-                    break
+        # If Raw Transcript exists, use it regardless, but log if mostly URLs
+        if 'Raw Transcript' in df.columns:
+            actual_transcript_column = 'Raw Transcript'
+            non_empty_count = df['Raw Transcript'].dropna().astype(str).str.strip().str.len().gt(0).sum()
+            logger.info(f"🔍 Column 'Raw Transcript' selected with {non_empty_count} non-empty values")
+        else:
+            for col in transcript_columns_to_check:
+                if col in df.columns:
+                    non_empty_count = df[col].dropna().astype(str).str.strip().str.len().gt(0).sum()
+                    logger.info(f"🔍 Column '{col}' has {non_empty_count} non-empty values")
+                    if non_empty_count > 0:
+                        actual_transcript_column = col
+                        logger.info(f"✅ Found transcripts in column: '{col}'")
+                        break
         
         if actual_transcript_column is None:
             logger.warning(f"⚠️ No transcript content found in any column")
@@ -275,21 +281,29 @@ class MetadataStage1Processor:
         for idx, row in target_data.iterrows():
             interview_id = row['Interview ID']
             transcript = row[actual_transcript_column]  # Use the detected column
-            # If transcript is a link or file reference, attempt to fetch the actual content
+            # If transcript is a link or file reference in ANY column, attempt to fetch the actual content
             try:
-                if isinstance(transcript, str) and len(transcript) < 50 and actual_transcript_column in ['Transcript Link', 'Raw Transcript File']:
+                if isinstance(transcript, str):
                     source_ref = transcript.strip()
+                    # Detect Google Docs and convert to export-as-text
                     if source_ref.startswith('http'):
+                        if 'docs.google.com/document/d/' in source_ref:
+                            import re as _re
+                            m = _re.search(r"/document/d/([^/]+)/", source_ref)
+                            if m:
+                                doc_id = m.group(1)
+                                source_ref = f"https://docs.google.com/document/d/{doc_id}/export?format=txt"
+                                logger.info(f"🔁 Converted Google Docs link to text export for {interview_id}")
                         try:
-                            resp = requests.get(source_ref, timeout=15)
-                            if resp.ok and resp.text:
+                            resp = requests.get(source_ref, timeout=20)
+                            if resp.ok and resp.text and len(resp.text.strip()) > 50:
                                 transcript = resp.text
                                 logger.info(f"🌐 Fetched transcript from URL for {interview_id} ({len(transcript)} chars)")
                             else:
-                                logger.warning(f"⚠️ Could not fetch transcript text from URL for {interview_id}: status={resp.status_code}")
+                                logger.warning(f"⚠️ Could not fetch usable transcript text from URL for {interview_id}: status={resp.status_code}")
                         except Exception as fetch_err:
                             logger.warning(f"⚠️ Fetch error for transcript URL in {interview_id}: {fetch_err}")
-                    elif os.path.exists(source_ref):
+                    elif len(source_ref) < 260 and os.path.exists(source_ref):
                         try:
                             with open(source_ref, 'r', encoding='utf-8') as f:
                                 transcript = f.read()
