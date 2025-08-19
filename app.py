@@ -65,10 +65,6 @@ def show_excel_generation():
                 help="Enter the desired filename for the Excel workbook"
             )
         
-        # Hybrid research/discovered themes toggle
-        include_research_themes = st.checkbox("Include Research-Seeded Themes (from discussion guide alignment)", value=True,
-                                             help="Adds themes seeded by discussion-guide questions alongside harmonized-subject themes, then deduplicates and quality-gates them together.")
-        
         # Alignment threshold
         research_alignment_min = st.slider("Min Research Alignment (fraction of quotes aligned in a group)", 0.0, 0.5, 0.15, 0.05,
                                            help="Only generate research-seeded themes when at least this fraction of quotes in a group explicitly align to the primary research question.")
@@ -107,7 +103,8 @@ def show_excel_generation():
                 status_text.text("📊 Generating themes and analysis...")
                 progress_bar.progress(30)
                 
-                generator = WinLossReportGenerator(client_id, include_research_themes=include_research_themes, research_alignment_min=research_alignment_min)
+                # Always include research-seeded themes; toggle removed for clarity
+                generator = WinLossReportGenerator(client_id, include_research_themes=True, research_alignment_min=research_alignment_min)
                 themes_data = generator.generate_analyst_report()
                 
                 if not themes_data["success"]:
