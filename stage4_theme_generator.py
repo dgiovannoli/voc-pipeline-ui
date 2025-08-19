@@ -638,6 +638,11 @@ CRITICAL: Generate themes that follow this exact format and specificity level. N
                 if not themes_data:
                     logger.warning("No research_themes available; cannot build fallback findings")
                     return ""
+                # Company data may be sparse in research_themes; allow processing without company requirement
+                try:
+                    self.require_company_data = False
+                except Exception:
+                    pass
                 # Build minimal findings-like records from research themes
                 fallback_findings = []
                 for row in themes_data:
@@ -652,6 +657,7 @@ CRITICAL: Generate themes that follow this exact format and specificity level. N
                         'finding_id': row.get('theme_id') or f"RT_{len(fallback_findings)+1}",
                         'finding_statement': stmt,
                         'company': row.get('company') or '',
+                        'interview_company': row.get('company') or '',
                         'date': row.get('created_at') or '',
                         'deal_status': '',
                         'interviewee_name': '',

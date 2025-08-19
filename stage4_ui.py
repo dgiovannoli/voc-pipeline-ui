@@ -122,8 +122,15 @@ def show_stage4_themes():
     with col4:
         st.metric("Companies", summary.get('companies_covered', 0))
     
-    # Run analysis button
-    if st.button("🔄 Run Stage 4 Analysis", type="primary"):
+    # Single CTA: Dedup research/discovered themes, then run consolidation
+    if st.button("🚀 Consolidate Themes (dedup → analyze)", type="primary"):
+        # Step 1: Dedup/merge research themes
+        try:
+            from scripts.deduplicate_themes import dedup_client
+            dedup_client(db, client_id, dry_run=False)
+        except Exception as e:
+            st.warning(f"Dedup step skipped/failed: {e}")
+        # Step 2: Run Stage 4 analysis
         run_stage4_analysis()
     
     # Show current themes status
@@ -139,29 +146,7 @@ def show_stage4_themes():
     else:
         st.info("📊 No themes or strategic alerts available yet. Run the analysis to generate them.")
     
-    # Deduplication control (post-generation)
-    with st.expander("🧹 Deduplicate & Merge Themes (post-generation)", expanded=False):
-        st.info("Detects near-duplicate themes across research/discovered, merges evidence, and marks merged children.")
-        col_a, col_b = st.columns(2)
-        with col_a:
-            if st.button("🔍 Dry Run (no changes)"):
-                with st.spinner("Analyzing duplicates..."):
-                    try:
-                        from scripts.deduplicate_themes import dedup_client
-                        result = dedup_client(db, client_id, dry_run=True)
-                        st.success(f"Groups: {result.get('groups')} | Canonicals: {result.get('canonicals')} | Merged pairs (simulated): {result.get('merged_pairs')}")
-                    except Exception as e:
-                        st.error(f"Dedup dry run failed: {e}")
-        with col_b:
-            if st.button("✅ Apply Merge (write)"):
-                with st.spinner("Merging duplicates..."):
-                    try:
-                        from scripts.deduplicate_themes import dedup_client
-                        result = dedup_client(db, client_id, dry_run=False)
-                        st.success(f"Merged pairs applied: {result.get('merged_pairs')} across {result.get('groups')} groups")
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Dedup write failed: {e}")
+    # Note: Manual dedup tools moved into the single CTA above to reduce confusion
 
     # Get themes data
     themes_df = db.get_themes(client_id=client_id)
