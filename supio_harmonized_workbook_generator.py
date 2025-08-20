@@ -19,6 +19,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from guiding_story_analyzer import build_guiding_story_payload, to_overview_table  # NEW
+from interview_theme_rollup import rollup_interview_themes  # NEW for aggregated interview themes
 
 
 # Add project root to path
@@ -71,17 +72,9 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("📊 Step 1: Creating base workbook...")
             self.workbook_path = self._create_base_workbook()
 
-            # Step 2: Add Summary tab
-            logger.info("📋 Step 2: Adding Summary tab...")
-            self._add_summary_tab()
-
-            # Step 2b: Add Guiding Story tab (interview-weighted overview)  # NEW
-            logger.info("🧭 Step 2b: Adding Guiding Story tab (interview-weighted)...")  # NEW
-            self._add_guiding_story_tab()  # NEW
-
-            # Step 2c: Add Interview Themes tab (if present)  # NEW
-            logger.info("🧩 Step 2c: Adding Interview Themes tab (if available)...")  # NEW
-            self._add_interview_themes_tab()  # NEW
+            # Step 2: Add Interview Themes (Aggregated) tab
+            logger.info("🧩 Step 2: Adding Interview Themes (Aggregated) tab...")
+            self._add_interview_themes_tab()
 
             # Step 3: Add Research Themes tab
             logger.info("🔬 Step 3: Adding Research Themes tab...")
@@ -91,32 +84,20 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("🔍 Step 4: Adding Discovered Themes tab...")
             self._add_discovered_themes_tab()
 
-            # Step 4b: Add Grouped Themes (non-destructive parent/children) tab
-            logger.info("🗂️ Step 4b: Adding Grouped Themes tab (non-destructive)...")
-            self._add_grouped_themes_tab()
-
-            # Step 4c: Add Grouped Quotes (all quotes under parent) tab
-            logger.info("🧾 Step 4c: Adding Grouped Quotes tab (all original quotes)...")
-            self._add_grouped_quotes_tab()
-
-            # Step 5: Add Mapping QA tab
-            logger.info("✅ Step 5: Adding Mapping QA tab...")
-            self._add_mapping_qa_tab()
-
-            # Step 6: Add Raw Data tab
-            logger.info("📋 Step 6: Adding Raw Data tab...")
+            # Step 5: Add Raw Data tab
+            logger.info("📋 Step 5: Adding Raw Data tab...")
             self._add_raw_data_tab()
 
-            # Step 7: Add All Themes tab
-            logger.info("📊 Step 7: Adding All Themes tab...")
+            # Step 6: Add All Themes tab
+            logger.info("📊 Step 6: Adding All Themes tab...")
             self._add_all_themes_tab()
 
-            # Step 8: Add Company Overview tab
-            logger.info("🏢 Step 8: Adding Company Overview tab...")
+            # Step 7: Add Company Overview tab
+            logger.info("🏢 Step 7: Adding Company Overview tab...")
             self._add_company_overview_tab()
 
-            # Step 9: Apply professional styling
-            logger.info("🎨 Step 9: Applying professional styling...")
+            # Step 8: Apply professional styling
+            logger.info("🎨 Step 8: Applying professional styling...")
             self._apply_professional_styling()
 
             processing_time = (datetime.now() - start_time).total_seconds()
@@ -408,41 +389,96 @@ class SupioHarmonizedWorkbookGenerator:
             logger.warning(f"⚠️ Guiding Story tab failed: {e}")
 
     def _add_interview_themes_tab(self):  # NEW
-        """Add Interview Themes tab from interview_level_themes if the table exists."""
+        """Add Interview Themes tab aggregated from interview_level_themes via clustering."""
         try:
             wb = load_workbook(self.workbook_path)
+            # Replace sheet if exists
+            if 'Interview Themes' in wb.sheetnames:
+                ws_old = wb['Interview Themes']
+                wb.remove(ws_old)
             ws = wb.create_sheet("Interview Themes")
+
+            # Load interview-level themes
             try:
                 res = self.db.supabase.table('interview_level_themes').select(
-                    'interview_id,theme_statement,subject,sentiment,impact_score,notes'
+                    'interview_id,theme_statement'
                 ).eq('client_id', self.client_id).execute()
                 rows = res.data or []
             except Exception as e:
                 logger.info(f"ℹ️ interview_level_themes not available: {e}")
                 rows = []
-            # Fetch overviews
-            overviews_map = {}
-            try:
-                m = self.db.supabase.table('interview_metadata').select('interview_id,interview_overview').eq('client_id', self.client_id).execute()
-                for r in (m.data or []):
-                    overviews_map[r.get('interview_id')] = r.get('interview_overview')
-            except Exception:
-                pass
+
             if not rows:
-                ws['A1'] = "No per-interview themes available"
+                ws['A1'] = "No interview themes available"
                 wb.save(self.workbook_path)
                 return
-            df = pd.DataFrame(rows)
-            df['interview_overview'] = df['interview_id'].map(lambda x: overviews_map.get(x))
-            from openpyxl.utils.dataframe import dataframe_to_rows
-            ws['A1'] = "Themes per interview (from full transcripts)"
+
+            # Roll up into clusters
+            try:
+                roll = rollup_interview_themes(self.db, self.client_id, threshold=0.78)
+            except Exception as e:
+                logger.warning(f"⚠️ Roll-up failed, falling back to listing raw interview themes: {e}")
+                import pandas as pd
+                df = pd.DataFrame(rows)
+                for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), start=4):
+                    for c_idx, value in enumerate(row, start=1):
+                        ws.cell(row=r_idx, column=c_idx, value=value)
+                wb.save(self.workbook_path)
+                return
+
+            import pandas as pd
+            clusters = roll.clusters.copy()
+            members = roll.members.copy()
+
+            # Header context
+            ws['A1'] = "Interview Themes (Aggregated)"
             ws['A1'].font = Font(bold=True, size=14)
-            start_row = 3
-            for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), start=start_row):
-                for c_idx, value in enumerate(row, start=1):
-                    ws.cell(row=r_idx, column=c_idx, value=value)
+            ws['A2'] = "Clusters derived from interview-level themes using semantic similarity."
+            ws['A2'].font = Font(italic=True, size=10)
+
+            # Top table: clusters
+            ws['A4'] = "Cluster ID"; ws['B4'] = "Canonical Theme"; ws['C4'] = "Interviews Covered"; ws['D4'] = "Members Count"; ws['E4'] = "Share of Interviews"
+            for col in range(1, 6):
+                cell = ws.cell(row=4, column=col)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            r = 5
+            for _, row in clusters.iterrows():
+                ws.cell(row=r, column=1, value=int(row.get('cluster_id')))
+                ws.cell(row=r, column=2, value=row.get('canonical_theme'))
+                ws.cell(row=r, column=3, value=int(row.get('interviews_covered')))
+                ws.cell(row=r, column=4, value=int(row.get('members_count')))
+                ws.cell(row=r, column=5, value=float(row.get('share_of_interviews')))
+                r += 1
+
+            # Spacer
+            r += 2
+
+            # Members detail table
+            ws.cell(row=r, column=1, value="Cluster Members")
+            ws.cell(row=r, column=1).font = Font(bold=True, size=12)
+            r += 1
+            ws['A'+str(r)] = "Cluster ID"; ws['B'+str(r)] = "Interview ID"; ws['C'+str(r)] = "Member Theme"
+            for col in range(1, 4):
+                cell = ws.cell(row=r, column=col)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            r += 1
+            for _, m in members.iterrows():
+                ws.cell(row=r, column=1, value=int(m.get('cluster_id')))
+                ws.cell(row=r, column=2, value=m.get('interview_id'))
+                ws.cell(row=r, column=3, value=m.get('member_theme'))
+                r += 1
+
+            # Widths
+            ws.column_dimensions['A'].width = 14
+            ws.column_dimensions['B'].width = 80
+            ws.column_dimensions['C'].width = 22
+            ws.column_dimensions['D'].width = 16
+            ws.column_dimensions['E'].width = 20
+
             wb.save(self.workbook_path)
-            logger.info("✅ Interview Themes tab added")
+            logger.info("✅ Interview Themes (Aggregated) tab added")
         except Exception as e:
             logger.warning(f"⚠️ Interview Themes tab failed: {e}")
 
