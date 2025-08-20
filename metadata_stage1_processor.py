@@ -188,6 +188,13 @@ class MetadataStage1Processor:
         logger.info(f"  Empty string count: {(transcript_values == '').sum()}")
         logger.info(f"  Whitespace-only count: {(transcript_values.astype(str).str.strip() == '').sum()}")
         logger.info(f"  Non-empty count: {(transcript_values.astype(str).str.strip() != '').sum()}")
+
+        # Prepare normalized client helper BEFORE any filtering/upserts
+        import re as _re_fix
+        def _normalize_client_early(s: str) -> str:
+            return _re_fix.sub(r'[^a-z0-9]', '', str(s).lower())
+        df['__client_name_norm__'] = df.get('Client Name', pd.Series(dtype=str)).apply(_normalize_client_early)
+        normalized_client_id = _normalize_client_early(client_id)
         
         # Check if there's a Raw Transcript File column that might contain the actual transcripts
         if 'Raw Transcript File' in df.columns:
@@ -241,13 +248,20 @@ class MetadataStage1Processor:
                     interview_id=mrow.get('Interview ID', ''),
                     interviewee_name=mrow.get('Interview Contact Full Name', ''),
                     company=mrow.get('Interview Contact Company Name', ''),
-                    deal_status=mrow.get('Deal Status', ''),
+                    deal_status=str(mrow.get('Deal Status', '') or '').strip(),
                     date_of_interview=str(mrow.get('Completion Date', '')),
                     industry=mrow.get('Industry', ''),
                     interviewee_role=mrow.get('Interviewee Role', ''),
                     firm_size=str(mrow.get('Firm Size', '')),
                     audio_video_link=mrow.get('Audio/Video Link', ''),
-                    contact_website=mrow.get('Interview Contact Website', '')
+                    contact_website=mrow.get('Interview Contact Website', ''),
+                    interview_contact_website=mrow.get('Interview Contact Website', ''),
+                    job_title=mrow.get('Job Title (from Contact ID)', ''),
+                    contact_email=mrow.get('Interview Contact Email', ''),
+                    client_name=mrow.get('Client Name', ''),
+                    contact_id=mrow.get('Contact ID', ''),
+                    interview_list_id_deals=mrow.get('Interview List ID (Deals Lookup)', ''),
+                    interview_list_id_direct=mrow.get('Interview List ID (Direct Link)', '')
                 )
                 meta_upserts += 1
                 # Save full transcript when available  # NEW
@@ -284,12 +298,9 @@ class MetadataStage1Processor:
             """Normalize client strings by lowercasing and removing non-alphanumerics."""
             return re.sub(r'[^a-z0-9]', '', str(s).lower())
         
-        normalized_client_id = _normalize_client(client_id)
-        df['__client_name_norm__'] = df['Client Name'].apply(_normalize_client)
-        
         target_data = df[
             (df['__client_name_norm__'] == normalized_client_id) & 
-            (df['Interview Status'] == 'Completed') &
+            (df['Interview Status'].astype(str).str.strip().str.lower() == 'completed') &
             (df[actual_transcript_column].notna()) &
             (df[actual_transcript_column].astype(str).str.strip().str.len() > 0)
         ].copy()

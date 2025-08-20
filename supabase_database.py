@@ -1353,7 +1353,14 @@ class SupabaseDatabase:
                                    firm_size: str = '',
                                    audio_video_link: str = '',
                                    contact_website: str = '',
-                                   interview_overview: Optional[str] = None) -> bool:
+                                   interview_overview: Optional[str] = None,
+                                   interview_contact_website: Optional[str] = None,
+                                   job_title: Optional[str] = None,
+                                   contact_email: Optional[str] = None,
+                                   client_name: Optional[str] = None,
+                                   contact_id: Optional[str] = None,
+                                   interview_list_id_deals: Optional[str] = None,
+                                   interview_list_id_direct: Optional[str] = None) -> bool:
         """Create or update a minimal interview_metadata record so UI can surface interviews.
         Uses (client_id, interview_id) as the natural key.
         """
@@ -1374,6 +1381,20 @@ class SupabaseDatabase:
             }
             if interview_overview is not None:
                 data['interview_overview'] = interview_overview
+            if interview_contact_website:
+                data['interview_contact_website'] = interview_contact_website
+            if job_title:
+                data['job_title'] = job_title
+            if contact_email:
+                data['contact_email'] = contact_email
+            if client_name:
+                data['client_name'] = client_name
+            if contact_id:
+                data['contact_id'] = contact_id
+            if interview_list_id_deals:
+                data['interview_list_id_deals'] = interview_list_id_deals
+            if interview_list_id_direct:
+                data['interview_list_id_direct'] = interview_list_id_direct
             # Sanitize NaN/inf to None
             try:
                 for k, v in list(data.items()):
