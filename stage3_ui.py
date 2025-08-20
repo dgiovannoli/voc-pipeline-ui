@@ -26,6 +26,40 @@ try:
 except Exception:
     _GUIDE_DB = None
 
+def _render_research_discovered_panels(client_id: str):
+    import streamlit as st
+    import pandas as pd
+    st.markdown("### Research & Discovered Themes")
+    if _GUIDE_DB is None:
+        st.info("Database not available.")
+        return
+    try:
+        res = _GUIDE_DB.supabase.table('research_themes').select('*').eq('client_id', client_id).execute()
+        rows = res.data or []
+    except Exception as e:
+        rows = []
+        st.error(f"Failed to load research_themes: {e}")
+    df = pd.DataFrame(rows)
+    if df.empty:
+        st.warning("No research or discovered themes found. Try 'Generate Stage 3 Themes'.")
+        return
+    origin_col = 'origin' if 'origin' in df.columns else None
+    if origin_col:
+        research_df = df[df[origin_col] == 'research']
+        discovered_df = df[df[origin_col] == 'discovered']
+    else:
+        research_df = df[~df.get('harmonized_subject', '').astype(str).str.startswith('DISCOVERED:')]
+        discovered_df = df[df.get('harmonized_subject', '').astype(str).str.startswith('DISCOVERED:')]
+    c1, c2 = st.columns(2)
+    with c1:
+        st.subheader("Research Themes")
+        st.metric("Count", len(research_df))
+        st.dataframe(research_df, use_container_width=True, height=300)
+    with c2:
+        st.subheader("Discovered Themes")
+        st.metric("Count", len(discovered_df))
+        st.dataframe(discovered_df, use_container_width=True, height=300)
+
 def _render_guiding_story_panel_stage3(client_id: str):
     st.markdown("### Guiding Story (Interview-weighted)")
     if _GUIDE_DB is None:
@@ -84,6 +118,9 @@ def _render_guiding_story_panel_stage3(client_id: str):
                         st.error(result.get("error", "Stage 3 processing failed"))
                 except Exception as e:
                     st.error(f"Stage 3 processing error: {e}")
+
+    # Always show Research & Discovered panels below
+    _render_research_discovered_panels(client_id)
 
 def show_stage3_processing_page():
     """
