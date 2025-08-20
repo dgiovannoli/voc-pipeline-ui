@@ -603,11 +603,18 @@ class SupioHarmonizedWorkbookGenerator:
                     else:
                         qbase['comp_ok'] = True
                     # Staged thresholds: (sim, jacc, len_min, require_comp)
-                    stages = [
-                        (0.80, 0.10, 30, True),
-                        (0.78, 0.05, 25, False),
-                        (0.75, 0.00, 20, False)
-                    ]
+                    if requires_comp:
+                        stages = [
+                            (0.80, 0.10, 30, True),
+                            (0.78, 0.10, 25, True),
+                            (0.75, 0.10, 20, True)
+                        ]
+                    else:
+                        stages = [
+                            (0.80, 0.10, 30, False),
+                            (0.78, 0.05, 25, False),
+                            (0.75, 0.00, 20, False)
+                        ]
                     chosen = None
                     for sim_thr, j_thr, lmin, comp_req in stages:
                         df = qbase[(qbase['similarity'] >= sim_thr) & (qbase['overlap'] >= j_thr) & (qbase['len_val'] >= lmin)]
