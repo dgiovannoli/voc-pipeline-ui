@@ -420,11 +420,20 @@ class SupioHarmonizedWorkbookGenerator:
             except Exception as e:
                 logger.info(f"ℹ️ interview_level_themes not available: {e}")
                 rows = []
+            # Fetch overviews
+            overviews_map = {}
+            try:
+                m = self.db.supabase.table('interview_metadata').select('interview_id,interview_overview').eq('client_id', self.client_id).execute()
+                for r in (m.data or []):
+                    overviews_map[r.get('interview_id')] = r.get('interview_overview')
+            except Exception:
+                pass
             if not rows:
                 ws['A1'] = "No per-interview themes available"
                 wb.save(self.workbook_path)
                 return
             df = pd.DataFrame(rows)
+            df['interview_overview'] = df['interview_id'].map(lambda x: overviews_map.get(x))
             from openpyxl.utils.dataframe import dataframe_to_rows
             ws['A1'] = "Themes per interview (from full transcripts)"
             ws['A1'].font = Font(bold=True, size=14)

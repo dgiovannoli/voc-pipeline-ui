@@ -151,6 +151,21 @@ def main():
 				if ok:
 					written += 1
 
+		# Create interview_overview paragraph (80–120 words) from sections
+		try:
+			bullets = [str(x.get('theme') if isinstance(x, dict) else x) for x in (obj.get('reasons_for_outcome') or [])][:3]
+			ci_b = [str(x.get('theme') if isinstance(x, dict) else x) for x in (obj.get('competitive_intel') or [])][:2]
+			sig_b = [str(x.get('theme') if isinstance(x, dict) else x) for x in (obj.get('other_signals') or [])][:1]
+			parts = bullets + (['Competitive intel: ' + '; '.join(ci_b)] if ci_b else []) + (['Signals: ' + '; '.join(sig_b)] if sig_b else [])
+			overview = ' '.join(parts)
+			# Trim to ~120 words
+			words = overview.split()
+			if len(words) > 120:
+				overview = ' '.join(words[:120])
+			db.update_interview_overview(args.client, iid, overview)
+		except Exception:
+			pass
+
 	print(f"Wrote {written} interview themes for {args.client}")
 	return 0
 

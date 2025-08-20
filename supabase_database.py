@@ -1342,17 +1342,18 @@ class SupabaseDatabase:
             return pd.DataFrame()
 
     def upsert_interview_metadata(self,
-                                  client_id: str,
-                                  interview_id: str,
-                                  interviewee_name: str,
-                                  company: str = '',
-                                  deal_status: str = '',
-                                  date_of_interview: Optional[str] = None,
-                                  industry: str = '',
-                                  interviewee_role: str = '',
-                                  firm_size: str = '',
-                                  audio_video_link: str = '',
-                                  contact_website: str = '') -> bool:
+                                   client_id: str,
+                                   interview_id: str,
+                                   interviewee_name: str,
+                                   company: str = '',
+                                   deal_status: str = '',
+                                   date_of_interview: Optional[str] = None,
+                                   industry: str = '',
+                                   interviewee_role: str = '',
+                                   firm_size: str = '',
+                                   audio_video_link: str = '',
+                                   contact_website: str = '',
+                                   interview_overview: Optional[str] = None) -> bool:
         """Create or update a minimal interview_metadata record so UI can surface interviews.
         Uses (client_id, interview_id) as the natural key.
         """
@@ -1371,6 +1372,8 @@ class SupabaseDatabase:
                 'contact_website': contact_website,
                 'metadata_updated_at': datetime.now().isoformat()
             }
+            if interview_overview is not None:
+                data['interview_overview'] = interview_overview
             # Sanitize NaN/inf to None
             try:
                 for k, v in list(data.items()):
@@ -1385,6 +1388,18 @@ class SupabaseDatabase:
             return True
         except Exception as e:
             logger.error(f"❌ Failed to upsert interview_metadata for {interview_id} ({client_id}): {e}")
+            return False
+
+    def update_interview_overview(self, client_id: str, interview_id: str, interview_overview: str) -> bool:
+        """Update interview_overview text if column exists; ignore if not present."""
+        try:
+            res = self.supabase.table('interview_metadata').update({'interview_overview': interview_overview}).eq('client_id', client_id).eq('interview_id', interview_id).execute()
+            if getattr(res, 'data', None) is not None:
+                logger.info(f"📝 Updated interview_overview for {interview_id}")
+                return True
+            return False
+        except Exception as e:
+            logger.warning(f"⚠️ Could not update interview_overview for {interview_id}: {e}")
             return False
 
     def merge_client_data(self, from_client_id: str, to_client_id: str) -> bool:
