@@ -103,7 +103,7 @@ def _cluster_by_threshold(embeddings: List[List[float]], tokens: List[set], thre
 	return assignments
 
 
-def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.90, min_cluster_size: int = 3, normalize: bool = True, min_token_overlap: float = 0.10, min_interviews_covered: int = 3, max_clusters: int = 12) -> RollupResult:
+def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.85, min_cluster_size: int = 2, normalize: bool = True, min_token_overlap: float = 0.08, min_interviews_covered: int = 2, max_clusters: int = 15) -> RollupResult:
 	# Pull interview-level themes
 	try:
 		res = db.supabase.table('interview_level_themes').select(

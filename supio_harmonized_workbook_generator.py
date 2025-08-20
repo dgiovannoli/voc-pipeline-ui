@@ -1149,6 +1149,12 @@ class SupioHarmonizedWorkbookGenerator:
                 it_df = pd.DataFrame(columns=['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies'])
 
             all_df = pd.concat([r_df[['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies']], it_df], ignore_index=True)
+            
+            # Debug output
+            print(f"DEBUG: Research themes: {len(r_df)}, Interview themes: {len(it_df)}, Total: {len(all_df)}")
+            if not it_df.empty:
+                print(f"DEBUG: Interview theme IDs: {it_df['Theme ID'].tolist()}")
+            
             if all_df.empty:
                 ws['A5'] = 'No themes available'
                 wb.save(self.workbook_path)
@@ -1193,7 +1199,7 @@ class SupioHarmonizedWorkbookGenerator:
                     cid = cr.get('cluster_id')
                     cstmt = cr.get('canonical_theme')
                     if cid is not None and cstmt is not None:
-                        statement_by_id[f"cluster_{int(cid)}::ITC"] = str(cstmt)
+                        statement_by_id[f"interview_theme_{int(cid):03d}"] = str(cstmt)
 
             # Compute duplicate density per subject (mean of top-3 scores)
             density_per_subject = {}
