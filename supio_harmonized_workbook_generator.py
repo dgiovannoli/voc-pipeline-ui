@@ -1155,36 +1155,17 @@ class SupioHarmonizedWorkbookGenerator:
                         'Duplicate Score': float(top['score'])
                     }
 
-            # Write grouped by subject
+            # Compute duplicate density per subject (mean of top-3 scores)
+            density_per_subject = {}
+            if not sim.empty and 'subject' in sim.columns:
+                for subj, g in sim.groupby('subject'):
+                    top3 = g['score'].sort_values(ascending=False).head(3)
+                    density_per_subject[subj] = float(top3.mean()) if len(top3) else 0.0
+
+            # Start writing at row 5
             row = 5
-            for subj, grp in all_df.groupby('Subject'):
-                # Section header
-                ws.cell(row=row, column=1, value=str(subj)).font = Font(bold=True)
-                row += 1
-                for _, theme in grp.iterrows():
-                    tid = theme['Theme ID']
-                    sim_info = sim_map.get(tid, {})
-                    ws.cell(row=row, column=1, value=theme['Subject'])
-                    ws.cell(row=row, column=2, value=tid)
-                    ws.cell(row=row, column=3, value=theme['Theme Statement'])
-                    ws.cell(row=row, column=4, value=theme['Source'])
-                    ws.cell(row=row, column=5, value=sim_info.get('Suggested Canonical'))
-                    ws.cell(row=row, column=6, value=sim_info.get('Duplicate Score'))
-                    ws.cell(row=row, column=7, value=int(theme['Evidence Count']))
-                    ws.cell(row=row, column=8, value=int(theme['Companies']))
-                    # Analyst Decision dropdown
-                    ws.cell(row=row, column=9, value=None)
-                    ws.cell(row=row, column=10, value=None)
-                    row += 1
-                row += 1
 
-            # Decision dropdown
-            dv = DataValidation(type="list", formula1='"Canonical,Duplicate-of:[ID],Ignore"', allow_blank=True)
-            ws.add_data_validation(dv)
-            dv.add(f"I5:I1048576")
-
-            # Duplicates Review area
-            row += 1
+            # Duplicates Review area (move to top)
             ws.cell(row=row, column=1, value="Duplicates Review (subject-local pairs)").font = Font(bold=True)
             row += 1
             headers2 = ["Subject","Theme A","Theme B","Score","Cosine","Jaccard"]
@@ -1206,6 +1187,42 @@ class SupioHarmonizedWorkbookGenerator:
                     row += 1
             else:
                 ws.cell(row=row, column=1, value='No similarity suggestions')
+                row += 1
+
+            # Spacer before sections
+            row += 2
+
+            # Decision dropdown (applies to the whole sheet)
+            dv = DataValidation(type="list", formula1='"Canonical,Duplicate-of:[ID],Ignore"', allow_blank=True)
+            ws.add_data_validation(dv)
+            dv.add(f"I5:I1048576")
+
+            # Write grouped by subject, ordered by duplicate density
+            subjects = list(all_df['Subject'].dropna().astype(str).unique())
+            subjects_sorted = sorted(subjects, key=lambda s: density_per_subject.get(s, 0.0), reverse=True)
+            for subj in subjects_sorted:
+                grp = all_df[all_df['Subject'].astype(str) == subj]
+                # Section header with density badge
+                density = density_per_subject.get(subj, 0.0)
+                header_text = f"{subj}  (Duplicate Density: {density:.2f})"
+                ws.cell(row=row, column=1, value=header_text).font = Font(bold=True)
+                row += 1
+                for _, theme in grp.iterrows():
+                    tid = theme['Theme ID']
+                    sim_info = sim_map.get(tid, {})
+                    ws.cell(row=row, column=1, value=str(theme['Subject']))
+                    ws.cell(row=row, column=2, value=tid)
+                    ws.cell(row=row, column=3, value=str(theme['Theme Statement']))
+                    ws.cell(row=row, column=4, value=str(theme['Source']))
+                    ws.cell(row=row, column=5, value=sim_info.get('Suggested Canonical'))
+                    ws.cell(row=row, column=6, value=sim_info.get('Duplicate Score'))
+                    ws.cell(row=row, column=7, value=int(theme['Evidence Count']))
+                    ws.cell(row=row, column=8, value=int(theme['Companies']))
+                    # Analyst Decision dropdown
+                    ws.cell(row=row, column=9, value=None)
+                    ws.cell(row=row, column=10, value=None)
+                    row += 1
+                row += 1
 
             # Save workbook
             wb.save(self.workbook_path)
