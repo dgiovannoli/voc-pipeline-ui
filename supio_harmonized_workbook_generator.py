@@ -976,64 +976,99 @@ class SupioHarmonizedWorkbookGenerator:
 
     def _add_company_overview_tab(self):
         """
-        Add Company Overview tab with company-level insights
+        Add Company Overview tab with per-interview context rows
         """
         try:
             # Load existing workbook
             wb = load_workbook(self.workbook_path)
 
-            # Get company data from database
-            response = self.db.supabase.table('stage1_data_responses').select(
-                'company,interviewee_name,deal_status,sentiment,impact_score'
-            ).eq('client_id', self.client_id).execute()
+            # Fetch interview-level metadata to populate overview
+            try:
+                meta = self.db.supabase.table('interview_metadata').select(
+                    'client_id,client_name,interview_id,company,interviewee_name,interviewee_role,job_title,deal_status,interview_overview'
+                ).eq('client_id', self.client_id).execute()
+                meta_rows = meta.data or []
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to load interview_metadata for Company Overview: {e}")
+                meta_rows = []
 
-            if not response.data:
-                logger.warning("⚠️ No company data found for Company Overview tab")
+            if not meta_rows:
+                logger.warning("⚠️ No interview_metadata found for Company Overview tab")
                 return
 
-            # Create DataFrame and group by company
-            df = pd.DataFrame(response.data)
+            df = pd.DataFrame(meta_rows)
+            # Compose role field preferring job_title then interviewee_role
+            def _compose_role(row):
+                jt = str(row.get('job_title') or '').strip()
+                ir = str(row.get('interviewee_role') or '').strip()
+                return jt if jt else ir
+            df['Role'] = df.apply(_compose_role, axis=1)
+            # Client column: prefer client_name from metadata, fallback to self.client_id
+            df['Client'] = df.apply(lambda r: (r.get('client_name') or self.client_id), axis=1)
 
-            # Convert numeric columns properly
-            df['sentiment'] = pd.to_numeric(df['sentiment'], errors='coerce')
-            df['impact_score'] = pd.to_numeric(df['impact_score'], errors='coerce')
+            # Reorder columns
+            out_cols = [
+                'Client',
+                'company',
+                'interviewee_name',
+                'Role',
+                'deal_status',
+                'interview_id',
+                'interview_overview',
+            ]
+            # Some columns may be missing; filter to existing
+            out_cols = [c for c in out_cols if c in df.columns]
+            df = df[out_cols].rename(columns={
+                'company': 'Company',
+                'interviewee_name': 'Interviewee',
+                'deal_status': 'Deal Status',
+                'interview_id': 'Interview ID',
+                'interview_overview': 'Interview Overview',
+            })
 
-            company_summary = df.groupby('company').agg({
-                'interviewee_name': 'count',
-                'sentiment': 'mean',
-                'impact_score': 'mean'
-            }).reset_index()
+            # Create/replace sheet
+            if 'Company Overview' in wb.sheetnames:
+                ws = wb['Company Overview']
+                wb.remove(ws)
+            ws = wb.create_sheet('Company Overview')
 
-            company_summary.columns = ['Company', 'Interview Count', 'Avg Sentiment', 'Avg Impact Score']
-
-            # Round numeric columns
-            company_summary['Avg Sentiment'] = company_summary['Avg Sentiment'].round(2)
-            company_summary['Avg Impact Score'] = company_summary['Avg Impact Score'].round(2)
-
-            # Add tab
-            ws = wb.create_sheet("Company Overview")
-
-            # Add header context
-            ws['A1'] = "Company Overview - Strategic Insights"
+            # Header
+            ws['A1'] = "Company Overview - Interview Context"
             ws['A1'].font = Font(bold=True, size=14)
-            ws['A2'] = "Company-level analysis and engagement metrics."
+            ws['A2'] = "Per-interview summary with client, person, role, deal status, and overview."
             ws['A2'].font = Font(italic=True, size=10)
 
-            # Add column headers
-            headers = list(company_summary.columns)
-            for col, header in enumerate(headers, 1):
-                cell = ws.cell(row=4, column=col, value=header)
-                cell.font = Font(bold=True)
-                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            # Write table
+            start_row = 4
+            for r_idx, row in enumerate(dataframe_to_rows(df, index=False, header=True), start=start_row):
+                for c_idx, value in enumerate(row, start=1):
+                    cell = ws.cell(row=r_idx, column=c_idx, value=value)
+                    # Wrap Interview Overview column
+                    if r_idx == start_row:
+                        # Header row styling
+                        cell.font = Font(bold=True)
+                        cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+                    else:
+                        if df.columns[c_idx - 1] in {"Interview Overview"}:
+                            cell.alignment = Alignment(vertical="top", wrap_text=True)
 
-            # Add data
-            for row_idx, (_, data_row) in enumerate(company_summary.iterrows(), 5):
-                for col_idx, value in enumerate(data_row, 1):
-                    ws.cell(row=row_idx, column=col_idx, value=value)
+            # Widths
+            col_widths = {
+                1: 24,  # Client
+                2: 28,  # Company
+                3: 24,  # Interviewee
+                4: 24,  # Role
+                5: 14,  # Deal Status
+                6: 16,  # Interview ID
+                7: 80,  # Interview Overview
+            }
+            for col_idx, width in col_widths.items():
+                letter = get_column_letter(col_idx)
+                ws.column_dimensions[letter].width = width
 
             # Save workbook
             wb.save(self.workbook_path)
-            logger.info(f"✅ Company Overview tab added with {len(company_summary)} companies")
+            logger.info(f"✅ Company Overview tab added with {len(df)} interviews")
 
         except Exception as e:
             logger.warning(f"⚠️ Company Overview tab failed: {e}")
