@@ -1265,6 +1265,7 @@ class SupioHarmonizedWorkbookGenerator:
             row += 1
             if not sim.empty:
                 s2 = sim.sort_values(by='score', ascending=False)
+                seen_pairs = set()
                 for _, r in s2.iterrows():
                     subj_val = str(r.get('subject') or '')
                     # Normalize subject label in review
@@ -1272,6 +1273,12 @@ class SupioHarmonizedWorkbookGenerator:
                         subj_val = subj_val.split(':', 1)[1].strip()
                     if subj_val.lower() == 'ci':
                         subj_val = 'Competitive Intelligence'
+                    # Deduplicate unordered pairs; keep first (highest score)
+                    pair_key = tuple(sorted([str(r.get('theme_id')), str(r.get('other_theme_id'))]))
+                    if pair_key in seen_pairs:
+                        continue
+                    seen_pairs.add(pair_key)
+
                     ws.cell(row=row, column=1, value=subj_val)
                     tida = r.get('theme_id'); tidb = r.get('other_theme_id')
                     ws.cell(row=row, column=2, value=tida)
