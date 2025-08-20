@@ -1119,14 +1119,21 @@ class SupioHarmonizedWorkbookGenerator:
             else:
                 r_df = pd.DataFrame(columns=['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies'])
 
-            it = self.db.fetch_interview_level_themes(self.client_id)
-            if not it.empty:
-                it_df = it.rename(columns={'theme_statement':'Theme Statement','subject':'Subject'})
-                it_df['Theme ID'] = it_df['interview_id'].astype(str) + '::IT'
-                it_df['Source'] = 'Interview'
-                it_df['Evidence Count'] = 0
-                it_df['Companies'] = 0
-                it_df = it_df[['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies']]
+            # Use only canonical interview themes from rollup clusters
+            try:
+                roll_it = rollup_interview_themes(self.db, self.client_id)
+                cl = roll_it.clusters.copy()
+            except Exception:
+                cl = pd.DataFrame(columns=['cluster_id','canonical_theme'])
+            if not cl.empty:
+                it_df = pd.DataFrame({
+                    'Theme ID': cl['cluster_id'].apply(lambda x: f"cluster_{int(x)}::ITC"),
+                    'Theme Statement': cl['canonical_theme'],
+                    'Subject': 'Interview',
+                    'Source': 'Interview (Canonical)',
+                    'Evidence Count': 0,
+                    'Companies': 0,
+                })
             else:
                 it_df = pd.DataFrame(columns=['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies'])
 
