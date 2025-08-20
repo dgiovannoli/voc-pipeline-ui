@@ -20,6 +20,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 from guiding_story_analyzer import build_guiding_story_payload, to_overview_table  # NEW
 from interview_theme_rollup import rollup_interview_themes  # NEW for aggregated interview themes
+from embedding_utils import EmbeddingManager
 
 
 # Add project root to path
@@ -1377,19 +1378,18 @@ class SupioHarmonizedWorkbookGenerator:
                 wb.save(self.workbook_path)
                 return
 
-            # Simple candidate scoring heuristic: impact + sentiment strength
+            # Precompute quote embeddings once
+            mgr = EmbeddingManager()
+            quote_texts = quotes_df.get('verbatim_response', pd.Series(dtype=str)).fillna('').astype(str).tolist()
+            quote_embs = mgr.get_embeddings_batch(quote_texts, batch_size=100)
+            # Impact and sentiment strength for tie-breaking
             quotes_df['impact_score'] = pd.to_numeric(quotes_df.get('impact_score', 0), errors='coerce').fillna(0)
             sent_map = {'very_positive': 1.0, 'positive': 0.8, 'neutral': 0.4, 'negative': 0.8, 'very_negative': 1.0}
             quotes_df['sent_strength'] = quotes_df.get('sentiment', '').map(sent_map).fillna(0.5)
-            max_imp = quotes_df['impact_score'].max()
-            try:
-                max_imp = float(max_imp)
-            except Exception:
-                max_imp = 0.0
-            if not max_imp or max_imp < 1.0:
+            max_imp = float(quotes_df['impact_score'].max() or 1.0)
+            if max_imp < 1.0:
                 max_imp = 1.0
             quotes_df['impact_norm'] = quotes_df['impact_score'] / max_imp
-            quotes_df['score'] = 0.7 * quotes_df['impact_norm'] + 0.3 * quotes_df['sent_strength']
 
             # Header
             headers = [
@@ -1405,16 +1405,43 @@ class SupioHarmonizedWorkbookGenerator:
             ws.add_data_validation(dv)
             dv.add(f"J2:J1048576")
 
-            # Pre-fill candidates: top 8 per cluster, max 2 per interviewee
+            # Pre-fill candidates per cluster using centroid similarity: top 8 per cluster, max 2 per interviewee
             row = 2
             for _, c in clusters.iterrows():
                 cid = int(c.get('cluster_id'))
                 theme = c.get('canonical_theme')
-                # Pick top quotes globally by score as a simple starting point
-                qsub = quotes_df.sort_values(by='score', ascending=False).copy()
+                # Compute centroid from member themes if available; fallback to canonical theme
+                try:
+                    members = roll.members[roll.members['cluster_id'] == cid]
+                except Exception:
+                    members = None
+                if members is not None and not members.empty:
+                    member_texts = members['member_theme'].astype(str).tolist()
+                    member_embs = mgr.get_embeddings_batch(member_texts, batch_size=50)
+                    valid = [e for e in member_embs if e is not None]
+                    if valid:
+                        centroid = [sum(vals) / len(valid) for vals in zip(*valid)]
+                    else:
+                        centroid = mgr.get_embeddings_batch([str(theme)], batch_size=1)[0]
+                else:
+                    centroid = mgr.get_embeddings_batch([str(theme)], batch_size=1)[0]
+
+                # Rank quotes by cosine similarity to centroid; tie-break by impact/sent
+                sims = []
+                for e in quote_embs:
+                    if e is None or centroid is None:
+                        sims.append(0.0)
+                    else:
+                        sims.append(mgr.calculate_cosine_similarity(e, centroid))
+                qsub = quotes_df.copy()
+                qsub['similarity'] = sims
+                qsub['rank_score'] = 0.8 * qsub['similarity'] + 0.2 * (0.7 * qsub['impact_norm'] + 0.3 * qsub['sent_strength'])
+                qsub = qsub.sort_values(by='rank_score', ascending=False)
                 picks = []
                 per_iv = {}
                 for _, q in qsub.iterrows():
+                    if q['similarity'] < 0.60:
+                        continue
                     iv = q.get('interviewee_name') or 'unknown'
                     if per_iv.get(iv, 0) >= 2:
                         continue
