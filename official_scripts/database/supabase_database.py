@@ -1705,6 +1705,63 @@ class SupabaseDatabase:
         except Exception:
             return pd.DataFrame()
 
+    def fetch_research_themes_all(self, client_id: str) -> pd.DataFrame:
+        """Fetch research_themes for a client (both research and discovered)."""
+        try:
+            res = self.supabase.table('research_themes').select('*').eq('client_id', client_id).execute()
+            return pd.DataFrame(res.data or [])
+        except Exception:
+            return pd.DataFrame()
+
+    def fetch_interview_level_themes(self, client_id: str) -> pd.DataFrame:
+        """Fetch interview_level_themes for a client."""
+        try:
+            res = self.supabase.table('interview_level_themes').select('*').eq('client_id', client_id).execute()
+            return pd.DataFrame(res.data or [])
+        except Exception:
+            return pd.DataFrame()
+
+    def fetch_theme_similarity(self, client_id: str, min_score: float = 0.7) -> pd.DataFrame:
+        """Fetch theme similarity suggestions above a threshold."""
+        try:
+            res = self.supabase.table('theme_similarity').select('*').eq('client_id', client_id).gte('score', min_score).order('score', desc=True).execute()
+            return pd.DataFrame(res.data or [])
+        except Exception:
+            return pd.DataFrame()
+
+    def upsert_theme_similarity(self, rows: list) -> int:
+        """Bulk upsert theme similarity rows."""
+        try:
+            if not rows:
+                return 0
+            inserted = 0
+            chunk = 500
+            for i in range(0, len(rows), chunk):
+                payload = rows[i:i+chunk]
+                self.supabase.table('theme_similarity').upsert(payload, on_conflict='client_id,theme_id,other_theme_id').execute()
+                inserted += len(payload)
+            return inserted
+        except Exception as e:
+            self.logger.warning(f"⚠️ upsert_theme_similarity failed: {e}")
+            return 0
+
+    def upsert_theme_link(self, client_id: str, theme_id: str, canonical_id: str, source: str, reason: str = '') -> bool:
+        """Upsert an analyst-approved duplicate link (non-destructive)."""
+        try:
+            data = {
+                'client_id': client_id,
+                'theme_id': theme_id,
+                'canonical_id': canonical_id,
+                'source': source,
+                'reason': reason,
+                'updated_at': datetime.now().isoformat(),
+            }
+            self.supabase.table('theme_links').upsert(data, on_conflict='client_id,theme_id').execute()
+            return True
+        except Exception as e:
+            self.logger.warning(f"⚠️ upsert_theme_link failed: {e}")
+            return False
+
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""
     return SupabaseDatabase() 
