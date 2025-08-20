@@ -578,7 +578,7 @@ class SupioHarmonizedWorkbookGenerator:
                     qsub = quotes_df.copy()
                     qsub['similarity'] = sims
                     # Filter and rank: similarity >= 0.70, then rank by combined score
-                    qsub = qsub[qsub['similarity'] >= 0.70].copy()
+                    qsub = qsub[qsub['similarity'] >= 0.80].copy()
                     if qsub.empty:
                         continue
                     qsub['rank_score'] = 0.8 * qsub['similarity'] + 0.2 * (0.7 * qsub['impact_norm'] + 0.3 * qsub['sent_strength'])
