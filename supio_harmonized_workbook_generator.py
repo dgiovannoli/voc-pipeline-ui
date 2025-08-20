@@ -584,40 +584,47 @@ class SupioHarmonizedWorkbookGenerator:
                             centroid = [sum(vals) / len(valid) for vals in zip(*valid)]
                     if centroid is None:
                         centroid = mgr.get_embeddings_batch([str(canonical)], batch_size=1)[0]
-                    # Compute similarities and rank
+                    # Compute similarities and base frame
                     sims = [mgr.calculate_cosine_similarity(e, centroid) if e is not None else 0.0 for e in quote_embs]
-                    qsub = quotes_df.copy()
-                    qsub['similarity'] = sims
-                    # Content gating: similarity >= 0.85, length >= 40, token overlap >= 0.2, contains at least one theme keyword
-                    qsub = qsub[qsub['similarity'] >= 0.85].copy()
-                    if qsub.empty:
-                        continue
-                    qsub['len_ok'] = qsub['verbatim_response'].astype(str).apply(lambda t: len(str(t)) >= 40)
-                    if requires_comp:
-                        qsub['comp_ok'] = qsub['verbatim_response'].astype(str).apply(lambda t: any(cx in self._normalize_for_match(t) for cx in self._COMPETITOR_LEXICON))
-                    else:
-                        qsub['comp_ok'] = True
-                    # token overlap
+                    qbase = quotes_df.copy()
+                    qbase['similarity'] = sims
+                    qbase['len_val'] = qbase['verbatim_response'].astype(str).apply(lambda t: len(str(t)))
                     theme_kw = {w for w in theme_tokens if ' ' in w or len(w) > 3}
-                    def _overlap_ok(t: str) -> bool:
+                    def _overlap_score(t: str) -> float:
                         qt = self._content_tokens(t)
                         if not qt:
-                            return False
+                            return 0.0
                         inter = len(qt & theme_kw)
                         union = len(qt | theme_kw)
-                        jacc = (inter / union) if union else 0.0
-                        contains_kw = any(k in qt for k in theme_kw)
-                        return jacc >= 0.2 and contains_kw
-                    qsub['overlap_ok'] = qsub['verbatim_response'].astype(str).apply(_overlap_ok)
-                    qsub = qsub[qsub['len_ok'] & qsub['comp_ok'] & qsub['overlap_ok']]
-                    if qsub.empty:
+                        return (inter / union) if union else 0.0
+                    qbase['overlap'] = qbase['verbatim_response'].astype(str).apply(_overlap_score)
+                    if requires_comp:
+                        qbase['comp_ok'] = qbase['verbatim_response'].astype(str).apply(lambda t: any(cx in self._normalize_for_match(t) for cx in self._COMPETITOR_LEXICON))
+                    else:
+                        qbase['comp_ok'] = True
+                    # Staged thresholds: (sim, jacc, len_min, require_comp)
+                    stages = [
+                        (0.85, 0.20, 40, True),
+                        (0.82, 0.15, 40, False),
+                        (0.80, 0.10, 30, False),
+                    ]
+                    chosen = None
+                    for sim_thr, j_thr, lmin, comp_req in stages:
+                        df = qbase[(qbase['similarity'] >= sim_thr) & (qbase['overlap'] >= j_thr) & (qbase['len_val'] >= lmin)]
+                        if comp_req:
+                            df = df[df['comp_ok']]
+                        if not df.empty:
+                            chosen = df
+                            break
+                    if chosen is None or chosen.empty:
                         continue
-                    qsub['rank_score'] = 0.8 * qsub['similarity'] + 0.2 * (0.7 * qsub['impact_norm'] + 0.3 * qsub['sent_strength'])
-                    qsub = qsub.sort_values(by='rank_score', ascending=False)
+                    chosen = chosen.copy()
+                    chosen['rank_score'] = 0.8 * chosen['similarity'] + 0.2 * (0.7 * chosen['impact_norm'] + 0.3 * chosen['sent_strength'])
+                    chosen = chosen.sort_values(by='rank_score', ascending=False)
                     # Select top 8 with max 2 per interviewee
                     picks = []
                     per_iv = {}
-                    for _, q in qsub.iterrows():
+                    for _, q in chosen.iterrows():
                         iv = q.get('interviewee_name') or 'unknown'
                         if per_iv.get(iv, 0) >= 2:
                             continue
