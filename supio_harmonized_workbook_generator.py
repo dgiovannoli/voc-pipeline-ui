@@ -548,7 +548,15 @@ class SupioHarmonizedWorkbookGenerator:
                 mgr = EmbeddingManager()
                 quote_texts = quotes_df.get('verbatim_response', pd.Series(dtype=str)).fillna('').astype(str).tolist()
                 quote_embs = mgr.get_embeddings_batch(quote_texts, batch_size=100)
-                # For each cluster, compute centroid and attach all quotes with similarity >= 0.60
+                # Prepare impact/sent features for ranking
+                quotes_df['impact_score'] = pd.to_numeric(quotes_df.get('impact_score', 0), errors='coerce').fillna(0)
+                sent_map = {'very_positive': 1.0, 'positive': 0.8, 'neutral': 0.4, 'negative': 0.8, 'very_negative': 1.0}
+                quotes_df['sent_strength'] = quotes_df.get('sentiment', '').map(sent_map).fillna(0.5)
+                max_imp = float(quotes_df['impact_score'].max() or 1.0)
+                if max_imp < 1.0:
+                    max_imp = 1.0
+                quotes_df['impact_norm'] = quotes_df['impact_score'] / max_imp
+                # For each cluster, compute centroid and attach top quotes only
                 for _, crow in clusters.iterrows():
                     cid = int(crow.get('cluster_id'))
                     canonical = crow.get('canonical_theme')
@@ -565,12 +573,28 @@ class SupioHarmonizedWorkbookGenerator:
                             centroid = [sum(vals) / len(valid) for vals in zip(*valid)]
                     if centroid is None:
                         centroid = mgr.get_embeddings_batch([str(canonical)], batch_size=1)[0]
-                    # Compute similarities
+                    # Compute similarities and rank
                     sims = [mgr.calculate_cosine_similarity(e, centroid) if e is not None else 0.0 for e in quote_embs]
                     qsub = quotes_df.copy()
                     qsub['similarity'] = sims
-                    qsub = qsub[qsub['similarity'] >= 0.60].sort_values(by='similarity', ascending=False)
+                    # Filter and rank: similarity >= 0.70, then rank by combined score
+                    qsub = qsub[qsub['similarity'] >= 0.70].copy()
+                    if qsub.empty:
+                        continue
+                    qsub['rank_score'] = 0.8 * qsub['similarity'] + 0.2 * (0.7 * qsub['impact_norm'] + 0.3 * qsub['sent_strength'])
+                    qsub = qsub.sort_values(by='rank_score', ascending=False)
+                    # Select top 8 with max 2 per interviewee
+                    picks = []
+                    per_iv = {}
                     for _, q in qsub.iterrows():
+                        iv = q.get('interviewee_name') or 'unknown'
+                        if per_iv.get(iv, 0) >= 2:
+                            continue
+                        picks.append(q)
+                        per_iv[iv] = per_iv.get(iv, 0) + 1
+                        if len(picks) >= 8:
+                            break
+                    for q in picks:
                         ws.cell(row=r, column=1, value=cid)
                         ws.cell(row=r, column=2, value=canonical)
                         ws.cell(row=r, column=3, value=q.get('response_id'))
