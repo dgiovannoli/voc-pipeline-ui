@@ -484,7 +484,7 @@ class SupioHarmonizedWorkbookGenerator:
             ws.cell(row=r, column=1).font = Font(bold=True, size=12)
             r += 1
             headers_q = [
-                'Cluster ID','Canonical Theme','Response ID','Similarity','Company','Interviewee','Verbatim Quote','Sentiment','Deal Status','Quote Decision','Notes'
+                'Interview Theme ID','Canonical Theme','Response ID','Similarity','Company','Interviewee','Verbatim Quote','Sentiment','Deal Status','Quote Decision','Notes'
             ]
             for col, h in enumerate(headers_q, 1):
                 cell = ws.cell(row=r, column=col, value=h)
@@ -586,7 +586,7 @@ class SupioHarmonizedWorkbookGenerator:
                         if len(picks) >= 8:
                             break
                     for q in picks:
-                        ws.cell(row=r, column=1, value=cid)
+                        ws.cell(row=r, column=1, value=f"interview_theme_{cid:03d}")
                         ws.cell(row=r, column=2, value=canonical)
                         ws.cell(row=r, column=3, value=q.get('response_id'))
                         ws.cell(row=r, column=4, value=float(q.get('similarity')))
@@ -602,7 +602,7 @@ class SupioHarmonizedWorkbookGenerator:
             r += 2
 
             # Top table: clusters
-            ws['A'+str(r)] = "Cluster ID"; ws['B'+str(r)] = "Canonical Theme"; ws['C'+str(r)] = "Interviews Covered"; ws['D'+str(r)] = "Members Count"; ws['E'+str(r)] = "Share of Interviews"; ws['F'+str(r)] = "Theme Decision"; ws['G'+str(r)] = "Notes"
+            ws['A'+str(r)] = "Interview Theme ID"; ws['B'+str(r)] = "Canonical Theme"; ws['C'+str(r)] = "Interviews Covered"; ws['D'+str(r)] = "Members Count"; ws['E'+str(r)] = "Share of Interviews"; ws['F'+str(r)] = "Theme Decision"; ws['G'+str(r)] = "Notes"
             for col in range(1, 8):
                 cell = ws.cell(row=r, column=col)
                 cell.font = Font(bold=True)
@@ -612,7 +612,7 @@ class SupioHarmonizedWorkbookGenerator:
             ws.add_data_validation(dv_theme)
             r += 1
             for _, row in clusters.iterrows():
-                ws.cell(row=r, column=1, value=int(row.get('cluster_id')))
+                ws.cell(row=r, column=1, value=f"interview_theme_{int(row.get('cluster_id')):03d}")
                 ws.cell(row=r, column=2, value=row.get('canonical_theme'))
                 ws.cell(row=r, column=3, value=int(row.get('interviews_covered')))
                 ws.cell(row=r, column=4, value=int(row.get('members_count')))
@@ -625,17 +625,17 @@ class SupioHarmonizedWorkbookGenerator:
             r += 2
 
             # Members detail table
-            ws.cell(row=r, column=1, value="Cluster Members")
+            ws.cell(row=r, column=1, value="Interview Theme Members")
             ws.cell(row=r, column=1).font = Font(bold=True, size=12)
             r += 1
-            ws['A'+str(r)] = "Cluster ID"; ws['B'+str(r)] = "Interview ID"; ws['C'+str(r)] = "Member Theme"
+            ws['A'+str(r)] = "Interview Theme ID"; ws['B'+str(r)] = "Interview ID"; ws['C'+str(r)] = "Member Theme"
             for col in range(1, 4):
                 cell = ws.cell(row=r, column=col)
                 cell.font = Font(bold=True)
                 cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
             r += 1
             for _, m in members.iterrows():
-                ws.cell(row=r, column=1, value=int(m.get('cluster_id')))
+                ws.cell(row=r, column=1, value=f"interview_theme_{int(m.get('cluster_id')):03d}")
                 ws.cell(row=r, column=2, value=m.get('interview_id'))
                 ws.cell(row=r, column=3, value=m.get('member_theme'))
                 r += 1
@@ -1128,21 +1128,23 @@ class SupioHarmonizedWorkbookGenerator:
                 r_df['Companies'] = r_df.get('company_coverage').apply(lambda x: len(x) if isinstance(x, list) else 0)
                 
                 # Format theme IDs as research_theme_XXX or discovered_theme_XXX
+                # Use the same counter-based format as the individual tabs
+                research_counter = 1
+                discovered_counter = 1
+                
                 def format_theme_id(row):
+                    nonlocal research_counter, discovered_counter
                     origin = row.get('origin', 'research')
-                    theme_id = row.get('theme_id', '')
                     if origin == 'research':
-                        # For research themes, use a hash of the UUID to create a consistent ID
-                        import hashlib
-                        hash_obj = hashlib.md5(str(theme_id).encode())
-                        hash_hex = hash_obj.hexdigest()[:6]
-                        return f"research_theme_{hash_hex}"
+                        # For research themes, use sequential numbering like the Research Themes tab
+                        counter = research_counter
+                        research_counter += 1
+                        return f"research_theme_{counter:03d}"
                     else:
-                        # For discovered themes, use a hash of the UUID
-                        import hashlib
-                        hash_obj = hashlib.md5(str(theme_id).encode())
-                        hash_hex = hash_obj.hexdigest()[:6]
-                        return f"discovered_theme_{hash_hex}"
+                        # For discovered themes, use sequential numbering
+                        counter = discovered_counter
+                        discovered_counter += 1
+                        return f"discovered_theme_{counter:03d}"
                 
                 r_df['Theme ID'] = r_df.apply(format_theme_id, axis=1)
                 r_df = r_df.rename(columns={'theme_statement':'Theme Statement'})
