@@ -31,53 +31,59 @@ def _render_guiding_story_panel_stage3(client_id: str):
     if _GUIDE_DB is None:
         st.info("Database not available for Guiding Story.")
         return
-    with st.expander("Compute Per-Interview Themes (full transcripts)", expanded=False):
-        st.info("Extracts 5–7 themes per interview from the full transcript (if saved in Stage 1).")
-        cols = st.columns(2)
-        with cols[0]:
-            if st.button("Compute Interview Themes", key="compute_interview_themes_stage3"):
-                try:
-                    tx = _GUIDE_DB.fetch_interview_transcripts(client_id)
-                    if tx is None or tx.empty:
-                        st.warning("No full transcripts found. Re-run Stage 1 to save Raw Transcript.")
-                    else:
-                        st.success(f"Found {len(tx)} transcripts. Themes table will be populated by the offline job.")
-                except Exception as e:
-                    st.warning(f"Interview themes precheck failed: {e}")
-        with cols[1]:
-            if st.button("Generate Interview Themes now", key="generate_interview_themes_now"):
-                import subprocess, sys
-                try:
-                    cmd = [sys.executable, str(Path(__file__).parent / 'scripts' / 'generate_interview_themes_now.py'), '--client', client_id]
-                except Exception:
-                    cmd = [sys.executable, 'scripts/generate_interview_themes_now.py', '--client', client_id]
-                with st.spinner("Generating interview themes…"):
-                    try:
-                        import subprocess
-                        proc = subprocess.run(cmd, capture_output=True, text=True)
-                        if proc.returncode == 0:
-                            st.success(proc.stdout.strip() or "Themes generated")
-                        else:
-                            st.error(proc.stderr.strip() or "Theme generation failed")
-                    except Exception as e:
-                        st.error(f"Theme generation error: {e}")
 
-    # One-step: Show interview themes + roll-up
-    if st.button("Roll Up Interview Themes (Guiding Story)", key="rollup_interview_themes"):
-        with st.spinner("Rolling up interview themes…"):
+    # Two-button layout only
+    colA, colB = st.columns(2)
+
+    with colA:
+        if st.button("Process Interview Themes + Roll-up", key="btn_interview_themes_rollup", type="primary"):
+            # 1) Generate Interview Themes now (per-interview)
+            import subprocess, sys
             try:
-                res = rollup_interview_themes(_GUIDE_DB, client_id)
-                if res.interview_themes.empty:
-                    st.warning("No interview themes found. Generate Interview Themes first.")
-                else:
-                    st.markdown("#### Interview-level Themes")
-                    st.dataframe(res.interview_themes, use_container_width=True)
-                    st.markdown("#### Roll-up Themes (Guiding Story)")
-                    st.dataframe(res.clusters, use_container_width=True)
-                    with st.expander("Members per Roll-up Theme", expanded=False):
-                        st.dataframe(res.members, use_container_width=True)
-            except Exception as e:
-                st.error(f"Roll-up failed: {e}")
+                script_path = str(Path(__file__).parent / 'scripts' / 'generate_interview_themes_now.py')
+                cmd = [sys.executable, script_path, '--client', client_id]
+            except Exception:
+                cmd = [sys.executable, 'scripts/generate_interview_themes_now.py', '--client', client_id]
+            with st.spinner("Generating interview themes and rolling up…"):
+                gen_ok = True
+                try:
+                    proc = subprocess.run(cmd, capture_output=True, text=True)
+                    if proc.returncode == 0:
+                        st.success(proc.stdout.strip() or "Interview themes generated")
+                    else:
+                        gen_ok = False
+                        st.error(proc.stderr.strip() or "Interview theme generation failed")
+                except Exception as e:
+                    gen_ok = False
+                    st.error(f"Theme generation error: {e}")
+                # 2) Roll-up
+                try:
+                    res = rollup_interview_themes(_GUIDE_DB, client_id)
+                    if res.interview_themes.empty:
+                        st.warning("No interview themes found. Generation may have failed or returned empty.")
+                    else:
+                        st.markdown("#### Interview-level Themes")
+                        st.dataframe(res.interview_themes, use_container_width=True)
+                        st.markdown("#### Roll-up Themes (Guiding Story)")
+                        st.dataframe(res.clusters, use_container_width=True)
+                        with st.expander("Members per Roll-up Theme", expanded=False):
+                            st.dataframe(res.members, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Roll-up failed: {e}")
+
+    with colB:
+        if st.button("Generate Stage 3 Themes", key="btn_generate_stage3"):
+            with st.spinner("Processing Stage 3 themes (research + discovered)…"):
+                try:
+                    proc = Stage3ThemeProcessor(client_id)
+                    result = proc.process_stage3_themes()
+                    if result.get("success"):
+                        st.success("Stage 3 themes generated")
+                        st.json(result)
+                    else:
+                        st.error(result.get("error", "Stage 3 processing failed"))
+                except Exception as e:
+                    st.error(f"Stage 3 processing error: {e}")
 
 def show_stage3_processing_page():
     """
