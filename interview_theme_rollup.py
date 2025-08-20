@@ -170,7 +170,7 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 	clusters = pd.DataFrame(clusters_rows)
 	if not clusters.empty:
 		clusters['share_of_interviews'] = clusters['interviews_covered'] / max(1, it_df['interview_id'].nunique())
-		clusters = clusters.sort_values(by=['interviews_covered','members_count'], ascending=[False, False]).reset_index(drop_duplicate=True)
+		clusters = clusters.sort_values(by=['interviews_covered','members_count'], ascending=[False, False]).reset_index(drop=True)
 	members = pd.DataFrame(members_rows)
 
 	# Unclustered = items with cluster_id == -1 or in clusters smaller than min size
