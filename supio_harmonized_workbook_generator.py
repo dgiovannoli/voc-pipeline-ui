@@ -106,6 +106,17 @@ class SupioHarmonizedWorkbookGenerator:
             except Exception as e:
                 logger.warning(f"⚠️ Could not remove Summary sheet: {e}")
 
+            # Reorder: move Company Overview to first tab
+            try:
+                wb_order = load_workbook(self.workbook_path)
+                if 'Company Overview' in wb_order.sheetnames:
+                    ws = wb_order['Company Overview']
+                    wb_order._sheets.insert(0, wb_order._sheets.pop(wb_order._sheets.index(ws)))
+                    wb_order.save(self.workbook_path)
+                    logger.info("📑 Moved 'Company Overview' to first tab")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not reorder sheets: {e}")
+
             # Step 8: Apply professional styling
             logger.info("🎨 Step 8: Applying professional styling...")
             self._apply_professional_styling()
