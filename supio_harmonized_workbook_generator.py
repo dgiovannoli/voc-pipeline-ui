@@ -1381,7 +1381,15 @@ class SupioHarmonizedWorkbookGenerator:
             quotes_df['impact_score'] = pd.to_numeric(quotes_df.get('impact_score', 0), errors='coerce').fillna(0)
             sent_map = {'very_positive': 1.0, 'positive': 0.8, 'neutral': 0.4, 'negative': 0.8, 'very_negative': 1.0}
             quotes_df['sent_strength'] = quotes_df.get('sentiment', '').map(sent_map).fillna(0.5)
-            quotes_df['score'] = 0.7 * (quotes_df['impact_score'] / quotes_df['impact_score'].max().clip(lower=1)) + 0.3 * quotes_df['sent_strength']
+            max_imp = quotes_df['impact_score'].max()
+            try:
+                max_imp = float(max_imp)
+            except Exception:
+                max_imp = 0.0
+            if not max_imp or max_imp < 1.0:
+                max_imp = 1.0
+            quotes_df['impact_norm'] = quotes_df['impact_score'] / max_imp
+            quotes_df['score'] = 0.7 * quotes_df['impact_norm'] + 0.3 * quotes_df['sent_strength']
 
             # Header
             headers = [
