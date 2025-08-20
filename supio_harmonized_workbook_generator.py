@@ -1136,11 +1136,58 @@ class SupioHarmonizedWorkbookGenerator:
                 cl = roll_it.clusters.copy()
             except Exception:
                 cl = pd.DataFrame(columns=['cluster_id','canonical_theme'])
+            
+            # Map interview themes to relevant subjects based on content
+            def map_interview_to_subject(theme_statement: str, research_subjects: list) -> str:
+                """Map interview theme to most relevant research subject based on content similarity"""
+                theme_lower = theme_statement.lower()
+                
+                # Define keyword mappings for common subjects
+                subject_keywords = {
+                    'Customer Satisfaction': ['customer', 'satisfaction', 'experience', 'service', 'support', 'needs', 'pain point'],
+                    'Deal Analysis': ['deal', 'decision', 'evaluation', 'vendor', 'selection', 'comparison', 'cost', 'price'],
+                    'Competitive Dynamics Analysis': ['competitor', 'competitive', 'vs', 'versus', 'alternative', 'switch', 'brand'],
+                    'Pain Points': ['pain point', 'challenge', 'problem', 'issue', 'frustration', 'difficulty', 'struggle'],
+                    'Background': ['background', 'context', 'history', 'growth', 'expansion', 'organization', 'company'],
+                    'Integration': ['integration', 'api', 'system', 'platform', 'connect', 'sync', 'workflow'],
+                    'Pricing': ['price', 'cost', 'fee', 'rate', 'pricing', 'budget', 'affordable', 'expensive'],
+                    'Features': ['feature', 'functionality', 'capability', 'tool', 'option', 'solution']
+                }
+                
+                # Find best matching subject
+                best_score = 0
+                best_subject = 'Interview'  # Default fallback
+                
+                for subject, keywords in subject_keywords.items():
+                    if subject in research_subjects:  # Only consider subjects that exist in research themes
+                        score = sum(1 for kw in keywords if kw in theme_lower)
+                        if score > best_score:
+                            best_score = score
+                            best_subject = subject
+                
+                # If no good match found, try to find similar subjects
+                if best_score == 0:
+                    # Look for partial matches in existing subjects
+                    for subject in research_subjects:
+                        if any(word in theme_lower for word in subject.lower().split()):
+                            return subject
+                
+                return best_subject
+            
             if not cl.empty:
+                # Get list of existing research subjects
+                research_subjects = list(r_df['Subject'].dropna().astype(str).unique()) if not r_df.empty else []
+                
+                # Map each interview theme to a subject
+                mapped_subjects = []
+                for _, row in cl.iterrows():
+                    subject = map_interview_to_subject(row['canonical_theme'], research_subjects)
+                    mapped_subjects.append(subject)
+                
                 it_df = pd.DataFrame({
                     'Theme ID': cl['cluster_id'].apply(lambda x: f"interview_theme_{int(x):03d}"),
                     'Theme Statement': cl['canonical_theme'],
-                    'Subject': 'Interview',
+                    'Subject': mapped_subjects,
                     'Source': 'Interview (Canonical)',
                     'Evidence Count': 0,
                     'Companies': 0,
