@@ -1136,51 +1136,11 @@ class SupioHarmonizedWorkbookGenerator:
                 cl = roll_it.clusters.copy()
             except Exception:
                 cl = pd.DataFrame(columns=['cluster_id','canonical_theme'])
-
-            # Map interview canonical themes to closest subject label from research/discovered subjects
-            def _assign_subjects_to_clusters(clusters_df: pd.DataFrame, research_df: pd.DataFrame) -> pd.Series:
-                manager = EmbeddingManager()
-                if research_df is None or research_df.empty or clusters_df is None or clusters_df.empty:
-                    return pd.Series(['Interview'] * len(clusters_df), index=clusters_df.index)
-                subject_labels = [s for s in research_df['Subject'].dropna().astype(str).unique().tolist() if len(str(s).strip()) > 0]
-                if not subject_labels:
-                    return pd.Series(['Interview'] * len(clusters_df), index=clusters_df.index)
-                try:
-                    subj_embs = manager.get_embeddings_batch(subject_labels)
-                    theme_texts = clusters_df['canonical_theme'].fillna('').astype(str).tolist()
-                    theme_embs = manager.get_embeddings_batch(theme_texts)
-                    def _cos(a, b):
-                        import numpy as _np
-                        if a is None or b is None:
-                            return 0.0
-                        va = _np.array(a); vb = _np.array(b)
-                        na = _np.linalg.norm(va); nb = _np.linalg.norm(vb)
-                        if na == 0 or nb == 0:
-                            return 0.0
-                        return float(_np.dot(va, vb) / (na * nb))
-                    subjects = []
-                    for e in theme_embs:
-                        if e is None:
-                            subjects.append('Interview')
-                            continue
-                        sims = [_cos(e, se) for se in subj_embs]
-                        if not sims:
-                            subjects.append('Interview')
-                            continue
-                        j = int(max(range(len(sims)), key=lambda k: sims[k]))
-                        best = sims[j]
-                        subjects.append(subject_labels[j] if best >= 0.55 else 'Other')
-                    return pd.Series(subjects, index=clusters_df.index)
-                except Exception:
-                    return pd.Series(['Interview'] * len(clusters_df), index=clusters_df.index)
-
             if not cl.empty:
-                # Build interview canonical themes with assigned subjects
-                it_subjects = _assign_subjects_to_clusters(cl, r_df)
                 it_df = pd.DataFrame({
-                    'Theme ID': cl['cluster_id'].apply(lambda x: f"cluster_{int(x)}::ITC"),
+                    'Theme ID': cl['cluster_id'].apply(lambda x: f"interview_theme_{int(x):03d}"),
                     'Theme Statement': cl['canonical_theme'],
-                    'Subject': it_subjects,
+                    'Subject': 'Interview',
                     'Source': 'Interview (Canonical)',
                     'Evidence Count': 0,
                     'Companies': 0,
@@ -1257,7 +1217,7 @@ class SupioHarmonizedWorkbookGenerator:
                 cell = ws.cell(row=row, column=col)
                 cell.border = Border(top=Side(style="thin"), bottom=Side(style="thin"))
             row += 1
-            headers2 = ["Subject","Theme A","Theme A Statement","Theme B","Theme B Statement","Score","Cosine","Jaccard"]
+            headers2 = ["Subject","Theme A ID","Theme A Statement","Theme B ID","Theme B Statement","Score","Cosine","Jaccard"]
             for col, h in enumerate(headers2, 1):
                 cell = ws.cell(row=row, column=col, value=h)
                 cell.font = Font(bold=True)
