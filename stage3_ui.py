@@ -18,6 +18,7 @@ from stage3_theme_processor import Stage3ThemeProcessor
 from supio_harmonized_workbook_generator import SupioHarmonizedWorkbookGenerator
 from supabase_database import SupabaseDatabase
 from guiding_story_analyzer import build_guiding_story_payload, to_overview_table, generate_narrative_llm
+from interview_theme_rollup import rollup_interview_themes
 
 # Initialize DB for this module
 try:
@@ -60,31 +61,23 @@ def _render_guiding_story_panel_stage3(client_id: str):
                             st.error(proc.stderr.strip() or "Theme generation failed")
                     except Exception as e:
                         st.error(f"Theme generation error: {e}")
-    if st.button("Compute Guiding Story (fast)", key="guiding_story_compute_stage3"):
-        with st.spinner("Computing…"):
-            payload = build_guiding_story_payload(client_id=client_id, db=_GUIDE_DB)
-            st.session_state.setdefault("guiding_story_payload", {})[client_id] = payload
-    payload = st.session_state.get("guiding_story_payload", {}).get(client_id)
-    if payload:
-        overview_df = to_overview_table(payload)
-        st.dataframe(overview_df, use_container_width=True)
-        for seg, qlist in (payload.get("quotes") or {}).items():
-            if not qlist:
-                continue
-            st.markdown(f"**{seg} — evidence quotes**")
-            st.table([{k: q[k] for k in ["response_id","company","interviewee_name","excerpt"] if k in q} for q in qlist])
-    with st.expander("Generate narrative (LLM) — optional", expanded=False):
-        enable = st.checkbox("Enable LLM narrative", value=False, key="guiding_story_llm_enable_stage3")
-        if enable and st.button("Generate narrative (LLM)", key="guiding_story_llm_btn_stage3"):
-            payload = st.session_state.get("guiding_story_payload", {}).get(client_id)
-            if not payload:
-                st.warning("Compute Guiding Story first.")
-            else:
-                narrative = generate_narrative_llm(payload, llm=None)
-                if narrative:
-                    st.markdown(narrative)
+
+    # One-step: Show interview themes + roll-up
+    if st.button("Roll Up Interview Themes (Guiding Story)", key="rollup_interview_themes"):
+        with st.spinner("Rolling up interview themes…"):
+            try:
+                res = rollup_interview_themes(_GUIDE_DB, client_id)
+                if res.interview_themes.empty:
+                    st.warning("No interview themes found. Generate Interview Themes first.")
                 else:
-                    st.info("LLM not configured. Supply an llm client to enable this.")
+                    st.markdown("#### Interview-level Themes")
+                    st.dataframe(res.interview_themes, use_container_width=True)
+                    st.markdown("#### Roll-up Themes (Guiding Story)")
+                    st.dataframe(res.clusters, use_container_width=True)
+                    with st.expander("Members per Roll-up Theme", expanded=False):
+                        st.dataframe(res.members, use_container_width=True)
+            except Exception as e:
+                st.error(f"Roll-up failed: {e}")
 
 def show_stage3_processing_page():
     """
