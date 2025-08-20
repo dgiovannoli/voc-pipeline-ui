@@ -1126,7 +1126,26 @@ class SupioHarmonizedWorkbookGenerator:
                 r_df['Source'] = r_df.get('origin','research').map(lambda x: 'Research' if x=='research' and not str(r_df.get('harmonized_subject','')).startswith('DISCOVERED:') else 'Discovered')
                 r_df['Evidence Count'] = r_df.get('supporting_quotes').apply(lambda x: len(x) if isinstance(x, list) else 0)
                 r_df['Companies'] = r_df.get('company_coverage').apply(lambda x: len(x) if isinstance(x, list) else 0)
-                r_df = r_df.rename(columns={'theme_id':'Theme ID','theme_statement':'Theme Statement'})
+                
+                # Format theme IDs as research_theme_XXX or discovered_theme_XXX
+                def format_theme_id(row):
+                    origin = row.get('origin', 'research')
+                    theme_id = row.get('theme_id', '')
+                    if origin == 'research':
+                        # For research themes, use a hash of the UUID to create a consistent ID
+                        import hashlib
+                        hash_obj = hashlib.md5(str(theme_id).encode())
+                        hash_hex = hash_obj.hexdigest()[:6]
+                        return f"research_theme_{hash_hex}"
+                    else:
+                        # For discovered themes, use a hash of the UUID
+                        import hashlib
+                        hash_obj = hashlib.md5(str(theme_id).encode())
+                        hash_hex = hash_obj.hexdigest()[:6]
+                        return f"discovered_theme_{hash_hex}"
+                
+                r_df['Theme ID'] = r_df.apply(format_theme_id, axis=1)
+                r_df = r_df.rename(columns={'theme_statement':'Theme Statement'})
             else:
                 r_df = pd.DataFrame(columns=['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies'])
 
@@ -1227,6 +1246,13 @@ class SupioHarmonizedWorkbookGenerator:
                     stmt = rr.get('Theme Statement')
                     if tid is not None and stmt is not None:
                         statement_by_id[str(tid)] = str(stmt)
+                
+                # Also map the original UUIDs to statements for the duplicates review section
+                for _, rr in r_df.iterrows():
+                    orig_tid = rr.get('theme_id')  # Original UUID
+                    stmt = rr.get('Theme Statement')
+                    if orig_tid is not None and stmt is not None:
+                        statement_by_id[str(orig_tid)] = str(stmt)
             # interview-level themes for lookup in review table
             try:
                 it_all = self.db.supabase.table('interview_level_themes').select('interview_id,theme_statement').eq('client_id', self.client_id).execute()
