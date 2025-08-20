@@ -1090,111 +1090,119 @@ class SupioHarmonizedWorkbookGenerator:
             ws = wb.create_sheet("All Themes")
 
             # Add header context
-            ws['A1'] = "All Themes - Comprehensive Review"
+            ws['A1'] = "All Themes - Subject-first duplicate triage"
             ws['A1'].font = Font(bold=True, size=14)
-            ws['A2'] = "All themes from database with supporting evidence and quality metrics."
+            ws['A2'] = "Group by subject; review suggested canonical and duplicates quickly."
             ws['A2'].font = Font(italic=True, size=10)
 
-            # Add column headers
+            # Column headers
             headers = [
-                "Group",
-                "Theme ID",
-                "Theme Statement",
-                "Origin",
-                "Type",
-                "Supporting Quotes",
-                "Company Coverage",
-                "Impact Score",
-                "Evidence Strength",
-                "Harmonized Subject"
+                "Subject","Theme ID","Theme Statement","Source","Suggested Canonical","Duplicate Score","Evidence Count","Companies","Analyst Decision","Reason"
             ]
-
-            for col, header in enumerate(headers, 1):
-                cell = ws.cell(row=4, column=col, value=header)
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=4, column=col, value=h)
                 cell.font = Font(bold=True)
                 cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
 
-            # Get actual themes from database
-            themes_response = self.db.supabase.table('research_themes').select(
-                'theme_id,theme_statement,origin,harmonized_subject,supporting_quotes,company_coverage,impact_score,evidence_strength'
+            # Fetch themes (research+discovered) and interview themes
+            rt = self.db.supabase.table('research_themes').select(
+                'theme_id,theme_statement,origin,harmonized_subject,supporting_quotes,company_coverage'
             ).eq('client_id', self.client_id).execute()
+            themes = [t for t in (rt.data or []) if not str(t.get('section','')).startswith('MERGED_INTO:')]
+            r_df = pd.DataFrame(themes)
+            if not r_df.empty:
+                r_df['Subject'] = r_df.get('harmonized_subject','Research')
+                r_df['Source'] = r_df.get('origin','research').map(lambda x: 'Research' if x=='research' and not str(r_df.get('harmonized_subject','')).startswith('DISCOVERED:') else 'Discovered')
+                r_df['Evidence Count'] = r_df.get('supporting_quotes').apply(lambda x: len(x) if isinstance(x, list) else 0)
+                r_df['Companies'] = r_df.get('company_coverage').apply(lambda x: len(x) if isinstance(x, list) else 0)
+                r_df = r_df.rename(columns={'theme_id':'Theme ID','theme_statement':'Theme Statement'})
+            else:
+                r_df = pd.DataFrame(columns=['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies'])
 
-            if not themes_response.data:
-                logger.warning("⚠️ No themes found in database")
+            it = self.db.fetch_interview_level_themes(self.client_id)
+            if not it.empty:
+                it_df = it.rename(columns={'theme_statement':'Theme Statement','subject':'Subject'})
+                it_df['Theme ID'] = it_df['interview_id'].astype(str) + '::IT'
+                it_df['Source'] = 'Interview'
+                it_df['Evidence Count'] = 0
+                it_df['Companies'] = 0
+                it_df = it_df[['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies']]
+            else:
+                it_df = pd.DataFrame(columns=['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies'])
+
+            all_df = pd.concat([r_df[['Theme ID','Theme Statement','Subject','Source','Evidence Count','Companies']], it_df], ignore_index=True)
+            if all_df.empty:
+                ws['A5'] = 'No themes available'
+                wb.save(self.workbook_path)
                 return
 
-            themes = [t for t in themes_response.data if not str(t.get('section', '')).startswith('MERGED_INTO:')]
-            current_row = 5
+            # Fetch similarity suggestions
+            sim = self.db.fetch_theme_similarity(self.client_id, min_score=0.7)
+            sim_map = {}
+            if not sim.empty:
+                # suggested canonical = for each theme_id, the other with highest score
+                for tid, g in sim.groupby('theme_id'):
+                    top = g.sort_values(by='score', ascending=False).iloc[0]
+                    sim_map[tid] = {
+                        'Suggested Canonical': top['other_theme_id'],
+                        'Duplicate Score': float(top['score'])
+                    }
 
-            # Research Themes Group
-            ws.cell(row=current_row, column=1, value="Research Themes")
-            ws.cell(row=current_row, column=1).font = Font(bold=True)
-            current_row += 1
+            # Write grouped by subject
+            row = 5
+            for subj, grp in all_df.groupby('Subject'):
+                # Section header
+                ws.cell(row=row, column=1, value=str(subj)).font = Font(bold=True)
+                row += 1
+                for _, theme in grp.iterrows():
+                    tid = theme['Theme ID']
+                    sim_info = sim_map.get(tid, {})
+                    ws.cell(row=row, column=1, value=theme['Subject'])
+                    ws.cell(row=row, column=2, value=tid)
+                    ws.cell(row=row, column=3, value=theme['Theme Statement'])
+                    ws.cell(row=row, column=4, value=theme['Source'])
+                    ws.cell(row=row, column=5, value=sim_info.get('Suggested Canonical'))
+                    ws.cell(row=row, column=6, value=sim_info.get('Duplicate Score'))
+                    ws.cell(row=row, column=7, value=int(theme['Evidence Count']))
+                    ws.cell(row=row, column=8, value=int(theme['Companies']))
+                    # Analyst Decision dropdown
+                    ws.cell(row=row, column=9, value=None)
+                    ws.cell(row=row, column=10, value=None)
+                    row += 1
+                row += 1
 
-            # Add actual research themes from database (exclude discovered themes)
-            research_themes = [t for t in themes if t.get('origin') == 'research' and not str(t.get('harmonized_subject', '')).startswith('DISCOVERED:')]
-            research_counter = 1
+            # Decision dropdown
+            dv = DataValidation(type="list", formula1='"Canonical,Duplicate-of:[ID],Ignore"', allow_blank=True)
+            ws.add_data_validation(dv)
+            dv.add(f"I5:I1048576")
 
-            for theme in research_themes:
-                theme_statement = theme.get('theme_statement', '')
-                harmonized_subject = theme.get('harmonized_subject', '')
-                supporting_quotes = theme.get('supporting_quotes', [])
-                company_coverage = theme.get('company_coverage', [])
-                impact_score = theme.get('impact_score', 0)
-                evidence_strength = theme.get('evidence_strength', 0)
-                
-                # Generate proper theme ID
-                proper_theme_id = f"research_theme_{research_counter:03d}"
-                
-                ws.cell(row=current_row, column=1, value="")
-                ws.cell(row=current_row, column=2, value=proper_theme_id)
-                ws.cell(row=current_row, column=3, value=theme_statement)
-                ws.cell(row=current_row, column=4, value="Research")
-                ws.cell(row=current_row, column=5, value="Discussion Guide")
-                ws.cell(row=current_row, column=6, value=len(supporting_quotes))
-                ws.cell(row=current_row, column=7, value=len(company_coverage))
-                ws.cell(row=current_row, column=8, value=impact_score)
-                ws.cell(row=current_row, column=9, value=evidence_strength)
-                ws.cell(row=current_row, column=10, value=harmonized_subject)
-                current_row += 1
-                research_counter += 1
-
-            # Discovered Themes Group - Using pre-generated discovered themes
-            ws.cell(row=current_row, column=1, value="Discovered Themes")
-            ws.cell(row=current_row, column=1).font = Font(bold=True)
-            current_row += 1
-
-            # Add actual discovered themes from database
-            discovered_themes = [t for t in themes if str(t.get('harmonized_subject', '')).startswith('DISCOVERED:')]
-            discovered_counter = 1
-
-            for theme in discovered_themes:
-                theme_statement = theme.get('theme_statement', '')
-                harmonized_subject = theme.get('harmonized_subject', '')
-                supporting_quotes = theme.get('supporting_quotes', [])
-                company_coverage = theme.get('company_coverage', [])
-                impact_score = theme.get('impact_score', 0)
-                evidence_strength = theme.get('evidence_strength', 0)
-                
-                # Generate proper theme ID
-                proper_theme_id = f"discovered_theme_{discovered_counter:03d}"
-                
-                ws.cell(row=current_row, column=1, value="")
-                ws.cell(row=current_row, column=2, value=proper_theme_id)
-                ws.cell(row=current_row, column=3, value=theme_statement)
-                ws.cell(row=current_row, column=4, value="Discovered")
-                ws.cell(row=current_row, column=5, value="Pattern Analysis")
-                ws.cell(row=current_row, column=6, value=len(supporting_quotes))
-                ws.cell(row=current_row, column=7, value=len(company_coverage))
-                ws.cell(row=current_row, column=8, value=impact_score)
-                ws.cell(row=current_row, column=9, value=evidence_strength)
-                ws.cell(row=current_row, column=10, value=harmonized_subject)
-                current_row += 1
-                discovered_counter += 1
+            # Duplicates Review area
+            row += 1
+            ws.cell(row=row, column=1, value="Duplicates Review (subject-local pairs)").font = Font(bold=True)
+            row += 1
+            headers2 = ["Subject","Theme A","Theme B","Score","Cosine","Jaccard"]
+            for col, h in enumerate(headers2, 1):
+                cell = ws.cell(row=row, column=col, value=h)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            row += 1
+            if not sim.empty:
+                s2 = sim.sort_values(by='score', ascending=False)
+                for _, r in s2.iterrows():
+                    ws.cell(row=row, column=1, value=r.get('subject'))
+                    ws.cell(row=row, column=2, value=r.get('theme_id'))
+                    ws.cell(row=row, column=3, value=r.get('other_theme_id'))
+                    ws.cell(row=row, column=4, value=float(r.get('score')))
+                    feats = r.get('features_json') or {}
+                    ws.cell(row=row, column=5, value=float(feats.get('cosine', 0)))
+                    ws.cell(row=row, column=6, value=float(feats.get('jaccard', 0)))
+                    row += 1
+            else:
+                ws.cell(row=row, column=1, value='No similarity suggestions')
 
             # Save workbook
             wb.save(self.workbook_path)
-            logger.info(f"✅ All Themes tab added successfully with {research_counter-1} research themes and {discovered_counter-1} discovered themes")
+            logger.info("✅ All Themes tab enhanced with subject grouping and duplicate signals")
 
         except Exception as e:
             logger.warning(f"⚠️ All Themes tab failed: {e}")
