@@ -103,7 +103,7 @@ def _cluster_by_threshold(embeddings: List[List[float]], tokens: List[set], thre
 	return assignments
 
 
-def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.94, min_cluster_size: int = 2, normalize: bool = True, min_token_overlap: float = 0.15) -> RollupResult:
+def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.90, min_cluster_size: int = 3, normalize: bool = True, min_token_overlap: float = 0.10, min_interviews_covered: int = 3, max_clusters: int = 12) -> RollupResult:
 	# Pull interview-level themes
 	try:
 		res = db.supabase.table('interview_level_themes').select(
@@ -168,13 +168,29 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 			members_rows.append({'cluster_id': cid, 'interview_id': iv, 'member_theme': t})
 
 	clusters = pd.DataFrame(clusters_rows)
-	if not clusters.empty:
-		clusters['share_of_interviews'] = clusters['interviews_covered'] / max(1, it_df['interview_id'].nunique())
-		clusters = clusters.sort_values(by=['interviews_covered','members_count'], ascending=[False, False]).reset_index(drop=True)
 	members = pd.DataFrame(members_rows)
 
-	# Unclustered = items with cluster_id == -1 or in clusters smaller than min size
-	mask_un = ~it_df['cluster_id'].isin(list(eligible_cluster_ids))
-	unclustered = it_df.loc[mask_un, ['interview_id','theme_statement']].reset_index(drop=True)
+	# Filter by interviews covered; demote to unclustered
+	unclustered = pd.DataFrame()
+	if not clusters.empty:
+		clusters['share_of_interviews'] = clusters['interviews_covered'] / max(1, it_df['interview_id'].nunique())
+		# Separate weak clusters
+		weak_ids = set(clusters.loc[clusters['interviews_covered'] < max(1, min_interviews_covered), 'cluster_id'].tolist())
+		if not members.empty and weak_ids:
+			weak_members = members[members['cluster_id'].isin(weak_ids)][['interview_id','member_theme']].rename(columns={'member_theme':'theme_statement'})
+			unclustered = pd.concat([unclustered, weak_members], ignore_index=True)
+		clusters = clusters[~clusters['cluster_id'].isin(weak_ids)].reset_index(drop=True)
+		members = members[~members['cluster_id'].isin(weak_ids)].reset_index(drop=True)
 
-	return RollupResult(interview_themes=it_df[['interview_id','theme_statement']], clusters=clusters, members=members, unclustered=unclustered) 
+	# Cap max clusters; demote the rest to unclustered by coverage then size
+	if not clusters.empty and len(clusters) > max_clusters:
+		clusters = clusters.sort_values(by=['interviews_covered','members_count'], ascending=[False, False]).reset_index(drop=True)
+		keep_ids = set(clusters.head(max_clusters)['cluster_id'].tolist())
+		drop_ids = set(clusters['cluster_id'].tolist()) - keep_ids
+		if not members.empty and drop_ids:
+			drop_members = members[members['cluster_id'].isin(drop_ids)][['interview_id','member_theme']].rename(columns={'member_theme':'theme_statement'})
+			unclustered = pd.concat([unclustered, drop_members], ignore_index=True)
+		clusters = clusters[clusters['cluster_id'].isin(keep_ids)].reset_index(drop=True)
+		members = members[members['cluster_id'].isin(keep_ids)].reset_index(drop=True)
+
+	return RollupResult(interview_themes=it_df[['interview_id','theme_statement']], clusters=clusters, members=members, unclustered=unclustered.reset_index(drop=True)) 
