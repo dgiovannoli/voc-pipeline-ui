@@ -470,17 +470,139 @@ class SupioHarmonizedWorkbookGenerator:
             ws['A2'] = "Clusters derived from interview-level themes using semantic similarity."
             ws['A2'].font = Font(italic=True, size=10)
 
+            # First: consolidated quotes per canonical theme at the top
+            r = 4
+            ws.cell(row=r, column=1, value="Interview Theme Quotes (analyst review)")
+            ws.cell(row=r, column=1).font = Font(bold=True, size=12)
+            r += 1
+            headers_q = [
+                'Cluster ID','Canonical Theme','Response ID','Similarity','Company','Interviewee','Verbatim Quote','Sentiment','Deal Status','Quote Decision','Notes'
+            ]
+            for col, h in enumerate(headers_q, 1):
+                cell = ws.cell(row=r, column=col, value=h)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            r += 1
+            dv_quote = DataValidation(type="list", formula1='"FEATURED,SUPPORTING,EXCLUDE"', allow_blank=True)
+            ws.add_data_validation(dv_quote)
+            # Prepare quotes and embeddings once
+            try:
+                qr = self.db.supabase.table('stage1_data_responses').select(
+                    'response_id,company,interviewee_name,verbatim_response,sentiment,deal_status,impact_score'
+                ).eq('client_id', self.client_id).execute()
+                quotes_df = pd.DataFrame(qr.data or [])
+            except Exception:
+                quotes_df = pd.DataFrame()
+            if not quotes_df.empty:
+                mgr = EmbeddingManager()
+                quote_texts = quotes_df.get('verbatim_response', pd.Series(dtype=str)).fillna('').astype(str).tolist()
+                quote_embs = mgr.get_embeddings_batch(quote_texts, batch_size=100)
+                # Prepare impact/sent features for ranking
+                quotes_df['impact_score'] = pd.to_numeric(quotes_df.get('impact_score', 0), errors='coerce').fillna(0)
+                sent_map = {'very_positive': 1.0, 'positive': 0.8, 'neutral': 0.4, 'negative': 0.8, 'very_negative': 1.0}
+                quotes_df['sent_strength'] = quotes_df.get('sentiment', '').map(sent_map).fillna(0.5)
+                max_imp = float(quotes_df['impact_score'].max() or 1.0)
+                if max_imp < 1.0:
+                    max_imp = 1.0
+                quotes_df['impact_norm'] = quotes_df['impact_score'] / max_imp
+                # For each cluster, compute centroid and attach top quotes using staged thresholds
+                for _, crow in clusters.iterrows():
+                    cid = int(crow.get('cluster_id'))
+                    canonical = crow.get('canonical_theme')
+                    can_norm = self._normalize_for_match(canonical)
+                    theme_tokens = self._content_tokens(canonical)
+                    requires_comp = any(term in can_norm for term in self._COMPETITOR_LEXICON)
+                    try:
+                        mems = roll.members[roll.members['cluster_id'] == cid]
+                    except Exception:
+                        mems = None
+                    centroid = None
+                    if mems is not None and not mems.empty:
+                        mem_texts = mems['member_theme'].astype(str).tolist()
+                        mem_embs = mgr.get_embeddings_batch(mem_texts, batch_size=50)
+                        valid = [e for e in mem_embs if e is not None]
+                        if valid:
+                            centroid = [sum(vals) / len(valid) for vals in zip(*valid)]
+                    if centroid is None:
+                        centroid = mgr.get_embeddings_batch([str(canonical)], batch_size=1)[0]
+                    sims = [mgr.calculate_cosine_similarity(e, centroid) if e is not None else 0.0 for e in quote_embs]
+                    qbase = quotes_df.copy()
+                    qbase['similarity'] = sims
+                    qbase['len_val'] = qbase['verbatim_response'].astype(str).apply(lambda t: len(str(t)))
+                    theme_kw = {w for w in theme_tokens if ' ' in w or len(w) > 3}
+                    def _overlap_score(t: str) -> float:
+                        qt = self._content_tokens(t)
+                        if not qt:
+                            return 0.0
+                        inter = len(qt & theme_kw)
+                        union = len(qt | theme_kw)
+                        return (inter / union) if union else 0.0
+                    qbase['overlap'] = qbase['verbatim_response'].astype(str).apply(_overlap_score)
+                    if requires_comp:
+                        qbase['comp_ok'] = qbase['verbatim_response'].astype(str).apply(lambda t: any(cx in self._normalize_for_match(t) for cx in self._COMPETITOR_LEXICON))
+                    else:
+                        qbase['comp_ok'] = True
+                    if requires_comp:
+                        stages = [
+                            (0.80, 0.10, 30, True),
+                            (0.78, 0.10, 25, True),
+                            (0.75, 0.10, 20, True)
+                        ]
+                    else:
+                        stages = [
+                            (0.80, 0.10, 30, False),
+                            (0.78, 0.05, 25, False),
+                            (0.75, 0.00, 20, False)
+                        ]
+                    chosen = None
+                    for sim_thr, j_thr, lmin, comp_req in stages:
+                        df = qbase[(qbase['similarity'] >= sim_thr) & (qbase['overlap'] >= j_thr) & (qbase['len_val'] >= lmin)]
+                        if comp_req:
+                            df = df[df['comp_ok']]
+                        if not df.empty:
+                            chosen = df
+                            break
+                    if chosen is None or chosen.empty:
+                        continue
+                    chosen = chosen.copy()
+                    chosen['rank_score'] = 0.8 * chosen['similarity'] + 0.2 * (0.7 * chosen['impact_norm'] + 0.3 * chosen['sent_strength'])
+                    chosen = chosen.sort_values(by='rank_score', ascending=False)
+                    picks = []
+                    per_iv = {}
+                    for _, q in chosen.iterrows():
+                        iv = q.get('interviewee_name') or 'unknown'
+                        if per_iv.get(iv, 0) >= 2:
+                            continue
+                        picks.append(q)
+                        per_iv[iv] = per_iv.get(iv, 0) + 1
+                        if len(picks) >= 8:
+                            break
+                    for q in picks:
+                        ws.cell(row=r, column=1, value=cid)
+                        ws.cell(row=r, column=2, value=canonical)
+                        ws.cell(row=r, column=3, value=q.get('response_id'))
+                        ws.cell(row=r, column=4, value=float(q.get('similarity')))
+                        ws.cell(row=r, column=5, value=q.get('company'))
+                        ws.cell(row=r, column=6, value=q.get('interviewee_name'))
+                        ws.cell(row=r, column=7, value=q.get('verbatim_response'))
+                        ws.cell(row=r, column=8, value=q.get('sentiment'))
+                        ws.cell(row=r, column=9, value=q.get('deal_status'))
+                        dv_quote.add(f"J{r}:J{r}")
+                        r += 1
+
+            # Now write clusters table below quotes
+            r += 2
+
             # Top table: clusters
-            ws['A4'] = "Cluster ID"; ws['B4'] = "Canonical Theme"; ws['C4'] = "Interviews Covered"; ws['D4'] = "Members Count"; ws['E4'] = "Share of Interviews"; ws['F4'] = "Theme Decision"; ws['G4'] = "Notes"
+            ws['A'+str(r)] = "Cluster ID"; ws['B'+str(r)] = "Canonical Theme"; ws['C'+str(r)] = "Interviews Covered"; ws['D'+str(r)] = "Members Count"; ws['E'+str(r)] = "Share of Interviews"; ws['F'+str(r)] = "Theme Decision"; ws['G'+str(r)] = "Notes"
             for col in range(1, 8):
-                cell = ws.cell(row=4, column=col)
+                cell = ws.cell(row=r, column=col)
                 cell.font = Font(bold=True)
                 cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
             # Dropdown for Theme Decision similar to Research Themes
             dv_theme = DataValidation(type="list", formula1='"VALIDATED,FEATURED,REJECTED,NEEDS REVISION"', allow_blank=True)
             ws.add_data_validation(dv_theme)
-            dv_theme.add(f"F5:F1048576")
-            r = 5
+            r += 1
             for _, row in clusters.iterrows():
                 ws.cell(row=r, column=1, value=int(row.get('cluster_id')))
                 ws.cell(row=r, column=2, value=row.get('canonical_theme'))
@@ -489,6 +611,7 @@ class SupioHarmonizedWorkbookGenerator:
                 ws.cell(row=r, column=5, value=float(row.get('share_of_interviews')))
                 # Columns F (Theme Decision) and G (Notes) left blank for analyst input
                 r += 1
+            dv_theme.add(f"F{r - len(clusters)}:F1048576")
 
             # Spacer
             r += 2
@@ -528,129 +651,6 @@ class SupioHarmonizedWorkbookGenerator:
                     r += 1
             else:
                 ws.cell(row=r, column=1, value="(none)")
-
-            # Spacer then consolidated quotes table tied to canonical themes (like Research Themes)
-            r += 2
-            ws.cell(row=r, column=1, value="Interview Theme Quotes (analyst review)")
-            ws.cell(row=r, column=1).font = Font(bold=True, size=12)
-            r += 1
-            headers = [
-                'Cluster ID','Canonical Theme','Response ID','Similarity','Company','Interviewee','Verbatim Quote','Sentiment','Deal Status','Quote Decision','Notes'
-            ]
-            for col, h in enumerate(headers, 1):
-                cell = ws.cell(row=r, column=col, value=h)
-                cell.font = Font(bold=True)
-                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
-            r += 1
-            dv_quote = DataValidation(type="list", formula1='"FEATURED,SUPPORTING,EXCLUDE"', allow_blank=True)
-            ws.add_data_validation(dv_quote)
-            # Prepare quotes and embeddings
-            try:
-                qr = self.db.supabase.table('stage1_data_responses').select(
-                    'response_id,company,interviewee_name,verbatim_response,sentiment,deal_status,impact_score'
-                ).eq('client_id', self.client_id).execute()
-                quotes_df = pd.DataFrame(qr.data or [])
-            except Exception:
-                quotes_df = pd.DataFrame()
-            if not quotes_df.empty:
-                mgr = EmbeddingManager()
-                quote_texts = quotes_df.get('verbatim_response', pd.Series(dtype=str)).fillna('').astype(str).tolist()
-                quote_embs = mgr.get_embeddings_batch(quote_texts, batch_size=100)
-                # Prepare impact/sent features for ranking
-                quotes_df['impact_score'] = pd.to_numeric(quotes_df.get('impact_score', 0), errors='coerce').fillna(0)
-                sent_map = {'very_positive': 1.0, 'positive': 0.8, 'neutral': 0.4, 'negative': 0.8, 'very_negative': 1.0}
-                quotes_df['sent_strength'] = quotes_df.get('sentiment', '').map(sent_map).fillna(0.5)
-                max_imp = float(quotes_df['impact_score'].max() or 1.0)
-                if max_imp < 1.0:
-                    max_imp = 1.0
-                quotes_df['impact_norm'] = quotes_df['impact_score'] / max_imp
-                # For each cluster, compute centroid and attach top quotes only
-                for _, crow in clusters.iterrows():
-                    cid = int(crow.get('cluster_id'))
-                    canonical = crow.get('canonical_theme')
-                    can_norm = self._normalize_for_match(canonical)
-                    theme_tokens = self._content_tokens(canonical)
-                    requires_comp = any(term in can_norm for term in self._COMPETITOR_LEXICON)
-                    try:
-                        mems = roll.members[roll.members['cluster_id'] == cid]
-                    except Exception:
-                        mems = None
-                    centroid = None
-                    if mems is not None and not mems.empty:
-                        mem_texts = mems['member_theme'].astype(str).tolist()
-                        mem_embs = mgr.get_embeddings_batch(mem_texts, batch_size=50)
-                        valid = [e for e in mem_embs if e is not None]
-                        if valid:
-                            centroid = [sum(vals) / len(valid) for vals in zip(*valid)]
-                    if centroid is None:
-                        centroid = mgr.get_embeddings_batch([str(canonical)], batch_size=1)[0]
-                    # Compute similarities and base frame
-                    sims = [mgr.calculate_cosine_similarity(e, centroid) if e is not None else 0.0 for e in quote_embs]
-                    qbase = quotes_df.copy()
-                    qbase['similarity'] = sims
-                    qbase['len_val'] = qbase['verbatim_response'].astype(str).apply(lambda t: len(str(t)))
-                    theme_kw = {w for w in theme_tokens if ' ' in w or len(w) > 3}
-                    def _overlap_score(t: str) -> float:
-                        qt = self._content_tokens(t)
-                        if not qt:
-                            return 0.0
-                        inter = len(qt & theme_kw)
-                        union = len(qt | theme_kw)
-                        return (inter / union) if union else 0.0
-                    qbase['overlap'] = qbase['verbatim_response'].astype(str).apply(_overlap_score)
-                    if requires_comp:
-                        qbase['comp_ok'] = qbase['verbatim_response'].astype(str).apply(lambda t: any(cx in self._normalize_for_match(t) for cx in self._COMPETITOR_LEXICON))
-                    else:
-                        qbase['comp_ok'] = True
-                    # Staged thresholds: (sim, jacc, len_min, require_comp)
-                    if requires_comp:
-                        stages = [
-                            (0.80, 0.10, 30, True),
-                            (0.78, 0.10, 25, True),
-                            (0.75, 0.10, 20, True)
-                        ]
-                    else:
-                        stages = [
-                            (0.80, 0.10, 30, False),
-                            (0.78, 0.05, 25, False),
-                            (0.75, 0.00, 20, False)
-                        ]
-                    chosen = None
-                    for sim_thr, j_thr, lmin, comp_req in stages:
-                        df = qbase[(qbase['similarity'] >= sim_thr) & (qbase['overlap'] >= j_thr) & (qbase['len_val'] >= lmin)]
-                        if comp_req:
-                            df = df[df['comp_ok']]
-                        if not df.empty:
-                            chosen = df
-                            break
-                    if chosen is None or chosen.empty:
-                        continue
-                    chosen = chosen.copy()
-                    chosen['rank_score'] = 0.8 * chosen['similarity'] + 0.2 * (0.7 * chosen['impact_norm'] + 0.3 * chosen['sent_strength'])
-                    chosen = chosen.sort_values(by='rank_score', ascending=False)
-                    # Select top 8 with max 2 per interviewee
-                    picks = []
-                    per_iv = {}
-                    for _, q in chosen.iterrows():
-                        iv = q.get('interviewee_name') or 'unknown'
-                        if per_iv.get(iv, 0) >= 2:
-                            continue
-                        picks.append(q)
-                        per_iv[iv] = per_iv.get(iv, 0) + 1
-                        if len(picks) >= 8:
-                            break
-                    for q in picks:
-                        ws.cell(row=r, column=1, value=cid)
-                        ws.cell(row=r, column=2, value=canonical)
-                        ws.cell(row=r, column=3, value=q.get('response_id'))
-                        ws.cell(row=r, column=4, value=float(q.get('similarity')))
-                        ws.cell(row=r, column=5, value=q.get('company'))
-                        ws.cell(row=r, column=6, value=q.get('interviewee_name'))
-                        ws.cell(row=r, column=7, value=q.get('verbatim_response'))
-                        ws.cell(row=r, column=8, value=q.get('sentiment'))
-                        ws.cell(row=r, column=9, value=q.get('deal_status'))
-                        dv_quote.add(f"J{r}:J{r}")
-                        r += 1
 
             # Widths
             ws.column_dimensions['A'].width = 14
