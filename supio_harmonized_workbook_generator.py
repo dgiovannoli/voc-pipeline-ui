@@ -125,8 +125,16 @@ class SupioHarmonizedWorkbookGenerator:
                 if 'Company Overview' in wb_order.sheetnames:
                     ws = wb_order['Company Overview']
                     wb_order._sheets.insert(0, wb_order._sheets.pop(wb_order._sheets.index(ws)))
+                    # Move All Themes to second tab if present
+                    if 'All Themes' in wb_order.sheetnames:
+                        ws2 = wb_order['All Themes']
+                        # Compute current index and move to position 1
+                        current_index = wb_order._sheets.index(ws2)
+                        offset = 1 - current_index
+                        if offset != 0:
+                            wb_order.move_sheet(ws2, offset=offset)
                     wb_order.save(self.workbook_path)
-                    logger.info("📑 Moved 'Company Overview' to first tab")
+                    logger.info("📑 Reordered: 'Company Overview' first, 'All Themes' second (if present)")
             except Exception as e:
                 logger.warning(f"⚠️ Could not reorder sheets: {e}")
 
@@ -1208,32 +1216,8 @@ class SupioHarmonizedWorkbookGenerator:
             # Start writing at row 5
             row = 5
 
-            # Duplicates Review area (move to top)
-            ws.cell(row=row, column=1, value="Duplicates Review (subject-local pairs)").font = Font(bold=True)
-            row += 1
-            headers2 = ["Subject","Theme A","Theme B","Score","Cosine","Jaccard"]
-            for col, h in enumerate(headers2, 1):
-                cell = ws.cell(row=row, column=col, value=h)
-                cell.font = Font(bold=True)
-                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
-            row += 1
-            if not sim.empty:
-                s2 = sim.sort_values(by='score', ascending=False)
-                for _, r in s2.iterrows():
-                    ws.cell(row=row, column=1, value=r.get('subject'))
-                    ws.cell(row=row, column=2, value=r.get('theme_id'))
-                    ws.cell(row=row, column=3, value=r.get('other_theme_id'))
-                    ws.cell(row=row, column=4, value=float(r.get('score')))
-                    feats = r.get('features_json') or {}
-                    ws.cell(row=row, column=5, value=float(feats.get('cosine', 0)))
-                    ws.cell(row=row, column=6, value=float(feats.get('jaccard', 0)))
-                    row += 1
-            else:
-                ws.cell(row=row, column=1, value='No similarity suggestions')
-                row += 1
-
-            # Spacer before sections
-            row += 2
+            # Spacer before sections (removed duplicate unstyled Duplicates Review)
+            row += 0
 
             # Styled header for Duplicates Review
             hdr = ws.cell(row=row, column=1, value="Duplicates Review (subject-local pairs)")
@@ -1244,7 +1228,7 @@ class SupioHarmonizedWorkbookGenerator:
                 cell = ws.cell(row=row, column=col)
                 cell.border = Border(top=Side(style="thin"), bottom=Side(style="thin"))
             row += 1
-            headers2 = ["Subject","Theme A","Theme B","Score","Cosine","Jaccard"]
+            headers2 = ["Subject","Theme A","Theme A Statement","Theme B","Theme B Statement","Score","Cosine","Jaccard"]
             for col, h in enumerate(headers2, 1):
                 cell = ws.cell(row=row, column=col, value=h)
                 cell.font = Font(bold=True)
@@ -1254,12 +1238,24 @@ class SupioHarmonizedWorkbookGenerator:
                 s2 = sim.sort_values(by='score', ascending=False)
                 for _, r in s2.iterrows():
                     ws.cell(row=row, column=1, value=r.get('subject'))
-                    ws.cell(row=row, column=2, value=r.get('theme_id'))
-                    ws.cell(row=row, column=3, value=r.get('other_theme_id'))
-                    ws.cell(row=row, column=4, value=float(r.get('score')))
+                    tida = r.get('theme_id'); tidb = r.get('other_theme_id')
+                    ws.cell(row=row, column=2, value=tida)
+                    # Look up statements from all_df
+                    try:
+                        stmt_a = all_df.loc[all_df['Theme ID'] == tida, 'Theme Statement'].iloc[0]
+                    except Exception:
+                        stmt_a = None
+                    ws.cell(row=row, column=3, value=str(stmt_a) if stmt_a is not None else '')
+                    ws.cell(row=row, column=4, value=tidb)
+                    try:
+                        stmt_b = all_df.loc[all_df['Theme ID'] == tidb, 'Theme Statement'].iloc[0]
+                    except Exception:
+                        stmt_b = None
+                    ws.cell(row=row, column=5, value=str(stmt_b) if stmt_b is not None else '')
+                    ws.cell(row=row, column=6, value=float(r.get('score')))
                     feats = r.get('features_json') or {}
-                    ws.cell(row=row, column=5, value=float(feats.get('cosine', 0)))
-                    ws.cell(row=row, column=6, value=float(feats.get('jaccard', 0)))
+                    ws.cell(row=row, column=7, value=float(feats.get('cosine', 0)))
+                    ws.cell(row=row, column=8, value=float(feats.get('jaccard', 0)))
                     row += 1
             else:
                 ws.cell(row=row, column=1, value='No similarity suggestions')
@@ -1289,7 +1285,7 @@ class SupioHarmonizedWorkbookGenerator:
                 grp = all_df[all_df['Subject'].astype(str) == subj]
                 # Section header with density badge
                 density = density_per_subject.get(subj, 0.0)
-                header_text = f"{subj}  (Duplicate Density: {density:.2f})"
+                header_text = f"{subj}  (Duplicate Density: {density:.2f})" if density > 0 else str(subj)
                 ws.cell(row=row, column=1, value=header_text).font = Font(bold=True)
                 row += 1
                 for _, theme in grp.iterrows():
