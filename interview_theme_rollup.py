@@ -18,6 +18,11 @@ class RollupResult:
 	unclustered: pd.DataFrame  # themes that did not meet cluster threshold or size
 
 
+_STOPWORDS = {
+	'and','or','but','the','a','an','to','of','for','in','on','at','by','with','from','as','is','are','was','were','be','been','being','that','this','it','they','we','you','i','their','our','your','his','her','its','not','no','do','does','did','have','has','had'
+}
+
+
 def _normalize_text(text: str) -> str:
 	"""Normalize theme text to reduce over-specificity while preserving semantics.
 	Lowercase, mask urls/emails/numbers/dates, map brand/provider tokens to placeholders,
@@ -53,36 +58,52 @@ def _normalize_text(text: str) -> str:
 	return s
 
 
-def _cluster_by_threshold(embeddings: List[List[float]], threshold: float) -> List[int]:
-	"""Greedy clustering: assign each item to first sufficiently similar prior item; otherwise new cluster."""
+def _tokens(s: str) -> set:
+	parts = [p for p in re.split(r'\s+', s) if p and p not in _STOPWORDS]
+	return set(parts)
+
+
+def _jaccard(a: set, b: set) -> float:
+	if not a or not b:
+		return 0.0
+	inter = len(a & b)
+	union = len(a | b)
+	return inter / union if union else 0.0
+
+
+def _cluster_by_threshold(embeddings: List[List[float]], tokens: List[set], threshold: float, min_token_overlap: float) -> List[int]:
+	"""Greedy clustering with token-overlap gate to avoid over-merging."""
 	assignments: List[int] = [-1] * len(embeddings)
 	centroids: List[List[float]] = []
+	centroid_tokens: List[set] = []
 	mgr = EmbeddingManager()
 	for i, emb in enumerate(embeddings):
 		if emb is None:
 			assignments[i] = -1
 			continue
-		# Try to assign to an existing centroid
 		best_idx = -1
 		best_sim = -1.0
 		for c_idx, c in enumerate(centroids):
-			s = mgr.calculate_cosine_similarity(emb, c)
-			if s > best_sim:
-				best_sim = s
+			cos = mgr.calculate_cosine_similarity(emb, c)
+			jac = _jaccard(tokens[i], centroid_tokens[c_idx])
+			if cos >= threshold and jac >= min_token_overlap and cos > best_sim:
+				best_sim = cos
 				best_idx = c_idx
-		if best_sim >= threshold and best_idx >= 0:
+		if best_idx >= 0:
 			assignments[i] = best_idx
-			# Update centroid (simple average)
+			# Update centroid (simple average) and centroid tokens (union)
 			c = centroids[best_idx]
 			centroids[best_idx] = [(a + b) / 2.0 for a, b in zip(c, emb)]
+			centroid_tokens[best_idx] = centroid_tokens[best_idx] | tokens[i]
 		else:
 			# New cluster
 			centroids.append(emb)
+			centroid_tokens.append(set(tokens[i]))
 			assignments[i] = len(centroids) - 1
 	return assignments
 
 
-def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.88, min_cluster_size: int = 2, normalize: bool = True) -> RollupResult:
+def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.94, min_cluster_size: int = 2, normalize: bool = True, min_token_overlap: float = 0.15) -> RollupResult:
 	# Pull interview-level themes
 	try:
 		res = db.supabase.table('interview_level_themes').select(
@@ -100,7 +121,8 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 	texts_norm = [_normalize_text(t) for t in texts_original] if normalize else texts_original
 	mgr = EmbeddingManager()
 	embs = mgr.get_embeddings_batch(texts_norm, batch_size=50)
-	assignments = _cluster_by_threshold(embs, threshold)
+	toks = [_tokens(t) for t in texts_norm]
+	assignments = _cluster_by_threshold(embs, toks, threshold, min_token_overlap)
 	it_df = it_df.assign(cluster_id=assignments)
 
 	# Build clusters table with centroid-based canonical label (original text)
@@ -148,7 +170,7 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 	clusters = pd.DataFrame(clusters_rows)
 	if not clusters.empty:
 		clusters['share_of_interviews'] = clusters['interviews_covered'] / max(1, it_df['interview_id'].nunique())
-		clusters = clusters.sort_values(by=['interviews_covered','members_count'], ascending=[False, False]).reset_index(drop=True)
+		clusters = clusters.sort_values(by=['interviews_covered','members_count'], ascending=[False, False]).reset_index(drop_duplicate=True)
 	members = pd.DataFrame(members_rows)
 
 	# Unclustered = items with cluster_id == -1 or in clusters smaller than min size
