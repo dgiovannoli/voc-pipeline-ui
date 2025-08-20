@@ -101,7 +101,7 @@ def build_pairs(df: pd.DataFrame) -> pd.DataFrame:
     return out.drop(columns=['pair_key'])
 
 
-def score_pairs(pairs: pd.DataFrame, mgr: EmbeddingManager, min_cos: float = 0.82, min_jacc: float = 0.30) -> pd.DataFrame:
+def score_pairs(pairs: pd.DataFrame, mgr: EmbeddingManager, min_cos: float = 0.85, min_jacc: float = 0.35) -> pd.DataFrame:
     if pairs.empty:
         return pairs
     texts_a = pairs['theme_statement_a'].astype(str).tolist()
@@ -132,7 +132,7 @@ def score_pairs(pairs: pd.DataFrame, mgr: EmbeddingManager, min_cos: float = 0.8
     pairs['jaccard'] = jacc
     pairs['domain_overlap'] = domain_overlap
     # Hard precision gates
-    gated = pairs[(pairs['cosine'] >= min_cos) & (pairs['jaccard'] >= min_jacc) & (pairs['domain_overlap'] >= 1)]
+    gated = pairs[(pairs['cosine'] >= min_cos) & (pairs['jaccard'] >= min_jacc) & (pairs['domain_overlap'] >= 2)]
     if gated.empty:
         return gated
     # Composite
@@ -147,7 +147,7 @@ def score_pairs(pairs: pd.DataFrame, mgr: EmbeddingManager, min_cos: float = 0.8
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--client', required=True)
-    ap.add_argument('--min-score', type=float, default=0.78)
+    ap.add_argument('--min-score', type=float, default=0.82)
     args = ap.parse_args()
 
     db = SupabaseDatabase()
@@ -180,7 +180,7 @@ def main():
         print('No pairs to score')
         return 0
 
-    pairs = score_pairs(pairs, mgr, min_cos=0.82, min_jacc=0.30)
+    pairs = score_pairs(pairs, mgr, min_cos=0.85, min_jacc=0.35)
     # If nothing passed the gates, exit early
     if pairs.empty or 'score' not in pairs.columns:
         print('No candidate pairs after precision gates')
