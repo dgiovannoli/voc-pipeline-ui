@@ -604,9 +604,7 @@ class SupioHarmonizedWorkbookGenerator:
                         qbase['comp_ok'] = True
                     # Staged thresholds: (sim, jacc, len_min, require_comp)
                     stages = [
-                        (0.85, 0.20, 40, True),
-                        (0.82, 0.15, 40, False),
-                        (0.80, 0.10, 30, False),
+                        (0.80, 0.10, 40, True)
                     ]
                     chosen = None
                     for sim_thr, j_thr, lmin, comp_req in stages:
