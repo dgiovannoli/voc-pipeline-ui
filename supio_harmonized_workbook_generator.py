@@ -1123,7 +1123,16 @@ class SupioHarmonizedWorkbookGenerator:
                 r_df['Subject'] = r_df.get('harmonized_subject','Research')
                 r_df['Subject'] = r_df['Subject'].astype(str).str.replace(r'^DISCOVERED:\s*', '', regex=True)
                 r_df['Subject'] = r_df['Subject'].replace({'ci': 'Competitive Intelligence', 'CI': 'Competitive Intelligence'})
-                r_df['Source'] = r_df.get('origin','research').map(lambda x: 'Research' if x=='research' and not str(r_df.get('harmonized_subject','')).startswith('DISCOVERED:') else 'Discovered')
+                
+                # Categorize themes correctly: Research vs Discovered based on harmonized_subject
+                def categorize_theme(row):
+                    harmonized_subject = str(row.get('harmonized_subject', ''))
+                    if harmonized_subject.startswith('DISCOVERED:'):
+                        return 'Discovered'
+                    else:
+                        return 'Research'
+                
+                r_df['Source'] = r_df.apply(categorize_theme, axis=1)
                 r_df['Evidence Count'] = r_df.get('supporting_quotes').apply(lambda x: len(x) if isinstance(x, list) else 0)
                 r_df['Companies'] = r_df.get('company_coverage').apply(lambda x: len(x) if isinstance(x, list) else 0)
                 
@@ -1134,8 +1143,8 @@ class SupioHarmonizedWorkbookGenerator:
                 
                 def format_theme_id(row):
                     nonlocal research_counter, discovered_counter
-                    origin = row.get('origin', 'research')
-                    if origin == 'research':
+                    source = row.get('Source', 'Research')
+                    if source == 'Research':
                         # For research themes, use sequential numbering like the Research Themes tab
                         counter = research_counter
                         research_counter += 1
