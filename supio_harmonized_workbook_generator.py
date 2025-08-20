@@ -521,6 +521,94 @@ class SupioHarmonizedWorkbookGenerator:
             else:
                 ws.cell(row=r, column=1, value="(none)")
 
+            # Spacer then related quotes per cluster
+            r += 2
+            ws.cell(row=r, column=1, value="Related Quotes per Cluster (for review)")
+            ws.cell(row=r, column=1).font = Font(bold=True, size=12)
+            r += 1
+            headers = [
+                'Cluster ID','Response ID','Similarity','Company','Interviewee','Verbatim','Sentiment','Deal Status','Suggested Rank','Decision','Notes'
+            ]
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=r, column=col, value=h)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            # Decision dropdown
+            r += 1
+            dv_quote = DataValidation(type="list", formula1='"FEATURED,SUPPORTING,EXCLUDE"', allow_blank=True)
+            ws.add_data_validation(dv_quote)
+            # Prepare quotes and embeddings
+            try:
+                qr = self.db.supabase.table('stage1_data_responses').select(
+                    'response_id,company,interviewee_name,verbatim_response,sentiment,deal_status,impact_score'
+                ).eq('client_id', self.client_id).execute()
+                quotes_df = pd.DataFrame(qr.data or [])
+            except Exception:
+                quotes_df = pd.DataFrame()
+            if not quotes_df.empty:
+                mgr = EmbeddingManager()
+                quote_texts = quotes_df.get('verbatim_response', pd.Series(dtype=str)).fillna('').astype(str).tolist()
+                quote_embs = mgr.get_embeddings_batch(quote_texts, batch_size=100)
+                # Impact/sent for rank tie-break
+                quotes_df['impact_score'] = pd.to_numeric(quotes_df.get('impact_score', 0), errors='coerce').fillna(0)
+                sent_map = {'very_positive': 1.0, 'positive': 0.8, 'neutral': 0.4, 'negative': 0.8, 'very_negative': 1.0}
+                quotes_df['sent_strength'] = quotes_df.get('sentiment', '').map(sent_map).fillna(0.5)
+                max_imp = float(quotes_df['impact_score'].max() or 1.0)
+                if max_imp < 1.0:
+                    max_imp = 1.0
+                quotes_df['impact_norm'] = quotes_df['impact_score'] / max_imp
+                # For each cluster, compute centroid from member themes
+                for _, crow in clusters.iterrows():
+                    cid = int(crow.get('cluster_id'))
+                    try:
+                        mems = roll.members[roll.members['cluster_id'] == cid]
+                    except Exception:
+                        mems = None
+                    if mems is not None and not mems.empty:
+                        mem_texts = mems['member_theme'].astype(str).tolist()
+                        mem_embs = mgr.get_embeddings_batch(mem_texts, batch_size=50)
+                        valid = [e for e in mem_embs if e is not None]
+                        if valid:
+                            centroid = [sum(vals) / len(valid) for vals in zip(*valid)]
+                        else:
+                            centroid = None
+                    else:
+                        centroid = None
+                    if centroid is None:
+                        continue
+                    # Rank quotes by similarity
+                    sims = []
+                    for e in quote_embs:
+                        sims.append(mgr.calculate_cosine_similarity(e, centroid) if e is not None else 0.0)
+                    qsub = quotes_df.copy()
+                    qsub['similarity'] = sims
+                    qsub['rank_score'] = 0.8 * qsub['similarity'] + 0.2 * (0.7 * qsub['impact_norm'] + 0.3 * qsub['sent_strength'])
+                    qsub = qsub.sort_values(by='rank_score', ascending=False)
+                    picks = []
+                    per_iv = {}
+                    for _, q in qsub.iterrows():
+                        if q['similarity'] < 0.60:
+                            continue
+                        iv = q.get('interviewee_name') or 'unknown'
+                        if per_iv.get(iv, 0) >= 2:
+                            continue
+                        picks.append(q)
+                        per_iv[iv] = per_iv.get(iv, 0) + 1
+                        if len(picks) >= 5:
+                            break
+                    for q in picks:
+                        ws.cell(row=r, column=1, value=cid)
+                        ws.cell(row=r, column=2, value=q.get('response_id'))
+                        ws.cell(row=r, column=3, value=float(q.get('similarity')))
+                        ws.cell(row=r, column=4, value=q.get('company'))
+                        ws.cell(row=r, column=5, value=q.get('interviewee_name'))
+                        ws.cell(row=r, column=6, value=q.get('verbatim_response'))
+                        ws.cell(row=r, column=7, value=q.get('sentiment'))
+                        ws.cell(row=r, column=8, value=q.get('deal_status'))
+                        ws.cell(row=r, column=9, value=None)
+                        dv_quote.add(f"J{r}:J{r}")
+                        r += 1
+
             # Widths
             ws.column_dimensions['A'].width = 14
             ws.column_dimensions['B'].width = 80
