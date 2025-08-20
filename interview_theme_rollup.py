@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Dict, Any, Tuple
 import pandas as pd
+import re
 
 from embedding_utils import EmbeddingManager
 from supabase_database import SupabaseDatabase
@@ -15,6 +16,41 @@ class RollupResult:
 	clusters: pd.DataFrame
 	members: pd.DataFrame
 	unclustered: pd.DataFrame  # themes that did not meet cluster threshold or size
+
+
+def _normalize_text(text: str) -> str:
+	"""Normalize theme text to reduce over-specificity while preserving semantics.
+	Lowercase, mask urls/emails/numbers/dates, map brand/provider tokens to placeholders,
+	simplify common synonyms (api/webhook -> api, 3pl/wms/warehouse -> 3pl),
+	and strip excessive punctuation.
+	"""
+	if not text:
+		return ""
+	s = str(text).lower()
+	# URLs/emails
+	s = re.sub(r'https?://\S+', ' [url] ', s)
+	s = re.sub(r'\b[\w\.-]+@[\w\.-]+\.[a-z]{2,}\b', ' [email] ', s)
+	# Numbers/dates
+	s = re.sub(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', ' [date] ', s)
+	s = re.sub(r'\b\d{4}-\d{2}-\d{2}\b', ' [date] ', s)
+	s = re.sub(r'\b\d+[\d,\.]*\b', ' [num] ', s)
+	# Brands/providers to [brand]
+	brands = [
+		'shipstation','easypost','pitney bowes','stamps','shippo','xps','endicia','usps','ups','fedex','dhl'
+	]
+	for b in brands:
+		s = re.sub(rf'\b{re.escape(b)}\b', ' [brand] ', s)
+	# Channel keywords
+	s = re.sub(r'\bwebhook(s)?\b', ' api ', s)
+	s = re.sub(r'\bportal\b', ' api ', s)
+	s = re.sub(r'\bapi(s)?\b', ' api ', s)
+	s = re.sub(r'\b3pl(s)?\b', ' 3pl ', s)
+	s = re.sub(r'\bwms\b', ' 3pl ', s)
+	s = re.sub(r'\bwarehouse management\b', ' 3pl ', s)
+	# Strip extra punctuation/whitespace
+	s = re.sub(r'[^a-z\[\] ]+', ' ', s)
+	s = re.sub(r'\s+', ' ', s).strip()
+	return s
 
 
 def _cluster_by_threshold(embeddings: List[List[float]], threshold: float) -> List[int]:
@@ -46,7 +82,7 @@ def _cluster_by_threshold(embeddings: List[List[float]], threshold: float) -> Li
 	return assignments
 
 
-def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.88, min_cluster_size: int = 2) -> RollupResult:
+def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: float = 0.88, min_cluster_size: int = 2, normalize: bool = True) -> RollupResult:
 	# Pull interview-level themes
 	try:
 		res = db.supabase.table('interview_level_themes').select(
@@ -59,14 +95,15 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 	if it_df.empty:
 		return RollupResult(interview_themes=it_df, clusters=pd.DataFrame(), members=pd.DataFrame(), unclustered=pd.DataFrame())
 
-	# Compute embeddings
+	# Compute embeddings on normalized text, preserve originals
+	texts_original = it_df['theme_statement'].astype(str).tolist()
+	texts_norm = [_normalize_text(t) for t in texts_original] if normalize else texts_original
 	mgr = EmbeddingManager()
-	texts = it_df['theme_statement'].astype(str).tolist()
-	embs = mgr.get_embeddings_batch(texts, batch_size=50)
+	embs = mgr.get_embeddings_batch(texts_norm, batch_size=50)
 	assignments = _cluster_by_threshold(embs, threshold)
 	it_df = it_df.assign(cluster_id=assignments)
 
-	# Build clusters table with centroid-based canonical label
+	# Build clusters table with centroid-based canonical label (original text)
 	grp = it_df.groupby('cluster_id')
 	clusters_rows = []
 	members_rows = []
@@ -75,16 +112,16 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 		if cid < 0:
 			continue
 		idxs = g.index.tolist()
-		g_texts = g['theme_statement'].astype(str).tolist()
+		g_texts_orig = [texts_original[i] for i in idxs]
 		g_embs = [embs[i] for i in idxs]
 		# Skip clusters smaller than min size
-		if len(g_texts) < max(1, min_cluster_size):
+		if len(g_texts_orig) < max(1, min_cluster_size):
 			continue
 		# Compute centroid
 		valid_embs = [e for e in g_embs if e is not None]
 		if valid_embs:
 			centroid = [sum(vals) / len(valid_embs) for vals in zip(*valid_embs)]
-			# Pick text with highest similarity to centroid
+			# Pick ORIGINAL text whose normalized embedding is closest to centroid
 			best_i = 0
 			best_sim = -1.0
 			for i_local, e in enumerate(g_embs):
@@ -94,18 +131,18 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 				if s > best_sim:
 					best_sim = s
 					best_i = i_local
-			canonical = g_texts[best_i]
+			canonical = g_texts_orig[best_i]
 		else:
-			canonical = sorted(g_texts, key=lambda x: (-len(x), x))[0]
+			canonical = sorted(g_texts_orig, key=lambda x: (-len(x), x))[0]
 
 		clusters_rows.append({
 			'cluster_id': cid,
-			'members_count': len(g_texts),
+			'members_count': len(g_texts_orig),
 			'canonical_theme': canonical,
 			'interviews_covered': g['interview_id'].nunique(),
 		})
 		eligible_cluster_ids.add(cid)
-		for iv, t in zip(g['interview_id'].tolist(), g_texts):
+		for iv, t in zip(g['interview_id'].tolist(), g_texts_orig):
 			members_rows.append({'cluster_id': cid, 'interview_id': iv, 'member_theme': t})
 
 	clusters = pd.DataFrame(clusters_rows)
