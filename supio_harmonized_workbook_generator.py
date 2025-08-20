@@ -1206,6 +1206,35 @@ class SupioHarmonizedWorkbookGenerator:
                         'Duplicate Score': float(top['score'])
                     }
 
+            # Build theme-id → statement mapping (research + interview-level + cluster canonicals)
+            statement_by_id = {}
+            if not r_df.empty:
+                for _, rr in r_df.iterrows():
+                    tid = rr.get('Theme ID')
+                    stmt = rr.get('Theme Statement')
+                    if tid is not None and stmt is not None:
+                        statement_by_id[str(tid)] = str(stmt)
+            # interview-level themes for lookup in review table
+            try:
+                it_all = self.db.supabase.table('interview_level_themes').select('interview_id,theme_statement').eq('client_id', self.client_id).execute()
+                for row_it in (it_all.data or []):
+                    iid = str(row_it.get('interview_id') or '').strip()
+                    stmt = row_it.get('theme_statement')
+                    if iid and stmt:
+                        tid = f"{iid}::IT"
+                        # Keep the first seen statement; it is sufficient for quick review
+                        if tid not in statement_by_id:
+                            statement_by_id[tid] = str(stmt)
+            except Exception:
+                pass
+            # cluster canonicals
+            if not cl.empty:
+                for _, cr in cl.iterrows():
+                    cid = cr.get('cluster_id')
+                    cstmt = cr.get('canonical_theme')
+                    if cid is not None and cstmt is not None:
+                        statement_by_id[f"cluster_{int(cid)}::ITC"] = str(cstmt)
+
             # Compute duplicate density per subject (mean of top-3 scores)
             density_per_subject = {}
             if not sim.empty and 'subject' in sim.columns:
@@ -1237,20 +1266,20 @@ class SupioHarmonizedWorkbookGenerator:
             if not sim.empty:
                 s2 = sim.sort_values(by='score', ascending=False)
                 for _, r in s2.iterrows():
-                    ws.cell(row=row, column=1, value=r.get('subject'))
+                    subj_val = str(r.get('subject') or '')
+                    # Normalize subject label in review
+                    if subj_val.startswith('DISCOVERED:'):
+                        subj_val = subj_val.split(':', 1)[1].strip()
+                    if subj_val.lower() == 'ci':
+                        subj_val = 'Competitive Intelligence'
+                    ws.cell(row=row, column=1, value=subj_val)
                     tida = r.get('theme_id'); tidb = r.get('other_theme_id')
                     ws.cell(row=row, column=2, value=tida)
-                    # Look up statements from all_df
-                    try:
-                        stmt_a = all_df.loc[all_df['Theme ID'] == tida, 'Theme Statement'].iloc[0]
-                    except Exception:
-                        stmt_a = None
+                    # Look up statements from mapping
+                    stmt_a = statement_by_id.get(str(tida))
                     ws.cell(row=row, column=3, value=str(stmt_a) if stmt_a is not None else '')
                     ws.cell(row=row, column=4, value=tidb)
-                    try:
-                        stmt_b = all_df.loc[all_df['Theme ID'] == tidb, 'Theme Statement'].iloc[0]
-                    except Exception:
-                        stmt_b = None
+                    stmt_b = statement_by_id.get(str(tidb))
                     ws.cell(row=row, column=5, value=str(stmt_b) if stmt_b is not None else '')
                     ws.cell(row=row, column=6, value=float(r.get('score')))
                     feats = r.get('features_json') or {}
