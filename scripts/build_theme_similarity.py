@@ -181,6 +181,10 @@ def main():
         return 0
 
     pairs = score_pairs(pairs, mgr, min_cos=0.82, min_jacc=0.30)
+    # If nothing passed the gates, exit early
+    if pairs.empty or 'score' not in pairs.columns:
+        print('No candidate pairs after precision gates')
+        return 0
     # Final score threshold
     pairs = pairs[pairs['score'] >= args.min_score]
 
