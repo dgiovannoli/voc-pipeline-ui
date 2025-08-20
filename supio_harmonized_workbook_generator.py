@@ -1111,7 +1111,10 @@ class SupioHarmonizedWorkbookGenerator:
             themes = [t for t in (rt.data or []) if not str(t.get('section','')).startswith('MERGED_INTO:')]
             r_df = pd.DataFrame(themes)
             if not r_df.empty:
+                # Normalize Subject labels
                 r_df['Subject'] = r_df.get('harmonized_subject','Research')
+                r_df['Subject'] = r_df['Subject'].astype(str).str.replace(r'^DISCOVERED:\s*', '', regex=True)
+                r_df['Subject'] = r_df['Subject'].replace({'ci': 'Competitive Intelligence', 'CI': 'Competitive Intelligence'})
                 r_df['Source'] = r_df.get('origin','research').map(lambda x: 'Research' if x=='research' and not str(r_df.get('harmonized_subject','')).startswith('DISCOVERED:') else 'Discovered')
                 r_df['Evidence Count'] = r_df.get('supporting_quotes').apply(lambda x: len(x) if isinstance(x, list) else 0)
                 r_df['Companies'] = r_df.get('company_coverage').apply(lambda x: len(x) if isinstance(x, list) else 0)
@@ -1230,6 +1233,48 @@ class SupioHarmonizedWorkbookGenerator:
                 row += 1
 
             # Spacer before sections
+            row += 2
+
+            # Styled header for Duplicates Review
+            hdr = ws.cell(row=row, column=1, value="Duplicates Review (subject-local pairs)")
+            hdr.font = Font(bold=True)
+            hdr.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
+            # draw a border across header columns A-F
+            for col in range(1, 7):
+                cell = ws.cell(row=row, column=col)
+                cell.border = Border(top=Side(style="thin"), bottom=Side(style="thin"))
+            row += 1
+            headers2 = ["Subject","Theme A","Theme B","Score","Cosine","Jaccard"]
+            for col, h in enumerate(headers2, 1):
+                cell = ws.cell(row=row, column=col, value=h)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            row += 1
+            if not sim.empty:
+                s2 = sim.sort_values(by='score', ascending=False)
+                for _, r in s2.iterrows():
+                    ws.cell(row=row, column=1, value=r.get('subject'))
+                    ws.cell(row=row, column=2, value=r.get('theme_id'))
+                    ws.cell(row=row, column=3, value=r.get('other_theme_id'))
+                    ws.cell(row=row, column=4, value=float(r.get('score')))
+                    feats = r.get('features_json') or {}
+                    ws.cell(row=row, column=5, value=float(feats.get('cosine', 0)))
+                    ws.cell(row=row, column=6, value=float(feats.get('jaccard', 0)))
+                    row += 1
+            else:
+                ws.cell(row=row, column=1, value='No similarity suggestions')
+                row += 1
+
+            # Spacer before sections
+            row += 2
+
+            # Separator header for All Themes area
+            sep = ws.cell(row=row, column=1, value="All Themes (by Subject)")
+            sep.font = Font(bold=True)
+            sep.fill = PatternFill(start_color="DDEBF7", end_color="DDEBF7", fill_type="solid")
+            for col in range(1, 11):
+                cell = ws.cell(row=row, column=col)
+                cell.border = Border(top=Side(style="thin"), bottom=Side(style="thin"))
             row += 2
 
             # Decision dropdown (applies to the whole sheet)
