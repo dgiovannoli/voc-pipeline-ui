@@ -60,19 +60,48 @@ def rollup_interview_themes(db: SupabaseDatabase, client_id: str, threshold: flo
 
 	# Compute embeddings
 	mgr = EmbeddingManager()
-	embs = mgr.get_embeddings_batch(it_df['theme_statement'].astype(str).tolist(), batch_size=50)
+	texts = it_df['theme_statement'].astype(str).tolist()
+	embs = mgr.get_embeddings_batch(texts, batch_size=50)
 	assignments = _cluster_by_threshold(embs, threshold)
 	it_df = it_df.assign(cluster_id=assignments)
 
-	# Build clusters table
+	# Build clusters table with centroid-based canonical label
 	grp = it_df.groupby('cluster_id')
-	clusters = grp.agg(
-		members_count=('theme_statement', 'count'),
-		canonical_theme=('theme_statement', lambda s: sorted(s, key=lambda x: (-len(x), x))[0]),
-		interviews_covered=('interview_id', lambda s: s.nunique())
-	).reset_index()
+	clusters_rows = []
+	members_rows = []
+	for cid, g in grp:
+		idxs = g.index.tolist()
+		g_texts = g['theme_statement'].astype(str).tolist()
+		g_embs = [embs[i] for i in idxs]
+		# Compute centroid
+		valid_embs = [e for e in g_embs if e is not None]
+		if valid_embs:
+			centroid = [sum(vals) / len(valid_embs) for vals in zip(*valid_embs)]
+			# Pick text with highest similarity to centroid
+			best_i = 0
+			best_sim = -1.0
+			for i_local, e in enumerate(g_embs):
+				if e is None:
+					continue
+				s = mgr.calculate_cosine_similarity(e, centroid)
+				if s > best_sim:
+					best_sim = s
+					best_i = i_local
+			canonical = g_texts[best_i]
+		else:
+			canonical = sorted(g_texts, key=lambda x: (-len(x), x))[0]
+
+		clusters_rows.append({
+			'cluster_id': cid,
+			'members_count': len(g_texts),
+			'canonical_theme': canonical,
+			'interviews_covered': g['interview_id'].nunique(),
+		})
+		for t in g_texts:
+			members_rows.append({'cluster_id': cid, 'interview_id': g.iloc[0]['interview_id'], 'member_theme': t})
+
+	clusters = pd.DataFrame(clusters_rows)
 	clusters['share_of_interviews'] = clusters['interviews_covered'] / max(1, it_df['interview_id'].nunique())
 	clusters = clusters.sort_values(by=['interviews_covered','members_count'], ascending=[False, False]).reset_index(drop=True)
-
-	members = it_df.rename(columns={'theme_statement': 'member_theme'})[['cluster_id','interview_id','member_theme']]
+	members = pd.DataFrame(members_rows)
 	return RollupResult(interview_themes=it_df[['interview_id','theme_statement']], clusters=clusters, members=members) 

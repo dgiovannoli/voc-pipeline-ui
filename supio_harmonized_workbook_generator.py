@@ -96,6 +96,16 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("🏢 Step 7: Adding Company Overview tab...")
             self._add_company_overview_tab()
 
+            # Remove default Summary sheet if present
+            try:
+                wb_cleanup = load_workbook(self.workbook_path)
+                if 'Summary' in wb_cleanup.sheetnames:
+                    wb_cleanup.remove(wb_cleanup['Summary'])
+                    wb_cleanup.save(self.workbook_path)
+                    logger.info("🧹 Removed Summary sheet")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not remove Summary sheet: {e}")
+
             # Step 8: Apply professional styling
             logger.info("🎨 Step 8: Applying professional styling...")
             self._apply_professional_styling()
