@@ -96,6 +96,10 @@ class SupioHarmonizedWorkbookGenerator:
             logger.info("🏢 Step 7: Adding Company Overview tab...")
             self._add_company_overview_tab()
 
+            # Add Interview Cluster Evidence sheet
+            logger.info("🧾 Adding Interview Cluster Evidence tab...")
+            self._add_interview_cluster_evidence_tab()
+
             # Remove default Summary sheet if present
             try:
                 wb_cleanup = load_workbook(self.workbook_path)
@@ -1345,6 +1349,85 @@ class SupioHarmonizedWorkbookGenerator:
                 if len(selected) >= min_quotes:
                     break
         return selected
+
+    def _add_interview_cluster_evidence_tab(self):
+        """Create a sheet that lists candidate quotes per interview cluster for analyst tagging."""
+        try:
+            wb = load_workbook(self.workbook_path)
+            if 'Interview Cluster Evidence' in wb.sheetnames:
+                ws_old = wb['Interview Cluster Evidence']
+                wb.remove(ws_old)
+            ws = wb.create_sheet('Interview Cluster Evidence')
+
+            # Get clusters from roll-up
+            roll = rollup_interview_themes(self.db, self.client_id)
+            clusters = roll.clusters
+            if clusters is None or clusters.empty:
+                ws['A1'] = 'No clusters available'
+                wb.save(self.workbook_path)
+                return
+
+            # Fetch all quotes for candidate scoring
+            qr = self.db.supabase.table('stage1_data_responses').select(
+                'response_id,company,interviewee_name,verbatim_response,sentiment,deal_status,impact_score'
+            ).eq('client_id', self.client_id).execute()
+            quotes_df = pd.DataFrame(qr.data or [])
+            if quotes_df.empty:
+                ws['A1'] = 'No quotes available'
+                wb.save(self.workbook_path)
+                return
+
+            # Simple candidate scoring heuristic: impact + sentiment strength
+            quotes_df['impact_score'] = pd.to_numeric(quotes_df.get('impact_score', 0), errors='coerce').fillna(0)
+            sent_map = {'very_positive': 1.0, 'positive': 0.8, 'neutral': 0.4, 'negative': 0.8, 'very_negative': 1.0}
+            quotes_df['sent_strength'] = quotes_df.get('sentiment', '').map(sent_map).fillna(0.5)
+            quotes_df['score'] = 0.7 * (quotes_df['impact_score'] / quotes_df['impact_score'].max().clip(lower=1)) + 0.3 * quotes_df['sent_strength']
+
+            # Header
+            headers = [
+                'Cluster ID','Canonical Theme','Response ID','Company','Interviewee','Verbatim','Sentiment','Deal Status','Suggested Rank','Decision','Notes'
+            ]
+            for col, h in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=h)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+
+            # Dropdown for Decision
+            dv = DataValidation(type="list", formula1='"FEATURED,SUPPORTING,EXCLUDE"', allow_blank=True)
+            ws.add_data_validation(dv)
+            dv.add(f"J2:J1048576")
+
+            # Pre-fill candidates: top 8 per cluster, max 2 per interviewee
+            row = 2
+            for _, c in clusters.iterrows():
+                cid = int(c.get('cluster_id'))
+                theme = c.get('canonical_theme')
+                # Pick top quotes globally by score as a simple starting point
+                qsub = quotes_df.sort_values(by='score', ascending=False).copy()
+                picks = []
+                per_iv = {}
+                for _, q in qsub.iterrows():
+                    iv = q.get('interviewee_name') or 'unknown'
+                    if per_iv.get(iv, 0) >= 2:
+                        continue
+                    picks.append(q)
+                    per_iv[iv] = per_iv.get(iv, 0) + 1
+                    if len(picks) >= 8:
+                        break
+                for q in picks:
+                    ws.cell(row=row, column=1, value=cid)
+                    ws.cell(row=row, column=2, value=theme)
+                    ws.cell(row=row, column=3, value=q.get('response_id'))
+                    ws.cell(row=row, column=4, value=q.get('company'))
+                    ws.cell(row=row, column=5, value=q.get('interviewee_name'))
+                    ws.cell(row=row, column=6, value=q.get('verbatim_response'))
+                    ws.cell(row=row, column=7, value=q.get('sentiment'))
+                    ws.cell(row=row, column=8, value=q.get('deal_status'))
+                    ws.cell(row=row, column=9, value=None)
+                    row += 1
+            wb.save(self.workbook_path)
+        except Exception as e:
+            logger.warning(f"⚠️ Interview Cluster Evidence tab failed: {e}")
 
 def main():
     """Main entry point"""

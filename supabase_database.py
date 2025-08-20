@@ -1992,6 +1992,40 @@ class SupabaseDatabase:
         except Exception:
             return pd.DataFrame()
 
+    def upsert_interview_cluster_evidence(self,
+                                          client_id: str,
+                                          cluster_id: int,
+                                          response_id: str,
+                                          evidence_label: Optional[str] = None,
+                                          notes: Optional[str] = None,
+                                          rank: Optional[int] = None) -> bool:
+        """Upsert one evidence decision for a cluster/response."""
+        try:
+            data = {
+                'client_id': client_id,
+                'cluster_id': int(cluster_id),
+                'response_id': response_id,
+                'evidence_label': evidence_label,
+                'notes': notes,
+                'rank': rank,
+                'updated_at': datetime.now().isoformat()
+            }
+            # Remove None values so we don't overwrite unintentionally
+            data = {k: v for k, v in data.items() if v is not None or k in ('client_id','cluster_id','response_id')}
+            self.supabase.table('interview_cluster_evidence').upsert(data, on_conflict='client_id,cluster_id,response_id').execute()
+            return True
+        except Exception as e:
+            logger.warning(f"⚠️ upsert_interview_cluster_evidence failed: {e}")
+            return False
+
+    def fetch_interview_cluster_evidence(self, client_id: str) -> pd.DataFrame:
+        """Fetch existing evidence decisions for a client."""
+        try:
+            res = self.supabase.table('interview_cluster_evidence').select('*').eq('client_id', client_id).execute()
+            return pd.DataFrame(res.data or [])
+        except Exception:
+            return pd.DataFrame()
+
 def create_supabase_database() -> SupabaseDatabase:
     """Factory function to create Supabase database instance"""
     return SupabaseDatabase() 
