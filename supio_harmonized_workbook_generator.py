@@ -463,11 +463,15 @@ class SupioHarmonizedWorkbookGenerator:
             ws['A2'].font = Font(italic=True, size=10)
 
             # Top table: clusters
-            ws['A4'] = "Cluster ID"; ws['B4'] = "Canonical Theme"; ws['C4'] = "Interviews Covered"; ws['D4'] = "Members Count"; ws['E4'] = "Share of Interviews"
-            for col in range(1, 6):
+            ws['A4'] = "Cluster ID"; ws['B4'] = "Canonical Theme"; ws['C4'] = "Interviews Covered"; ws['D4'] = "Members Count"; ws['E4'] = "Share of Interviews"; ws['F4'] = "Theme Decision"; ws['G4'] = "Notes"
+            for col in range(1, 8):
                 cell = ws.cell(row=4, column=col)
                 cell.font = Font(bold=True)
                 cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+            # Dropdown for Theme Decision similar to Research Themes
+            dv_theme = DataValidation(type="list", formula1='"VALIDATED,FEATURED,REJECTED,NEEDS REVISION"', allow_blank=True)
+            ws.add_data_validation(dv_theme)
+            dv_theme.add(f"F5:F1048576")
             r = 5
             for _, row in clusters.iterrows():
                 ws.cell(row=r, column=1, value=int(row.get('cluster_id')))
@@ -475,6 +479,7 @@ class SupioHarmonizedWorkbookGenerator:
                 ws.cell(row=r, column=3, value=int(row.get('interviews_covered')))
                 ws.cell(row=r, column=4, value=int(row.get('members_count')))
                 ws.cell(row=r, column=5, value=float(row.get('share_of_interviews')))
+                # Columns F (Theme Decision) and G (Notes) left blank for analyst input
                 r += 1
 
             # Spacer
@@ -502,7 +507,7 @@ class SupioHarmonizedWorkbookGenerator:
             ws.cell(row=r, column=1).font = Font(bold=True, size=12)
             r += 1
             ws['A'+str(r)] = "Interview ID"; ws['B'+str(r)] = "Theme"
-            for col in range(1, 3):
+            for col in range(1, 2 + 1):
                 cell = ws.cell(row=r, column=col)
                 cell.font = Font(bold=True)
                 cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
@@ -522,6 +527,8 @@ class SupioHarmonizedWorkbookGenerator:
             ws.column_dimensions['C'].width = 22
             ws.column_dimensions['D'].width = 16
             ws.column_dimensions['E'].width = 20
+            ws.column_dimensions['F'].width = 18
+            ws.column_dimensions['G'].width = 28
 
             wb.save(self.workbook_path)
             logger.info("✅ Interview Themes (Aggregated) tab added")
