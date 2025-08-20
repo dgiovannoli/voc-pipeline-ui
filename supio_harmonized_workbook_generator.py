@@ -480,6 +480,26 @@ class SupioHarmonizedWorkbookGenerator:
                 ws.cell(row=r, column=3, value=m.get('member_theme'))
                 r += 1
 
+            # Spacer then unclustered
+            r += 2
+            ws.cell(row=r, column=1, value="Unclustered Themes")
+            ws.cell(row=r, column=1).font = Font(bold=True, size=12)
+            r += 1
+            ws['A'+str(r)] = "Interview ID"; ws['B'+str(r)] = "Theme"
+            for col in range(1, 3):
+                cell = ws.cell(row=r, column=col)
+                cell.font = Font(bold=True)
+                cell.fill = PatternFill(start_color="EEEEEE", end_color="EEEEEE", fill_type="solid")
+            r += 1
+            un = roll.unclustered if hasattr(roll, 'unclustered') else None
+            if un is not None and not un.empty:
+                for _, row in un.iterrows():
+                    ws.cell(row=r, column=1, value=row.get('interview_id'))
+                    ws.cell(row=r, column=2, value=row.get('theme_statement'))
+                    r += 1
+            else:
+                ws.cell(row=r, column=1, value="(none)")
+
             # Widths
             ws.column_dimensions['A'].width = 14
             ws.column_dimensions['B'].width = 80
