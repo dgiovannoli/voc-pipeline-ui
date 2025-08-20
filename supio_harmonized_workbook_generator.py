@@ -13,6 +13,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Any
 import pandas as pd
+import re
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils.dataframe import dataframe_to_rows
@@ -43,6 +44,13 @@ class SupioHarmonizedWorkbookGenerator:
     """
     Supio HARMONIZED quality workbook generator
     """
+
+    _GENERIC_TERMS = {
+        'need','needs','needed','fast','faster','quick','quickly','easy','easier','easiest','good','great','nice','absolutely','perfect','really','best','help','use','work','works','working','awesome','cool','okay','ok','fine'
+    }
+    _COMPETITOR_LEXICON = {
+        'competitor','competitors','alternative','alternatives','other provider','other providers','switch','switching','vs','versus','compare','comparison','compared','against','rival','rivals'
+    }
 
     def __init__(self, client_id: str):
         self.client_id = client_id
@@ -560,6 +568,9 @@ class SupioHarmonizedWorkbookGenerator:
                 for _, crow in clusters.iterrows():
                     cid = int(crow.get('cluster_id'))
                     canonical = crow.get('canonical_theme')
+                    can_norm = self._normalize_for_match(canonical)
+                    theme_tokens = self._content_tokens(canonical)
+                    requires_comp = any(term in can_norm for term in self._COMPETITOR_LEXICON)
                     try:
                         mems = roll.members[roll.members['cluster_id'] == cid]
                     except Exception:
@@ -577,8 +588,28 @@ class SupioHarmonizedWorkbookGenerator:
                     sims = [mgr.calculate_cosine_similarity(e, centroid) if e is not None else 0.0 for e in quote_embs]
                     qsub = quotes_df.copy()
                     qsub['similarity'] = sims
-                    # Filter and rank: similarity >= 0.70, then rank by combined score
-                    qsub = qsub[qsub['similarity'] >= 0.80].copy()
+                    # Content gating: similarity >= 0.85, length >= 40, token overlap >= 0.2, contains at least one theme keyword
+                    qsub = qsub[qsub['similarity'] >= 0.85].copy()
+                    if qsub.empty:
+                        continue
+                    qsub['len_ok'] = qsub['verbatim_response'].astype(str).apply(lambda t: len(str(t)) >= 40)
+                    if requires_comp:
+                        qsub['comp_ok'] = qsub['verbatim_response'].astype(str).apply(lambda t: any(cx in self._normalize_for_match(t) for cx in self._COMPETITOR_LEXICON))
+                    else:
+                        qsub['comp_ok'] = True
+                    # token overlap
+                    theme_kw = {w for w in theme_tokens if ' ' in w or len(w) > 3}
+                    def _overlap_ok(t: str) -> bool:
+                        qt = self._content_tokens(t)
+                        if not qt:
+                            return False
+                        inter = len(qt & theme_kw)
+                        union = len(qt | theme_kw)
+                        jacc = (inter / union) if union else 0.0
+                        contains_kw = any(k in qt for k in theme_kw)
+                        return jacc >= 0.2 and contains_kw
+                    qsub['overlap_ok'] = qsub['verbatim_response'].astype(str).apply(_overlap_ok)
+                    qsub = qsub[qsub['len_ok'] & qsub['comp_ok'] & qsub['overlap_ok']]
                     if qsub.empty:
                         continue
                     qsub['rank_score'] = 0.8 * qsub['similarity'] + 0.2 * (0.7 * qsub['impact_norm'] + 0.3 * qsub['sent_strength'])
@@ -1561,6 +1592,35 @@ class SupioHarmonizedWorkbookGenerator:
             wb.save(self.workbook_path)
         except Exception as e:
             logger.warning(f"⚠️ Interview Cluster Evidence tab failed: {e}")
+
+    def _normalize_for_match(self, text: str) -> str:
+        if not text:
+            return ''
+        s = str(text).lower()
+        s = re.sub(r'https?://\S+', ' ', s)
+        s = re.sub(r'\b[\w\.-]+@[\w\.-]+\.[a-z]{2,}\b', ' ', s)
+        s = re.sub(r'\b\d{1,2}/\d{1,2}/\d{2,4}\b', ' ', s)
+        s = re.sub(r'\b\d{4}-\d{2}-\d{2}\b', ' ', s)
+        s = re.sub(r'\b\d+[\d,\.]*\b', ' ', s)
+        brands = ['shipstation','easypost','pitney bowes','stamps','shippo','xps','endicia','usps','ups','fedex','dhl']
+        for b in brands:
+            s = re.sub(rf'\b{re.escape(b)}\b', ' [brand] ', s)
+        s = re.sub(r'\bwebhook(s)?\b', ' api ', s)
+        s = re.sub(r'\bportal\b', ' api ', s)
+        s = re.sub(r'\bapi(s)?\b', ' api ', s)
+        s = re.sub(r'\b3pl(s)?\b', ' 3pl ', s)
+        s = re.sub(r'\bwms\b', ' 3pl ', s)
+        s = re.sub(r'\bwarehouse management\b', ' 3pl ', s)
+        s = re.sub(r'[^a-z\[\] ]+', ' ', s)
+        s = re.sub(r'\s+', ' ', s).strip()
+        return s
+
+    def _content_tokens(self, text: str) -> set:
+        s = self._normalize_for_match(text)
+        parts = [p for p in s.split() if p and p not in self._GENERIC_TERMS]
+        # include bigrams
+        bigrams = [f"{parts[i]} {parts[i+1]}" for i in range(len(parts)-1)] if len(parts) > 1 else []
+        return set(parts + bigrams)
 
 def main():
     """Main entry point"""
