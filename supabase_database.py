@@ -1881,8 +1881,16 @@ class SupabaseDatabase:
                 logger.warning(f"⚠️ interview_transcripts missing or upsert failed; trying interview_metadata.full_transcript: {e}")
                 # Fallback: store on interview_metadata if column exists
                 try:
-                    self.supabase.table('interview_metadata').update({'full_transcript': full_transcript}).eq('client_id', client_id).eq('interview_id', interview_id).execute()
-                    logger.info(f"✅ Stored full transcript for {interview_id} in interview_metadata.full_transcript")
+                    # Use 'raw_transcripts' column as per schema preference
+                    self.supabase.table('interview_metadata').upsert({
+                        'client_id': client_id,
+                        'interview_id': interview_id,
+                        'company': company,
+                        'interviewee_name': interviewee_name,
+                        'raw_transcripts': full_transcript,
+                        'metadata_updated_at': datetime.now().isoformat(),
+                    }).execute()
+                    logger.info(f"✅ Upserted full transcript for {interview_id} in interview_metadata.raw_transcripts")
                     return True
                 except Exception as e2:
                     logger.error(f"❌ Failed to store full transcript for {interview_id}: {e2}")
@@ -1903,8 +1911,12 @@ class SupabaseDatabase:
                 pass
             # Fallback
             try:
-                res2 = self.supabase.table('interview_metadata').select('client_id,interview_id,company,interviewee_name,full_transcript').eq('client_id', client_id).execute()
-                return pd.DataFrame(res2.data or [])
+                # Select raw_transcripts and alias it as full_transcript for consumers
+                res2 = self.supabase.table('interview_metadata').select('client_id,interview_id,company,interviewee_name,raw_transcripts').eq('client_id', client_id).execute()
+                df2 = pd.DataFrame(res2.data or [])
+                if not df2.empty and 'raw_transcripts' in df2.columns:
+                    df2 = df2.rename(columns={'raw_transcripts': 'full_transcript'})
+                return df2
             except Exception:
                 return pd.DataFrame()
         except Exception:

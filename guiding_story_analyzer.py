@@ -357,7 +357,10 @@ def build_guiding_story_payload(
 			**signals,
 		})
 
-	interview_level_df = pd.DataFrame(interview_rows).set_index("interview_id", drop=False)
+	interview_level_df = pd.DataFrame(interview_rows)
+	if interview_level_df.empty:  # NEW
+		return {"client_id": client_id, "generated_at": datetime.now(timezone.utc).isoformat(), "segments": {}, "interviews": [], "quotes": {}, "notes": "No interviews aggregated for guiding story."}
+	interview_level_df = interview_level_df.set_index("interview_id", drop=False)
 	interview_level_df["provider_indifference_index"] = compute_provider_indifference_index(interview_level_df[["channel_hits","price_efficiency_hits","provider_brand_hits"]])
 
 	segments = aggregate_segment_metrics(interview_level_df)

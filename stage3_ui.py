@@ -32,15 +32,34 @@ def _render_guiding_story_panel_stage3(client_id: str):
         return
     with st.expander("Compute Per-Interview Themes (full transcripts)", expanded=False):
         st.info("Extracts 5–7 themes per interview from the full transcript (if saved in Stage 1).")
-        if st.button("Compute Interview Themes", key="compute_interview_themes_stage3"):
-            try:
-                tx = _GUIDE_DB.fetch_interview_transcripts(client_id)
-                if tx is None or tx.empty:
-                    st.warning("No full transcripts found. Re-run Stage 1 to save Raw Transcript.")
-                else:
-                    st.success(f"Found {len(tx)} transcripts. Themes table will be populated by the offline job.")
-            except Exception as e:
-                st.warning(f"Interview themes precheck failed: {e}")
+        cols = st.columns(2)
+        with cols[0]:
+            if st.button("Compute Interview Themes", key="compute_interview_themes_stage3"):
+                try:
+                    tx = _GUIDE_DB.fetch_interview_transcripts(client_id)
+                    if tx is None or tx.empty:
+                        st.warning("No full transcripts found. Re-run Stage 1 to save Raw Transcript.")
+                    else:
+                        st.success(f"Found {len(tx)} transcripts. Themes table will be populated by the offline job.")
+                except Exception as e:
+                    st.warning(f"Interview themes precheck failed: {e}")
+        with cols[1]:
+            if st.button("Generate Interview Themes now", key="generate_interview_themes_now"):
+                import subprocess, sys
+                try:
+                    cmd = [sys.executable, str(Path(__file__).parent / 'scripts' / 'generate_interview_themes_now.py'), '--client', client_id]
+                except Exception:
+                    cmd = [sys.executable, 'scripts/generate_interview_themes_now.py', '--client', client_id]
+                with st.spinner("Generating interview themes…"):
+                    try:
+                        import subprocess
+                        proc = subprocess.run(cmd, capture_output=True, text=True)
+                        if proc.returncode == 0:
+                            st.success(proc.stdout.strip() or "Themes generated")
+                        else:
+                            st.error(proc.stderr.strip() or "Theme generation failed")
+                    except Exception as e:
+                        st.error(f"Theme generation error: {e}")
     if st.button("Compute Guiding Story (fast)", key="guiding_story_compute_stage3"):
         with st.spinner("Computing…"):
             payload = build_guiding_story_payload(client_id=client_id, db=_GUIDE_DB)
