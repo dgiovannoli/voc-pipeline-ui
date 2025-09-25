@@ -1237,8 +1237,8 @@ class SupioHarmonizedWorkbookGenerator:
                 wb.save(self.workbook_path)
                 return
 
-            # Fetch similarity suggestions
-            sim = self.db.fetch_theme_similarity(self.client_id, min_score=0.7)
+            # Fetch similarity suggestions using LLM-based analysis
+            sim = self.db.fetch_theme_similarity(self.client_id, min_score=0.7, use_llm=True)
             sim_map = {}
             if not sim.empty:
                 # suggested canonical = for each theme_id, the other with highest score
@@ -1302,12 +1302,12 @@ class SupioHarmonizedWorkbookGenerator:
             hdr = ws.cell(row=row, column=1, value="Duplicates Review (subject-local pairs)")
             hdr.font = Font(bold=True)
             hdr.fill = PatternFill(start_color="FFF2CC", end_color="FFF2CC", fill_type="solid")
-            # draw a border across header columns A-F
-            for col in range(1, 7):
+            # draw a border across header columns A-I
+            for col in range(1, 10):
                 cell = ws.cell(row=row, column=col)
                 cell.border = Border(top=Side(style="thin"), bottom=Side(style="thin"))
             row += 1
-            headers2 = ["Subject","Theme A ID","Theme A Statement","Theme B ID","Theme B Statement","Score","Cosine","Jaccard"]
+            headers2 = ["Subject","Theme A ID","Theme A Statement","Theme B ID","Theme B Statement","Score","Confidence","Rationale","Canonical Suggestion"]
             for col, h in enumerate(headers2, 1):
                 cell = ws.cell(row=row, column=col, value=h)
                 cell.font = Font(bold=True)
@@ -1340,8 +1340,15 @@ class SupioHarmonizedWorkbookGenerator:
                     ws.cell(row=row, column=5, value=str(stmt_b) if stmt_b is not None else '')
                     ws.cell(row=row, column=6, value=float(r.get('score')))
                     feats = r.get('features_json') or {}
-                    ws.cell(row=row, column=7, value=float(feats.get('cosine', 0)))
-                    ws.cell(row=row, column=8, value=float(feats.get('jaccard', 0)))
+                    # Confidence band (High/Medium/Low)
+                    confidence = feats.get('decision_band', 'Medium')
+                    ws.cell(row=row, column=7, value=confidence)
+                    # Rationale for the merge
+                    rationale = feats.get('rationale', '')
+                    ws.cell(row=row, column=8, value=rationale)
+                    # Canonical theme suggestion
+                    canonical = feats.get('canonical_suggestion', '')
+                    ws.cell(row=row, column=9, value=canonical)
                     row += 1
             else:
                 ws.cell(row=row, column=1, value='No similarity suggestions')

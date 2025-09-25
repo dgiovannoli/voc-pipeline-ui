@@ -2059,7 +2059,206 @@ class SupabaseDatabase:
             logger.warning(f"⚠️ upsert_theme_similarity failed: {e}")
             return 0
 
-    def fetch_theme_similarity(self, client_id: str, min_score: float = 0.7) -> pd.DataFrame:
+    def fetch_theme_similarity(self, client_id: str, min_score: float = 0.7, use_llm: bool = False) -> pd.DataFrame:
+        """
+        Fetch theme similarity data.
+        If use_llm=True, uses LLM-based analysis instead of stored similarity data.
+        """
+        if use_llm:
+            return self._fetch_llm_theme_similarity(client_id, min_score)
+        else:
+            try:
+                res = self.supabase.table('theme_similarity').select('*').eq('client_id', client_id).gte('score', min_score).order('score', desc=True).execute()
+                return pd.DataFrame(res.data or [])
+            except Exception:
+                return pd.DataFrame()
+
+    def _fetch_llm_theme_similarity(self, client_id: str, min_score: float = 0.7) -> pd.DataFrame:
+        """Use LLM to analyze theme similarity and return results in the expected format."""
+        try:
+            # Import here to avoid circular imports
+            from openai import OpenAI
+            import os
+            import json
+            
+            # Check if OpenAI API key is available
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                logger.warning("⚠️ OpenAI API key not found, falling back to rule-based similarity")
+                return self._fetch_rule_based_similarity(client_id, min_score)
+            
+            openai_client = OpenAI(api_key=api_key)
+            
+            # Get all themes for analysis
+            research_themes = self.fetch_research_themes_all(client_id)
+            
+            # Get canonical interview themes from rollup clusters
+            try:
+                from interview_theme_rollup import rollup_interview_themes
+                rollup_result = rollup_interview_themes(self, client_id)
+                canonical_interview_themes = rollup_result.clusters.copy()
+            except Exception as e:
+                logger.warning(f"⚠️ Could not fetch rollup interview themes: {e}")
+                canonical_interview_themes = pd.DataFrame(columns=['cluster_id', 'canonical_theme'])
+            
+            if research_themes.empty and canonical_interview_themes.empty:
+                return pd.DataFrame()
+            
+            # Prepare themes for LLM analysis
+            themes_list = []
+            
+            # Add research themes
+            if not research_themes.empty:
+                for _, theme in research_themes.iterrows():
+                    source = 'discovered' if str(theme.get('origin', '')).startswith('DISCOVERED:') else 'research'
+                    themes_list.append({
+                        'theme_id': theme['theme_id'],
+                        'theme_statement': theme['theme_statement'],
+                        'subject': theme.get('harmonized_subject', 'Uncategorized'),
+                        'source': source
+                    })
+            
+            # Add canonical interview themes
+            if not canonical_interview_themes.empty:
+                for _, theme in canonical_interview_themes.iterrows():
+                    themes_list.append({
+                        'theme_id': f"interview_theme_{int(theme['cluster_id']):03d}",
+                        'theme_statement': theme['canonical_theme'],
+                        'subject': 'Interview',
+                        'source': 'interview_canonical'
+                    })
+            
+            if len(themes_list) < 2:
+                return pd.DataFrame()
+            
+            # LLM prompt for theme deduplication
+            dedup_prompt = """You are a strict qualitative-dedupe analyst for B2B SaaS win/loss themes. Your job: find redundant themes without losing specificity from interviews. Prefer precision over recall.
+
+Key concepts:
+- Subject ≈ parent topic (e.g., Integration, Pricing, Support, Efficiency).
+- Discovered/Research themes can be merged. Interview themes can be merged with research themes or other interview themes.
+
+Scoring rules:
+- Cosine similarity threshold (LLM-estimated semantic similarity on 0–1 scale).
+- Noun-phrase Jaccard overlap on extracted key phrases.
+- Entity overlap on systems/brands/processes (e.g., Shopify, WMS, CRM, rate cards, carriers).
+- Sentiment/polarity alignment (both problem or both praise).
+- Domain facet match (Integration, Pricing, Support, Efficiency).
+
+Within-Subject gate: cosine ≥ 0.74 AND noun Jaccard ≥ 0.35.
+Cross-Subject gate: cosine ≥ 0.78 AND entity overlap ≥ 0.50.
+
+Do-NOT-Merge rules (any one triggers DENY):
+- Conflicting entities (e.g., Shopify vs WMS/CRM) without shared parent qualifier.
+- Opposite sentiment/polarity.
+- Different stakeholder focus (Ops vs Finance/Legal).
+- Modality mismatch (Pricing vs Support; Discovery vs Implementation).
+- Temporal mismatch (Pilot vs steady-state) unless explicitly the same.
+
+Banding:
+- High ≥ 0.80
+- Medium 0.70–0.79
+- Low < 0.70 (do not recommend)
+
+Max cluster size: 7 (split by dominant entity if exceeded).
+Per-subject cap: 12 suggestions max.
+
+Output JSON schema (array of objects):
+{
+  "pair_type": "within_subject" | "cross_subject",
+  "subject_A": "...",
+  "subject_B": "...",
+  "theme_id_A": "...",
+  "theme_id_B": "...",
+  "statement_A": "...",
+  "statement_B": "...",
+  "scores": {
+    "cosine": 0.00,
+    "noun_jaccard": 0.00,
+    "entity_overlap": 0.00,
+    "sentiment_align": true,
+    "facet_match": true
+  },
+  "decision_band": "High" | "Medium" | "Low",
+  "merge_recommendation": "MERGE" | "DO_NOT_MERGE",
+  "canonical_label_suggestion": "...",
+  "rationale": "Short, specific reason citing shared phrases/entities and alignment.",
+  "evidence_policy": "If either is an interview_theme_* => treat as Evidence, not merged."
+}
+
+Return only valid JSON."""
+
+            # Create analysis prompt
+            analysis_prompt = dedup_prompt + "\n\nAnalyze these themes for duplicates:\n\n"
+            for j, theme in enumerate(themes_list):
+                analysis_prompt += f"Theme {j+1} ({theme['source']}): {theme['theme_statement']}\n"
+                analysis_prompt += f"ID: {theme['theme_id']}\n"
+                analysis_prompt += f"Subject: {theme['subject']}\n\n"
+            
+            analysis_prompt += "Investigate all possible pairs and return JSON array of duplicate analysis results."
+            
+            # Call OpenAI
+            response = openai_client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a precise theme deduplication analyst. Return only valid JSON."},
+                    {"role": "user", "content": analysis_prompt}
+                ],
+                temperature=0.1,
+                max_tokens=4000
+            )
+            
+            # Parse response
+            content = response.choices[0].message.content
+            json_start = content.find('[')
+            json_end = content.rfind(']') + 1
+            
+            if json_start == -1 or json_end == -1:
+                logger.warning("⚠️ Could not extract JSON from LLM response")
+                return self._fetch_rule_based_similarity(client_id, min_score)
+            
+            json_str = content[json_start:json_end]
+            results = json.loads(json_str)
+            
+            # Convert LLM results to the expected DataFrame format
+            similarity_rows = []
+            for result in results:
+                if result.get('merge_recommendation') == 'MERGE':
+                    # Create similarity row in the expected format
+                    score = result.get('scores', {}).get('cosine', 0.0)
+                    if score >= min_score:
+                        similarity_rows.append({
+                            'client_id': client_id,
+                            'theme_id': result['theme_id_A'],
+                            'other_theme_id': result['theme_id_B'],
+                            'subject': result['subject_A'],
+                            'score': score,
+                            'features_json': {
+                                'cosine': result.get('scores', {}).get('cosine', 0.0),
+                                'jaccard': result.get('scores', {}).get('noun_jaccard', 0.0),
+                                'entity_overlap': result.get('scores', {}).get('entity_overlap', 0.0),
+                                'sentiment_align': result.get('scores', {}).get('sentiment_align', False),
+                                'facet_match': result.get('scores', {}).get('facet_match', False),
+                                'decision_band': result.get('decision_band', 'Medium'),
+                                'rationale': result.get('rationale', ''),
+                                'canonical_suggestion': result.get('canonical_label_suggestion', '')
+                            }
+                        })
+            
+            # Convert to DataFrame and sort by score
+            if similarity_rows:
+                df = pd.DataFrame(similarity_rows)
+                df = df.sort_values('score', ascending=False)
+                return df
+            else:
+                return pd.DataFrame()
+                
+        except Exception as e:
+            logger.warning(f"⚠️ LLM similarity analysis failed: {e}, falling back to rule-based")
+            return self._fetch_rule_based_similarity(client_id, min_score)
+
+    def _fetch_rule_based_similarity(self, client_id: str, min_score: float = 0.7) -> pd.DataFrame:
+        """Fallback to rule-based similarity when LLM is not available."""
         try:
             res = self.supabase.table('theme_similarity').select('*').eq('client_id', client_id).gte('score', min_score).order('score', desc=True).execute()
             return pd.DataFrame(res.data or [])

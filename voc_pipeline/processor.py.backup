@@ -486,7 +486,7 @@ def remove_disfluencies(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-def clean_verbatim_response(text: str, interviewer_names=None):
+def clean_verbatim_response(text: str, interviewer_names=None) -> str:
     if interviewer_names is None:
         interviewer_names = ["Q:", "A:", "Interviewer:", "Drew Giovannoli:", "Brian:", "Yusuf Elmarakby:"]
     lines = text.splitlines()
@@ -690,7 +690,7 @@ def _process_transcript_parallel(
     
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
-        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview", "start_timestamp", "end_timestamp"],
+        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
         template="""CRITICAL INSTRUCTIONS FOR CONTEXT-DRIVEN EXTRACTION:
 - You have access to focused context windows (~7K tokens) containing Q&A exchanges.
 - Focus on COMPLETE CONTEXT and MEANINGFUL Q&A PAIRS rather than arbitrary numbers.
@@ -751,8 +751,6 @@ Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pair
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}",
-    "start_timestamp": "{start_timestamp}",
-    "end_timestamp": "{end_timestamp}",
     "findings": "key_finding_summary_with_specific_details_1",
     "value_realization": "value_or_roi_metrics_with_quantitative_details_1",
     "implementation_experience": "implementation_details_with_workflow_specifics_1",
@@ -810,18 +808,17 @@ Interview chunk to analyze:
                 print(f"📋 Chunk {chunk_index} filtered: not Q&A content", file=sys.stderr)
                 return []
             
-            # Clean the chunk text and extract timestamps
+            # Clean the chunk text (but be less aggressive for speaker-based transcripts)
             if found_qa:
-                # For Q&A format, clean aggressively with timestamp extraction
-                cleaned_chunk, start_ts, end_ts = clean_verbatim_response(chunk)
+                # For Q&A format, clean aggressively
+                cleaned_chunk = clean_verbatim_response(chunk)
                 if not cleaned_chunk:
                     print(f"📋 Chunk {chunk_index} filtered: no content after cleaning", file=sys.stderr)
                     return []
             else:
-                # For speaker-based transcripts, extract timestamps then clean
-                start_ts, end_ts, all_ts = extract_timestamps_from_text(chunk)
-                cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', chunk)
-                cleaned_chunk = re.sub(r'\(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', cleaned_chunk)
+                # For speaker-based transcripts, just remove speaker labels and timestamps
+                cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', chunk)
+                cleaned_chunk = re.sub(r'\(\d{2}:\d{2}\):\s*', '', cleaned_chunk)
                 cleaned_chunk = cleaned_chunk.strip()
                 if len(cleaned_chunk) < 5:
                     print(f"📋 Chunk {chunk_index} filtered: too short after cleaning", file=sys.stderr)
@@ -842,9 +839,7 @@ Interview chunk to analyze:
                 "company_name": company,
                 "interviewee_name": interviewee,
                 "deal_status": deal_status,
-                "date_of_interview": date_of_interview,
-                "start_timestamp": start_ts,
-                "end_timestamp": end_ts
+                "date_of_interview": date_of_interview
             }
             
             # Get response from LLM with retries
@@ -929,7 +924,6 @@ Interview chunk to analyze:
     column_order = [
         'response_id', 'key_insight', 'verbatim_response', 'subject', 'question',
         'deal_status', 'company', 'interviewee_name', 'date_of_interview',
-        'start_timestamp', 'end_timestamp',
         'findings', 'value_realization', 'implementation_experience', 'risk_mitigation',
         'competitive_advantage', 'customer_success', 'product_feedback', 'service_quality',
         'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
@@ -981,7 +975,7 @@ def _process_transcript_sequential_impl(
     
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
-        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview", "start_timestamp", "end_timestamp"],
+        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
         template="""CRITICAL INSTRUCTIONS FOR CONTEXT-DRIVEN EXTRACTION:
 - You have access to focused context windows (~7K tokens) containing Q&A exchanges.
 - Focus on COMPLETE CONTEXT and MEANINGFUL Q&A PAIRS rather than arbitrary numbers.
@@ -1042,8 +1036,6 @@ Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pair
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}",
-    "start_timestamp": "{start_timestamp}",
-    "end_timestamp": "{end_timestamp}",
     "findings": "key_finding_summary_with_specific_details_1",
     "value_realization": "value_or_roi_metrics_with_quantitative_details_1",
     "implementation_experience": "implementation_details_with_workflow_specifics_1",
@@ -1130,9 +1122,7 @@ Interview chunk to analyze:
                 "company_name": company,
                 "interviewee_name": interviewee,
                 "deal_status": deal_status,
-                "date_of_interview": date_of_interview,
-                "start_timestamp": start_ts,
-                "end_timestamp": end_ts
+                "date_of_interview": date_of_interview
             }
             
             # Get response from LLM with retries
@@ -1197,7 +1187,6 @@ Interview chunk to analyze:
     column_order = [
         'response_id', 'key_insight', 'verbatim_response', 'subject', 'question',
         'deal_status', 'company', 'interviewee_name', 'date_of_interview',
-        'start_timestamp', 'end_timestamp',
         'findings', 'value_realization', 'implementation_experience', 'risk_mitigation',
         'competitive_advantage', 'customer_success', 'product_feedback', 'service_quality',
         'decision_factors', 'pain_points', 'success_metrics', 'future_plans'

@@ -1,0 +1,1016 @@
+id,client_id,interview_id,company,interviewee_name,deal_status,date_of_interview,audio_video_link,created_at,updated_at,raw_transcript,raw_transcript_file,industry,client_name,contact_id,interview_list_id_deals,interview_list_id_direct,project_id,scheduled_date,contact_phone,moderator_email,interview_method,conversion_source,interview_status,moderator_notes,flag_details,flag_type,payment_complete,transcript_link,interview_contact_website,job_title,contact_email,contact_mobile,interview_question_id,interview_response_id,discussion_guide_link,client_website,moderator_responses,final_incentive_amount,auto_id,deal_id,company_match_key,base_incentive_amount,escalated_incentive_amount,incentive_change_date,custom_incentive,custom_incentive_amount,interview_guide_context,interview_guides_id,linkedin_profile,recruitment_records,moderators,moderator_score,segment,last_modified_time,interview_guides,metadata_source,metadata_uploaded_at,completion_date,contact_website,interviewee_role,firm_size,metadata_updated_at
+127,Endicia,IVW-00261,Energy Earth,Mike Murphy,Closed Lost,,https://drive.google.com/file/d/1Z-9wUJZk9gxwKCN4GsSWRAfm13Eiu-ql/view?usp=drive_link,2025-08-14 18:01:07.123246+00,2025-08-14 18:01:07.123246+00,"An Interview with Mike Murphy, VP of Operations at Energy Earth
+
+Speaker 1 Buried Wins Moderator
+Speaker 2 Mike Murphy
+Contact: Mike Murphy
+Contact Title VP of Operations
+Contact Company:  Energy Earth
+Contact Company Website:  energyearth.com
+Contact Company Description:  Energy Earth is a company headquartered in Chattanooga, Tennessee, providing energy efficiency products and solutions to residential and commercial customers across the United States. The company delivers products such as LED lighting, water-saving devices, and weatherization materials that help clients reduce energy and water usage. Energy Earth is particularly known for running efficiency programs in partnership with utilities and government agencies, aiming to lower utility costs and promote sustainability among individuals, businesses, and municipalities.
+Deal Status: Churned
+Buried Wins Client: Endicia
+Interview Date: July 30, 2025 
+
+Raw Transcript:
+Moderator 2 (00:00:06 - 00:00:10)
+So this interview is being recorded. Are you. Are you okay with that?
+Mike Murphy (00:00:10 - 00:00:11)
+Yeah, that's fine.
+Moderator 2 (00:00:11 - 00:00:28)
+Okay. So I'm with Bard Wins. As you know, we're a research firm and working with Indicia, basically to understand your experience with it, you know, how they can do something better or if not, you know, what is it that you need?
+Mike Murphy (00:00:29 - 00:00:29)
+Sure.
+Moderator 2 (00:00:30 - 00:00:48)
+So, and all of this is just going to be put in a report to be shared with the client. So you can choose if, you know, you want your name there or if it's anonymous. Most likely it's. All the responses are going to be grouped together. It's more a collective report that's going to them.
+Mike Murphy (00:00:48 - 00:00:48)
+Sure.
+Moderator 2 (00:00:49 - 00:01:01)
+Yeah. Just to let you know so that we're absolutely transparent about this. So tell me something about yourself and your company and how do you. What was your position there?
+Mike Murphy (00:01:02 - 00:02:59)
+Sure. So we are a corporate incentive company. We help businesses incentivize either their customers or their employees. Customers is usually to do some type of action. We want you to sign up for this service. We want you to do paperless billing, things like that. Employees. It could be anything from anniversary holidays, service programs, safety, things like that. So we've actually, I've been in the industry for 23 years. This business has been around since 2011. We, I believe, originally started. So I'm. I'm VP of Operations. In the past, I was over all of our supply chain vendor management and those types of things. We have a warehouse. We. We used to have a warehouse that was about 30,000 square feet. And when Covid happened, we downsized and moved into a smaller one, I think just about like everyone else in the world, of course. And so we actually, as far as Indisha goes, we started using them when we partnered with a warehouse services company who came in and gave us a software as a service package for us to scan, print, pack, and ship everything. Right. So we use them as one of our postage providers. We also used UPS and FedEx, but the rates ended up being significantly better through the post office. So we ended up using Indisha more.
+Moderator 2 (00:02:59 - 00:03:00)
+Okay.
+Mike Murphy (00:03:01 - 00:04:02)
+In 2020, again, Covid, we had a couple of very large enterprise clients who were shipping a lot of packages each month that went bankrupt. And so we lost that business. Right. And so we saw a decline in our postage rates both in how much we were shipping out and what we were actually paying per package. And so, you know, originally we had someone who was dedicated to our account from Indisha. And as those numbers started dropping down, we dropped from a particular service level down to, okay, you're not quite as important as you used to be. And then even that person who was over our account turned us over to just general customer service.
+Moderator 2 (00:04:03 - 00:04:04)
+I see. Okay.
+Mike Murphy (00:04:05 - 00:05:07)
+Which is. I understand. Right. But it became increasingly more difficult for us to get in contact with people when we needed to. And then also there were a lot of things we were trying to look at in terms of what services we were using, how we could lower our freight cost. And so we went back and forth. We have netsuite as our warehouse management package now. Right. And they have a third party. That third party does all of our scanning for our orders. And they had previously integrated with Indisha. When we started looking at some better service rates, they wanted to move us to a different platform of theirs. But Indisha was not an option. They used a different service called Easy Post.
+Moderator 2 (00:05:07 - 00:05:08)
+Okay.
+Mike Murphy (00:05:09 - 00:05:41)
+And so basically, from not getting the same support level that we were getting before, not getting the same rates that we were before, we had to look at other options. And this was the best option for us. And we've actually, by making that switch, we've cut our postage rates almost in half. So it was a change that I didn't necessarily want to make, but it turned out to be the best option for us.
+Moderator 2 (00:05:44 - 00:06:01)
+So help me understand this. When you were working with Indicia, you had somebody like a point of contact with whom you used to communicate, and this person, as your business with them went down, turn your account over to customer service. Is that right?
+Mike Murphy (00:06:01 - 00:06:19)
+So there was actually two levels. So we had our main contact, who then turned it over to a different main contact, who then turned it over to customer, general customer service. So it was kind of a step down number one. Step down number two.
+Moderator 2 (00:06:19 - 00:06:27)
+Okay, so and how often was your interaction with this person? I mean, did you need to contact them often or maybe once a week or how often was that?
+Mike Murphy (00:06:27 - 00:06:33)
+No. So the original one, we would check in maybe once a month.
+Moderator 2 (00:06:34 - 00:06:34)
+Okay.
+Mike Murphy (00:06:34 - 00:06:46)
+Every other week at most. Just kind of, what's going on? What kind of volume? How can we help you? And that was really good for probably two years.
+Moderator 2 (00:06:47 - 00:06:49)
+So they were checking in with you very much.
+Mike Murphy (00:06:52 - 00:08:02)
+Fantastic support. It would really. The only time where we would need to reach out is if we had some kind of service issue, whether it was the software wasn't working or rates weren't being applied properly, something like that. But that was very rare. When we moved down to that next person, we. We got to a place where we needed a little more in terms of reporting. And so I would reach out, hey, here's the reporting that we're looking for, Wouldn't hear anything for a little bit. Reach out again, hey, I still need these reports. It's pretty critical to our business. And then finally he's just said, yeah, we're, we're handing you over to general customer care. Customer care would say, well, you need to talk with this person. And this person would say, well, you need to talk with customer care. And so we just kind of got in that loop of we don't know who to talk with, and no one seems to want to help us, so.
+Moderator 2 (00:08:02 - 00:08:16)
+Correct. Okay, and so when you were facing all this, did you decide, are you one of the decision makers or did somebody else decide, hey, we need to look at somebody else for this?
+Mike Murphy (00:08:16 - 00:08:18)
+Oh, no, it was. It was very much my decision.
+Moderator 2 (00:08:18 - 00:08:23)
+Okay, yes. So how did you start doing that process? I mean, how did you start looking out?
+Mike Murphy (00:08:23 - 00:09:59)
+So one of the things that kind of came up in those conversations was it's not a limit. It's. This is how it was presented to me. It's not a limitation of Indisha. It's a limitation of NET Suite, or it's a limitation on RF Smart, the third party that we use for pack and ship. And so through that process, I wasn't getting any support from Indisha. So I started Talking with the NetSuite and RF smart folks and said, hey, you know, here's what we're trying to do. They're saying, it's your fault. What can we do? And so Indisha gave us no solutions. Netsuite and rsmart said, well, of course we can do that, and here's how we would go about doing it. And so that was maybe six months of research and making sure that what we were looking for could actually happen. And the only change that needed to happen on their end was moving from Indisha to this other third or fourth party at this point, Easy Post. So, and with Easy Post, I get. I have a dedicated support person, a dedicated salesperson, and then a dedicated IT resource who I can at any point, in any time call and say, here's my problem. And usually within an hour, I've got a response and a solution.
+Moderator 2 (00:10:01 - 00:10:08)
+Okay, so when you were using netsuite, did you. Did Indicia know that you were using netsuite or was this.
+Mike Murphy (00:10:08 - 00:10:13)
+Oh, yeah, yeah. Indicia was integrated into both RF Smart and to NetSuite.
+Moderator 2 (00:10:13 - 00:10:23)
+Okay, so did you reach out to them and say, hey, something's not working. Could you suggest. Okay, yes and yeah. So any answer back, okay, no.
+Mike Murphy (00:10:23 - 00:10:34)
+There were two things really that we were looking for. One was Additional reporting. And then the second was the post office implemented a new service called Ground Advantage.
+Moderator 2 (00:10:34 - 00:10:35)
+Okay.
+Mike Murphy (00:10:35 - 00:10:42)
+Basically Priority Mail that takes a day or two slower, but you get a much better rate on it.
+Moderator 2 (00:10:42 - 00:10:42)
+Right.
+Mike Murphy (00:10:43 - 00:10:46)
+And Indisha said, sorry, that's not an option.
+Moderator 2 (00:10:46 - 00:10:47)
+Okay.
+Mike Murphy (00:10:47 - 00:11:21)
+And when we pressed them on it, it was, sorry, that's not an option because it's not an option in NetSuite. And so that's when we started reaching out to NetSuite and to RSMART saying, hey, they're saying we can't do this because you can't do this. And they said we can do it, we just can...",,marketing & advertising,Endicia,Mike Murphy,IVL-00017,IVL-00017,Endicia_PRJ-00025,2025-07-30 10:00:00+00,+1 423-902-2203,moderator2@buriedwins.com,zoom,+1 423-902-2203,Completed,,,,true,https://docs.google.com/document/d/19OFngvx9SyMpKimn0RjSqgWFhxvp-l7rIXlGe6mWZVU/edit?usp=drive_link,https://energyearth.com,"Vice President, Operations",mike@energyearth.com,+1 423-531-7177,,,https://forms.gle/n7mrC6VXR99X6hHW6,,,105.00,261,DLS-03360,Endicia_PRJ-00025_Energy Earth,105.00,215.00,2025-07-31 00:00:00+00,false,,"Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).",IVG-00155,http://www.linkedin.com/in/mike-murphy-0786774,,,,,2025-08-12 09:25:00+00,"Endicia Churn Discussion Guide V1
+Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).
+Introduction (4 minutes)
+Objective: Establish rapport, confirm recording permission, confirm recent reduction or cessation of Endicia usage, and set expectations for the interview.
+Thank you for joining me today, [Participant Name]. I’m with Buried Wins, a third-party research firm working with Endicia to understand how they can better serve their customers. This interview aims to explore your shipping needs and experiences with Endicia. With your permission, I’d like to record this conversation. The recording and transcript will be used to create a report shared with Endicia.
+Any questions?
+- Information will only be shared with our client.
+- If participant is concerned about anonymity: We can remove mentions of your name and company name.
+- If participant does not want to be recorded: We can conduct the interview without recording and take notes.
+
+1. To start, my understanding is that your company recently reduced or stopped using Endicia, is that correct? [PARTICIPANT SHOULD SAY YES]
+
+1. Can you briefly introduce yourself and your role at your company? 
+
+Usage Context and Churn Triggers (8 minutes)
+Objective: Understand the reasons for reducing or stopping Endicia usage and the competitive landscape that influenced their decision.
+Client Assumptions: Customers are shifting to USPS direct or other carriers due to pricing, tech partner decisions, or better API offerings (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32).
+1. What prompted your company to reduce or stop using Endicia’s services? 
+    a. IF REDUCED USAGE: To what extent are you still using Endicia, and why? 
+
+1. Which other solutions or providers did you consider when deciding to reduce or stop using Endicia? 
+
+1. Which solution or provider did you primarily choose to increase usage or switch to from Endicia?
+
+1. IF CHOSE ANOTHER SOLUTION: Why did you choose to prioritize this solution over Endicia? What were its key strengths?
+
+Customer Experience Post-Migration (4 minutes)
+Objective: Explore the customer’s experience with their current shipping solution to identify pain points and benefits compared to Endicia.
+Client Assumptions: Customers may face challenges with USPS direct API, such as lack of account management or slower response times, which Endicia could address (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+1. IF CHOSE ANOTHER SOLUTION: How has your experience been with your new shipping solution(s)?
+
+1. IF CHOSE ANOTHER SOLUTION: What specific pain points or benefits have you encountered with your new solution(s) compared to Endicia’s offerings? 
+
+Decision-Making Influencers (4 minutes)
+Objective: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia.
+Client Assumptions: Decisions to move away from Endicia may involve IT or other stakeholders not adequately engaged by Endicia’s team (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+1. Who was involved in the decision to reduce or stop using Endicia (e.g., logistics, IT, procurement)? Who were the key influencers or decision-makers? 
+
+1. How did Endicia’s account management or sales team engage with your team during your usage or decision-making process? 
+
+Multi-Homing Behavior and Barriers to ShipStation API (6 minutes)
+Objective: Investigate why customers split shipping volume and what prevents adoption of ShipStation API.
+Client Assumptions: Customers multi-home due to carrier needs or tech partner limitations, and integration costs deter switching to ShipStation API (Candi, 00:11:15-00:12:32; Anthony, 00:25:32-00:26:23).
+1. Do you currently split your shipping volume across multiple providers? (e.g., USPS, UPS, FedEx) 
+    a. IF YES: Why do you use multiple providers? 
+
+1. Were you aware of Endicia’s affiliation with ShipStation API, a multi-carrier solution? 
+    a. IF YES: What barriers prevented you from adopting it? (e.g., integration costs, tech partner limitations) 
+
+
+Retention Strategies and Incentives (6 minutes)
+Objective: Determine what incentives could retain or attract customers to Endicia or ShipStation API.
+Client Assumptions: Incentives like revenue sharing, free service periods, or compliance management could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+1. What could Endicia have done that would have encouraged your company to maintain or increase your usage with them? 
+    a. PROBE: revenue sharing, no label fees, free service periods, compliance management?
+
+1. What would make a multi-carrier solution like ShipStation API more appealing, considering your current tech stack or operational needs? 
+
+Wrap-Up (4 minutes)
+Objective: Capture additional insights and future considerations to inform Endicia’s retention and growth strategies.
+Client Assumptions: Regional carriers and streamlined pricing could be differentiators, but customers need clear incentives to justify integration efforts (Candi, 00:19:34-00:22:39; Anthony, 00:25:32-00:26:23).
+1. Are there any other factors or experiences with Endicia, USPS, or other providers you’d like to share? 
+
+1. What would make you consider returning to or increasing usage with Endicia or exploring their broader solutions, such as ShipStation API, in the future? 
+
+Closing: “Those are all of my questions. Thank you for your time today. You will receive an email from the rewards platform, Tremendous, with your payment within the next 48 hours.”",csv_upload,2025-08-14 13:01:06.719775+00,2025-07-30 00:00:00+00,,,,
+128,Endicia,IVW-00268,Ryanwestberg,Ryan Westberg,Closed Lost,,https://drive.google.com/file/d/1Xnt4RcUzEkIS_XSdHkjlU_tftfKGuL5s/view?usp=drive_link,2025-08-14 18:01:07.425124+00,2025-08-14 18:01:07.425124+00,"GMT20250730-175457_Recording_640x360.mp4
+Metadata:
+
+Speaker 1 Buried Wins Moderator
+ Speaker 2 Ryan Westberg
+Contact: Ryan Westberg
+Contact Title CEO
+ Contact Company:  Fan of a fan
+Contact Company Website:  fanofafan.com
+Contact Company Description:  Fan of a Fan is a small full-service merchandise and brand development company headquartered in Venice, California, providing design, manufacturing, fulfillment, and marketing services to influencers, artists, and digital creators primarily across North America. They specialize in creator-centric, end-to-end brand building with integrated logistics and customer service capabilities.
+Deal Status:  Churned
+Buried Wins Client:  Endicia
+Interview Date:  Jul 30, 2025
+
+Raw Transcript:
+Buried Wins Moderator (00:00:16 - 00:00:18)
+Hello? Hi, Ryan?
+Ryan Westberg (00:00:19 - 00:00:19)
+Yes.
+Buried Wins Moderator (00:00:20 - 00:00:29)
+Hi, this is Nandini. I'm with Bayard Winds. Before we start, this call is being recorded. Is that okay with you?
+Ryan Westberg (00:00:29 - 00:00:29)
+Yes.
+Buried Wins Moderator (00:00:30 - 00:00:50)
+Okay, fine. All right. So we are a research firm. We're just working with Indicia to understand, you know, your experience with them, how they can improve, things like that. So just to get started, could you briefly maybe introduce yourself your role at the company?
+Ryan Westberg (00:00:51 - 00:01:20)
+Yep. I'm Ryan Westberg, founder and CEO of Fan of a Fan. We're a full service merchandising company and 3PL. So we use NDC more on the 3PL side of the business. So we operate and we fulfill for our own brands, but also for other e commerce brands. And so we use Indicia to plug into our WMS platform called ShipHero and that's, that's how we utilize it.
+Buried Wins Moderator (00:01:20 - 00:01:26)
+So could you elaborate a little bit more about 3pl? Because I understand you're a graphic designer, is that right?
+Ryan Westberg (00:01:27 - 00:01:30)
+No, the warehousing side is where we use in dc.
+Buried Wins Moderator (00:01:30 - 00:01:31)
+Okay.
+Ryan Westberg (00:01:31 - 00:01:35)
+Warehousing, shipping and fulfillment, e commerce brands.
+Buried Wins Moderator (00:01:35 - 00:01:38)
+Okay. So what does 3PL stand for?
+Ryan Westberg (00:01:39 - 00:01:40)
+Third party logistics.
+Buried Wins Moderator (00:01:40 - 00:01:53)
+Oh, okay, okay, okay, okay. I walked into that one. Okay, so. So I understand. Have you reduced using them or stopped using them completely in this year?
+Ryan Westberg (00:01:54 - 00:01:55)
+We've reduced using it.
+Buried Wins Moderator (00:01:56 - 00:01:56)
+Okay.
+Ryan Westberg (00:01:56 - 00:02:02)
+Because we've moved more to Shipo in the past few months.
+Buried Wins Moderator (00:02:03 - 00:02:04)
+Is it Ship up or Shipo?
+Ryan Westberg (00:02:05 - 00:02:05)
+Shipo.
+Buried Wins Moderator (00:02:06 - 00:02:08)
+Okay. That's S H I P P O.
+Ryan Westberg (00:02:09 - 00:02:10)
+Correct? Yes.
+Buried Wins Moderator (00:02:10 - 00:02:13)
+Okay. And why have you moved to them? I mean, is there a reason?
+Ryan Westberg (00:02:14 - 00:02:34)
+Yeah, much more user friendly. It just is an easier to use platform and it's. Yeah, just an overall better experience. And dc, transparently, the dashboard hasn't been updated in a long time. It's doesn't feel as just user friendly in general.
+Buried Wins Moderator (00:02:36 - 00:02:40)
+Did you have like issues with it? Did you have to reach out to them or anything like that or.
+Ryan Westberg (00:02:40 - 00:02:51)
+No, Shippo just came and was doing basically the same thing. No additional costs or anything. It was just easier to use. So we moved over most of our volume to them.
+Buried Wins Moderator (00:02:52 - 00:02:58)
+How do you get in touch with them? Did they approach you or did you consider like many solution providers or how did that.
+Ryan Westberg (00:02:58 - 00:03:09)
+Checked out? A few, but yeah, asked around what other people were using and some people recommended Shippo. We checked it out and yeah, it was super easy to integrate and get things going quickly.
+Buried Wins Moderator (00:03:11 - 00:03:18)
+And what is it that Indicia is giving you that you're still, you know, you're using them for something and then moving the bulk of your things to sipo?
+Ryan Westberg (00:03:18 - 00:03:41)
+Yeah, for some reason Some of their rates on like small package come out a little bit cheaper and so. And DCA will still win some of the volume there. Yeah, exactly. So we have three rates competing against each other with usps, we have Shippo and dc and then we have an NSA with USPS Direct.
+Buried Wins Moderator (00:03:42 - 00:03:42)
+Okay.
+Ryan Westberg (00:03:43 - 00:03:48)
+USPS Modern. So they're all competing for the, the best rates.
+Buried Wins Moderator (00:03:49 - 00:03:53)
+Okay. And what has your experience been with Shippo so far?
+Ryan Westberg (00:03:54 - 00:04:01)
+Been great. Yeah. Zero issues. It's been pretty, pretty easy to use and yeah, no issues.
+Buried Wins Moderator (00:04:02 - 00:04:05)
+Would that be like the main thing for you, like ease of use?
+Ryan Westberg (00:04:06 - 00:04:27)
+Yeah, yeah, for sure. If pricing is comparable, I'd rather just use something that's easy to use. And they gave us a direct account manager that is always following up, making sure we're good there, all that. But this is literally the first time I've ever even interacted with anyone from Indicia, so. Or I know you're not even with Indicia, but they're clearly doing research.
+Buried Wins Moderator (00:04:29 - 00:04:36)
+Yes. Oh, so you don't, do you. You don't have anybody in like checking in on you or following up with you or anything?
+Ryan Westberg (00:04:36 - 00:04:41)
+Nope, never have. And I think I've been signed up for Indicia for probably eight to ten years.
+Buried Wins Moderator (00:04:42 - 00:04:53)
+I see. I didn't know that. Okay, do you typically have any questions like do you need to run reports or, or pull something for which you. You wish you had somebody, would that have helped you?
+Ryan Westberg (00:04:54 - 00:05:25)
+Maybe. I mean it just puts kind of a person behind the brand and makes you a little bit more loyal if you have someone to talk to if something does go wrong. Because you always sure, Chipo. At least I know someone's there. We haven't needed them, but we know there's something there. And you always, when something goes wrong, you want to know who you can go to. And yeah, nothing went wrong with Indicia. Probably have probably five questions in 10 years. But I don't want to like just call some told free number and get put on hold and not really know who to talk to.
+Buried Wins Moderator (00:05:26 - 00:05:33)
+Yeah, no, I was just trying to understand whether you would need to interact on a. Like you need somebody to check up on yours only in the case of an issue or a problem.
+Ryan Westberg (00:05:34 - 00:05:41)
+Yeah, I think only a problem. But yeah, the checkups are probably nice because it takes no time and don't really even utilize it.
+Buried Wins Moderator (00:05:41 - 00:05:47)
+Okay, and how much does Shippo charge you? Like is it, is it an add on to something else or is it like a standalone service or.
+Ryan Westberg (00:05:48 - 00:05:57)
+It's a monthly service fee for the API connection and nominal. It's like maybe 50 bucks or something.
+Buried Wins Moderator (00:05:57 - 00:06:05)
+Okay, okay. And who made that decision? Like was it just you or do you have to ask other people or do you influence the decision?
+Ryan Westberg (00:06:06 - 00:06:07)
+It was just me.
+Buried Wins Moderator (00:06:09 - 00:06:19)
+Okay. And so you said you use UPS or usps, you. A third one was there, right?
+Ryan Westberg (00:06:20 - 00:06:39)
+Yeah, just for the USPS side I'm talking about. Yeah, we have Shippo and D.C. and then we have USPS Modern, which we have like a direct NSA since they started offering that about probably eight to 10 months ago. And then we also use other carriers. DHL and UPS are primaries.
+Buried Wins Moderator (00:06:40 - 00:06:51)
+And why do you use all these multiple. I mean it's. Do you find that the best way to like for your business or would one or two do or has it always.
+Ryan Westberg (00:06:51 - 00:07:18)
+Yeah, we need multiple carriers for multiple reasons. Dhl, we use a lot for international. UPS is much better for heavier, heavier packages, heavier box packages. UPS is much better. And yeah, we, we need, we're shipping a lot, we're shipping thousands of orders every day. So we need to have a competition between the carriers and each carrier has its own what things it's good for.
+Buried Wins Moderator (00:07:19 - 00:07:24)
+So are they like clearly defined or do they all compete just based on rates or.
+Ryan Westberg (00:07:25 - 00:07:34)
+Some clients don't want to work with usps so they'll have the ups. So it depends on client client basis and then depends on the product itself as well.
+Buried Wins Moderator (00:07:35 - 00:07:42)
+I see, I see. And were you aware that Indicia is affiliated with ShipStation API who's like a multi carrier solution.
+Ryan Westberg (00:07:43 - 00:07:45)
+Sorry, could you repeat that? You cut out for a sec.
+Buried Wins Moderator (00:07:45 - 00:07:53)
+Yeah. So do you know that Endicia is affiliated with ShipStation API? It's a multi carrier solution.
+Ryan Westberg (00:07:53 - 00:08:09)
+Yeah, yeah, I used to use shiphero when we were much smaller and yeah, it just doesn't work for our business anymore. We've. We outgrew it. But that's how I got introduced to Indicia to begin with was through ShipStation.
+Buried Wins Moderator (00:08:09 - 00:08:15)
+Oh, I see. Okay. Okay. And does that. So. But that didn't work for your business. That's what you said, right?
+Ryan Westberg (00:08:17 - 00:08:24)
+No longer. Yeah, I mean we're still signed up, but we use it for like single packages just because the platform is pretty easy to use and cheap.
+Buried Wins Moderator (00:08:25 - 00:08:34)
+Okay. All right. And do you think Indicia could have done anything to either retain their volume that they were doing with you or increase the usage, anything like that?
+Ryan Westberg (00:08:35 - 00:08:45)
+Cheaper rates they were winning. If it was so cheap that it was winning all the volume, then yeah, it wouldn't. Money always talks. Yeah, sure....",,,Endicia,Ryan Westberg,IVL-00017,IVL-00017,Endicia_PRJ-00025,2025-07-30 13:00:00+00,+1 203-895-0180,moderator2@buriedwins.com,zoom,SMS,Completed,,,,true,https://docs.google.com/document/d/1d7_qdTp0i49hj3DDyxnjQ9Yfjx2aP44gDfOjbIIrFpc/edit?tab=t.0,https://ryanwestberg.com,Graphic Designer,r@ryanwestberg.com,+1 203-895-0180,,,https://forms.gle/n7mrC6VXR99X6hHW6,,,105.00,268,DLS-03449,Endicia_PRJ-00025_Ryanwestberg,105.00,215.00,2025-07-31 00:00:00+00,false,,"Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).",IVG-00155,http://www.linkedin.com/in/ryan-westberg-88a08672,,,,,2025-08-12 09:26:00+00,"Endicia Churn Discussion Guide V1
+Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).
+Introduction (4 minutes)
+Objective: Establish rapport, confirm recording permission, confirm recent reduction or cessation of Endicia usage, and set expectations for the interview.
+Thank you for joining me today, [Participant Name]. I’m with Buried Wins, a third-party research firm working with Endicia to understand how they can better serve their customers. This interview aims to explore your shipping needs and experiences with Endicia. With your permission, I’d like to record this conversation. The recording and transcript will be used to create a report shared with Endicia.
+Any questions?
+- Information will only be shared with our client.
+- If participant is concerned about anonymity: We can remove mentions of your name and company name.
+- If participant does not want to be recorded: We can conduct the interview without recording and take notes.
+
+1. To start, my understanding is that your company recently reduced or stopped using Endicia, is that correct? [PARTICIPANT SHOULD SAY YES]
+
+1. Can you briefly introduce yourself and your role at your company? 
+
+Usage Context and Churn Triggers (8 minutes)
+Objective: Understand the reasons for reducing or stopping Endicia usage and the competitive landscape that influenced their decision.
+Client Assumptions: Customers are shifting to USPS direct or other carriers due to pricing, tech partner decisions, or better API offerings (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32).
+1. What prompted your company to reduce or stop using Endicia’s services? 
+    a. IF REDUCED USAGE: To what extent are you still using Endicia, and why? 
+
+1. Which other solutions or providers did you consider when deciding to reduce or stop using Endicia? 
+
+1. Which solution or provider did you primarily choose to increase usage or switch to from Endicia?
+
+1. IF CHOSE ANOTHER SOLUTION: Why did you choose to prioritize this solution over Endicia? What were its key strengths?
+
+Customer Experience Post-Migration (4 minutes)
+Objective: Explore the customer’s experience with their current shipping solution to identify pain points and benefits compared to Endicia.
+Client Assumptions: Customers may face challenges with USPS direct API, such as lack of account management or slower response times, which Endicia could address (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+1. IF CHOSE ANOTHER SOLUTION: How has your experience been with your new shipping solution(s)?
+
+1. IF CHOSE ANOTHER SOLUTION: What specific pain points or benefits have you encountered with your new solution(s) compared to Endicia’s offerings? 
+
+Decision-Making Influencers (4 minutes)
+Objective: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia.
+Client Assumptions: Decisions to move away from Endicia may involve IT or other stakeholders not adequately engaged by Endicia’s team (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+1. Who was involved in the decision to reduce or stop using Endicia (e.g., logistics, IT, procurement)? Who were the key influencers or decision-makers? 
+
+1. How did Endicia’s account management or sales team engage with your team during your usage or decision-making process? 
+
+Multi-Homing Behavior and Barriers to ShipStation API (6 minutes)
+Objective: Investigate why customers split shipping volume and what prevents adoption of ShipStation API.
+Client Assumptions: Customers multi-home due to carrier needs or tech partner limitations, and integration costs deter switching to ShipStation API (Candi, 00:11:15-00:12:32; Anthony, 00:25:32-00:26:23).
+1. Do you currently split your shipping volume across multiple providers? (e.g., USPS, UPS, FedEx) 
+    a. IF YES: Why do you use multiple providers? 
+
+1. Were you aware of Endicia’s affiliation with ShipStation API, a multi-carrier solution? 
+    a. IF YES: What barriers prevented you from adopting it? (e.g., integration costs, tech partner limitations) 
+
+
+Retention Strategies and Incentives (6 minutes)
+Objective: Determine what incentives could retain or attract customers to Endicia or ShipStation API.
+Client Assumptions: Incentives like revenue sharing, free service periods, or compliance management could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+1. What could Endicia have done that would have encouraged your company to maintain or increase your usage with them? 
+    a. PROBE: revenue sharing, no label fees, free service periods, compliance management?
+
+1. What would make a multi-carrier solution like ShipStation API more appealing, considering your current tech stack or operational needs? 
+
+Wrap-Up (4 minutes)
+Objective: Capture additional insights and future considerations to inform Endicia’s retention and growth strategies.
+Client Assumptions: Regional carriers and streamlined pricing could be differentiators, but customers need clear incentives to justify integration efforts (Candi, 00:19:34-00:22:39; Anthony, 00:25:32-00:26:23).
+1. Are there any other factors or experiences with Endicia, USPS, or other providers you’d like to share? 
+
+1. What would make you consider returning to or increasing usage with Endicia or exploring their broader solutions, such as ShipStation API, in the future? 
+
+Closing: “Those are all of my questions. Thank you for your time today. You will receive an email from the rewards platform, Tremendous, with your payment within the next 48 hours.”",csv_upload,2025-08-14 13:01:06.720319+00,,,,,
+129,Endicia,IVW-00264,Itamar Medical,Kyle Fouts,Closed Lost,,https://drive.google.com/file/d/1mCwx_vswUdDM04hMSwUTVaOmNNmxcmRL/view?usp=drive_link,2025-08-14 18:01:07.671862+00,2025-08-14 18:01:07.671862+00,"GMT20250731-135910_Recording_640x360.mp4
+Speaker 1 Buried Wins Moderator
+Speaker 2 Kyle Fouts
+Contact: Kyle Fouts
+Contact Title Salesforce Administrator
+Contact Company:   Itamar Medical ZOLL
+Contact Company Website:  zoll.com
+Contact Company Description:  ZOLL Medical Corporation is a mid-market medical device and software company headquartered in Chelmsford, Massachusetts, providing advanced emergency care solutions including defibrillators, cardiac monitors, ventilation, temperature management, and sleep apnea diagnostic products to hospitals, EMS, public safety, and military sectors globally. It is a subsidiary of Asahi Kasei Group, specializing in integrated cardiopulmonary and respiratory care technologies.
+Deal Status:  Churned
+Buried Wins Client:  Endicia
+Interview Date: July 31, 2025
+
+
+Raw Transcript:
+Buried Wins Moderator (00:00:25 - 00:00:57)
+It. Hello.
+Kyle Fouts (00:00:59 - 00:01:00)
+Good morning.
+Buried Wins Moderator (00:01:00 - 00:01:02)
+Good morning. Kyle, right?
+Kyle Fouts (00:01:02 - 00:01:03)
+Yes.
+Buried Wins Moderator (00:01:04 - 00:01:09)
+Okay, before we get started, this interview is going to be recorded. Is that okay with you?
+Kyle Fouts (00:01:09 - 00:01:10)
+Yes, that's fine.
+Buried Wins Moderator (00:01:11 - 00:01:19)
+Okay, good. All right. Okay, so just to get started, could you introduce yourself, tell me a little bit about your company.
+Kyle Fouts (00:01:20 - 00:01:43)
+Yeah, sure. So, Kyle Fouts, salesforce administrator. Our company does home sleep apnea testing and one of our service lines does direct to patient delivery. That's why we were using Indusia.
+Buried Wins Moderator (00:01:45 - 00:01:51)
+Okay, you are using Indisha. So how long have you been using it before you stopped?
+Kyle Fouts (00:01:52 - 00:01:58)
+So they were using it before I started with the company. I would say we probably used it for at least four years.
+Buried Wins Moderator (00:01:59 - 00:02:08)
+Okay. All right. And so were you involved in the decision making to start using Indicia at all or was it before you joined?
+Kyle Fouts (00:02:08 - 00:02:20)
+Not to start. I did manage the Indicia platform after I got there. Yeah, that's about it.
+Buried Wins Moderator (00:02:21 - 00:02:24)
+Okay. And any specific reason why you stopped?
+Kyle Fouts (00:02:25 - 00:02:55)
+Yeah. So we contracted directly with USPS for better volume shipping rates and a USPS integration with our third party shipping vendor became viable. So before Indisha had the best integration with them and then USPS improved their integration or the venture integration, so. But mostly, mostly cost savings.
+Buried Wins Moderator (00:02:56 - 00:03:05)
+Okay. So did you, did anybody reach out to, you know, maybe offer you a better rate or ask why you stopped or anything like that?
+Kyle Fouts (00:03:08 - 00:03:26)
+I might have had one follow up call, but it was months after we'd already switched. Yeah. And I mean that. We were already under contract with USPS anyway by the time they reached out. So.
+Buried Wins Moderator (00:03:27 - 00:03:28)
+Okay.
+Kyle Fouts (00:03:28 - 00:03:30)
+Yeah, we didn't give Indicia a chance to negotiate.
+Buried Wins Moderator (00:03:33 - 00:03:37)
+Okay. Were there any other issues with Indisha at all, other than the rate?
+Kyle Fouts (00:03:39 - 00:04:21)
+I will say like tier, Tier one customer support was easy to get a hold of, but getting anything escalated past that was difficult. It was difficult to get. So we, we had a balance on. We ended up having like two, I think two Indicia accounts for some reason. And when we ended the contract we had a balance on both of those accounts and it took at least three months, maybe more, to get refunds. So the internal processing was very long. The communication was almost non existent.
+Buried Wins Moderator (00:04:24 - 00:04:27)
+So you do deposit some amount with them or something like that or.
+Kyle Fouts (00:04:27 - 00:04:33)
+We did, yeah. We were, we were depositing, I don't know, $15,000 a week or something.
+Buried Wins Moderator (00:04:34 - 00:04:35)
+Okay.
+Kyle Fouts (00:04:37 - 00:04:44)
+In like $5,000 chunks? I think so, yeah. Currently we're doing 10,000 shipments a month.
+Buried Wins Moderator (00:04:49 - 00:04:53)
+And who's the third party? You said you're integrating with somebody else, right?
+Kyle Fouts (00:04:53 - 00:04:54)
+Zencraft.
+Buried Wins Moderator (00:04:55 - 00:04:59)
+Okay. Okay. And. And Indicia doesn't integrate with that?
+Kyle Fouts (00:04:59 - 00:05:29)
+No, they do so they were, they, they had, they had. At the time that we selected Indicia, they probably had the only USPS integration. I don't know if usps, I think USPS only had a direct integration at that time, which would be difficult for our small team to set up. But the vendor and USPS both improved and they have an integration now which is almost just as easy as Indicia to set up.
+Buried Wins Moderator (00:05:30 - 00:05:32)
+Okay. And they're giving you better rates.
+Kyle Fouts (00:05:34 - 00:05:38)
+Have an edge on, ease of setup with that vendor.
+Buried Wins Moderator (00:05:40 - 00:05:56)
+Okay. And so when, when you switched, you made this switch from Indicia, did you ever consider somebody else? Because I know you were already working with USPS to start with. Right. Did you consider other providers @ all besides USPS? Yeah.
+Kyle Fouts (00:05:57 - 00:05:57)
+No.
+Buried Wins Moderator (00:05:59 - 00:06:05)
+Did you just go with them? Because, I mean, the comfort factor, I mean, you know them, they're giving you better rates, so let's just go with them.
+Kyle Fouts (00:06:05 - 00:06:14)
+Yeah, it's just, it was just because we could do the contract directly, the volume. We, I mean we'd reached a volume level where we could contract directly with them.
+Buried Wins Moderator (00:06:16 - 00:06:17)
+Where you couldn't do that.
+Kyle Fouts (00:06:18 - 00:06:26)
+I don't, I don't. We weren't aware that there were volume discounts. I don't think if there are, I'm not, I'm still not aware if there are volume discounts.
+Buried Wins Moderator (00:06:27 - 00:06:58)
+Okay. And, and just to reiterate, I mean, I know I didn't go over this. I'm not working for Indisha. I. We're working for third party research firms. So feel free to be completely honest. This is just going back as feedback to them. That's all Right. So, okay, so getting back to this, who made that decision to go, I mean, to let go of Indicia and go with usps? Was it you or was it a combination of people or how director of.
+Kyle Fouts (00:06:58 - 00:07:29)
+Operations started with the, the contract, USPS contract. I informed them that we could integrate because, I mean, that was another key factor was can we keep using the same process we use today in the same software? So the answer there was yes. And, and the rates were obviously better.
+Buried Wins Moderator (00:07:30 - 00:07:39)
+Okay. And have you, how has your experience been? Because I know you said it's been recent, right. Since you made that switch. So.
+Kyle Fouts (00:07:42 - 00:08:50)
+Man, it's got to be close to a year now. I don't know exactly what, when we switch, but experience has been pretty good. I mean, I know Indisha was, Indisha was really just like a, you know, a third party to the usps. So any like, connection, like there's been a few server outages for, you know, minimal downtime, but I assume those could have happened with Indicia, too. Account management has been better. We got dedicated account managers. Yeah. And then access to their technical team. We. We had to have access to their technical team because the setup was a little more difficult. But there is access. Even if it's slow, there is access, which we did not seem to have with Indusia. Again, initiation was simpler, so there wasn't as much technical support needed, but fair.
+Buried Wins Moderator (00:08:50 - 00:09:07)
+Okay, so when. When you were talking about. I know, just to take a step back, when you said you didn't get the refund in time or. Or any other issues that you might have encountered, was it you who had to reach out to them, or was there somebody from their side ever reaching out to you just to make sure everything was going okay or.
+Kyle Fouts (00:09:08 - 00:09:23)
+I don't think. I don't think anyone ever reached out from Indicia to ensure that we got the refund. I followed up on it multiple times to find out what the process was, and eventually I think I just stopped. And then finally they got the check in the mail.
+Buried Wins Moderator (00:09:25 - 00:09:29)
+Okay, so they did know that you were trying to get that processed?
+Kyle Fouts (00:09:29 - 00:09:36)
+Yeah, I mean, I did. I did contact someone and they responded and occasionally gave updates when asked.
+Buried Wins Moderator (00:09:37 - 00:09:43)
+Okay, and what about any kind of technical issues? Did you ever contact their team for anything else?
+Kyle Fouts (00:09:44 - 00:10:01)
+Yeah, I had multiple times contacted for technical support. Occasionally it would be resolved through the Tier one support. I remember one instance where I needed Tier two support, and it was very difficult. Long wait times. I don't remember the issue or the resolution, but.
+Buried Wins Moderator (00:10:06 - 00:10:10)
+Okay, so tell me a little bit. What is Tier one support? What is Tier two support?
+Kyle Fouts (00:10:11 - 00:10:16)
+So Tier one is like, you know, the. The general help desk. They can help you reset your password.
+Buried Wins Moderator (00:10:16 - 00:10:17)
+Oh, okay. Okay. Okay.
+Kyle Fouts (00:10:17 - 00:10:22)
+Then Tier two would be. They can solve more complex issues, more specific.
+Buried Wins Moderator (00:10:22 - 00:10:32)
+Okay, and what is the wait time on that? I mean, so how. I'm just trying to understand how that support works. Do you contact somebody and then they route you to somebody else or.
+Kyle Fouts (00:10:32 - 00:10:53)
+Yeah, so I would contact Tier one. And I mean, the answer time was not. The. The wait time was not too long to get to Tier one. And then after they understood your issue, it just seemed like they didn't have the internal processes to escalate it to a Tier two. They didn't have the resources to resolve the issue. I don't know.
+Buried Wins Moderator (00:10:55 - 00:11:00)
+Okay, s...",,medical devices,Endicia,Kyle Fouts,IVL-00017,IVL-00017,Endicia_PRJ-00025,2025-07-31 09:30:00+00,+1 501-607-2038,moderator2@buriedwins.com,zoom,+1 501-607-2038,Completed,,,,true,https://docs.google.com/document/d/1CT8GDIjT-t5Wgu_vrCTwRi81D7g1nDb4jl8Cvj3f1Fg/edit?tab=t.0,https://zoll.com,,kyle.fouts@zoll.com,"Yes,+1 501-607-2038,SMS",,,https://forms.gle/n7mrC6VXR99X6hHW6,,,215.00,264,DLS-03360,Endicia_PRJ-00025_Itamar Medical,105.00,215.00,2025-07-31 00:00:00+00,false,,"Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).",IVG-00155,,,,,,2025-08-12 09:26:00+00,"Endicia Churn Discussion Guide V1
+Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).
+Introduction (4 minutes)
+Objective: Establish rapport, confirm recording permission, confirm recent reduction or cessation of Endicia usage, and set expectations for the interview.
+Thank you for joining me today, [Participant Name]. I’m with Buried Wins, a third-party research firm working with Endicia to understand how they can better serve their customers. This interview aims to explore your shipping needs and experiences with Endicia. With your permission, I’d like to record this conversation. The recording and transcript will be used to create a report shared with Endicia.
+Any questions?
+- Information will only be shared with our client.
+- If participant is concerned about anonymity: We can remove mentions of your name and company name.
+- If participant does not want to be recorded: We can conduct the interview without recording and take notes.
+
+1. To start, my understanding is that your company recently reduced or stopped using Endicia, is that correct? [PARTICIPANT SHOULD SAY YES]
+
+1. Can you briefly introduce yourself and your role at your company? 
+
+Usage Context and Churn Triggers (8 minutes)
+Objective: Understand the reasons for reducing or stopping Endicia usage and the competitive landscape that influenced their decision.
+Client Assumptions: Customers are shifting to USPS direct or other carriers due to pricing, tech partner decisions, or better API offerings (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32).
+1. What prompted your company to reduce or stop using Endicia’s services? 
+    a. IF REDUCED USAGE: To what extent are you still using Endicia, and why? 
+
+1. Which other solutions or providers did you consider when deciding to reduce or stop using Endicia? 
+
+1. Which solution or provider did you primarily choose to increase usage or switch to from Endicia?
+
+1. IF CHOSE ANOTHER SOLUTION: Why did you choose to prioritize this solution over Endicia? What were its key strengths?
+
+Customer Experience Post-Migration (4 minutes)
+Objective: Explore the customer’s experience with their current shipping solution to identify pain points and benefits compared to Endicia.
+Client Assumptions: Customers may face challenges with USPS direct API, such as lack of account management or slower response times, which Endicia could address (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+1. IF CHOSE ANOTHER SOLUTION: How has your experience been with your new shipping solution(s)?
+
+1. IF CHOSE ANOTHER SOLUTION: What specific pain points or benefits have you encountered with your new solution(s) compared to Endicia’s offerings? 
+
+Decision-Making Influencers (4 minutes)
+Objective: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia.
+Client Assumptions: Decisions to move away from Endicia may involve IT or other stakeholders not adequately engaged by Endicia’s team (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+1. Who was involved in the decision to reduce or stop using Endicia (e.g., logistics, IT, procurement)? Who were the key influencers or decision-makers? 
+
+1. How did Endicia’s account management or sales team engage with your team during your usage or decision-making process? 
+
+Multi-Homing Behavior and Barriers to ShipStation API (6 minutes)
+Objective: Investigate why customers split shipping volume and what prevents adoption of ShipStation API.
+Client Assumptions: Customers multi-home due to carrier needs or tech partner limitations, and integration costs deter switching to ShipStation API (Candi, 00:11:15-00:12:32; Anthony, 00:25:32-00:26:23).
+1. Do you currently split your shipping volume across multiple providers? (e.g., USPS, UPS, FedEx) 
+    a. IF YES: Why do you use multiple providers? 
+
+1. Were you aware of Endicia’s affiliation with ShipStation API, a multi-carrier solution? 
+    a. IF YES: What barriers prevented you from adopting it? (e.g., integration costs, tech partner limitations) 
+
+
+Retention Strategies and Incentives (6 minutes)
+Objective: Determine what incentives could retain or attract customers to Endicia or ShipStation API.
+Client Assumptions: Incentives like revenue sharing, free service periods, or compliance management could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+1. What could Endicia have done that would have encouraged your company to maintain or increase your usage with them? 
+    a. PROBE: revenue sharing, no label fees, free service periods, compliance management?
+
+1. What would make a multi-carrier solution like ShipStation API more appealing, considering your current tech stack or operational needs? 
+
+Wrap-Up (4 minutes)
+Objective: Capture additional insights and future considerations to inform Endicia’s retention and growth strategies.
+Client Assumptions: Regional carriers and streamlined pricing could be differentiators, but customers need clear incentives to justify integration efforts (Candi, 00:19:34-00:22:39; Anthony, 00:25:32-00:26:23).
+1. Are there any other factors or experiences with Endicia, USPS, or other providers you’d like to share? 
+
+1. What would make you consider returning to or increasing usage with Endicia or exploring their broader solutions, such as ShipStation API, in the future? 
+
+Closing: “Those are all of my questions. Thank you for your time today. You will receive an email from the rewards platform, Tremendous, with your payment within the next 48 hours.”",csv_upload,2025-08-14 13:01:06.720591+00,2025-07-31 00:00:00+00,,,,
+130,Endicia,IVW-00263,Smartpak Equine-Ma,Kevin Mason,Closed Lost,,https://drive.google.com/file/d/1GQBro53R5ASd3YRqD1liWA8boZ4cyiMu/view?usp=drive_link,2025-08-14 18:01:07.962427+00,2025-08-14 18:01:07.962427+00,"GMT20250731-152306_Recording_640x360.mp4
+Metadata:
+Speaker 1 Buried Wins Moderator
+Speaker 2 Kevin Murphy
+Contact: Kevin Murphy
+Contact Title Transportation Manager 
+Contact Company:  Covetrus
+Contact Company Website: covetrus.com 
+Contact Company Description:  Covetrus is a global mid-market animal health technology and services company headquartered in Portland, Maine. The company provides veterinary clinics and professionals with an integrated platform combining animal health products, prescription and supply chain services, practice management software, diagnostics, and client engagement solutions. Covetrus supports companion, equine, and large-animal veterinary practices—serving over 100,000 veterinary customers across North America, Europe, and the Asia-Pacific region. The company went private in 2022 after being acquired by investment firms Clayton, Dubilier & Rice and TPG, and employs about 5,500 people globally. Covetrus is recognized for its focus on enhancing the efficiency and productivity of veterinary practices through technology-driven solutions and supply chain expertise
+Deal Status:  Churn
+Buried Wins Client:  Endicia
+Interview Date: Jul 31, 2025
+
+Raw Transcript:
+
+Kevin Murphy (00:03:24 - 00:03:49)
+It's.
+Buried Wins Moderator (00:07:16 - 00:07:17)
+Kevin. Kevin.
+Kevin Murphy (00:07:17 - 00:07:18)
+How are you doing today?
+Buried Wins Moderator (00:07:18 - 00:07:20)
+I'm good, thank you. How are you?
+Kevin Murphy (00:07:20 - 00:07:20)
+Good.
+Buried Wins Moderator (00:07:23 - 00:07:40)
+Well, thank you so much for coming. My name is Nandini. I'm with B.O. we're a third party research firm working with Indicia with some key clients to understand their experiences. So thank you so much for sparing the time to talk with me.
+Kevin Murphy (00:07:40 - 00:07:41)
+Absolutely.
+Buried Wins Moderator (00:07:41 - 00:07:47)
+Sure. Before we get started, just want to let you know that this is being recorded. Is that okay with you?
+Kevin Murphy (00:07:47 - 00:07:48)
+Yep, that's fine.
+Buried Wins Moderator (00:07:48 - 00:07:55)
+Okay, so tell me something about yourself, your company. What do you do?
+Kevin Murphy (00:07:56 - 00:09:23)
+So I'm a transportation manager for two of our divisions. We are a pet healthcare company. So the division I do is prescriptions and things to the pets. So if you think of it, you go to a vet and your pet has a prescription, like on a monthly thing. What we do is to fill those prescriptions and mail them directly to the customer's houses. So you don't necessarily have to go to the vet every month. So kind of like the subscription things. We support the vets in what they're doing. So not necessarily like a direct e comm kind of place. You have to kind of go through your vet and you have to go through get prescriptions and things. So we focus mainly on the healthcare of the pets and not necessarily on, say, toys or other products like that. So my division is like the smaller vet in home. We also have an equine division as well, which is horses and large animal. And then those two divisions I just talked about were on stamps for a very long time. As I know it's not the exact same thing as Indisha, but it is kind of like the half or slash Indisha. And then the other division is different though. So those two I had mentioned are like B2C. Neither one is B2B and those are ordered today, delivered tomorrow directly to clinics and hospitals and things like that for pets. So that's a different animal and they have not been on stamps or Indonesia before.
+Buried Wins Moderator (00:09:25 - 00:09:37)
+I see. So you deliver directly to customers. You do okay. Yeah. My pet uses the Simperico Trio. He's a golden. You probably play a part there.
+Kevin Murphy (00:09:37 - 00:09:41)
+Yep. It's very convenient when it comes to you so you don't have to keep running up for it, right?
+Buried Wins Moderator (00:09:41 - 00:09:44)
+Yeah, yeah. We just get it delivered once in six months.
+Kevin Murphy (00:09:44 - 00:09:45)
+Yeah. Yep.
+Buried Wins Moderator (00:09:47 - 00:09:54)
+All right, coming back. So I understand that you, you have been using Indicia for some time, correct?
+Kevin Murphy (00:09:55 - 00:09:57)
+We have, but we've moved away from them now.
+Buried Wins Moderator (00:09:57 - 00:10:00)
+Sure. So how long did you use it before you moved away?
+Kevin Murphy (00:10:00 - 00:10:10)
+At least at Least seven years that I know of. And I think it went back further than that, but that was the furthest I could find back in the record. So I've been with the company for about three.
+Buried Wins Moderator (00:10:11 - 00:10:13)
+Okay, okay.
+Kevin Murphy (00:10:13 - 00:10:23)
+And we used them mainly up through one division was through about August of last year and then the other one was through January of this year.
+Buried Wins Moderator (00:10:25 - 00:10:32)
+Oh, okay, okay. And so have you reduced using or completely stopped using them?
+Kevin Murphy (00:10:32 - 00:10:35)
+We've moved away now entirely.
+Buried Wins Moderator (00:10:36 - 00:10:39)
+And what prompted this? I mean.
+Kevin Murphy (00:10:40 - 00:12:09)
+Well, part of it was, I mean we had a great business working relationship with it. So we understood that when regulations changed they could no longer offer the discounted prices, you know, all the resell or reshuffling there. So we were, we understood that and we were still very much engaged with their system. But our issue ran into more of. With the reserve account, the reserve postage account with the company where we would put cash in to pre fund our accounts in an enterpriser way. It was the lack of visibility and then the lack of accounting coming out of that. So we were putting cash in and we like, okay, but I couldn't get a real balance of what was it. You know, I knew how much I was putting in, I can see how much it's going out. But we, the information we were getting automated to us was also very off. And what I mean, off it was like close off, like $600,000 off. So I'm like, I can't give that to my accounting team. They want pennies, of course. So I mean we did try to work through that quite a bit, but it really came down to the visibility and then that part of the trust thing, I'm like, you know, because we are giving you cash directly into that account. It was just that visibility. And I understand, I don't know if indecision or stamps have direct control over the postage reserve accounts that are set to them, but I know that that is separate from the regular accounting or finance team.
+Buried Wins Moderator (00:12:10 - 00:12:21)
+So, so help me understand how this process works because so do they. Do you put in like a certain amount every week or every month? Like, like, like a deposit?
+Kevin Murphy (00:12:21 - 00:12:48)
+Yeah. So it's so in. So unlike the UPS or FedEx or other carriers, they'll invoice you after you've delivered. With the post office, it's a prepay model, so you have to pay up front or have funds available for when the label's made. So you have to keep funds in that account. If it runs out, then you can't make any labels. So you actually have to make sure you keep Cash sitting in there. So you're able to process.
+Buried Wins Moderator (00:12:49 - 00:12:50)
+And that is through Andisha.
+Kevin Murphy (00:12:51 - 00:13:44)
+Yes. So there's a postage reserve account for enterprise customers. Way back when it used to be on a credit card. We had it on a credit card, even a large company for us, we. I don't know why, but we were still using our credit card and it would just auto fund, you know, ever so much and it worked fine. But then there were some regulation changes around that it could no longer be a credit card and it had to be an ACH bank account or the trust account. Our finance did not want to do at ACH because they don't want to try to reconcile thousands of lines of transactions coming out. You know, each time it tried to do these credits or also the taking the information out of the account itself. So that's when we moved forward with the trust account. So then you can still see what's coming out and it still does increments by the day, not necessarily transactional. So.
+Buried Wins Moderator (00:13:45 - 00:13:51)
+So the ACH works like kind of like a PayPal, like through a different provider, and so you can hook it.
+Kevin Murphy (00:13:51 - 00:14:00)
+Up directly to your ACH account. So then each time you're doing a manifest or whatever, it would come out at the end of each day for each location.
+Buried Wins Moderator (00:14:01 - 00:14:01)
+Okay.
+Kevin Murphy (00:14:01 - 00:14:04)
+You would have to reconcile. So we have quite a few locations.
+Buried Wins Moderator (00:14:05 - 00:14:15)
+Okay. And so doesn't that money. Suppose you. You put in X amount of money per week and so whatever is left over, doesn't it just roll over to the next week?
+Kevin Murphy (00:14:15 - 00:14:39)
+Yes. So that. Yes. So it just stays there until you're using it. But our issue was that we had no visibility to exactly how much money was sitting there. So as you're trying to plan for like forecast or volume increases or a sale coming up, it's like, okay, how much do I need to add to that account to make sure we have enough funds so it doesn't run to zero, so we don't stop the business, you know, that kind of thing. So it was just.
+Buried Wins Moderator (00:14:39 - 00:14:41)
+Isn't there like a set amount that you have to put in every week?
+Kevin Murphy (00:14:42 - 00:15:14)
+No. So that you determine how much you're putting in there. Yeah. But, you know, we would try to keep about two and a half weeks at least. Or not two and a half. Yeah, two and a half weeks at least operating in there in case there was an issue with some of the transfers or we need to do an immediate wire transfer or something like that. But at times, you know, that would balloon up. So we would have like a million dollars in cash sitting in that account at times. So it's like, it's hard to justify that with your finance people.
+Buried Wins Moderator (00:15:15 - 00:15:33)
+I can see that. And so, so tell me something. Did anybody. Did you try to reach out to them to say, hey, you know, can we know, can we understand how much is there in the account so I can do something about it? Or...",,veterinary,Endicia,Kevin Mason,IVL-00017,IVL-00017,Endicia_PRJ-00025,2025-07-31 10:30:00+00,+1 614-746-2721,moderator2@buriedwins.com,zoom,+1 614-746-2721,Completed,,,,true,https://docs.google.com/document/d/1qVw0PU6CprY6bZ02TA9oIWc3y5fG9tklCUbchw7JKII/edit?usp=drive_link,https://covetrus.com,Transportation Manager,kevin.mason@covetrus.com,,,,https://forms.gle/n7mrC6VXR99X6hHW6,,,215.00,263,DLS-03360,Endicia_PRJ-00025_Smartpak Equine-Ma,105.00,215.00,2025-07-31 00:00:00+00,false,,"Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).",IVG-00155,http://www.linkedin.com/in/kevin-mason-8653477,,,,,2025-08-12 09:25:00+00,"Endicia Churn Discussion Guide V1
+Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).
+Introduction (4 minutes)
+Objective: Establish rapport, confirm recording permission, confirm recent reduction or cessation of Endicia usage, and set expectations for the interview.
+Thank you for joining me today, [Participant Name]. I’m with Buried Wins, a third-party research firm working with Endicia to understand how they can better serve their customers. This interview aims to explore your shipping needs and experiences with Endicia. With your permission, I’d like to record this conversation. The recording and transcript will be used to create a report shared with Endicia.
+Any questions?
+- Information will only be shared with our client.
+- If participant is concerned about anonymity: We can remove mentions of your name and company name.
+- If participant does not want to be recorded: We can conduct the interview without recording and take notes.
+
+1. To start, my understanding is that your company recently reduced or stopped using Endicia, is that correct? [PARTICIPANT SHOULD SAY YES]
+
+1. Can you briefly introduce yourself and your role at your company? 
+
+Usage Context and Churn Triggers (8 minutes)
+Objective: Understand the reasons for reducing or stopping Endicia usage and the competitive landscape that influenced their decision.
+Client Assumptions: Customers are shifting to USPS direct or other carriers due to pricing, tech partner decisions, or better API offerings (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32).
+1. What prompted your company to reduce or stop using Endicia’s services? 
+    a. IF REDUCED USAGE: To what extent are you still using Endicia, and why? 
+
+1. Which other solutions or providers did you consider when deciding to reduce or stop using Endicia? 
+
+1. Which solution or provider did you primarily choose to increase usage or switch to from Endicia?
+
+1. IF CHOSE ANOTHER SOLUTION: Why did you choose to prioritize this solution over Endicia? What were its key strengths?
+
+Customer Experience Post-Migration (4 minutes)
+Objective: Explore the customer’s experience with their current shipping solution to identify pain points and benefits compared to Endicia.
+Client Assumptions: Customers may face challenges with USPS direct API, such as lack of account management or slower response times, which Endicia could address (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+1. IF CHOSE ANOTHER SOLUTION: How has your experience been with your new shipping solution(s)?
+
+1. IF CHOSE ANOTHER SOLUTION: What specific pain points or benefits have you encountered with your new solution(s) compared to Endicia’s offerings? 
+
+Decision-Making Influencers (4 minutes)
+Objective: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia.
+Client Assumptions: Decisions to move away from Endicia may involve IT or other stakeholders not adequately engaged by Endicia’s team (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+1. Who was involved in the decision to reduce or stop using Endicia (e.g., logistics, IT, procurement)? Who were the key influencers or decision-makers? 
+
+1. How did Endicia’s account management or sales team engage with your team during your usage or decision-making process? 
+
+Multi-Homing Behavior and Barriers to ShipStation API (6 minutes)
+Objective: Investigate why customers split shipping volume and what prevents adoption of ShipStation API.
+Client Assumptions: Customers multi-home due to carrier needs or tech partner limitations, and integration costs deter switching to ShipStation API (Candi, 00:11:15-00:12:32; Anthony, 00:25:32-00:26:23).
+1. Do you currently split your shipping volume across multiple providers? (e.g., USPS, UPS, FedEx) 
+    a. IF YES: Why do you use multiple providers? 
+
+1. Were you aware of Endicia’s affiliation with ShipStation API, a multi-carrier solution? 
+    a. IF YES: What barriers prevented you from adopting it? (e.g., integration costs, tech partner limitations) 
+
+
+Retention Strategies and Incentives (6 minutes)
+Objective: Determine what incentives could retain or attract customers to Endicia or ShipStation API.
+Client Assumptions: Incentives like revenue sharing, free service periods, or compliance management could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+1. What could Endicia have done that would have encouraged your company to maintain or increase your usage with them? 
+    a. PROBE: revenue sharing, no label fees, free service periods, compliance management?
+
+1. What would make a multi-carrier solution like ShipStation API more appealing, considering your current tech stack or operational needs? 
+
+Wrap-Up (4 minutes)
+Objective: Capture additional insights and future considerations to inform Endicia’s retention and growth strategies.
+Client Assumptions: Regional carriers and streamlined pricing could be differentiators, but customers need clear incentives to justify integration efforts (Candi, 00:19:34-00:22:39; Anthony, 00:25:32-00:26:23).
+1. Are there any other factors or experiences with Endicia, USPS, or other providers you’d like to share? 
+
+1. What would make you consider returning to or increasing usage with Endicia or exploring their broader solutions, such as ShipStation API, in the future? 
+
+Closing: “Those are all of my questions. Thank you for your time today. You will receive an email from the rewards platform, Tremendous, with your payment within the next 48 hours.”",csv_upload,2025-08-14 13:01:06.720846+00,2025-07-31 00:00:00+00,,,,
+131,Endicia,IVW-00284,Warehousing Pro,Chris Jenkins,Closed Lost,,https://drive.google.com/file/d/1Ebkao9GzwODvHlL5g3IwcbJ2Y8lbwAmd/view?usp=drive_link,2025-08-14 18:01:08.264529+00,2025-08-14 18:01:08.264529+00,"GMT20250804-145249_Recording_640x360.mp4
+Metadata:
+Speaker 1 Buried Wins Moderator 
+Speaker 2 Chris Jenkins
+Contact: Chris Jenkins
+Contact Title COO
+ Contact Company: Warehousing Pro
+ Contact Company Website:  https://warehousingpro.com
+Contact Company Description:  Warehousing Pro is a small third-party logistics (3PL) company headquartered in Nashville, Tennessee, providing warehousing, inventory management, order fulfillment, cross docking, load reworking, and seasonal storage services to small, medium, and large businesses primarily across the Southeastern United States. They specialize in customizable, scalable logistics solutions with an emphasis on fast fulfillment and cost efficiency.
+Deal Status:  Churned
+Buried Wins Client:  Endicia 
+Interview Date: Aug 4, 2025
+
+Raw Transcript:
+Buried Wins Moderator (00:03:49 - 00:05:06)
+It's, it's.
+Chris Jenkins (00:07:54 - 00:07:55)
+Good morning, how are you?
+Buried Wins Moderator (00:07:56 - 00:07:58)
+Good morning. I'm good, thank you. How are you?
+Chris Jenkins (00:07:58 - 00:07:59)
+Not too bad.
+Buried Wins Moderator (00:08:01 - 00:08:02)
+Thank you for joining us today.
+Chris Jenkins (00:08:03 - 00:08:04)
+Yeah, for sure.
+Buried Wins Moderator (00:08:04 - 00:08:08)
+And before we start, this call is being recorded. Are you okay with that?
+Chris Jenkins (00:08:09 - 00:08:09)
+Sure.
+Buried Wins Moderator (00:08:10 - 00:08:26)
+Okay, so I'm with. My name is Nandini. I'm with Bayard Winds. We're a third party research firm working with Indicia to understand customers, their experiences and try to see if there's anything they can do better.
+Chris Jenkins (00:08:27 - 00:08:37)
+Okay, Makes sense. I sent a reply email and I replied to the email I got and I also replied to the text messages I got, but I didn't hear back from anyone, so I thought maybe it was just automated boxes or something.
+Buried Wins Moderator (00:08:39 - 00:08:41)
+Oh, you didn't get a email confirming this?
+Chris Jenkins (00:08:41 - 00:09:14)
+No, no, I got an email confirmation, but I actually replied to it with a couple questions on the email and the text. But last week and this week. But I thought maybe it was just like an automated email or something or an automated email box and text message because I didn't hear back. But basically it's okay. I was just wondering, for one, we've been in, I mean, we've been in Indonesia client for probably a decade as a 3PO and I wasn't sure if you were looking for information on anything specific like the, the pricing or the functionality or the communication of our rep or, or whatnot.
+Buried Wins Moderator (00:09:17 - 00:09:22)
+Oh, okay. Yeah, we'll go through that. But we just want to know your reaction overall to Indisha as a company.
+Chris Jenkins (00:09:22 - 00:09:26)
+Okay. I don't know if there's like a certain zone, so just Indisha in general.
+Buried Wins Moderator (00:09:26 - 00:09:36)
+Yeah, and I'll go through it when we go through. Yeah. But yeah, if there's anything specific that you want to share, I'm always happy to listen. Okay, awesome.
+Chris Jenkins (00:09:36 - 00:09:41)
+And then I saw that the 175. How do you. Is that like a Visa gift card or Amazon or how do you do that?
+Buried Wins Moderator (00:09:43 - 00:09:51)
+I actually don't know. I think it's a gift card, but I can check that up for you because I don't have the payments. It comes from the platform, so I'm not sure.
+Chris Jenkins (00:09:52 - 00:09:53)
+Okay.
+Buried Wins Moderator (00:09:53 - 00:09:57)
+But if you want to know, I can check up and get back to you. I'll send you an email.
+Chris Jenkins (00:09:57 - 00:09:58)
+Yeah, that'd be great.
+Buried Wins Moderator (00:09:59 - 00:10:04)
+Okay, so just to start, would you just introduce yourself, your role at the company?
+Chris Jenkins (00:10:06 - 00:10:08)
+Sure. Chris Jenkins, COO at Warehousing Pro.
+Buried Wins Moderator (00:10:09 - 00:10:15)
+Mm. Okay. And so you said you've been using Indicia for a decade, right?
+Chris Jenkins (00:10:16 - 00:10:16)
+Yep.
+Buried Wins Moderator (00:10:16 - 00:10:24)
+But. Okay. And just during this time, did anybody from Indisha interact with you like the sales team, the account team, anybody?
+Chris Jenkins (00:10:25 - 00:10:25)
+Yeah, we have a rep.
+Buried Wins Moderator (00:10:26 - 00:10:32)
+Okay. And how good are they at following up or checking or just checking up on you?
+Chris Jenkins (00:10:33 - 00:10:34)
+Checking up on us?
+Buried Wins Moderator (00:10:34 - 00:10:40)
+Yeah. Like, do they call up and ask you is everything okay? Or do you have any issues or do you need to call them? How does that work?
+Chris Jenkins (00:10:41 - 00:12:14)
+I. When I'm able to reach our rep, I like her. She's. She's helpful. She's communicative. Well, she's helpful, knowledgeable. When I'm able to reach her and I've worked with her, I don't think she. I've worked with her the whole time. I think we've had multiple Indisha reps, but she's been a rep for a few years. And yeah, I like working with her. I do. She, I. She seldom, if ever, checks in with us. Maybe. I don't know if even. Maybe once a year, if she does that. And I have a lot of difficulty reaching her. Actually, I've been waiting for our. A while to hear back from her. I left her make sure I give you accurate information. So I tried to call her a week ago last Monday, and I couldn't reach her. I left her voicemail. I emailed her that day on Monday. I emailed her a followup on Thursday. I still haven't heard from her, so I'm not sure. Like that. And that's not uncommon. That. Like, sometimes I'll go weeks trying to reach out to her and don't hear back. Sometimes I'll send an email and I'll get an answer the same day, but that's. I don't know. So the communication is. It's not the best. I don't know if she's just overwhelmed or busy or what's up there. But yeah, sometimes, I mean, if I can't reach her by phone or email for over a week, that's not really helpful. So.
+Buried Wins Moderator (00:12:14 - 00:12:18)
+Okay. So sorry.
+Chris Jenkins (00:12:18 - 00:12:19)
+That's okay.
+Buried Wins Moderator (00:12:22 - 00:12:31)
+I'm just gonna mute my phone. I'm sorry. No problem. I don't know who calls at this time because usually phone is just used for texting, so. That's strange.
+Chris Jenkins (00:12:31 - 00:12:32)
+I know, right?
+Buried Wins Moderator (00:12:33 - 00:12:37)
+That's strange. Usually it's just the credit card companies, you know, calling you, but.
+Chris Jenkins (00:12:37 - 00:12:38)
+Right, exactly.
+Buried Wins Moderator (00:12:38 - 00:12:48)
+All right. Sorry about that. So tell me right now, are you using Indicia or. Yes. You've moved away from them and you reduce your usage. What is it?
+Chris Jenkins (00:12:50 - 00:12:54)
+Neither. We spend probably $5,000 every day or two.
+Buried Wins Moderator (00:12:55 - 00:12:57)
+Okay, so you continue using Indicia?
+Chris Jenkins (00:12:57 - 00:13:05)
+Yeah, I think in the last two weeks we spent about 40 to $50,000 in postage and most of that was disha.
+Buried Wins Moderator (00:13:05 - 00:13:11)
+Okay, so I had a question on that. Do you, how does that work? Do you deposit money every week? Like a set amount?
+Chris Jenkins (00:13:12 - 00:13:13)
+5,000.
+Buried Wins Moderator (00:13:13 - 00:13:14)
+Okay.
+Chris Jenkins (00:13:14 - 00:13:28)
+No, no, we, we purchase, we have an auto buy. So when it gets down to I think 200 or maybe it's a thousand, something like that, when it gets down to a lower amount, then it auto buys 5,000, which happens usually every day or two.
+Buried Wins Moderator (00:13:28 - 00:13:41)
+Okay, and do you, are you able to see where that money is used or if there's any outstanding, like at the end of the week, you know, you put in 5,000, but I have so much amount left, so, so that rolls over to the next week. Are you able to see that? Is that transparency in that?
+Chris Jenkins (00:13:42 - 00:13:50)
+Yep. Yeah, I can log into the site and it's right there in the top right corner of what our balance is. But we don't, we use, we don't use Indicia software. We use Shapiro.
+Buried Wins Moderator (00:13:51 - 00:13:51)
+Okay.
+Chris Jenkins (00:13:51 - 00:13:52)
+Shapiro.
+Buried Wins Moderator (00:13:52 - 00:14:01)
+Okay. So are you considering anybody else at all to replace and issue or you're happy with it the way it's working and you're going to continue with that?
+Chris Jenkins (00:14:04 - 00:14:50)
+I had no plans to switch from Indisha. Well, let me back up. We, yes, we use Indisha, but we have us, we have a USPS nsa. So we have our rates directly with usps. The only reason we use Indicia is just for printing of the labels, but there's no label printing fee or anything. So I think we pay them maybe $30 a month for the maintenance or management fee or whatever to have the account. But our rates are not with Indisha. We just use them as the API provider. But they, I don't know if you're aware, but they, because you're not Indicia, you're a third party. But they Recently, I guess the USPS went to Indisha and said, we want to, we want you to pay us more timely on the postage. Are you aware of that?
+Buried Wins Moderator (00:14:50 - 00:14:51)
+No.
+Chris Jenkins (00:14:51 - 00:17:30)
+Okay, well, USPS want like Indisha wasn't paying them, know if they were paying them once a, like every two weeks or every month or something. But USPS said, hey, if you're going to buy postage from us, you need to pay us more quickly. And I guess Indisha went ahead and they said, okay, look, all, you know, all their customers, they said you need to set up a, or at least, at least NSA customers. You need to set up a payment account with USPS directly so you can still use Indisha, but you're going to pay it USPS for the postage and USPS wasn't ready for that. And Indisha told all or Indisha made that announcement before they even talked to usps. So USPS is pretty disgruntled about it. And I didn't even have that information. I, I had to find that out from usps. I don't know why Indisha didn't tell us that. So the issue, and I'm getting to your question, is that on the new system that USPS wasn't ready for because or they weren't ready for it. So the new system doesn't allow us to use a credit card. You can only use ach. So they said that in beach is working on making a change, hopefully ...",,warehousing,Endicia,Chris Jenkins,IVL-00017,,Endicia_PRJ-00025,2025-08-04 10:00:00+00,+1 615-696-9675,moderator2@buriedwins.com,zoom,Email,Completed,,,,true,https://docs.google.com/document/d/1fptH8WlPYCO5G_9A-pfZNUyTfQLq8MN3PJIRlmDzhHM/edit?tab=t.0,https://warehousingpro.com,Chief Operating Officer,contact@warehousingpro.com,+1 615-988-8181,,,https://forms.gle/n7mrC6VXR99X6hHW6,,,215.00,284,DLS-03360,Endicia_PRJ-00025_Warehousing Pro,105.00,215.00,2025-07-31 00:00:00+00,false,,"Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).",IVG-00155,http://www.linkedin.com/in/chris-jenkins-ba922abb,,,,,2025-08-12 09:27:00+00,"Endicia Churn Discussion Guide V1
+Common Desired Learnings Across Stakeholders
+1. Churn Drivers: Understand why customers reduce or stop using Endicia, focusing on shifts to USPS direct API, competitor offerings, or other carriers, and the role of pricing, service, or technology (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Competitor Strategies: Gain insights into USPS’s direct API tactics, including pricing incentives, revenue sharing, and sales approaches, as well as competitors’ offerings like ProShip or other partners moving to USPS direct (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:08:13-00:08:46).
+3. Value of Multi-Carrier Solutions: Determine what would entice customers to shift volume to Endicia or adopt ShipStation API, especially for multi-homing customers or those using tech partners like ProShip (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:14:45-00:15:34).
+4. Customer Experience Post-Migration: Explore pain points and benefits customers experience after moving to USPS API or other solutions compared to Endicia (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+5. Multi-Homing Behavior: Investigate why customers split their shipping volume across multiple providers and what it would take to consolidate more volume with Endicia or ShipStation API (Candi, 00:11:15-00:12:32; Chris S, 00:24:19-00:25:16).
+6. Decision-Making Influencers: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+7. Barriers to Transition: Explore specific challenges preventing customers from moving to ShipStation API, such as tech partner limitations, development costs, or lack of perceived value (Candi, 00:15:34-00:17:39; Anthony, 00:25:32-00:26:23).
+8. Retention Strategies: Determine what incentives (e.g., revenue sharing, free service, compliance management) could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+Common Assumptions Across Stakeholders
+1. USPS Direct as Primary Competitor: USPS’s improved API, credit card payment options, and aggressive sales tactics (e.g., revenue sharing, no label fees) drive churn, particularly through tech partners like ProShip (Candi, 00:08:13-00:09:02; Anthony, 00:12:14-00:13:32; Chris S, 00:05:41-00:06:19).
+2. Limited Multi-Carrier Appeal: Endicia’s single-carrier focus (USPS) limits appeal for customers with multi-carrier needs, especially if tech partners don’t support ShipStation API (Candi, 00:06:22-00:08:13; Anthony, 00:11:37-00:12:12).
+3. Pricing as a Barrier: Endicia’s label fees and lack of timely pricing updates deter customers, especially when USPS or competitors offer no-fee or revenue-sharing models (Anthony, 00:19:30-00:20:55; Candi, 00:25:29-00:25:56).
+4. Tech Partner Dependency: Customers tied to tech partners (e.g., ProShip, Shapiro) are unlikely to switch to ShipStation API due to integration costs and established systems, leading to churn when partners move to USPS direct (Candi, 00:07:28-00:10:00; Anthony, 00:11:37-00:12:12).
+5. Regional Carriers as Opportunity: Offering regional carriers through ShipStation API could be a differentiator, but customers may not recognize this value or be willing to invest in integration (Candi, 00:19:34-00:22:39; Chris S, 00:19:34-00:21:39).
+Introduction (4 minutes)
+Objective: Establish rapport, confirm recording permission, confirm recent reduction or cessation of Endicia usage, and set expectations for the interview.
+Thank you for joining me today, [Participant Name]. I’m with Buried Wins, a third-party research firm working with Endicia to understand how they can better serve their customers. This interview aims to explore your shipping needs and experiences with Endicia. With your permission, I’d like to record this conversation. The recording and transcript will be used to create a report shared with Endicia.
+Any questions?
+- Information will only be shared with our client.
+- If participant is concerned about anonymity: We can remove mentions of your name and company name.
+- If participant does not want to be recorded: We can conduct the interview without recording and take notes.
+
+1. To start, my understanding is that your company recently reduced or stopped using Endicia, is that correct? [PARTICIPANT SHOULD SAY YES]
+
+1. Can you briefly introduce yourself and your role at your company? 
+
+Usage Context and Churn Triggers (8 minutes)
+Objective: Understand the reasons for reducing or stopping Endicia usage and the competitive landscape that influenced their decision.
+Client Assumptions: Customers are shifting to USPS direct or other carriers due to pricing, tech partner decisions, or better API offerings (Candi, 00:06:22-00:10:00; Anthony, 00:08:53-00:13:32).
+1. What prompted your company to reduce or stop using Endicia’s services? 
+    a. IF REDUCED USAGE: To what extent are you still using Endicia, and why? 
+
+1. Which other solutions or providers did you consider when deciding to reduce or stop using Endicia? 
+
+1. Which solution or provider did you primarily choose to increase usage or switch to from Endicia?
+
+1. IF CHOSE ANOTHER SOLUTION: Why did you choose to prioritize this solution over Endicia? What were its key strengths?
+
+Customer Experience Post-Migration (4 minutes)
+Objective: Explore the customer’s experience with their current shipping solution to identify pain points and benefits compared to Endicia.
+Client Assumptions: Customers may face challenges with USPS direct API, such as lack of account management or slower response times, which Endicia could address (Chris S, 00:13:29-00:14:25; Candi, 00:15:34-00:17:39).
+1. IF CHOSE ANOTHER SOLUTION: How has your experience been with your new shipping solution(s)?
+
+1. IF CHOSE ANOTHER SOLUTION: What specific pain points or benefits have you encountered with your new solution(s) compared to Endicia’s offerings? 
+
+Decision-Making Influencers (4 minutes)
+Objective: Identify key decision-makers and influencers within customer organizations who may not have been effectively engaged by Endicia.
+Client Assumptions: Decisions to move away from Endicia may involve IT or other stakeholders not adequately engaged by Endicia’s team (Chris S, 00:14:27-00:15:34; Anthony, 00:20:13-00:20:55).
+1. Who was involved in the decision to reduce or stop using Endicia (e.g., logistics, IT, procurement)? Who were the key influencers or decision-makers? 
+
+1. How did Endicia’s account management or sales team engage with your team during your usage or decision-making process? 
+
+Multi-Homing Behavior and Barriers to ShipStation API (6 minutes)
+Objective: Investigate why customers split shipping volume and what prevents adoption of ShipStation API.
+Client Assumptions: Customers multi-home due to carrier needs or tech partner limitations, and integration costs deter switching to ShipStation API (Candi, 00:11:15-00:12:32; Anthony, 00:25:32-00:26:23).
+1. Do you currently split your shipping volume across multiple providers? (e.g., USPS, UPS, FedEx) 
+    a. IF YES: Why do you use multiple providers? 
+
+1. Were you aware of Endicia’s affiliation with ShipStation API, a multi-carrier solution? 
+    a. IF YES: What barriers prevented you from adopting it? (e.g., integration costs, tech partner limitations) 
+
+
+Retention Strategies and Incentives (6 minutes)
+Objective: Determine what incentives could retain or attract customers to Endicia or ShipStation API.
+Client Assumptions: Incentives like revenue sharing, free service periods, or compliance management could retain or grow Endicia’s customer base (Candi, 00:11:15-00:12:32; Anthony, 00:14:10-00:16:20; Chris S, 00:24:19-00:25:56).
+1. What could Endicia have done that would have encouraged your company to maintain or increase your usage with them? 
+    a. PROBE: revenue sharing, no label fees, free service periods, compliance management?
+
+1. What would make a multi-carrier solution like ShipStation API more appealing, considering your current tech stack or operational needs? 
+
+Wrap-Up (4 minutes)
+Objective: Capture additional insights and future considerations to inform Endicia’s retention and growth strategies.
+Client Assumptions: Regional carriers and streamlined pricing could be differentiators, but customers need clear incentives to justify integration efforts (Candi, 00:19:34-00:22:39; Anthony, 00:25:32-00:26:23).
+1. Are there any other factors or experiences with Endicia, USPS, or other providers you’d like to share? 
+
+1. What would make you consider returning to or increasing usage with Endicia or exploring their broader solutions, such as ShipStation API, in the future? 
+
+Closing: “Those are all of my questions. Thank you for your time today. You will receive an email from the rewards platform, Tremendous, with your payment within the next 48 hours.”",csv_upload,2025-08-14 13:01:06.721117+00,2025-08-04 00:00:00+00,,,,
+132,ShipStationAPI,IVW-00292,AllTrails,Emmeline Wang,"ICP Target,ICP Target",2025-08-08,,2025-08-19 19:52:47.823154+00,2025-08-19 19:52:47.823154+00,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,csv_upload,2025-08-19 19:52:47.823154+00,,,,,2025-08-19 14:52:47.632318+00
+133,ShipStationAPI,IVW-00300,FORT,Jim McClellan,ICP Target,2025-08-11,,2025-08-19 19:54:19.334476+00,2025-08-19 19:54:19.334476+00,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,csv_upload,2025-08-19 19:54:19.334476+00,,,,,2025-08-19 14:54:19.137325+00
+134,ShipStationAPI,IVW-00281,Primary.com,Alex Kazickas,ICP Target,2025-08-04,,2025-08-19 19:56:47.644807+00,2025-08-19 19:56:47.644807+00,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,csv_upload,2025-08-19 19:56:47.644807+00,,,,,2025-08-19 14:56:47.454158+00
+135,ShipStationAPI,IVW-00293,Tire Agent,Franco Cappitta,ICP Target,2025-08-08,,2025-08-19 19:57:34.319462+00,2025-08-19 19:57:34.319462+00,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,csv_upload,2025-08-19 19:57:34.319462+00,,,,,2025-08-19 14:57:34.123633+00

@@ -31,136 +31,6 @@ logging.basicConfig(filename="qc.log",
                     level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(message)s")
 
-
-# ===== TIMESTAMP EXTRACTION FUNCTIONS =====
-def parse_timestamp(ts_str: str):
-    """Parse timestamp string to HH:MM:SS format"""
-    if not ts_str:
-        return None
-    
-    # Remove brackets and parentheses
-    ts_str = re.sub(r'[\[\]()]', '', ts_str.strip())
-    
-    # Handle different formats
-    patterns = [
-        r'^(\d{1,2}):(\d{2}):(\d{2})$',  # HH:MM:SS
-        r'^(\d{1,2}):(\d{2})$',          # MM:SS
-    ]
-    
-    for pattern in patterns:
-        match = re.match(pattern, ts_str)
-        if match:
-            if len(match.groups()) == 3:  # HH:MM:SS
-                h, m, s = map(int, match.groups())
-                return f"{h:02d}:{m:02d}:{s:02d}"
-            elif len(match.groups()) == 2:  # MM:SS
-                m, s = map(int, match.groups())
-                return f"00:{m:02d}:{s:02d}"
-    
-    return None
-
-def extract_timestamps_from_text(text: str):
-    """
-    Extract all timestamps from text and return start, end, and all timestamps found.
-    Handles multiple formats: [HH:MM:SS], (MM:SS), Speaker (HH:MM):, Speaker (HH:MM:SS - HH:MM:SS)
-    """
-    all_timestamps = []
-    
-    # Pattern 1: [HH:MM:SS] or [MM:SS] inline timestamps
-    inline_pattern = r'\[(\d{1,2}:\d{2}(?::\d{2})?)\]'
-    for match in re.finditer(inline_pattern, text):
-        ts = parse_timestamp(match.group(1))
-        if ts:
-            all_timestamps.append(ts)
-    
-    # Pattern 2: Speaker (HH:MM): or (HH:MM):
-    speaker_pattern = r'(?:Speaker \d+|[A-Za-z\s]+?)?\s*\((\d{1,2}:\d{2}(?::\d{2})?)\):'
-    for match in re.finditer(speaker_pattern, text):
-        ts = parse_timestamp(match.group(1))
-        if ts:
-            all_timestamps.append(ts)
-    
-    # Pattern 3: ShipBob format - Speaker (HH:MM:SS - HH:MM:SS)
-    shipbob_pattern = r'(?:Speaker \d+|[A-Za-z\s]+?)?\s*\((\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*(\d{1,2}:\d{2}(?::\d{2})?)\)'
-    for match in re.finditer(shipbob_pattern, text):
-        start_ts = parse_timestamp(match.group(1))
-        end_ts = parse_timestamp(match.group(2))
-        if start_ts:
-            all_timestamps.append(start_ts)
-        if end_ts:
-            all_timestamps.append(end_ts)
-    
-    # Pattern 4: Standalone (HH:MM): timestamps
-    standalone_pattern = r'^\((\d{1,2}:\d{2}(?::\d{2})?)\):'
-    for match in re.finditer(standalone_pattern, text, re.MULTILINE):
-        ts = parse_timestamp(match.group(1))
-        if ts:
-            all_timestamps.append(ts)
-    
-    # Remove duplicates and sort
-    all_timestamps = sorted(list(set(all_timestamps)))
-    
-    start_timestamp = all_timestamps[0] if all_timestamps else None
-    end_timestamp = all_timestamps[-1] if all_timestamps else None
-    
-    return start_timestamp, end_timestamp, all_timestamps
-
-def clean_verbatim_response_with_timestamps(text: str, interviewer_names=None):
-    """
-    Enhanced version of clean_verbatim_response that extracts timestamps before cleaning.
-    Returns: (cleaned_text, start_timestamp, end_timestamp)
-    """
-    # First extract timestamps before cleaning
-    start_ts, end_ts, all_ts = extract_timestamps_from_text(text)
-    
-    # Then clean normally (using existing logic)
-    if interviewer_names is None:
-        interviewer_names = ["Q:", "A:", "Interviewer:", "Drew Giovannoli:", "Brian:", "Yusuf Elmarakby:"]
-    
-    lines = text.splitlines()
-    cleaned_lines = []
-    for line in lines:
-        l = line.strip()
-        # Remove interview titles/headings
-        if l.lower().startswith("an interview with") or l.lower().startswith("interview with"):
-            continue
-        # Remove speaker labels, timestamps, Q:/A: tags
-        if any(l.startswith(name) for name in interviewer_names):
-            continue
-        if re.match(r'^Speaker \d+ \(\d{1,2}:\d{2}(?::\d{2})?\):', l):
-            continue
-        if re.match(r'^\(\d{1,2}:\d{2}(?::\d{2})?\):', l):
-            continue
-        # Skip lines that are just questions (but keep questions that are part of longer content)
-        if l.endswith("?") and len(l) < 50:
-            continue
-        cleaned_lines.append(line)
-    
-    cleaned = " ".join(cleaned_lines).strip()
-    
-    # Remove timestamps and speaker labels from cleaned text
-    cleaned = re.sub(r'\[(\d{1,2}:\d{2}(?::\d{2})?)\]', '', cleaned)  # Remove [HH:MM:SS]
-    cleaned = re.sub(r'Speaker \d+ \(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', cleaned)  # Remove Speaker (HH:MM):
-    cleaned = re.sub(r'\(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', cleaned)  # Remove (HH:MM):
-    cleaned = re.sub(r'(?:Speaker \d+|[A-Za-z\s]+?)?\s*\(\d{1,2}:\d{2}(?::\d{2})?\s*-\s*\d{1,2}:\d{2}(?::\d{2})?\)', '', cleaned)  # Remove ShipBob format
-    cleaned = re.sub(r'^(Speaker \d+|Drew Giovannoli|Brian|Yusuf Elmarakby):\s*', '', cleaned, flags=re.MULTILINE)
-    
-    # Clean up whitespace
-    cleaned = re.sub(r'\n+', ' ', cleaned)
-    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    
-    # Remove disfluencies (if function exists)
-    try:
-        cleaned = remove_disfluencies(cleaned)
-    except:
-        pass  # Function might not exist yet
-    
-    if len(cleaned) < 5:
-        cleaned = ""
-    
-    return cleaned, start_ts, end_ts
-# ===== END TIMESTAMP EXTRACTION FUNCTIONS =====
-
 def normalize_response_id(company: str, interviewee: str, chunk_index: int, client_id: str = None) -> str:
     """Create normalized, unique Response ID with timestamp for uniqueness"""
     parts = []
@@ -486,7 +356,7 @@ def remove_disfluencies(text: str) -> str:
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-def clean_verbatim_response(text: str, interviewer_names=None):
+def clean_verbatim_response(text: str, interviewer_names=None) -> str:
     if interviewer_names is None:
         interviewer_names = ["Q:", "A:", "Interviewer:", "Drew Giovannoli:", "Brian:", "Yusuf Elmarakby:"]
     lines = text.splitlines()
@@ -690,7 +560,7 @@ def _process_transcript_parallel(
     
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
-        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview", "start_timestamp", "end_timestamp"],
+        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
         template="""CRITICAL INSTRUCTIONS FOR CONTEXT-DRIVEN EXTRACTION:
 - You have access to focused context windows (~7K tokens) containing Q&A exchanges.
 - Focus on COMPLETE CONTEXT and MEANINGFUL Q&A PAIRS rather than arbitrary numbers.
@@ -751,8 +621,6 @@ Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pair
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}",
-    "start_timestamp": "{start_timestamp}",
-    "end_timestamp": "{end_timestamp}",
     "findings": "key_finding_summary_with_specific_details_1",
     "value_realization": "value_or_roi_metrics_with_quantitative_details_1",
     "implementation_experience": "implementation_details_with_workflow_specifics_1",
@@ -810,18 +678,17 @@ Interview chunk to analyze:
                 print(f"📋 Chunk {chunk_index} filtered: not Q&A content", file=sys.stderr)
                 return []
             
-            # Clean the chunk text and extract timestamps
+            # Clean the chunk text (but be less aggressive for speaker-based transcripts)
             if found_qa:
-                # For Q&A format, clean aggressively with timestamp extraction
-                cleaned_chunk, start_ts, end_ts = clean_verbatim_response(chunk)
+                # For Q&A format, clean aggressively
+                cleaned_chunk = clean_verbatim_response(chunk)
                 if not cleaned_chunk:
                     print(f"📋 Chunk {chunk_index} filtered: no content after cleaning", file=sys.stderr)
                     return []
             else:
-                # For speaker-based transcripts, extract timestamps then clean
-                start_ts, end_ts, all_ts = extract_timestamps_from_text(chunk)
-                cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', chunk)
-                cleaned_chunk = re.sub(r'\(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', cleaned_chunk)
+                # For speaker-based transcripts, just remove speaker labels and timestamps
+                cleaned_chunk = re.sub(r'^Speaker \d+ \(\d{2}:\d{2}\):\s*', '', chunk)
+                cleaned_chunk = re.sub(r'\(\d{2}:\d{2}\):\s*', '', cleaned_chunk)
                 cleaned_chunk = cleaned_chunk.strip()
                 if len(cleaned_chunk) < 5:
                     print(f"📋 Chunk {chunk_index} filtered: too short after cleaning", file=sys.stderr)
@@ -842,9 +709,7 @@ Interview chunk to analyze:
                 "company_name": company,
                 "interviewee_name": interviewee,
                 "deal_status": deal_status,
-                "date_of_interview": date_of_interview,
-                "start_timestamp": start_ts,
-                "end_timestamp": end_ts
+                "date_of_interview": date_of_interview
             }
             
             # Get response from LLM with retries
@@ -929,7 +794,6 @@ Interview chunk to analyze:
     column_order = [
         'response_id', 'key_insight', 'verbatim_response', 'subject', 'question',
         'deal_status', 'company', 'interviewee_name', 'date_of_interview',
-        'start_timestamp', 'end_timestamp',
         'findings', 'value_realization', 'implementation_experience', 'risk_mitigation',
         'competitive_advantage', 'customer_success', 'product_feedback', 'service_quality',
         'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
@@ -981,7 +845,7 @@ def _process_transcript_sequential_impl(
     
     # Create enhanced prompt template optimized for quality over quantity
     prompt_template = PromptTemplate(
-        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview", "start_timestamp", "end_timestamp"],
+        input_variables=["response_id", "key_insight", "chunk_text", "company", "company_name", "interviewee_name", "deal_status", "date_of_interview"],
         template="""CRITICAL INSTRUCTIONS FOR CONTEXT-DRIVEN EXTRACTION:
 - You have access to focused context windows (~7K tokens) containing Q&A exchanges.
 - Focus on COMPLETE CONTEXT and MEANINGFUL Q&A PAIRS rather than arbitrary numbers.
@@ -1042,8 +906,6 @@ Analyze the provided interview chunk and extract COMPLETE, CONTEXT-RICH Q&A pair
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
     "date_of_interview": "{date_of_interview}",
-    "start_timestamp": "{start_timestamp}",
-    "end_timestamp": "{end_timestamp}",
     "findings": "key_finding_summary_with_specific_details_1",
     "value_realization": "value_or_roi_metrics_with_quantitative_details_1",
     "implementation_experience": "implementation_details_with_workflow_specifics_1",
@@ -1130,9 +992,7 @@ Interview chunk to analyze:
                 "company_name": company,
                 "interviewee_name": interviewee,
                 "deal_status": deal_status,
-                "date_of_interview": date_of_interview,
-                "start_timestamp": start_ts,
-                "end_timestamp": end_ts
+                "date_of_interview": date_of_interview
             }
             
             # Get response from LLM with retries
@@ -1197,7 +1057,6 @@ Interview chunk to analyze:
     column_order = [
         'response_id', 'key_insight', 'verbatim_response', 'subject', 'question',
         'deal_status', 'company', 'interviewee_name', 'date_of_interview',
-        'start_timestamp', 'end_timestamp',
         'findings', 'value_realization', 'implementation_experience', 'risk_mitigation',
         'competitive_advantage', 'customer_success', 'product_feedback', 'service_quality',
         'decision_factors', 'pain_points', 'success_metrics', 'future_plans'
