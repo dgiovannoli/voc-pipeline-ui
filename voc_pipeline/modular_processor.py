@@ -11,6 +11,7 @@ import json
 import time
 import re
 from typing import Dict, List, Optional, Any, Tuple
+from difflib import SequenceMatcher
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -153,6 +154,200 @@ def clean_verbatim_response_with_timestamps(text: str, interviewer_names=None) -
     
     return cleaned, start_ts, end_ts
 # ===== END TIMESTAMP EXTRACTION FUNCTIONS =====
+
+# ===== ENHANCED QUOTE-TO-TIMESTAMP MAPPING =====
+def extract_timestamped_segments(transcript_text: str) -> List[Dict]:
+    """Extract all timestamped segments from transcript with their timestamps"""
+    segments = []
+    lines = transcript_text.splitlines()
+    
+    current_speaker = None
+    current_text_lines = []
+    current_start_time = None
+    current_end_time = None
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+            
+        # Pattern 1: Speaker (HH:MM:SS - HH:MM:SS) Text (ShipBob format)
+        speaker_range_match = re.match(r'^(?P<speaker>[A-Za-z\s]+?)\s*\((?P<start_ts>\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*(?P<end_ts>\d{1,2}:\d{2}(?::\d{2})?)\)\s*(?P<text>.*)', line)
+        
+        # Pattern 2: Speaker (HH:MM:SS): Text
+        speaker_ts_match = re.match(r'^(?P<speaker>Speaker \d+|[A-Za-z\s]+?)\s*\((?P<start_ts>\d{1,2}:\d{2}(?::\d{2})?)\):?\s*(?P<text>.*)', line)
+        
+        # Pattern 3: [HH:MM:SS] Text
+        inline_ts_match = re.match(r'^\[(?P<start_ts>\d{1,2}:\d{2}(?::\d{2})?)\]\s*(?P<text>.*)', line)
+        
+        # Pattern 4: (HH:MM:SS): Text
+        standalone_ts_match = re.match(r'^\((?P<start_ts>\d{1,2}:\d{2}(?::\d{2})?)\):?\s*(?P<text>.*)', line)
+        
+        if speaker_range_match:
+            # ShipBob format with start and end times
+            speaker_name = speaker_range_match.group('speaker').strip()
+            start_ts = parse_timestamp(speaker_range_match.group('start_ts'))
+            end_ts = parse_timestamp(speaker_range_match.group('end_ts'))
+            text = speaker_range_match.group('text').strip()
+            
+            # Finalize previous segment if exists
+            if current_text_lines and current_speaker:
+                segments.append({
+                    "speaker": current_speaker,
+                    "text": " ".join(current_text_lines).strip(),
+                    "start_time": current_start_time,
+                    "end_time": current_end_time
+                })
+            
+            # Start new segment
+            current_speaker = speaker_name
+            current_text_lines = [text]
+            current_start_time = start_ts
+            current_end_time = end_ts
+            
+        elif speaker_ts_match:
+            # Speaker with single timestamp
+            speaker_name = speaker_ts_match.group('speaker').strip()
+            start_ts = parse_timestamp(speaker_ts_match.group('start_ts'))
+            text = speaker_ts_match.group('text').strip()
+            
+            # Finalize previous segment if exists
+            if current_text_lines and current_speaker:
+                segments.append({
+                    "speaker": current_speaker,
+                    "text": " ".join(current_text_lines).strip(),
+                    "start_time": current_start_time,
+                    "end_time": current_end_time
+                })
+            
+            # Start new segment
+            current_speaker = speaker_name
+            current_text_lines = [text]
+            current_start_time = start_ts
+            current_end_time = None
+            
+        elif inline_ts_match:
+            # Inline timestamp
+            start_ts = parse_timestamp(inline_ts_match.group('start_ts'))
+            text = inline_ts_match.group('text').strip()
+            
+            # Finalize previous segment if exists
+            if current_text_lines and current_speaker:
+                segments.append({
+                    "speaker": current_speaker,
+                    "text": " ".join(current_text_lines).strip(),
+                    "start_time": current_start_time,
+                    "end_time": current_end_time
+                })
+            
+            # Start new segment
+            current_speaker = "Unknown"
+            current_text_lines = [text]
+            current_start_time = start_ts
+            current_end_time = None
+            
+        elif standalone_ts_match:
+            # Standalone timestamp
+            start_ts = parse_timestamp(standalone_ts_match.group('start_ts'))
+            text = standalone_ts_match.group('text').strip()
+            
+            # Finalize previous segment if exists
+            if current_text_lines and current_speaker:
+                segments.append({
+                    "speaker": current_speaker,
+                    "text": " ".join(current_text_lines).strip(),
+                    "start_time": current_start_time,
+                    "end_time": current_end_time
+                })
+            
+            # Start new segment
+            current_speaker = "Unknown"
+            current_text_lines = [text]
+            current_start_time = start_ts
+            current_end_time = None
+            
+        else:
+            # Continuation of previous segment
+            if current_text_lines:
+                current_text_lines.append(line)
+            else:
+                # Orphaned text without timestamp
+                current_text_lines = [line]
+                current_speaker = current_speaker or "Unknown"
+    
+    # Finalize last segment
+    if current_text_lines and current_speaker:
+        segments.append({
+            "speaker": current_speaker,
+            "text": " ".join(current_text_lines).strip(),
+            "start_time": current_start_time,
+            "end_time": current_end_time
+        })
+    
+    return segments
+
+def find_quote_timestamps(quote_text: str, timestamped_segments: List[Dict]) -> Tuple[Optional[str], Optional[str]]:
+    """Find the best matching segment for a quote and return its timestamps"""
+    if not quote_text or not timestamped_segments:
+        return None, None
+    
+    best_match = None
+    best_score = 0.0
+    
+    for segment in timestamped_segments:
+        segment_text = segment.get('text', '')
+        if not segment_text:
+            continue
+            
+        # Calculate similarity score
+        similarity = SequenceMatcher(None, quote_text.lower(), segment_text.lower()).ratio()
+        
+        # Check for exact substring match (higher priority)
+        if quote_text.lower() in segment_text.lower():
+            similarity = max(similarity, 0.9)
+        
+        # Check for partial match (medium priority)
+        words_in_quote = set(quote_text.lower().split())
+        words_in_segment = set(segment_text.lower().split())
+        word_overlap = len(words_in_quote.intersection(words_in_segment)) / len(words_in_quote)
+        if word_overlap > 0.5:
+            similarity = max(similarity, word_overlap * 0.8)
+        
+        if similarity > best_score:
+            best_score = similarity
+            best_match = segment
+    
+    if best_match and best_score > 0.3:  # Minimum threshold for match
+        return best_match.get('start_time'), best_match.get('end_time')
+    
+    return None, None
+
+def map_quotes_to_timestamps(quotes: List[Dict], original_transcript: str) -> List[Dict]:
+    """Map a list of quotes to their timestamps in the original transcript"""
+    # Extract timestamped segments from original transcript
+    timestamped_segments = extract_timestamped_segments(original_transcript)
+    
+    # Map each quote to its timestamps
+    mapped_quotes = []
+    for quote in quotes:
+        quote_text = quote.get('verbatim_response', '')
+        if not quote_text:
+            mapped_quotes.append(quote)
+            continue
+        
+        # Find timestamps for this quote
+        start_ts, end_ts = find_quote_timestamps(quote_text, timestamped_segments)
+        
+        # Create mapped quote with timestamps
+        mapped_quote = quote.copy()
+        mapped_quote['start_timestamp'] = start_ts or '00:00:00'
+        mapped_quote['end_timestamp'] = end_ts or start_ts or '00:00:00'
+        
+        mapped_quotes.append(mapped_quote)
+    
+    return mapped_quotes
+# ===== END ENHANCED QUOTE-TO-TIMESTAMP MAPPING =====
+
 
 
 
