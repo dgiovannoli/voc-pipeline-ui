@@ -396,9 +396,9 @@ class ModularProcessor:
                 # Add timestamps to all responses (LLM might not include them consistently)
                 for response in parsed_responses:
                     if 'start_timestamp' not in response or not response.get('start_timestamp'):
-                        response['start_timestamp'] = clean_start_ts or start_ts
+                        response["start_timestamp"] = clean_start_ts or start_ts or "00:00:00"
                     if 'end_timestamp' not in response or not response.get('end_timestamp'):
-                        response['end_timestamp'] = clean_end_ts or end_ts
+                        response["end_timestamp"] = clean_end_ts or end_ts or "00:00:00"
                 
                 logger.info(f"✅ Chunk {chunk_index} completed: {len(parsed_responses)} responses extracted")
                 return parsed_responses
