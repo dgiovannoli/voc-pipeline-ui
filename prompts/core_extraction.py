@@ -135,7 +135,9 @@ Analyze the provided interview chunk and extract COMPLETE Q&A pairs in CHRONOLOG
     "deal_status": "{deal_status}",
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
-    "date_of_interview": "{date_of_interview}"
+    "date_of_interview": "{date_of_interview}",
+    "start_timestamp": "{start_timestamp}",
+    "end_timestamp": "{end_timestamp}"
   }},
   {{
     "response_id": "{response_id}_2",
@@ -145,7 +147,9 @@ Analyze the provided interview chunk and extract COMPLETE Q&A pairs in CHRONOLOG
     "deal_status": "{deal_status}",
     "company": "{company}",
     "interviewee_name": "{interviewee_name}",
-    "date_of_interview": "{date_of_interview}"
+    "date_of_interview": "{date_of_interview}",
+    "start_timestamp": "{start_timestamp}",
+    "end_timestamp": "{end_timestamp}"
   }}
 ]
 

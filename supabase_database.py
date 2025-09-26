@@ -90,7 +90,9 @@ class SupabaseDatabase:
                 'contact_website': response_data.get('contact_website'),
                 'file_source': response_data.get('file_source', ''),
                 'client_id': response_data.get('client_id', 'default'),
-                'created_at': datetime.now().isoformat()
+                'created_at': datetime.now().isoformat(),
+                'start_timestamp': response_data.get('start_timestamp'),
+                'end_timestamp': response_data.get('end_timestamp')
             }
             
             # Add harmonized subject fields if present

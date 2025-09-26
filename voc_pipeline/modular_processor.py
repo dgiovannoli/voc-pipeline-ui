@@ -9,7 +9,8 @@ import sys
 import logging
 import json
 import time
-from typing import Dict, List, Optional, Any
+import re
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -29,6 +30,131 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# ===== TIMESTAMP EXTRACTION FUNCTIONS =====
+def parse_timestamp(ts_str: str) -> Optional[str]:
+    """Parse timestamp string to HH:MM:SS format"""
+    if not ts_str:
+        return None
+    
+    # Remove brackets and parentheses
+    ts_str = re.sub(r'[\[\]()]', '', ts_str.strip())
+    
+    # Handle different formats
+    patterns = [
+        r'^(\d{1,2}):(\d{2}):(\d{2})$',  # HH:MM:SS
+        r'^(\d{1,2}):(\d{2})$',          # MM:SS
+    ]
+    
+    for pattern in patterns:
+        match = re.match(pattern, ts_str)
+        if match:
+            if len(match.groups()) == 3:  # HH:MM:SS
+                h, m, s = map(int, match.groups())
+                return f"{h:02d}:{m:02d}:{s:02d}"
+            elif len(match.groups()) == 2:  # MM:SS
+                m, s = map(int, match.groups())
+                return f"00:{m:02d}:{s:02d}"
+    
+    return None
+
+def extract_timestamps_from_text(text: str) -> Tuple[Optional[str], Optional[str], List[str]]:
+    """
+    Extract all timestamps from text and return start, end, and all timestamps found.
+    Handles multiple formats: [HH:MM:SS], (MM:SS), Speaker (HH:MM):, Speaker (HH:MM:SS - HH:MM:SS)
+    """
+    all_timestamps = []
+    
+    # Pattern 1: [HH:MM:SS] or [MM:SS] inline timestamps
+    inline_pattern = r'\[(\d{1,2}:\d{2}(?::\d{2})?)\]'
+    for match in re.finditer(inline_pattern, text):
+        ts = parse_timestamp(match.group(1))
+        if ts:
+            all_timestamps.append(ts)
+    
+    # Pattern 2: Speaker (HH:MM): or (HH:MM):
+    speaker_pattern = r'(?:Speaker \d+|[A-Za-z\s]+?)?\s*\((\d{1,2}:\d{2}(?::\d{2})?)\):'
+    for match in re.finditer(speaker_pattern, text):
+        ts = parse_timestamp(match.group(1))
+        if ts:
+            all_timestamps.append(ts)
+    
+    # Pattern 3: ShipBob format - Speaker (HH:MM:SS - HH:MM:SS)
+    shipbob_pattern = r'(?:Speaker \d+|[A-Za-z\s]+?)?\s*\((\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*(\d{1,2}:\d{2}(?::\d{2})?)\)'
+    for match in re.finditer(shipbob_pattern, text):
+        start_ts = parse_timestamp(match.group(1))
+        end_ts = parse_timestamp(match.group(2))
+        if start_ts:
+            all_timestamps.append(start_ts)
+        if end_ts:
+            all_timestamps.append(end_ts)
+    
+    # Pattern 4: Standalone (HH:MM): timestamps
+    standalone_pattern = r'^\((\d{1,2}:\d{2}(?::\d{2})?)\):'
+    for match in re.finditer(standalone_pattern, text, re.MULTILINE):
+        ts = parse_timestamp(match.group(1))
+        if ts:
+            all_timestamps.append(ts)
+    
+    # Remove duplicates and sort
+    all_timestamps = sorted(list(set(all_timestamps)))
+    
+    start_timestamp = all_timestamps[0] if all_timestamps else None
+    end_timestamp = all_timestamps[-1] if all_timestamps else None
+    
+    return start_timestamp, end_timestamp, all_timestamps
+
+def clean_verbatim_response_with_timestamps(text: str, interviewer_names=None) -> Tuple[str, Optional[str], Optional[str]]:
+    """
+    Enhanced version of clean_verbatim_response that extracts timestamps before cleaning.
+    Returns: (cleaned_text, start_timestamp, end_timestamp)
+    """
+    # First extract timestamps before cleaning
+    start_ts, end_ts, all_ts = extract_timestamps_from_text(text)
+    
+    # Then clean normally
+    if interviewer_names is None:
+        interviewer_names = ["Q:", "A:", "Interviewer:", "Drew Giovannoli:", "Brian:", "Yusuf Elmarakby:"]
+    
+    lines = text.splitlines()
+    cleaned_lines = []
+    for line in lines:
+        l = line.strip()
+        # Remove interview titles/headings
+        if l.lower().startswith("an interview with") or l.lower().startswith("interview with"):
+            continue
+        # Remove speaker labels, timestamps, Q:/A: tags
+        if any(l.startswith(name) for name in interviewer_names):
+            continue
+        if re.match(r'^Speaker \d+ \(\d{1,2}:\d{2}(?::\d{2})?\):', l):
+            continue
+        if re.match(r'^\(\d{1,2}:\d{2}(?::\d{2})?\):', l):
+            continue
+        # Skip lines that are just questions (but keep questions that are part of longer content)
+        if l.endswith("?") and len(l) < 50:
+            continue
+        cleaned_lines.append(line)
+    
+    cleaned = " ".join(cleaned_lines).strip()
+    
+    # Remove timestamps and speaker labels from cleaned text
+    cleaned = re.sub(r'\[(\d{1,2}:\d{2}(?::\d{2})?)\]', '', cleaned)  # Remove [HH:MM:SS]
+    cleaned = re.sub(r'Speaker \d+ \(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', cleaned)  # Remove Speaker (HH:MM):
+    cleaned = re.sub(r'\(\d{1,2}:\d{2}(?::\d{2})?\):\s*', '', cleaned)  # Remove (HH:MM):
+    cleaned = re.sub(r'(?:Speaker \d+|[A-Za-z\s]+?)?\s*\(\d{1,2}:\d{2}(?::\d{2})?\s*-\s*\d{1,2}:\d{2}(?::\d{2})?\)', '', cleaned)  # Remove ShipBob format
+    cleaned = re.sub(r'^(Speaker \d+|Drew Giovannoli|Brian|Yusuf Elmarakby):\s*', '', cleaned, flags=re.MULTILINE)
+    
+    # Clean up whitespace
+    cleaned = re.sub(r'\n+', ' ', cleaned)
+    cleaned = re.sub(r'\s+', ' ', cleaned).strip()
+    
+    if len(cleaned) < 5:
+        cleaned = ""
+    
+    return cleaned, start_ts, end_ts
+# ===== END TIMESTAMP EXTRACTION FUNCTIONS =====
+
+
 
 class ModularProcessor:
     """Modular processor for independent pipeline stages."""
@@ -164,7 +290,7 @@ class ModularProcessor:
                 
                 # Create prompt template (use raw template, not formatted)
                 prompt_template = PromptTemplate(
-                    input_variables=["response_id", "company", "interviewee_name", "deal_status", "date_of_interview", "chunk_text"],
+                    input_variables=["response_id", "company", "interviewee_name", "deal_status", "date_of_interview", "chunk_text", "start_timestamp", "end_timestamp"],
                     template=CORE_EXTRACTION_PROMPT
                 )
                 chain = prompt_template | self.llm
@@ -227,21 +353,32 @@ class ModularProcessor:
                 # Create unique response ID for this chunk
                 chunk_id = f"{company}_{interviewee}_{chunk_index+1}"
                 
+                # Extract timestamps from chunk before processing
+                start_ts, end_ts, all_ts = extract_timestamps_from_text(chunk_text)
+                
+                # Clean the chunk text with timestamp extraction
+                cleaned_chunk, clean_start_ts, clean_end_ts = clean_verbatim_response_with_timestamps(chunk_text)
+                
+                # Use cleaned text for LLM processing
+                processed_chunk = cleaned_chunk if cleaned_chunk else chunk_text
+                
                 # Create prompt template (use raw template, not formatted)
                 prompt_template = PromptTemplate(
-                    input_variables=["response_id", "company", "interviewee_name", "deal_status", "date_of_interview", "chunk_text"],
+                    input_variables=["response_id", "company", "interviewee_name", "deal_status", "date_of_interview", "chunk_text", "start_timestamp", "end_timestamp"],
                     template=CORE_EXTRACTION_PROMPT
                 )
                 chain = prompt_template | self.llm
                 
-                # Get response
+                # Get response with timestamps
                 result = chain.invoke({
                     "response_id": chunk_id,
                     "company": company,
                     "interviewee_name": interviewee,
                     "deal_status": deal_status,
                     "date_of_interview": date_of_interview,
-                    "chunk_text": chunk_text
+                    "chunk_text": processed_chunk,
+                    "start_timestamp": clean_start_ts or start_ts,
+                    "end_timestamp": clean_end_ts or end_ts
                 })
                 
                 # Parse response
@@ -255,6 +392,13 @@ class ModularProcessor:
                 
                 # Parse the response
                 parsed_responses = self._parse_llm_response(response_text, chunk_id, chunk_index)
+                
+                # Add timestamps to all responses (LLM might not include them consistently)
+                for response in parsed_responses:
+                    if 'start_timestamp' not in response or not response.get('start_timestamp'):
+                        response['start_timestamp'] = clean_start_ts or start_ts
+                    if 'end_timestamp' not in response or not response.get('end_timestamp'):
+                        response['end_timestamp'] = clean_end_ts or end_ts
                 
                 logger.info(f"✅ Chunk {chunk_index} completed: {len(parsed_responses)} responses extracted")
                 return parsed_responses
